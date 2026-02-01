@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# === CONFIG ===
+TARGET_FILE="RALPH_DONE"   # file that must exist to stop
+WORKDIR="/Users/david/projects/regattadesk"
+LOG_FILE="codex-loop.log"
+
+# Provide prompts in order; each Codex call uses the next prompt.
+# You can add as many as you want.
+PROMPTS=(
+  "Your goal is to remove all inconsistencies. Review the pdd/ folder and identify inconsistencies, gaps, and missing information. Produce a report by updating todo.md with clear, concise action items describing what needs to be fixed, phrased so Codex can execute them directly. if no issues are found, write all done in RALPH_DONE file. If you discover you need user inpout, write all questions that need answers to RALPH_DONE file"
+  "Address the issues in todo.md one by one, making code changes as needed. After completing each task, update todo.md to reflect the changes made. Only edit files in the pdd/ folder and todo.md. After you are done, clear commit the changes to git with a clear commit message summarizing the changes. finally clean up todo.md by removing all completed tasks."
+)
+
+# Optional controls
+MAX_ITERATIONS=5     # 0 = no limit
+SLEEP_SECONDS=2
+
+# === SCRIPT ===
+cd "$WORKDIR"
+
+i=0
+while true; do
+  if [[ -f "$TARGET_FILE" ]]; then
+    echo "Target file exists: $TARGET_FILE"
+    exit 0
+  fi
+
+  if (( MAX_ITERATIONS > 0 && i >= MAX_ITERATIONS )); then
+    echo "Reached MAX_ITERATIONS=$MAX_ITERATIONS without creating $TARGET_FILE"
+    exit 1
+  fi
+
+  for prompt_index in "${!PROMPTS[@]}"; do
+    prompt="${PROMPTS[$prompt_index]}"
+    echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running codex with prompt: $prompt" | tee -a "$LOG_FILE"
+    codex exec --full-auto "$prompt" 2>&1 | tee -a "$LOG_FILE"
+
+    if [[ -f "$TARGET_FILE" ]]; then
+      echo "Target file exists: $TARGET_FILE"
+      exit 0
+    fi
+    sleep "$SLEEP_SECONDS"
+  done
+
+  i=$((i + 1))
+done

@@ -12,6 +12,8 @@ This document consolidates the decisions made during requirements clarification 
 - Jury investigations, penalties, exclusions, DSQ, approvals
 - Public read-only site (high cacheability) with live updates
 - Staff UI (Auth0) + operator UI (QR/token, offline-capable)
+- Finance: payment status per entry or per club; bulk mark paid/unpaid
+- API-first for all operations; staff/operator/public UIs consume the same API surface (imports can be external tools later)
 - Event sourcing for auditability and reversibility
 
 ### Out of scope (v0.1)
@@ -22,7 +24,7 @@ This document consolidates the decisions made during requirements clarification 
 ## 2) Domain concepts
 
 - Athlete: full name, DOB, gender, club, optional federation id
-- Crew: display name; derived club; list of athletes + seat order
+- Crew: display name; derived club; list of athletes + seat order; reusable across regattas
 - Entry: participation of a crew in a regatta+event; includes bib, start position, status
 - Event: class/category/boat type; may be grouped into overarching classes per regatta
 - Block: operational unit with multiple classes/events; has schedule start and start intervals:
@@ -31,10 +33,13 @@ This document consolidates the decisions made during requirements clarification 
 - Bib pools:
   - blocks can have multiple pools
   - regatta has a single overflow pool; all blocks may borrow from it
-- Status values: active, withdrawn before draw, withdrawn after draw, dns, dnf, excluded, dsq
+- Payments: per-entry and per-club payment status
+- Status values: active, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq
+- Derived workflow/UI states (not primary status values): under_investigation, approved/immutable, offline_queued
 
 ## 3) Draw + schedule
 - Draw order random for v0.1; architecture allows future algorithms
+- Store the random draw seed for reproducibility
 - Classes start sequentially, but finishes can interleave
 - No insertion after draw in v0.1
 - Start time display config:
@@ -56,7 +61,7 @@ This document consolidates the decisions made during requirements clarification 
   - selecting an unlinked marker moves detail view to that marker
 - Camera metadata:
   - know when recording started and fps; compute time from frame offset
-  - store full line scan during regatta; after configured delay keep only ±2s around each marker
+- store full line scan during regatta; after configured delay keep only ±2s around approved markers
 - Markers:
   - contain timestamp, capture device, image tile reference
   - unassigned markers are not audited
@@ -68,8 +73,13 @@ This document consolidates the decisions made during requirements clarification 
 - Operator station model:
   - single active station per token
   - second device can request access without interrupting active station
-  - new device shows a PIN; admin can view PIN remotely to communicate to operator
+  - new device shows a PIN; active station can reveal the matching PIN to complete handover
+  - admin can view PIN remotely only if the active station cannot access the PIN flow
   - token display must not interrupt the active station UI (hidden unless opened intentionally)
+- Offline conflict policy (operator queue sync):
+  - Last-write-wins: marker position/time adjustments and unlinking when entry is not approved.
+  - Auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
+  - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
 
 ## 7) Protests / investigations / penalties
 - Investigation is per result/entry
@@ -80,11 +90,16 @@ This document consolidates the decisions made during requirements clarification 
 - Rare tribunal escalation represented by re-opening
 
 ## 8) Approvals + state transitions
-- Entry timing can be “complete” if finish time set OR marked dns/dnf/dsq/excl and not under investigation
-- Event cannot be approved if any entry is not in approved/dns/dnf/dsq/excl state
+- Entry timing can be “complete” if finish time set OR marked dns/dnf/dsq/excluded and not under investigation
+- Withdrawn entries are excluded from approval gating.
+- Event cannot be approved if any non-withdrawn entry is not in approved/dns/dnf/dsq/excluded state
 - Operators can mark/unmark DNS; warning lists impacted entries before batch operations
 - DSQ implemented via is_dsq flag for easy revert
 - Reverting DSQ returns to prior state (typically approved)
+- Result labels for UI:
+  - provisional: computed but not event-approved
+  - edited: manual adjustment or penalty applied (still provisional until approval)
+  - official: event approved
 
 ## 9) Authn/Authz and roles
 - Staff auth: Auth0; one account per person
@@ -95,7 +110,8 @@ This document consolidates the decisions made during requirements clarification 
   - financial_manager: mark paid per entry or per club
   - super_admin: all regattas; manage global defaults (e.g., rulesets)
 - Competitors do not need accounts
-- Operators: QR token links, scoped to block(s); configurable validity window; revocable; export to PDF with fallback instructions
+- Operators: QR token links, scoped to block(s) + station; configurable validity window; revocable; export to PDF with fallback instructions
+- Operators are accountless (no personal accounts); access is strictly via QR/token links
 
 ## 10) Rulesets (v0.1 minimal, extensible)
 - Rulesets are versioned, can be duplicated and updated
@@ -110,9 +126,10 @@ This document consolidates the decisions made during requirements clarification 
 ## 11) Public site caching + live updates
 - Public pages cacheable; results auto-update
 - Revision model:
-  - draw_revision affects schedule/start order pages
-  - results pages cache key includes draw_revision + results_revision
-  - entry/crew list cache key includes draw_revision + results_revision
+  - schedule/start order content depends on draw_revision
+  - results_revision tracks results changes
+  - cache keys for all public pages include draw_revision + results_revision
+  - withdrawal after draw bumps draw_revision only (no results_revision change)
 - Cache busting:
   - path versioning: /public/v{draw_revision}-{results_revision}/...
   - client soft-updates and history.replaceState to latest versioned path
@@ -129,12 +146,15 @@ This document consolidates the decisions made during requirements clarification 
 ## 12) Public anonymous session (for per-client limits)
 - POST /public/session mints/refreshes anon session cookie
 - Cookie is signed JWT (HS256) with iss/aud; key rotation with kid; two active keys; overlap ≥6 days
-- Sliding TTL 5 days; refresh window 20% of TTL; refresh on consistent-origin calls
+- Cookie attributes: HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=5d
+- Sliding TTL 5 days; refresh window 20% of TTL; refresh only when a valid anon cookie is already present (no Origin/Referer checks)
 - /public/session:
   - 204 No Content
   - idempotent; refresh only when needed
   - mild Cloudflare abuse protection; no Origin/Referer checks
+  - CSRF: no token required (anonymous + idempotent); rely on SameSite=Lax
   - Cache-Control: private, no-store
+- JWT includes a stable client-id claim used for per-client SSE caps
 - Bootstrap:
   - call /versions first
   - if 401 missing/invalid: call /public/session then retry /versions once
@@ -148,6 +168,7 @@ This document consolidates the decisions made during requirements clarification 
 - Health endpoint + OpenTelemetry endpoint
 - Audit logs retained indefinitely (v0.1)
 - Event sourcing chosen for auditability and easy correction of mistakes
+- Containerized deployment + automated pipeline (CI/CD)
 
 ## 14) UX, accessibility, i18n, and printing
 - Three UX surfaces:
@@ -157,7 +178,7 @@ This document consolidates the decisions made during requirements clarification 
 - Accessibility targets:
   - Public: WCAG 2.2 AA minimum for all flows; aim for WCAG 2.2 AAA where feasible (especially schedule/results).
   - Staff: no hard requirement, but avoid obviously inaccessible patterns (focus visibility, contrast, touch targets).
-  - Operator: prioritize outdoor readability and large touch targets; expose a high-contrast mode.
+  - Operator: prioritize outdoor readability and large touch targets; default to high-contrast mode with a toggle back to standard; persist per-device.
 - Internationalization and formatting:
   - Initial locales: Dutch (`nl`) and English (`en`).
   - Time: 24h.
@@ -167,7 +188,7 @@ This document consolidates the decisions made during requirements clarification 
   - Default comfortable density; provide compact/dense toggle (especially for staff tables).
 - Printing:
   - Admin generates printables (A4); assume mostly monochrome printers.
-  - Each printed page must include regatta name, generated timestamp, and draw/results revisions.
+  - Each printed page must include regatta name, generated timestamp, draw/results revisions, and page number.
 - Style guide:
   - Visual direction for v0.1 is “Calm Instrument”.
   - Canonical design tokens and component/page patterns are defined in `design/style-guide.md`.

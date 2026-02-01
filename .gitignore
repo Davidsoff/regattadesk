@@ -1,0 +1,8 @@
+codex-loop.log
+todo.md
+RALPH_DONE
+.vscode/
+.DS_Store
+node_modules/
+.env
+dist/

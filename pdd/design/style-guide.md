@@ -1,4 +1,4 @@
-Version: v1 (2026-02-01)
+Version: v2 (2026-02-01)
 
 # RegattaDesk v0.1 Style Guide (Implementation Spec)
 
@@ -23,6 +23,7 @@ Assumptions (confirmed):
 5. **Outdoor-readable:** operator UI defaults to high contrast, large targets, and minimal glare-prone chrome.
 6. **Non-interrupting flows:** operator capture must not be blocked by token/PIN flows.
 7. **Accessible is faster:** strong focus and predictable navigation reduce mistakes under pressure.
+8. **Staff accessibility:** no hard requirement, but avoid obviously inaccessible patterns (focus visibility, contrast, touch targets).
 
 ---
 
@@ -31,7 +32,7 @@ Assumptions (confirmed):
 ### 2.1 Color system
 - Default vibe: calm, trustworthy “instrumentation”.
 - Public pages must meet **WCAG 2.2 AA**; aim **AAA** where feasible for key public results/schedule flows.
-- Operator should expose a **high-contrast mode** for sunlight/outdoor use.
+- Operator surface defaults to **high-contrast mode** for sunlight/outdoor use, with a toggle back to standard; persist per-device.
 
 #### 2.1.1 CSS variables (canonical)
 ```css
@@ -96,6 +97,7 @@ Assumptions (confirmed):
 
 #### 2.1.2 Status chip mapping (domain)
 All chips must be understandable in monochrome print: **label + icon (optional) + shape**, not color alone.
+Note: entry status values are primary domain states; “under_investigation”, “approved/immutable”, “offline_queued”, and “provisional/edited/official” are derived workflow/UI states.
 
 - Entry statuses (v0.1):
   - `active`: neutral outline
@@ -198,12 +200,16 @@ Purpose: very fast event selection for experienced users while remaining accessi
   - tap to create; drag handles for adjustments; large hit areas
   - “Undo” always visible
   - linked/approved markers show lock and disable destructive controls
+- Overview + detail:
+  - overview strip with draggable detail window for fine alignment
+  - selecting an unlinked marker recenters the detail view
 - Detail loupe:
   - draggable magnifier window
   - fixed zoom steps (don’t rely on pinch-only)
 
 ### 3.9 Second-device PIN access request (non-interrupting)
-- Present as toast/banner with countdown and “Approve / Deny”.
+- Present as toast/banner with a non-blocking “Show PIN” action (no Approve/Deny).
+- Active station can reveal the matching PIN to complete handover; admin flow is a fallback if the active station can’t access the PIN.
 - Token display never overlays the scan area; use a drawer or separate station screen.
 
 ### 3.10 Public results cards (mobile-first)
@@ -221,7 +227,7 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Draw publish: preview + diff to previous + explicit “Publishing increments draw_revision”.
 - Investigations: queue + per-entry evidence + outcome, gated by approvals.
 - Approvals: “inbox” view for pending approvals; irreversible actions labeled.
-- Finance: invoice-like layout; export actions grouped; audit trail for refunds/withdrawals.
+- Finance: invoice-like layout; export actions grouped; audit trail for payment status changes.
 
 ### 4.2 Operator
 - Capture: one primary task per screen; minimal chroming.
