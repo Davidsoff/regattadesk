@@ -56,6 +56,8 @@ This document consolidates the decisions made during requirements clarification 
 - Scheduled start time (deterministic):
   - per-entry scheduled_start = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval)
   - indices are zero-based in draw order; class order is the block’s class sequence, crew order is the class draw order
+- Block scheduled end time (best practice): block_end = last_scheduled_start + crew_interval.
+  - Equivalent formula for final crew: block_end = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval) + crew_interval
 
 ## 4) Bib assignment + collisions
 - Bibs are regatta-wide unique (a bib number can be assigned to only one entry across all blocks).
@@ -115,7 +117,7 @@ This document consolidates the decisions made during requirements clarification 
 - One penalty per investigation; multiple investigations allowed; not all entries in an investigation get penalties
 - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
 - Investigation closure is per investigation (not bulk)
-- If an investigation ends with “no action”, the result is considered approved “as is”
+- Closing an investigation with “no action” by an authorized role auto-approves the entry if timing is complete and no other investigations are open; otherwise it returns to “pending approval”.
 - Rare tribunal escalation represented by re-opening
 
 ## 8) Approvals + state transitions
@@ -124,12 +126,13 @@ This document consolidates the decisions made during requirements clarification 
   - When timing is complete and there are no open investigations, entry becomes “pending approval”.
   - Approving an entry marks it `approved/immutable` and locks linked markers.
 - Withdrawn entries are excluded from approval gating.
+- withdrawn_before_draw entries are excluded from public schedule/results entirely; show only in staff views with filters/audit history.
 - withdrawn_after_draw entries remain visible on staff/public schedules and results with a withdrawn status label; they are excluded from rankings and approvals.
 - Event cannot be approved if any non-withdrawn entry is not in approved/dns/dnf/dsq/excluded state
-- If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF.
+- If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF/DSQ/Excluded.
 - Operators can mark/unmark DNS; warning lists impacted entries before batch operations
-- DSQ implemented via is_dsq flag for easy revert
-- Reverting DSQ returns to prior state (typically approved)
+- DSQ is a canonical entry status (no separate flag)
+- Reverting DSQ is an explicit status-change event that restores the prior status; store prior status in event metadata for easy revert/audit
 - Result labels for UI:
   - provisional: computed but not event-approved
   - edited: manual adjustment or penalty applied (still provisional until approval)

@@ -97,7 +97,7 @@ Assumptions (confirmed):
 
 #### 2.1.2 Status chip mapping (domain)
 All chips must be understandable in monochrome print: **label + icon (optional) + shape**, not color alone.
-Note: entry status values are primary domain states; “under_investigation”, “approved/immutable”, “offline_queued”, and “provisional/edited/official” are derived workflow/UI states.
+Note: entry status values are primary domain states (DSQ is a status, not a separate flag); “under_investigation”, “approved/immutable”, “offline_queued”, and “provisional/edited/official” are derived workflow/UI states.
 
 - Entry statuses (v0.1):
   - `active`: neutral outline
@@ -244,6 +244,7 @@ Purpose: very fast event selection for experienced users while remaining accessi
 ### 4.3 Public
 - Schedule: scannable timeline; “now/next” highlight.
 - Results: stable ordering; row highlight for updates; Live/Offline indicator (SSE only).
+- withdrawn_before_draw entries are not shown on public schedule/results; staff-only via filters/audit history.
 - Versioning: banner “New official results available → View” (non-modal).
 
 ### 4.4 Print (admin-generated PDFs, A4, mostly monochrome)

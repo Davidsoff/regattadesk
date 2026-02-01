@@ -22,6 +22,8 @@ API-first for all operations; staff/operator/public clients consume the same API
 - Scheduled start time (deterministic):
   - per-entry scheduled_start = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval)
   - indices are zero-based in draw order; class order is the block’s class sequence, crew order is the class draw order
+- Block scheduled end time (best practice): block_end = last_scheduled_start + crew_interval.
+  - Equivalent formula for final crew: block_end = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval) + crew_interval
 - Entries/crews/athletes: CRUD via API; crew reusable across regattas; entry is regatta-scoped participation.
   - Club fields: id, name, short_name.
   - Athlete fields: full name, DOB, gender, club, optional federation id.
@@ -59,17 +61,18 @@ API-first for all operations; staff/operator/public clients consume the same API
 - Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), exclusion, DSQ; approvals gate.
   - Multiple investigations per entry allowed; closure is per investigation.
   - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
-  - "No action" closes the investigation and leaves the entry approved as-is.
+  - "No action" closes the investigation; if timing is complete and no other investigations are open, an authorized role auto-approves the entry, otherwise it returns to pending approval.
   - Tribunal escalation is modeled by re-opening an investigation.
   - Not all entries in a single investigation must receive penalties.
-- Approvals/results: entry completion criteria, event approval gating (withdrawn entries excluded), DSQ reversible via is_dsq flag (reverting DSQ restores prior state, typically approved); result labels provisional/edited/official.
+- Approvals/results: entry completion criteria, event approval gating (withdrawn entries excluded), DSQ as a canonical status with explicit revert event storing prior status in metadata; result labels provisional/edited/official.
   - Entry completion: finish time set OR status dns/dnf/dsq/excluded and not under investigation.
   - Entry approval is explicit (head_of_jury or regatta_admin):
     - When timing is complete and there are no open investigations, entry becomes “pending approval”.
     - Approving an entry marks it `approved/immutable` and locks linked markers.
   - Event cannot be approved unless every non-withdrawn entry is in approved/dns/dnf/dsq/excluded state.
+  - withdrawn_before_draw entries are excluded from public schedule/results entirely; show only in staff views with filters/audit history.
   - withdrawn_after_draw entries remain visible on staff/public schedules and results with a withdrawn status label; they are excluded from rankings and approvals.
-  - If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF.
+  - If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF/DSQ/Excluded.
   - Result labels:
     - provisional: computed but not event-approved
     - edited: manual adjustment or penalty applied (still provisional until approval)
