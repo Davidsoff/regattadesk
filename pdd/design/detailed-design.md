@@ -82,13 +82,16 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Rounding rule: round half-up to the configured precision for display; ranking uses actual (unrounded) time.
   - Elapsed-time format: `M:SS.mmm` (or `H:MM:SS.mmm` when ≥1h).
   - Scheduled-time format: `HH:mm` (24h).
+  - Public results Delta: time behind leader, computed from unrounded times then rounded for display; format `+M:SS.mmm` (or `+H:MM:SS.mmm` when ≥1h).
+  - Leader delta displays as `+0:00.000` (rounded) so the UI never shows a blank delta.
 - Operator workflow: global queue across blocks (not necessarily draw order); marker→bib linking with quick correction; DNS batch warnings before bulk changes.
-- Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), excluded, DSQ; approvals gate.
+- Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), excluded, DSQ (entry); approvals gate.
   - Multiple investigations per entry allowed; closure is per investigation.
   - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
   - "No action" closes the investigation; if timing is complete and no other investigations are open, an authorized role auto-approves the entry, otherwise it returns to pending approval.
   - Tribunal escalation is modeled by re-opening an investigation.
   - Not all entries in a single investigation must receive penalties.
+  - Best practice: regatta-wide DSQ is modeled as a bulk action applying DSQ (entry) to all affected entries, with per-entry audit events.
 - Approvals/results: entry completion criteria, event approval gating (withdrawn entries excluded), DSQ as a canonical status with explicit revert event storing prior status in metadata; result labels provisional/edited/official.
   - Entry completion: finish time set OR status dns/dnf/dsq/excluded and not under investigation.
   - Entry approval is explicit (head_of_jury or regatta_admin):
@@ -192,15 +195,16 @@ flowchart LR
   - Regatta roles: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
   - Permissions matrix (best-practice defaults):
 
-| Action | regatta_admin | head_of_jury | info_desk | operator |
-| --- | --- | --- | --- | --- |
-| Publish draw | Yes | No | No | No |
-| Approve entry | Yes | Yes | No | No |
-| Approve event | Yes | Yes | No | No |
-| Mark DNS | Yes | Yes | No | Yes (within scoped block) |
-| Mark DNF | Yes | Yes | No | No |
-| Mark withdrawn_before_draw | Yes | No | Yes | No |
-| Mark withdrawn_after_draw | Yes | Yes | Yes | No |
+| Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
+| --- | --- | --- | --- | --- | --- | --- |
+| Publish draw | Yes | No | No | No | No | Yes |
+| Approve entry | Yes | Yes | No | No | No | Yes |
+| Approve event | Yes | Yes | No | No | No | Yes |
+| Mark DNS | Yes | Yes | No | No | Yes (within scoped block) | Yes |
+| Mark DNF | Yes | Yes | No | No | No | Yes |
+| Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
+| Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
+| Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.

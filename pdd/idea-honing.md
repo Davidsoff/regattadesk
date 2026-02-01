@@ -114,6 +114,7 @@ This document consolidates the decisions made during requirements clarification 
   - elapsed-time format: `M:SS.mmm` (or `H:MM:SS.mmm` when ≥1h)
   - scheduled-time format: `HH:mm` (24h)
   - Public results Delta: time behind leader, computed from unrounded times then rounded for display; format `+M:SS.mmm` (or `+H:MM:SS.mmm` when >=1h)
+  - Leader delta displays as `+0:00.000` (rounded) so the UI never shows a blank delta
 - Timing storage (best practice):
   - regatta.time_zone stored as IANA TZ name (e.g., `Europe/Amsterdam`)
   - store timestamps in UTC (Instant)
@@ -136,7 +137,8 @@ This document consolidates the decisions made during requirements clarification 
 
 ## 7) Protests / investigations / penalties
 - Investigation is per result/entry
-- Outcomes: no action, penalty (seconds configurable per regatta), excluded (race), DSQ (regatta)
+- Outcomes: no action, penalty (seconds configurable per regatta), excluded (race), DSQ (entry)
+- Best practice: regatta-wide DSQ is modeled as a bulk action applying DSQ (entry) to all affected entries, with per-entry audit events.
 - One penalty per investigation; multiple investigations allowed; not all entries in an investigation get penalties
 - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
 - Investigation closure is per investigation (not bulk)
@@ -174,15 +176,16 @@ This document consolidates the decisions made during requirements clarification 
 - Operators are accountless (no personal accounts); access is strictly via QR/token links
 - Permissions matrix (best-practice defaults):
 
-| Action | regatta_admin | head_of_jury | info_desk | operator |
-| --- | --- | --- | --- | --- |
-| Publish draw | Yes | No | No | No |
-| Approve entry | Yes | Yes | No | No |
-| Approve event | Yes | Yes | No | No |
-| Mark DNS | Yes | Yes | No | Yes (within scoped block) |
-| Mark DNF | Yes | Yes | No | No |
-| Mark withdrawn_before_draw | Yes | No | Yes | No |
-| Mark withdrawn_after_draw | Yes | Yes | Yes | No |
+| Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
+| --- | --- | --- | --- | --- | --- | --- |
+| Publish draw | Yes | No | No | No | No | Yes |
+| Approve entry | Yes | Yes | No | No | No | Yes |
+| Approve event | Yes | Yes | No | No | No | Yes |
+| Mark DNS | Yes | Yes | No | No | Yes (within scoped block) | Yes |
+| Mark DNF | Yes | Yes | No | No | No | Yes |
+| Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
+| Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
+| Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
 
 ## 10) Rulesets (v0.1 minimal, extensible)
 - Rulesets are versioned, can be duplicated and updated
