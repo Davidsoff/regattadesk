@@ -33,7 +33,10 @@ This document consolidates the decisions made during requirements clarification 
 - Bib pools:
   - blocks can have multiple pools
   - regatta has a single overflow pool; all blocks may borrow from it
-- Payments: per-entry and per-club payment status
+- Payments (best practice):
+  - entry-level status is the source of truth
+  - club “paid/unpaid” is a bulk action that updates entries and emits audit events
+  - club status is derived from current entry statuses
 - Status values: active, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq
 - Derived workflow/UI states (not primary status values): under_investigation, approved/immutable, offline_queued
 
@@ -72,6 +75,10 @@ This document consolidates the decisions made during requirements clarification 
 - Timing precision:
   - store milliseconds
   - display rounds to configured precision; ranking uses actual (unrounded) time
+  - Public results Delta: time behind leader, computed from unrounded times then rounded for display; format `+M:SS.mmm` (or `+H:MM:SS.mmm` when >=1h)
+- Timing storage (best practice):
+  - store timestamps in UTC (Instant)
+  - display in regatta-local time zone
 
 ## 6) Operations: start/finish flow
 - Operators work in blocks, on a global queue (not necessarily draw order)
@@ -140,6 +147,10 @@ This document consolidates the decisions made during requirements clarification 
   - results_revision tracks results changes
   - cache keys for all public pages include draw_revision + results_revision
   - withdrawal after draw bumps draw_revision only (no results_revision change)
+- Revision bump rules (best practice):
+  - draw_revision: draw publish + any schedule/start-order/bib display change
+  - results_revision: marker/time edits, penalties, approvals, DNS/DNF/DSQ/exclusion changes
+  - if a single operation affects both schedule/start-order/bib display and result-affecting data, increment both together
 - Cache busting:
   - path versioning: /public/v{draw_revision}-{results_revision}/...
   - client soft-updates and history.replaceState to latest versioned path

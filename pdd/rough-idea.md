@@ -2,6 +2,8 @@ Version: v1 (2026-01-31)
 
 # Rough idea
 
+> NOTE: Superseded by `idea-honing.md` v2. See that doc for current decisions.
+
 Build a regatta management system for rowing head races (single distance) with:
 
 - Backend: Quarkus (Java) + Postgres
@@ -24,5 +26,5 @@ Key capabilities (v0.1):
 - Strong auditability (adopt event sourcing)
 - Public pages cacheable; results auto-update via server push
 - Staff auth via Auth0; per-regatta roles; operators use QR token links (no personal accounts)
-- Operators pages work without stable internet; last-write-wins on conflicts
+- Operators pages work without stable internet; offline conflict policy uses LWW for marker adjustments/unlinks when entry is not approved, and requires manual resolution for duplicate links or edits against approved/immutable entries
 - Health endpoint + OpenTelemetry endpoint

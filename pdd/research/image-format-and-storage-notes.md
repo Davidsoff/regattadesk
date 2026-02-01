@@ -21,6 +21,12 @@ This meets “no width/height restriction” by construction and enables post-re
 - keep all tiles during regatta,
 - after delay, retain only tiles intersecting ±2s around approved markers.
 
+## Defaults (best practice)
+- Tile size: 512x512.
+- Format: WebP lossless; PNG fallback where WebP is not supported.
+- Manifest: include tile size, origin, and x-coordinate -> timestamp mapping.
+- Pruning: default delay 14 days after regatta end (configurable per regatta).
+
 ## Sources (titles)
 - “Specification for WebP Lossless Bitstream” (Google Developers)
 - “JPEG” (Wikipedia, JPEG/JFIF max image size section)

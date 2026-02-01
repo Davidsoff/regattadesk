@@ -26,7 +26,7 @@ API-first for all operations; staff/operator/public clients consume the same API
 - Rulesets: versioned; can be duplicated and updated; global rulesets immutable once linked to a regatta with a published draw; regatta cannot change ruleset after draw; age calculation config (actual age at start vs age as of Jan 1).
   - Only super_admin can promote regatta-owned rulesets to global selection.
   - Validation checks: gender compatibility and min/max age constraints.
-- Finance: track payment status per entry or per club; support bulk mark paid/unpaid with audit trail.
+- Finance: entry-level payment status is the source of truth; club “paid/unpaid” is a bulk action that updates entries with audit events; club status is derived from current entries.
 - Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; classes start sequentially but finishes can interleave.
 - Bibs: collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (smallest/largest) configurable; blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
   - Overflow pool is regatta-level and shared across all blocks; any block may borrow from it.
@@ -34,9 +34,11 @@ API-first for all operations; staff/operator/public clients consume the same API
   - UI: overview strip plus draggable detail window for fine alignment at start/finish.
   - Selecting an unlinked marker recenters the detail view on that marker.
   - Capture metadata: recording start time + fps; compute time from frame offset.
+  - Time storage (best practice): store timestamps in UTC (Instant) and display in regatta-local time zone.
   - Marker metadata: timestamp, capture device id, image tile reference (tile coords/ids).
+  - Tile defaults (best practice): 512x512 WebP lossless tiles with PNG fallback; manifest includes tile size, origin, and x-coordinate -> timestamp mapping.
   - Unassigned markers are not audited; assigned markers become immutable after approval.
-  - Retention: keep full line scan during regatta; after configured delay prune to ±2s around approved markers.
+  - Retention: keep full line scan during regatta; after configured delay (default 14 days after regatta end, configurable per regatta) prune to ±2s around approved markers.
   - Result calculation: use actual start + finish markers only (no scheduled-time fallback).
   - If a start/finish marker is missing, approval is blocked until the marker is added or the entry is set to DNS/DNF.
   - Timing precision: store milliseconds; display rounds to configured precision; ranking uses actual (unrounded) time.
@@ -59,6 +61,10 @@ API-first for all operations; staff/operator/public clients consume the same API
     - official: event approved
 - Public: cacheable versioned paths with draw/results revision keys; /versions no-store; SSE ticks and snapshot.
   - Schedule/start order content depends only on draw_revision, even though cache keys include both revisions.
+  - Revision bump rules (best practice):
+    - draw_revision: draw publish + any schedule/start-order/bib display change
+    - results_revision: marker/time edits, penalties, approvals, DNS/DNF/DSQ/exclusion changes
+    - if a single operation affects both schedule/start-order/bib display and result-affecting data, increment both together
 
 ### Status taxonomy
 - Domain status values: active, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq.

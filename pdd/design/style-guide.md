@@ -219,6 +219,7 @@ Purpose: very fast event selection for experienced users while remaining accessi
 
 ### 3.10 Public results cards (mobile-first)
 - Card rows: Rank, Crew/Club, Time, Delta, Status.
+- Delta: time behind leader; compute from unrounded times, then round to display precision. Format `+M:SS.mmm` (or `+H:MM:SS.mmm` when >=1h); leader shows `+0:00.000`.
 - Provide quick filters (Event, Category, Club search).
 - Version banner shows “Draw vX, Results vY” and links to the canonical versioned URL.
 
