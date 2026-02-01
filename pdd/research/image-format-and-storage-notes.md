@@ -26,6 +26,7 @@ This meets “no width/height restriction” by construction and enables post-re
 - Format: WebP lossless; PNG fallback where WebP is not supported.
 - Manifest: include tile size, origin, and x-coordinate -> timestamp mapping.
 - Pruning: default delay 14 days after regatta end (configurable per regatta).
+- 1024x1024 tiles are acceptable only when validated on target devices (desktop/tablet) and bandwidth/memory budgets, and when reduced tile-count is preferred; default remains 512x512.
 
 ## Sources (titles)
 - “Specification for WebP Lossless Bitstream” (Google Developers)
