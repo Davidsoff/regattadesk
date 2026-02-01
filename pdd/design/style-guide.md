@@ -151,7 +151,10 @@ Note: entry status values are primary domain states (DSQ is a status, not a sepa
 ### 3.1 Tables (Staff + Public)
 - Sticky header; optional sticky first column (bib/crew).
 - Numeric columns right-aligned; times in tabular numerals.
-- Time precision: display rounds to the configured precision; rankings use the actual (unrounded) time.
+- Time precision: default display precision is milliseconds (`.mmm`); round half-up to the configured precision; rankings use the actual (unrounded) time.
+- Time formats:
+  - Scheduled times: `HH:mm` (24h).
+  - Elapsed times: `M:SS.mmm` (or `H:MM:SS.mmm` when ≥1h).
 - Row states: hover (desktop), focus-visible ring (keyboard), selected (bulk actions).
 - Empty state: “No entries match filters” + “Clear filters”.
 - Loading state: skeleton rows (keep column alignment stable).
@@ -216,11 +219,13 @@ Purpose: very fast event selection for experienced users while remaining accessi
 ### 3.9 Second-device PIN access request (non-interrupting)
 - Present as toast/banner with a non-blocking “Show PIN” action (no Approve/Deny).
 - Active station can reveal the matching PIN to complete handover; admin flow is a fallback if the active station can’t access the PIN.
+- After handoff, the previous device is read-only and shows copy like “Read-only — re-auth to take control.”
 - Token display never overlays the scan area; use a drawer or separate station screen.
 
 ### 3.10 Public results cards (mobile-first)
 - Card rows: Rank, Crew/Club, Time, Delta, Status.
 - Delta: time behind leader; compute from unrounded times, then round to display precision. Format `+M:SS.mmm` (or `+H:MM:SS.mmm` when >=1h); leader shows `+0:00.000`.
+- Ordering/tie-breaks (public): rank by elapsed time including penalties; ties share rank; secondary sort by start time then bib; non-finish statuses appear after ranked entries.
 - Provide quick filters (Event, Category, Club search).
 - Version banner shows “Draw vX, Results vY” and links to the canonical versioned URL.
 

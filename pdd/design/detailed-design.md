@@ -16,29 +16,40 @@ API-first for all operations; staff/operator/public clients consume the same API
 (See idea-honing.md for consolidated requirements. This design is standalone, but references the same decisions.)
 
 ### Functional
-- Regatta setup: events/classes, blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
-- Blocks: schedule start time plus interval between crews and interval between classes (block-level config).
+- Terminology (glossary; use consistently in this doc):
+  - Category: demographic grouping (age/gender/skill level).
+  - Boat type: shell/rigging type (e.g., 1x, 2x, 2-, 4+, 8+).
+  - Event: a Category × Boat type pairing; primary unit for entries, scheduling, and results.
+  - Event group (optional): named grouping of events for awards or schedule organization (avoid using “class” as a standalone term).
+  - Block: operational scheduling unit with an ordered list of events.
+- Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
+- Blocks: schedule start time plus interval between crews and interval between events (block-level config).
 - Regatta end definition (for retention windows): use explicit regatta_end_at timestamp when set; otherwise compute from the latest block’s scheduled end time.
 - Scheduled start time (deterministic):
-  - per-entry scheduled_start = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval)
-  - indices are zero-based in draw order; class order is the block’s class sequence, crew order is the class draw order
+  - per-entry scheduled_start = block_start + (event_index * event_interval) + (crew_index_within_event * crew_interval)
+  - indices are zero-based in draw order; event order is the block’s event sequence, crew order is the event draw order
 - Block scheduled end time (best practice): block_end = last_scheduled_start + crew_interval.
-  - Equivalent formula for final crew: block_end = block_start + (class_index * class_interval) + (crew_index_within_class * crew_interval) + crew_interval
+  - Equivalent formula for final crew: block_end = block_start + (event_index * event_interval) + (crew_index_within_event * crew_interval) + crew_interval
 - Entries/crews/athletes: CRUD via API; crew reusable across regattas; entry is regatta-scoped participation.
   - Club fields: id, name, short_name.
   - Athlete fields: full name, DOB, gender, club, optional federation id.
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
     - Derived club rule: if all athletes share the same club, use that club; otherwise mark crew as composite/multi-club.
   - Entry fields: bib, start position, status.
-- Events: class/category/boat type; may be grouped into overarching classes per regatta.
+- Events: category × boat type; may be grouped into event groups per regatta.
 - Rulesets: versioned; can be duplicated and updated; global rulesets immutable once linked to a regatta with a published draw; regatta cannot change ruleset after draw; age calculation config (actual age at start vs age as of Jan 1).
   - Only super_admin can promote regatta-owned rulesets to global selection.
   - Validation checks: gender compatibility and min/max age constraints.
-- Finance: entry-level payment status is the source of truth; club “paid/unpaid” is a bulk action that updates entries with audit events; club status is derived from current entries.
+- Finance: payment_status enum (v0.1) is `unpaid` or `paid` only (no partial/refund support); default is `unpaid`.
+  - Entry-level status is the source of truth.
+  - Club “paid/unpaid” is a bulk action that updates entries with audit events.
+  - Club status is derived from current entry statuses (paid only if all current billable entries are `paid`; otherwise `unpaid`).
+  - Optional payment metadata fields: paid_at, paid_by, payment_reference.
   - Billing club source of truth: entry.billing_club_id when set; otherwise crew’s club (single-club crews only).
   - Composite/multi-club crews require explicit billing_club_id (and remain labeled as composite for reporting).
-- Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; classes start sequentially but finishes can interleave.
-- Bibs: regatta-wide unique; collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (smallest/largest) configurable; blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
+- Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; events start sequentially but finishes can interleave.
+- Bibs: regatta-wide unique; collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (smallest/largest) configurable per regatta (no per-pool override in v0.1); blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
+  - Pools/overflow must be defined as non-overlapping inclusive numeric ranges (or explicit lists); validate uniqueness across all pools at setup.
   - Allocation priority: use the entry’s block primary pool first, then additional block pools in configured order, then overflow.
   - Next available bib = first unused number in the current pool when scanning in the configured direction; if exhausted, continue to the next pool in priority order.
   - Overflow pool is regatta-level and shared across all blocks; any block may borrow from it.
@@ -49,16 +60,30 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Recording start time sourced via device time sync at session start (server handshake/NTP); store server_time_at_start plus device monotonic offset.
   - Drift handling: periodic resync; apply offset correction; if drift exceeds threshold, flag the capture session for review.
   - Fallback: if device time is invalid or sync fails, mark the capture session as unsynced and require manual timestamp correction before approvals (server-received timestamps are provisional only).
-  - Time storage (best practice): store timestamps in UTC (Instant) and display in regatta-local time zone.
+  - Time storage (best practice): regatta.time_zone stored as IANA TZ name (e.g., `Europe/Amsterdam`); store timestamps in UTC (Instant) and display in regatta-local time zone.
   - Marker metadata: timestamp, capture device id, image tile reference (tile coords/ids).
   - Tile defaults (best practice): 512x512 WebP lossless tiles with PNG fallback; manifest includes tile size, origin, and x-coordinate -> timestamp mapping.
-  - Unassigned markers are not audited; assigned markers become immutable after approval.
+  - Unlinked marker create/delete is not audited.
+  - Link/unlink actions and edits to linked markers are always audited.
+  - Pre-approval deletes of linked markers emit audit events.
+  - Linked markers become immutable after approval.
   - Retention: keep full line scan during regatta; after configured delay (default 14 days after regatta end, configurable per regatta) prune to ±2s around approved markers. (Regatta end defined above.)
+    - Do not prune until the regatta is archived or all entries are approved.
+    - If the retention delay elapses first, keep the full scan and raise an admin alert.
   - Result calculation: use actual start + finish markers only (no scheduled-time fallback).
+  - Public results ordering (best practice):
+    - Rank by elapsed time including penalties.
+    - Ties share rank.
+    - Secondary sort for display: start time, then bib.
+    - Non-finish statuses (dns/dnf/dsq/excluded/withdrawn) appear after ranked entries.
   - If a start/finish marker is missing, approval is blocked until the marker is added or the entry is set to DNS/DNF/DSQ/Excluded.
-  - Timing precision: store milliseconds; display rounds to configured precision; ranking uses actual (unrounded) time.
+  - Timing precision: store milliseconds.
+  - Default display precision: milliseconds (`.mmm`).
+  - Rounding rule: round half-up to the configured precision for display; ranking uses actual (unrounded) time.
+  - Elapsed-time format: `M:SS.mmm` (or `H:MM:SS.mmm` when ≥1h).
+  - Scheduled-time format: `HH:mm` (24h).
 - Operator workflow: global queue across blocks (not necessarily draw order); marker→bib linking with quick correction; DNS batch warnings before bulk changes.
-- Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), exclusion, DSQ; approvals gate.
+- Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), excluded, DSQ; approvals gate.
   - Multiple investigations per entry allowed; closure is per investigation.
   - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
   - "No action" closes the investigation; if timing is complete and no other investigations are open, an authorized role auto-approves the entry, otherwise it returns to pending approval.
@@ -81,7 +106,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Schedule/start order content depends only on draw_revision, even though cache keys include both revisions.
   - Revision bump rules (best practice):
     - draw_revision: draw publish + any schedule/start-order/bib display change
-    - results_revision: marker/time edits, penalties, approvals, DNS/DNF/DSQ/exclusion changes
+    - results_revision: marker/time edits, penalties, approvals, DNS/DNF/DSQ/excluded changes
     - if a single operation affects both schedule/start-order/bib display and result-affecting data, increment both together
 
 ### Status taxonomy
@@ -179,6 +204,7 @@ flowchart LR
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.
+  - After PIN handover, the previous device is demoted to read-only and must re-auth to regain control.
   - Admin can view PIN remotely only if the active station cannot access the PIN flow.
   - Token display must not interrupt capture UI (hidden unless opened intentionally).
   - QR tokens exportable to PDF with fallback instructions (short URL + token/PIN) if QR scan fails.

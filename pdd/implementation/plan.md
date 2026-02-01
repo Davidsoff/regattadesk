@@ -14,7 +14,7 @@ Version: v2 (2026-02-01)
 - [ ] Step 8: Public site versioned delivery (all pages use /public/v{draw}-{results}) + CDN headers
 - [ ] Step 9: Design tokens + table primitives per design/style-guide.md + public accessibility targets (WCAG 2.2 AA min, aim AAA) + operator default high-contrast mode toggle with per-device persistence
 - [ ] Step 10: i18n/formatting (nl/en, 24h, dd-MM-yyyy, regatta-local timezone) + printables (A4 PDFs, monochrome-friendly, header with regatta name + generated timestamp + draw/results revisions + page number)
-- [ ] Step 11: SSE per regatta (snapshot + multiplexed event types + ticks) + deterministic id + reconnect/backoff (min 100ms, base 500ms, cap 20s, full jitter, retry forever) + per-client cap (open after /versions bootstrap)
+- [ ] Step 11: SSE per regatta (snapshot + multiplexed event types + ticks; events: `snapshot`/`draw_revision`/`results_revision` with data `{draw_revision, results_revision, reason?}`) + deterministic id + reconnect/backoff (min 100ms, base 500ms, cap 20s, full jitter, retry forever) + per-client cap (open after /versions bootstrap)
 - [ ] Step 12: Rulesets: versioning, duplication/update, immutability after draw, age calculation config, validation (gender + min/max age), super_admin-only promotion of regatta-owned rulesets to global selection
 - [ ] Step 13: Blocks (start time + intervals between crews/classes), multiple bib pools per block, regatta-level shared overflow pool + bib assignment rules + start-time display config
 - [ ] Step 14: Draw (random with stored seed) + publish draw + draw_revision; no insertion after draw in v0.1
