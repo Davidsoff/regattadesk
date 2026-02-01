@@ -37,6 +37,9 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Marker metadata: timestamp, capture device id, image tile reference (tile coords/ids).
   - Unassigned markers are not audited; assigned markers become immutable after approval.
   - Retention: keep full line scan during regatta; after configured delay prune to ±2s around approved markers.
+  - Result calculation: use actual start + finish markers only (no scheduled-time fallback).
+  - If a start/finish marker is missing, approval is blocked until the marker is added or the entry is set to DNS/DNF.
+  - Timing precision: store milliseconds; display rounds to configured precision; ranking uses actual (unrounded) time.
 - Operator workflow: global queue across blocks (not necessarily draw order); marker→bib linking with quick correction; DNS batch warnings before bulk changes.
 - Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), exclusion, DSQ; approvals gate.
   - Multiple investigations per entry allowed; closure is per investigation.
@@ -45,7 +48,11 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Not all entries in a single investigation must receive penalties.
 - Approvals/results: entry completion criteria, event approval gating (withdrawn entries excluded), DSQ reversible via is_dsq flag (reverting DSQ restores prior state, typically approved); result labels provisional/edited/official.
   - Entry completion: finish time set OR status dns/dnf/dsq/excluded and not under investigation.
+  - Entry approval is explicit (head_of_jury or regatta_admin):
+    - When timing is complete and there are no open investigations, entry becomes “pending approval”.
+    - Approving an entry marks it `approved/immutable` and locks linked markers.
   - Event cannot be approved unless every non-withdrawn entry is in approved/dns/dnf/dsq/excluded state.
+  - If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF.
   - Result labels:
     - provisional: computed but not event-approved
     - edited: manual adjustment or penalty applied (still provisional until approval)
@@ -142,15 +149,18 @@ flowchart LR
   - QR tokens exportable to PDF with fallback instructions (short URL + token/PIN) if QR scan fails.
 - Public:
   - POST /public/session (204) mints/refreshes anon HttpOnly JWT cookie (HS256; iss/aud; kid rotation).
-    - Sliding TTL 5 days; refresh window 20% of TTL; refresh only when a valid anon cookie is already present.
+    - If missing/invalid anon cookie: mint a new one.
+    - If valid and within refresh window: refresh (new Set-Cookie).
+    - If valid and outside refresh window: 204 with no Set-Cookie.
+    - Sliding TTL 5 days; refresh window 20% of TTL.
     - Key rotation: two active keys; overlap ≥6 days.
     - Cookie attributes: HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=5d.
     - Idempotent; Cache-Control: private, no-store; mild abuse protection (no Origin/Referer checks).
     - CSRF: no token required (anonymous + idempotent); rely on SameSite=Lax.
     - JWT includes a stable client-id claim used for per-client SSE caps.
   - Bootstrap: call /versions first; if 401 missing/invalid then call /public/session and retry /versions once; then open SSE.
-  - GET /public/regattas/{id}/versions returns {draw_revision, results_revision}, Cache-Control: no-store; rate-limited.
-  - GET /public/regattas/{id}/events SSE: snapshot on connect + revision ticks.
+  - GET /public/regattas/{id}/versions returns {draw_revision, results_revision}, requires anon session cookie; 401 if missing/invalid; Cache-Control: no-store; rate-limited per client-id.
+  - GET /public/regattas/{id}/events SSE: snapshot on connect + revision ticks; requires anon session cookie; 401 if missing/invalid.
     - Multiplexed by event type (event: snapshot, draw_revision, results_revision).
     - Deterministic SSE id includes draw_revision + results_revision.
     - Per-client cap: 20 concurrent connections per client-id per regatta; reject excess with 429.
@@ -164,7 +174,7 @@ flowchart LR
 
 ## Data Models (high level)
 - event_store: aggregate streams with sequence numbers; payload + metadata.
-- projections: public tables keyed by (regatta_id, draw_rev, results_rev) where appropriate.
+- projections: public tables keyed by (regatta_id, draw_revision, results_revision) where appropriate.
 - payments: per-entry and per-club payment status in projections; events for mark_paid/mark_unpaid.
 - results_state: derived labels (provisional/edited/official) based on approvals and manual edits/penalties.
 - line-scan storage: capture session + tile manifest + tiles in object storage; markers reference tile coords and computed time, and store timestamp + capture device id.

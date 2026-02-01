@@ -66,6 +66,12 @@ This document consolidates the decisions made during requirements clarification 
   - contain timestamp, capture device, image tile reference
   - unassigned markers are not audited
   - assigned markers become immutable once the associated entry timing is approved
+- Result calculation:
+  - use actual start + finish markers only (no scheduled-time fallback)
+  - if a start/finish marker is missing, block approval until the marker is added or the entry is set to DNS/DNF
+- Timing precision:
+  - store milliseconds
+  - display rounds to configured precision; ranking uses actual (unrounded) time
 
 ## 6) Operations: start/finish flow
 - Operators work in blocks, on a global queue (not necessarily draw order)
@@ -91,8 +97,12 @@ This document consolidates the decisions made during requirements clarification 
 
 ## 8) Approvals + state transitions
 - Entry timing can be “complete” if finish time set OR marked dns/dnf/dsq/excluded and not under investigation
+- Entry approval is explicit (head_of_jury or regatta_admin):
+  - When timing is complete and there are no open investigations, entry becomes “pending approval”.
+  - Approving an entry marks it `approved/immutable` and locks linked markers.
 - Withdrawn entries are excluded from approval gating.
 - Event cannot be approved if any non-withdrawn entry is not in approved/dns/dnf/dsq/excluded state
+- If a required start/finish marker is missing, approval is blocked unless the entry is set to DNS/DNF.
 - Operators can mark/unmark DNS; warning lists impacted entries before batch operations
 - DSQ implemented via is_dsq flag for easy revert
 - Reverting DSQ returns to prior state (typically approved)
@@ -134,7 +144,8 @@ This document consolidates the decisions made during requirements clarification 
   - path versioning: /public/v{draw_revision}-{results_revision}/...
   - client soft-updates and history.replaceState to latest versioned path
 - Versions endpoint:
-  - unauthenticated, rate-limited, Cache-Control: no-store
+  - requires anon session cookie; 401 if missing/invalid
+  - rate-limited (per client-id); Cache-Control: no-store
   - GET /public/regattas/{id}/versions -> {draw_revision, results_revision}
 - Live updates:
   - SSE per regatta, multiplexed event types
@@ -144,10 +155,13 @@ This document consolidates the decisions made during requirements clarification 
   - UI: minimal Live/Offline indicator (SSE state only)
 
 ## 12) Public anonymous session (for per-client limits)
-- POST /public/session mints/refreshes anon session cookie
+- POST /public/session mints/refreshes anon session cookie:
+  - if missing/invalid anon cookie, mint a new one
+  - if valid and within refresh window, refresh (new Set-Cookie)
+  - otherwise 204 with no Set-Cookie
 - Cookie is signed JWT (HS256) with iss/aud; key rotation with kid; two active keys; overlap ≥6 days
 - Cookie attributes: HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=5d
-- Sliding TTL 5 days; refresh window 20% of TTL; refresh only when a valid anon cookie is already present (no Origin/Referer checks)
+- Sliding TTL 5 days; refresh window 20% of TTL; no Origin/Referer checks
 - /public/session:
   - 204 No Content
   - idempotent; refresh only when needed

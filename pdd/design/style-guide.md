@@ -111,6 +111,10 @@ Note: entry status values are primary domain states; “under_investigation”, 
   - `under_investigation`: info + “investigation” icon
   - `approved` / `immutable`: success + lock icon
   - `offline_queued`: muted + “queued” icon (never green)
+- Result labels:
+  - `provisional`: neutral outline + “clock” icon
+  - `edited`: info + “edit” icon
+  - `official`: success + “check/seal” icon
 
 ### 2.2 Typography
 - UI font: `Inter` (fallback: system-ui). Keep weights conservative (400/500/600).
@@ -147,6 +151,7 @@ Note: entry status values are primary domain states; “under_investigation”, 
 ### 3.1 Tables (Staff + Public)
 - Sticky header; optional sticky first column (bib/crew).
 - Numeric columns right-aligned; times in tabular numerals.
+- Time precision: display rounds to the configured precision; rankings use the actual (unrounded) time.
 - Row states: hover (desktop), focus-visible ring (keyboard), selected (bulk actions).
 - Empty state: “No entries match filters” + “Clear filters”.
 - Loading state: skeleton rows (keep column alignment stable).
