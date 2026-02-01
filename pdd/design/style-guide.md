@@ -204,7 +204,8 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Marker workflow:
   - tap to create; drag handles for adjustments; large hit areas
   - “Undo” always visible
-  - linked/approved markers show lock and disable destructive controls
+  - linked-but-unapproved markers remain editable (move/unlink/delete)
+  - approved/immutable markers show a lock and disable destructive controls
 - Overview + detail:
   - overview strip with draggable detail window for fine alignment
   - selecting an unlinked marker recenters the detail view

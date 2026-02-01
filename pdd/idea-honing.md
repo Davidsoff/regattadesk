@@ -88,7 +88,7 @@ This document consolidates the decisions made during requirements clarification 
   - assigned markers become immutable once the associated entry timing is approved
 - Result calculation:
   - use actual start + finish markers only (no scheduled-time fallback)
-  - if a start/finish marker is missing, block approval until the marker is added or the entry is set to DNS/DNF
+- if a start/finish marker is missing, block approval until the marker is added or the entry is set to DNS/DNF/DSQ/Excluded
 - Timing precision:
   - store milliseconds
   - display rounds to configured precision; ranking uses actual (unrounded) time
@@ -173,11 +173,12 @@ This document consolidates the decisions made during requirements clarification 
 
 ## 11) Public site caching + live updates
 - Public pages cacheable; results auto-update
+- Versioned public endpoints (`/public/v{draw_revision}-{results_revision}/...`) are fully anonymous and cacheable (no anon session cookie required; caches should ignore cookies).
 - Revision model:
   - schedule/start order content depends on draw_revision
   - results_revision tracks results changes
   - cache keys for all public pages include draw_revision + results_revision
-  - withdrawal after draw bumps draw_revision only (no results_revision change)
+  - withdrawn_after_draw status changes bump both draw_revision and results_revision
 - Revision bump rules (best practice):
   - draw_revision: draw publish + any schedule/start-order/bib display change
   - results_revision: marker/time edits, penalties, approvals, DNS/DNF/DSQ/exclusion changes
@@ -192,6 +193,7 @@ This document consolidates the decisions made during requirements clarification 
 - Live updates:
   - SSE per regatta, multiplexed event types
   - snapshot event emitted on connect
+  - requires anon session cookie; 401 if missing/invalid
   - deterministic SSE id includes both revisions
   - reconnect: exp backoff + full jitter; min 100ms, base 500ms, cap 20s; retry forever
   - UI: minimal Live/Offline indicator (SSE state only)
@@ -208,6 +210,7 @@ This document consolidates the decisions made during requirements clarification 
   - 204 No Content
   - idempotent; refresh only when needed
   - mild Cloudflare abuse protection; no Origin/Referer checks
+  - used only for /public/regattas/{id}/versions and SSE (versioned public pages remain anonymous)
   - CSRF: no token required (anonymous + idempotent); rely on SameSite=Lax
   - Cache-Control: private, no-store
 - JWT includes a stable client-id claim used for per-client SSE caps

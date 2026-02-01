@@ -55,7 +55,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Unassigned markers are not audited; assigned markers become immutable after approval.
   - Retention: keep full line scan during regatta; after configured delay (default 14 days after regatta end, configurable per regatta) prune to ±2s around approved markers. (Regatta end defined above.)
   - Result calculation: use actual start + finish markers only (no scheduled-time fallback).
-  - If a start/finish marker is missing, approval is blocked until the marker is added or the entry is set to DNS/DNF.
+  - If a start/finish marker is missing, approval is blocked until the marker is added or the entry is set to DNS/DNF/DSQ/Excluded.
   - Timing precision: store milliseconds; display rounds to configured precision; ranking uses actual (unrounded) time.
 - Operator workflow: global queue across blocks (not necessarily draw order); marker→bib linking with quick correction; DNS batch warnings before bulk changes.
 - Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), exclusion, DSQ; approvals gate.
@@ -203,9 +203,10 @@ flowchart LR
     - No per-IP concurrent cap or per-IP rate limiting until measured.
     - UI shows a minimal Live/Offline indicator based on SSE connection state only (no freshness claim).
   - GET /public/v{d}-{r}/... versioned pages/data cacheable.
+    - Fully anonymous: no anon session cookie required; caches should ignore cookies for these endpoints.
     - Cache keys include draw_revision + results_revision; client soft-updates and replaces URL to latest version.
     - Schedule/start order content still only changes with draw_revision.
-    - Withdrawal after draw bumps draw_revision only (no results_revision change).
+  - withdrawn_after_draw status changes bump both draw_revision and results_revision.
 
 ## Data Models (high level)
 - event_store: aggregate streams with sequence numbers; payload + metadata.
