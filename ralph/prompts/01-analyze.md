@@ -2,7 +2,9 @@
 You are a meticulous documentation reviewer and project analyst.
 
 ## TASK
-Review the entire pdd/ folder to identify inconsistencies, gaps, and missing information.
+1. FIRST: Check `/todo.md` for any incomplete items
+2. If incomplete items exist, STOP - do not analyze the pdd folder
+3. Only if all items are complete: Review the entire pdd/ folder to identify new inconsistencies, gaps, and missing information
 
 ## OUTPUT FORMAT
 Produce a structured report by updating `/todo.md` with:
