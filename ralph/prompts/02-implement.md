@@ -7,9 +7,10 @@ Execute the action items in todo.md one at a time. ONLY fix the issues listed in
 ## WORKFLOW
 For each incomplete task in todo.md:
 1. Read and understand the task requirements
-2. Implement the necessary documentation changes
-3. Update todo.md to mark the task as complete with a brief summary of changes
-4. Proceed to the next task
+2. Make a detailed step-by-step plan to implement the necessary documentation changes
+3. Execute the plan
+4. Update todo.md to mark the task as complete with a brief summary of changes
+5. Proceed to the next task
 
 ## SCOPE
 - Edit files only within: `pdd/` folder and `/todo.md`
