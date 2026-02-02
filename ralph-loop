@@ -34,7 +34,7 @@ while true; do
   for prompt_index in "${!PROMPTS[@]}"; do
     prompt="${PROMPTS[$prompt_index]}"
     echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running loop..." | tee -a "$LOG_FILE"
-    kilocode --auto --yolo --mode orchestrator "$prompt" >> "$LOG_FILE" 2>&1
+    kilocode --auto --yolo --mode orchestrator --json --nosplash "$prompt" >> "$LOG_FILE" 2>&1
 
     if [[ -f "$TARGET_FILE" ]]; then
       echo "[$(date -Iseconds)] Target file exists: $TARGET_FILE"
