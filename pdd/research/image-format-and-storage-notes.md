@@ -1,4 +1,4 @@
-Version: v1 (2026-01-31)
+Version: v2 (2026-02-01)
 
 # Image format & storage notes for line-scan “infinite width” images
 

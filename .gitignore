@@ -6,3 +6,4 @@ RALPH_DONE
 node_modules/
 .env
 dist/
+ralph-loop.log

@@ -3,13 +3,15 @@ set -euo pipefail
 
 # === CONFIG ===
 TARGET_FILE="RALPH_DONE"   # file that must exist to stop
-WORKDIR="/Users/david/projects/regattadesk"
+# Get the directory where this script lives
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKDIR="$SCRIPT_DIR"
 LOG_FILE="ralph-loop.log"
 
 # Provide prompts in order; each AI call uses the next prompt.
 # You can add as many as you want.
 # Each prompt is defined using a heredoc-style approach with a unique delimiter.
-read -r -d '' PROMPT_0 << 'PROMPT_0_EOF'
+read -r -d '' PROMPT_0 << 'PROMPT_0_EOF' || true
 ## ROLE
 You are a meticulous documentation reviewer and project analyst.
 
@@ -29,6 +31,7 @@ Produce a structured report by updating todo.md with:
 ## CONSTRAINTS
 - Do not make any code changes in this step
 - Focus only on analysis and reporting
+- idea-honing.md, and rough-idea.md are to be treated as read only.
 
 ## CONTEXT
 - The pdd/ folder contains Product Design Documents (PDD) for the project
@@ -36,7 +39,7 @@ Produce a structured report by updating todo.md with:
 - Key areas to review: user flows, data models, API specifications, UI/UX requirements
 PROMPT_0_EOF
 
-read -r -d '' PROMPT_1 << 'PROMPT_1_EOF'
+read -r -d '' PROMPT_1 << 'PROMPT_1_EOF' || true
 ## ROLE
 You are an implementation engineer executing documented tasks.
 
@@ -53,6 +56,7 @@ For each incomplete task in todo.md:
 ## SCOPE
 - Edit files only within: pdd/ folder and todo.md
 - Do not modify files outside this scope
+- idea-honing.md, and rough-idea.md are to be treated as read only.
 
 ## COMPLETION
 When all tasks are done:
@@ -85,8 +89,8 @@ while true; do
 
   for prompt_index in "${!PROMPTS[@]}"; do
     prompt="${PROMPTS[$prompt_index]}"
-    echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running codex..." | tee -a "$LOG_FILE"
-    kilocode --auto --yolo "$prompt" >> "$LOG_FILE" 2>&1
+    echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running loop..." | tee -a "$LOG_FILE"
+    kilocode --auto --yolo --mode orchestrator "$prompt" >> "$LOG_FILE" 2>&1
 
     if [[ -f "$TARGET_FILE" ]]; then
       echo "Target file exists: $TARGET_FILE"
