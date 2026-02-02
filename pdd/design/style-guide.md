@@ -168,8 +168,9 @@ Purpose: very fast event selection for experienced users while remaining accessi
   - Hover highlights row/column.
   - Arrow keys move cell focus; Enter opens.
 - Mobile behavior:
-  - Option A: horizontal scroll with sticky left header.
-  - Option B: boat-type tabs + category list (preferred if matrix becomes too wide).
+  - **Decision: Option B - boat-type tabs + category list**
+  - Rationale: Tabs provide better touch navigation than horizontal scroll, which can be awkward on mobile devices. This pattern scales better when the matrix has many boat types.
+  - Implementation: Top-level boat-type tabs (e.g., 1x, 2x, 4+, 4x, 8+) with a vertical list of categories below the selected tab, showing event label + count.
 - Accessibility:
   - Each cell has an `aria-label` like “Junior 18 Double Sculls, 52 entries”.
   - Strong focus ring and clear selected state.
@@ -287,3 +288,87 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Build a small headless component set:
   - `RdTable`, `RdChip`, `RdBanner`, `RdToast`, `RdDrawer`, `RdMatrix`
 - Ensure numeric/time cells use tabular numerals and consistent alignment.
+
+---
+
+## 8) Staff Accessibility Pattern Guide
+
+### Keyboard Navigation
+- **Focus management**: Logical tab order matching visual layout
+- **Focus indicators**: Visible focus ring (2px solid, high contrast)
+- **Skip links**: Skip to main content, skip to filters on list pages
+- **Keyboard shortcuts**:
+  - `Esc`: Close modal/drawer, cancel action
+  - `Enter`: Confirm action, open selected
+  - `Arrow keys`: Navigate within tables, grids, and lists
+  - `Ctrl/Cmd + F`: Focus search
+- **Trap focus**: Modals trap focus; Escape releases to trigger element
+
+### Screen Reader Support
+- **ARIA labels**: All interactive elements have descriptive labels
+- **Live regions**: Use `aria-live` for status updates (e.g., "12 entries selected")
+- **Announcements**: Toast notifications announced via `role="status"`
+- **Table accessibility**: Use proper `<th scope="col|row">` for matrices
+- **Form labels**: All inputs have associated `<label>` or `aria-label`
+- **Error messages**: Linked via `aria-describedby`
+
+### High Contrast Mode
+- **data-contrast="high"** attribute on `<html>`
+- **Minimum contrast**: 4.5:1 for text, 3:1 for large text
+- **Border visibility**: All borders visible in high contrast
+- **Focus states**: Enhanced focus indicator in high contrast
+
+### Reduced Motion
+- **prefers-reduced-motion**: Respect user preference
+- **Transitions**: Replace with instant state changes
+- **Animations**: Disable auto-playing animations
+- **Flashing content**: Avoid; max 3 flashes per second
+
+### Touch Accessibility (Mobile/Tablet)
+- **Touch targets**: Minimum 44x44 CSS pixels
+- **Spacing**: 8px minimum between touch targets
+- **Gesture alternatives**: All gestures have tap/double-tap alternatives
+- **Drag and drop**: Always provide alternative (e.g., "Move to" button)
+
+### Color Independence
+- **No color-only communication**: Use icons + text + patterns
+- **Status indicators**: "Error", "Warning", "Success" labels alongside colors
+- **Charts/graphs**: Include data labels or accessible tables
+- **Form validation**: Icons + text error messages
+
+### Focus Management Patterns
+
+| Pattern | Implementation |
+|---------|----------------|
+| Page load | Focus to main heading or first interactive element |
+| Modal open | Focus to first focusable element in modal |
+| Modal close | Focus back to trigger element |
+| Filter applied | Announce results count via live region |
+| Navigation | Current page indicated in nav with `aria-current="page"` |
+| Data loading | Show loading state, announce when complete |
+| Error state | Focus to error summary or first error |
+
+### Staff-Specific Accessibility Considerations
+
+**Operator Timekeeping Interface:**
+- Large touch targets for marker placement
+- Keyboard shortcuts for common actions (add marker, link, approve)
+- Screen reader announcements for marker creation/linking
+- High contrast mode for outdoor visibility
+
+**Staff Admin Interfaces:**
+- Full keyboard navigation for all CRUD operations
+- Error messages linked to form fields
+- Confirmation dialogs announced to screen readers
+- Tables with proper headers and row descriptions
+
+**Public-Facing Components:**
+- Results tables: Sortable columns with `aria-sort`
+- Event matrix: Cell descriptions via `aria-label`
+- Live status: Text-based "Live" indicator (not just color)
+
+### Testing Accessibility
+- **Automated**: axe-core in CI pipeline
+- **Manual**: Keyboard navigation testing weekly
+- **Screen reader testing**: NVDA (Windows), VoiceOver (macOS)
+- **User testing**: Include users with disabilities in QA
