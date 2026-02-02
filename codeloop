@@ -4,18 +4,69 @@ set -euo pipefail
 # === CONFIG ===
 TARGET_FILE="RALPH_DONE"   # file that must exist to stop
 WORKDIR="/Users/david/projects/regattadesk"
-LOG_FILE="codex-loop.log"
+LOG_FILE="ralph-loop.log"
 
-# Provide prompts in order; each Codex call uses the next prompt.
+# Provide prompts in order; each AI call uses the next prompt.
 # You can add as many as you want.
+# Each prompt is defined using a heredoc-style approach with a unique delimiter.
+read -r -d '' PROMPT_0 << 'PROMPT_0_EOF'
+## ROLE
+You are a meticulous documentation reviewer and project analyst.
+
+## TASK
+Review the entire pdd/ folder to identify inconsistencies, gaps, and missing information.
+
+## OUTPUT FORMAT
+Produce a structured report by updating todo.md with:
+- Clear, actionable items that another LLM can execute directly
+- Each item must specify: what to fix, where to find it, and the expected outcome
+
+## DECISION RULES
+- If ambiguity can be resolved by applying industry best practices: resolve it and document your reasoning
+- If no issues are found: create RALPH_DONE file containing "all done"
+- If you need user clarification: make an assumption and document it in assumptions.md, if an assumption is deemed too risky, create RALPH_DONE file containing a numbered list of all questions requiring answers
+
+## CONSTRAINTS
+- Do not make any code changes in this step
+- Focus only on analysis and reporting
+
+## CONTEXT
+- The pdd/ folder contains Product Design Documents (PDD) for the project
+- The project is a web application for managing regatta events
+- Key areas to review: user flows, data models, API specifications, UI/UX requirements
+PROMPT_0_EOF
+
+read -r -d '' PROMPT_1 << 'PROMPT_1_EOF'
+## ROLE
+You are an implementation engineer executing documented tasks.
+
+## TASK
+Execute the action items in todo.md one at a time.
+
+## WORKFLOW
+For each incomplete task in todo.md:
+1. Read and understand the task requirements
+2. Implement the necessary changes (code or documentation)
+3. Update todo.md to mark the task as complete with a brief summary of changes
+4. Proceed to the next task
+
+## SCOPE
+- Edit files only within: pdd/ folder and todo.md
+- Do not modify files outside this scope
+
+## COMPLETION
+When all tasks are done:
+1. Stage and commit all changes with a descriptive commit message
+2. Clean up todo.md by removing all completed task entries
+PROMPT_1_EOF
+
 PROMPTS=(
-  "Your goal is to remove all inconsistencies. Review the pdd/ folder and identify inconsistencies, gaps, and missing information. Produce a report by updating todo.md with clear, concise action items describing what needs to be fixed, phrased so Codex can execute them directly. If abiguity can be solved by applying best practises, always do so and document it. If no issues are found, write all done in RALPH_DONE file. If you discover you need user inpout, write all questions that need answers to RALPH_DONE file"
-  "Address the issues in todo.md one by one, making code changes as needed. After completing each task, update todo.md to reflect the changes made. Only edit files in the pdd/ folder and todo.md. After you are done, clear commit the changes to git with a clear commit message summarizing the changes. finally clean up todo.md by removing all completed tasks."
+  "$PROMPT_0"
+  "$PROMPT_1"
 )
 
 # Optional controls
-MAX_ITERATIONS=5     # 0 = no limit
-SLEEP_SECONDS=2
+MAX_ITERATIONS=2     # 0 = no limit
 
 # === SCRIPT ===
 cd "$WORKDIR"
@@ -34,14 +85,13 @@ while true; do
 
   for prompt_index in "${!PROMPTS[@]}"; do
     prompt="${PROMPTS[$prompt_index]}"
-    echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running codex with prompt: $prompt" | tee -a "$LOG_FILE"
-    codex exec --full-auto "$prompt" 2>&1 | tee -a "$LOG_FILE"
+    echo "[$(date -Iseconds)] Iteration $i (prompt $prompt_index): running codex..." | tee -a "$LOG_FILE"
+    kilocode --auto --yolo "$prompt" >> "$LOG_FILE" 2>&1
 
     if [[ -f "$TARGET_FILE" ]]; then
       echo "Target file exists: $TARGET_FILE"
       exit 0
     fi
-    sleep "$SLEEP_SECONDS"
   done
 
   i=$((i + 1))
