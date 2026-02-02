@@ -8,6 +8,8 @@ Review the entire pdd/ folder to identify inconsistencies, gaps, and missing inf
 Produce a structured report by updating `/todo.md` with:
 - Clear, actionable items that another LLM can execute directly
 - Each item must specify: what to fix, where to find it, and the expected outcome
+- Each task must include a `status: pending` field for tracking completion
+- Use markdown task list format with `[ ]` for pending tasks
 
 ## OUTPUT FILES
 - `RALPH_DONE`: Signal file created in project root when work is complete (when no issues found or risky assumptions needed)
