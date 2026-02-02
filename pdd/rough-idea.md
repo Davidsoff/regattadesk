@@ -1,8 +1,8 @@
-Version: v1 (2026-01-31)
+Version: v2 (2026-02-02)
 
 # Rough idea
 
-> NOTE: Superseded by `idea-honing.md` v2. See that doc for current decisions.
+> NOTE: Superseded by `idea-honing.md` v2. This document retained for historical reference only.
 
 Build a regatta management system for rowing head races (single distance) with:
 

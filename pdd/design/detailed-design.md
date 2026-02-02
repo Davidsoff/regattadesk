@@ -33,6 +33,8 @@ API-first for all operations; staff/operator/public clients consume the same API
 - Entries/crews/athletes: CRUD via API; crew reusable across regattas; entry is regatta-scoped participation.
   - Club fields: id, name, short_name.
   - Athlete fields: full name, DOB, gender, club, optional federation id.
+    - Federation ID format: alphanumeric, max 20 chars; optional field for national federation integration.
+    - API for searching athletes by federation ID: GET /api/v1/athletes?federationId={id}.
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
     - Derived club rule: if all athletes share the same club, use that club; otherwise mark crew as composite/multi-club.
   - Entry fields: bib, start position, status.
@@ -41,6 +43,9 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Only super_admin can promote regatta-owned rulesets to global selection.
   - Validation checks: gender compatibility and min/max age constraints.
 - Finance: payment_status enum (v0.1) is `unpaid` or `paid` only (no partial/refund support); default is `unpaid`.
+  - Payment amount configuration: entry fee is configurable per regatta (default €0.00); stored in regatta configuration.
+  - Club-level billing: configurable billing contact and invoicing details per club.
+  - Entry-level status is the source of truth.
   - Entry-level status is the source of truth.
   - Club “paid/unpaid” is a bulk action that updates entries with audit events.
   - Club status is derived from current entry statuses (paid only if all current billable entries are `paid`; otherwise `unpaid`).
@@ -114,13 +119,16 @@ API-first for all operations; staff/operator/public clients consume the same API
 
 ### Status taxonomy
 - Domain status values: active, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq.
+  - `excluded` - entry was disqualified from the race (not the same as DSQ which is entry-level ban).
 - Derived workflow/UI states: under_investigation, approved/immutable, offline_queued, provisional/edited/official.
 
 ### Non-functional
 - Operator offline: queued actions; sync with explicit conflict policy.
-  - Last-write-wins: marker position/time adjustments and unlinking when entry is not approved.
-  - Auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
+  - Queue data structure: array of {action, timestamp, deviceId, metadata} objects.
+  - Sync endpoint: POST /api/v1/regattas/{id}/operator/sync (accepts queued actions, returns conflicts).
+  - Conflict resolution: last-write-wins for marker position/time adjustments and unlinking when entry is not approved; auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
+  - Conflict resolution API: GET /api/v1/regattas/{id}/operator/conflicts returns pending conflicts with resolution options.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
 - Containerized deployment + automated pipeline (CI/CD).
 - Observability: health + OpenTelemetry + metrics.
@@ -183,28 +191,48 @@ flowchart LR
   - Time zone: regatta-local (future may add viewer-local toggle).
 - Printing:
   - Admin generates printables as A4 PDFs; monochrome-friendly output.
+  - Print generation: async processing via background queue (for large regattas); PDF library: iText or similar.
   - Each page header includes regatta name, generated timestamp, draw/results revisions, and page number.
 - Operator UX constraints:
   - Must remain usable on iPhone SE class devices.
   - Must support outdoor readability via high contrast and larger touch targets.
-  - Default to high-contrast mode with a toggle back to standard; persist preference per device.
+  - Default to high-contrast mode with a toggle back to standard; persist preference per device (LocalStorage).
+  - Density toggle: persist per device via LocalStorage (compact/dense modes).
   - PIN/token flows must not interrupt active capture UI.
 
 ## Components and Interfaces
 - Staff API: Auth0 JWT, regatta-scoped roles (+ super_admin).
+  - Auth0 configuration:
+    - Tenant: configured via environment variable
+    - Audience: `https://api.regattadesk.com`
+    - Role claim format: `https://regattadesk.com/roles` array in JWT token
+    - Token refresh: automatic via Auth0 SDK; refresh token rotation enabled
   - Regatta roles: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
   - Permissions matrix (best-practice defaults):
-
-| Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
-| --- | --- | --- | --- | --- | --- | --- |
-| Publish draw | Yes | No | No | No | No | Yes |
-| Approve entry | Yes | Yes | No | No | No | Yes |
-| Approve event | Yes | Yes | No | No | No | Yes |
-| Mark DNS | Yes | Yes | No | No | Yes (within scoped block) | Yes |
-| Mark DNF | Yes | Yes | No | No | No | Yes |
-| Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
-| Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
-| Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
+  
+  | Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Create/update regatta | Yes | No | No | No | No | Yes |
+  | Create/update events | Yes | No | No | No | No | Yes |
+  | Create/update blocks | Yes | No | No | No | No | Yes |
+  | Manage bib pools | Yes | No | No | No | No | Yes |
+  | Create/update entries | Yes | No | Yes | No | No | Yes |
+  | Create/update crews/athletes | Yes | No | Yes | No | No | Yes |
+  | Publish draw | Yes | No | No | No | No | Yes |
+  | Approve entry | Yes | Yes | No | No | No | Yes |
+  | Approve event | Yes | Yes | No | No | No | Yes |
+  | Mark DNS | Yes | Yes | No | No | Yes (within scoped block) | Yes |
+  | Mark DNF | Yes | Yes | No | No | No | Yes |
+  | Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
+  | Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
+  | Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
+  | Create investigations | Yes | Yes | No | No | No | Yes |
+  | Assign penalties | Yes | Yes | No | No | No | Yes |
+  | Close investigations | Yes | Yes | No | No | No | Yes |
+  | View audit logs | Yes | No | No | No | No | Yes |
+  | Export printables/PDFs | Yes | No | No | No | No | Yes |
+  | Manage operator tokens | Yes | No | No | No | No | Yes |
+  | Revoke operator access | Yes | No | No | No | No | Yes |
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.
@@ -226,7 +254,13 @@ flowchart LR
   - Bootstrap: call /versions first; if 401 missing/invalid then call /public/session and retry /versions once; then open SSE.
   - GET /public/regattas/{id}/versions returns {draw_revision, results_revision}, requires anon session cookie; 401 if missing/invalid; Cache-Control: no-store; rate-limited per client-id.
   - GET /public/regattas/{id}/events SSE: snapshot on connect + revision ticks; requires anon session cookie; 401 if missing/invalid.
-    - Multiplexed by event type (event: snapshot, draw_revision, results_revision).
+  - SSE event types:
+    - `snapshot` - initial state on connect (contains full regatta data)
+    - `draw_revision` - draw-related changes (schedule, start order, bibs)
+    - `results_revision` - results-related changes (times, penalties, approvals, status changes)
+    - `investigation_created` - new investigation opened
+    - `penalty_assigned` - penalty applied to entry
+  - Multiplexed by event type (event: snapshot, draw_revision, results_revision).
     - Deterministic SSE id includes draw_revision + results_revision.
     - Per-client cap: 20 concurrent connections per client-id per regatta; reject excess with 429.
     - Reconnect: exponential backoff with full jitter; min 100ms, base 500ms, cap 20s; retry forever.
@@ -245,8 +279,164 @@ flowchart LR
 - results_state: derived labels (provisional/edited/official) based on approvals and manual edits/penalties.
 - line-scan storage: capture session + tile manifest + tiles in object storage; markers reference tile coords and computed time, and store timestamp + capture device id.
 
+## Staff API Endpoints
+
+### Authentication
+All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with regatta-scoped role claims.
+
+### Regatta Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas | List regattas (paginated) | super_admin |
+| POST | /api/v1/regattas | Create regatta | super_admin |
+| GET | /api/v1/regattas/{id} | Get regatta details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id} | Update regatta | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id} | Delete regatta (if not published) | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/archive | Archive regatta | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/publish-draw | Publish draw | regatta_admin, super_admin |
+
+### Event Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/events | List events | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/events | Create event | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/events/{eventId} | Get event details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/events/{eventId} | Update event | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/events/{eventId} | Delete event (if draw not published) | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/event-groups | List event groups | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/event-groups | Create event group | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/event-groups/{groupId} | Get event group details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/event-groups/{groupId} | Update event group | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/event-groups/{groupId} | Delete event group | regatta_admin, super_admin |
+
+### Category and Boat Type Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/categories | List categories | regatta-scoped roles |
+| POST | /api/v1/categories | Create category | super_admin |
+| GET | /api/v1/boat-types | List boat types | regatta-scoped roles |
+| POST | /api/v1/boat-types | Create boat type | super_admin |
+
+### Ruleset Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/rulesets | List global rulesets | regatta-scoped roles |
+| POST | /api/v1/rulesets | Create ruleset | super_admin |
+| PUT | /api/v1/rulesets/{id} | Update ruleset | super_admin |
+| POST | /api/v1/regattas/{id}/rulesets | Create regatta-specific ruleset | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/rulesets/{rulesetId}/promote | Promote ruleset to global | super_admin |
+
+### Block Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/blocks | List blocks | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/blocks | Create block | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/blocks/{blockId} | Get block details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/blocks/{blockId} | Update block | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/blocks/{blockId} | Delete block (if draw not published) | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools | List bib pools for block | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools | Create bib pool | regatta_admin, super_admin |
+
+### Entry/Crew/Athlete Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/entries | List entries (paginated, filterable) | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/entries | Create entry | regatta_admin, info_desk, super_admin |
+| GET | /api/v1/regattas/{id}/entries/{entryId} | Get entry details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/entries/{entryId} | Update entry | regatta_admin, info_desk, super_admin |
+| DELETE | /api/v1/regattas/{id}/entries/{entryId} | Delete entry (if not approved) | regatta_admin, info_desk, super_admin |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/withdraw-before-draw | Mark withdrawn_before_draw | regatta_admin, info_desk, super_admin |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/withdraw-after-draw | Mark withdrawn_after_draw | regatta_admin, head_of_jury, info_desk, super_admin |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/status | Update status (DNS/DNF/DSQ/Excluded) | regatta_admin, head_of_jury, operator (DNS only) |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/approve | Approve entry | regatta_admin, head_of_jury |
+| GET | /api/v1/crews | Search crews (reusable across regattas) | regatta-scoped roles |
+| POST | /api/v1/crews | Create crew | regatta_admin, info_desk, super_admin |
+| GET | /api/v1/crews/{crewId} | Get crew details | regatta-scoped roles |
+| PUT | /api/v1/crews/{crewId} | Update crew | regatta_admin, info_desk, super_admin |
+| GET | /api/v1/athletes | Search athletes | regatta-scoped roles |
+| POST | /api/v1/athletes | Create athlete | regatta_admin, info_desk, super_admin |
+| GET | /api/v1/athletes/{athleteId} | Get athlete details | regatta-scoped roles |
+| PUT | /api/v1/athletes/{athleteId} | Update athlete | regatta_admin, info_desk, super_admin |
+
+### Draw Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/draw | Get current draw state | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/draw/generate | Generate random draw | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/draw/publish | Publish draw (bumps draw_revision) | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/draw/seed | Get draw seed (for reproducibility) | regatta-scoped roles |
+
+### Timing/Markers
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/markers | List markers (filterable by blockId, entryId, status, captureSessionId) | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/markers | Create marker | operator, regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/markers/{markerId} | Get marker details | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/markers/{markerId} | Update marker position/time | operator, regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/markers/{markerId} | Delete marker (pre-approval only) | operator, regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/markers/{markerId}/link | Link marker to entry | operator, regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/markers/{markerId}/unlink | Unlink marker from entry | operator, regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/tiles/manifest | Get tile manifest for capture session | regatta-scoped roles |
+| GET | /api/v1/regattas/{id}/tiles/{tileId} | Retrieve tile image | regatta-scoped roles |
+
+### Investigations
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/investigations | List investigations | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/investigations | Create investigation | regatta_admin, head_of_jury, super_admin |
+| GET | /api/v1/regattas/{id}/investigations/{invId} | Get investigation details | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/investigations/{invId}/close | Close investigation | regatta_admin, head_of_jury, super_admin |
+| POST | /api/v1/regattas/{id}/investigations/{invId}/reopen | Reopen investigation (tribunal escalation) | regatta_admin, head_of_jury, super_admin |
+| POST | /api/v1/regattas/{id}/investigations/{invId}/penalties | Assign penalty to entry | regatta_admin, head_of_jury, super_admin |
+| DELETE | /api/v1/regattas/{id}/investigations/{invId}/penalties/{entryId} | Remove penalty | regatta_admin, head_of_jury, super_admin |
+
+### Finance
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/payments | List payment statuses | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/mark-paid | Mark entry paid | regatta_admin, financial_manager, super_admin |
+| POST | /api/v1/regattas/{id}/entries/{entryId}/mark-unpaid | Mark entry unpaid | regatta_admin, financial_manager, super_admin |
+| POST | /api/v1/regattas/{id}/clubs/{clubId}/mark-paid | Mark all club entries paid | regatta_admin, financial_manager, super_admin |
+| POST | /api/v1/regattas/{id}/clubs/{clubId}/mark-unpaid | Mark all club entries unpaid | regatta_admin, financial_manager, super_admin |
+
+### Event Approvals
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/regattas/{id}/events/{eventId}/approve | Approve event (all entries approved) | regatta_admin, head_of_jury |
+| GET | /api/v1/regattas/{id}/events/{eventId}/approval-status | Get event approval status | regatta-scoped roles |
+
+### Penalty Configuration
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/penalty-config | Get penalty configuration | regatta-scoped roles |
+| PUT | /api/v1/regattas/{id}/penalty-config | Update penalty configuration | regatta_admin, super_admin |
+
+### Operator Tokens
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/operator-tokens | List operator tokens | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/operator-tokens | Create operator token | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/operator-tokens/{tokenId}/config | Get token config (validity window) | regatta_admin, super_admin |
+| PUT | /api/v1/regattas/{id}/operator-tokens/{tokenId}/config | Update token config | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/operator-tokens/{tokenId} | Revoke operator token | regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/operator-tokens/{tokenId}/export-pdf | Export token to PDF | regatta_admin, super_admin |
+
+### Audit/Export
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/regattas/{id}/audit-log | Query audit events (filter by entityType, entityId, actorId, action, fromDate, toDate) | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/export/results | Export results (CSV/JSON: delimiter `,`, LF line endings, UTF-8 encoding; JSON schema includes all entry fields with penalties applied) | regatta-scoped roles |
+| GET | /api/v1/regattas/{id}/export/printables | Generate printable PDFs (async for large regattas; monochrome-friendly A4, header with regatta name, revision, timestamp, page number) | regatta_admin, super_admin |
+
 ## Error Handling
-- Structured error responses {code, message, details}.
+- Structured error responses `{code, message, details}`.
+- Standard error codes:
+  - `ANON_SESSION_MISSING` (401) - Anonymous session cookie missing
+  - `ANON_SESSION_INVALID` (401) - Anonymous session cookie invalid/expired
+  - `CONFLICT` (409) - Stale version or conflicting state
+  - `PERMISSION_DENIED` (403) - Insufficient permissions
+  - `VALIDATION_ERROR` (400) - Request validation failed
+  - `NOT_FOUND` (404) - Resource not found
 - Optimistic concurrency: 409 on stale expected version.
 - Public session errors:
   - 401 ANON_SESSION_MISSING or ANON_SESSION_INVALID
