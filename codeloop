@@ -9,7 +9,7 @@ LOG_FILE="codex-loop.log"
 # Provide prompts in order; each Codex call uses the next prompt.
 # You can add as many as you want.
 PROMPTS=(
-  "Your goal is to remove all inconsistencies. Review the pdd/ folder and identify inconsistencies, gaps, and missing information. Produce a report by updating todo.md with clear, concise action items describing what needs to be fixed, phrased so Codex can execute them directly. if no issues are found, write all done in RALPH_DONE file. If you discover you need user inpout, write all questions that need answers to RALPH_DONE file"
+  "Your goal is to remove all inconsistencies. Review the pdd/ folder and identify inconsistencies, gaps, and missing information. Produce a report by updating todo.md with clear, concise action items describing what needs to be fixed, phrased so Codex can execute them directly. If abiguity can be solved by applying best practises, always do so and document it. If no issues are found, write all done in RALPH_DONE file. If you discover you need user inpout, write all questions that need answers to RALPH_DONE file"
   "Address the issues in todo.md one by one, making code changes as needed. After completing each task, update todo.md to reflect the changes made. Only edit files in the pdd/ folder and todo.md. After you are done, clear commit the changes to git with a clear commit message summarizing the changes. finally clean up todo.md by removing all completed tasks."
 )
 
