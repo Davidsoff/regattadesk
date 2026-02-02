@@ -23,6 +23,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Event group (optional): named grouping of events for awards or schedule organization (avoid using “class” as a standalone term).
   - Block: operational scheduling unit with an ordered list of events.
 - Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
+- Regatta state lifecycle: draft → published (draw published) → archived → deleted.
 - Blocks: schedule start time plus interval between crews and interval between events (block-level config).
 - Regatta end definition (for retention windows): use explicit regatta_end_at timestamp when set; otherwise compute from the latest block’s scheduled end time.
 - Scheduled start time (deterministic):
@@ -46,13 +47,14 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Payment amount configuration: entry fee is configurable per regatta (default €0.00); stored in regatta configuration.
   - Club-level billing: configurable billing contact and invoicing details per club.
   - Entry-level status is the source of truth.
-  - Entry-level status is the source of truth.
   - Club “paid/unpaid” is a bulk action that updates entries with audit events.
   - Club status is derived from current entry statuses (paid only if all current billable entries are `paid`; otherwise `unpaid`).
   - Optional payment metadata fields: paid_at, paid_by, payment_reference.
   - Billing club source of truth: entry.billing_club_id when set; otherwise crew’s club (single-club crews only).
   - Composite/multi-club crews require explicit billing_club_id (and remain labeled as composite for reporting).
 - Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; events start sequentially but finishes can interleave.
+  - Bib pools are immutable after draw publish. To change pools, unpublish draw first.
+  - Draw generation uses the bib pool allocation algorithm. If a pool is exhausted, continue to the next pool. If overflow is exhausted, throw error.
 - Bibs: regatta-wide unique; collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (smallest/largest) configurable per regatta (no per-pool override in v0.1); blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
   - Pools/overflow must be defined as non-overlapping inclusive numeric ranges (or explicit lists); validate uniqueness across all pools at setup.
   - Allocation priority: use the entry’s block primary pool first, then additional block pools in configured order, then overflow.
@@ -90,10 +92,11 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Public results Delta: time behind leader, computed from unrounded times then rounded for display; format `+M:SS.mmm` (or `+H:MM:SS.mmm` when ≥1h).
   - Leader delta displays as `+0:00.000` (rounded) so the UI never shows a blank delta.
 - Operator workflow: global queue across blocks (not necessarily draw order); marker→bib linking with quick correction; DNS batch warnings before bulk changes.
-- Jury: investigations per entry; outcomes include no action, penalty seconds (value configurable per regatta), excluded, DSQ (entry); approvals gate.
+- Jury: investigations per entry; outcomes include no action, penalty seconds (configurable per regatta via penalty configuration), excluded, DSQ (entry); approvals gate.
   - Multiple investigations per entry allowed; closure is per investigation.
   - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
-  - "No action" closes the investigation; if timing is complete and no other investigations are open, an authorized role auto-approves the entry, otherwise it returns to pending approval.
+  - Penalty configuration (`defaultPenaltySeconds`, `allowCustomSeconds`) is set at the regatta level and used when assigning penalties via investigations.
+  - "No action" closes the investigation; workflow: 1) Close investigation with outcome=no_action, 2) System checks if timing is complete, 3) If yes and no other open investigations, auto-approve entry, 4) If no, entry returns to pending_approval.
   - Tribunal escalation is modeled by re-opening an investigation.
   - Not all entries in a single investigation must receive penalties.
   - Best practice: regatta-wide DSQ is modeled as a bulk action applying DSQ (entry) to all affected entries, with per-entry audit events.
@@ -281,6 +284,13 @@ flowchart LR
 
 ## Staff API Endpoints
 
+### API Naming Convention
+All API endpoints use plural for collection resources:
+- Root-level collections: `/api/v1/categories`, `/api/v1/boat-types`, `/api/v1/athletes`, `/api/v1/clubs`
+- Regatta-scoped: `/api/v1/regattas/{id}/events`, `/api/v1/regattas/{id}/event-groups`, `/api/v1/regattas/{id}/investigations`
+
+All collection resources use plural naming.
+
 ### Authentication
 All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with regatta-scoped role claims.
 
@@ -294,6 +304,8 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 | DELETE | /api/v1/regattas/{id} | Delete regatta (if not published) | regatta_admin, super_admin |
 | POST | /api/v1/regattas/{id}/archive | Archive regatta | regatta_admin, super_admin |
 | POST | /api/v1/regattas/{id}/publish-draw | Publish draw | regatta_admin, super_admin |
+| GET/PUT | /api/v1/regattas/{id}/config/entry-fee | Get/Update entry fee configuration | regatta_admin, super_admin |
+Response/request schema: `{amount: number, currency: string}`
 
 ### Event Management
 | Method | Path | Description | Auth |
@@ -336,6 +348,8 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 | DELETE | /api/v1/regattas/{id}/blocks/{blockId} | Delete block (if draw not published) | regatta_admin, super_admin |
 | GET | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools | List bib pools for block | regatta-scoped roles |
 | POST | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools | Create bib pool | regatta_admin, super_admin |
+| PUT | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools/{poolId} | Update bib pool | regatta_admin, super_admin |
+| DELETE | /api/v1/regattas/{id}/blocks/{blockId}/bib-pools/{poolId} | Delete bib pool (only if draw not published) | regatta_admin, super_admin |
 
 ### Entry/Crew/Athlete Management
 | Method | Path | Description | Auth |
@@ -378,13 +392,17 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 | POST | /api/v1/regattas/{id}/markers/{markerId}/unlink | Unlink marker from entry | operator, regatta_admin, super_admin |
 | GET | /api/v1/regattas/{id}/tiles/manifest | Get tile manifest for capture session | regatta-scoped roles |
 | GET | /api/v1/regattas/{id}/tiles/{tileId} | Retrieve tile image | regatta-scoped roles |
+| POST | /api/v1/regattas/{id}/capture-sessions/{sessionId}/tiles | Upload tile image | operator, regatta_admin, super_admin |
+| POST | /api/v1/regattas/{id}/capture-sessions/{sessionId}/manifest | Upload tile manifest | operator, regatta_admin, super_admin |
 
 ### Investigations
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
 | GET | /api/v1/regattas/{id}/investigations | List investigations | regatta-scoped roles |
+Response schema: `{investigations: [{id, entryId, status, createdAt, createdBy, ...}]}`
 | POST | /api/v1/regattas/{id}/investigations | Create investigation | regatta_admin, head_of_jury, super_admin |
 | GET | /api/v1/regattas/{id}/investigations/{invId} | Get investigation details | regatta-scoped roles |
+| GET | /api/v1/regattas/{id}/investigations/{invId}/penalties | List penalties for investigation | regatta-scoped roles |
 | POST | /api/v1/regattas/{id}/investigations/{invId}/close | Close investigation | regatta_admin, head_of_jury, super_admin |
 | POST | /api/v1/regattas/{id}/investigations/{invId}/reopen | Reopen investigation (tribunal escalation) | regatta_admin, head_of_jury, super_admin |
 | POST | /api/v1/regattas/{id}/investigations/{invId}/penalties | Assign penalty to entry | regatta_admin, head_of_jury, super_admin |
@@ -399,6 +417,15 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 | POST | /api/v1/regattas/{id}/clubs/{clubId}/mark-paid | Mark all club entries paid | regatta_admin, financial_manager, super_admin |
 | POST | /api/v1/regattas/{id}/clubs/{clubId}/mark-unpaid | Mark all club entries unpaid | regatta_admin, financial_manager, super_admin |
 
+### Club Management
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/clubs | List clubs (paginated) | regatta-scoped roles |
+| POST | /api/v1/clubs | Create club | super_admin |
+| GET | /api/v1/clubs/{clubId} | Get club details | regatta-scoped roles |
+| PUT | /api/v1/clubs/{clubId} | Update club | super_admin |
+| DELETE | /api/v1/clubs/{clubId} | Delete club (only if no entries) | super_admin |
+
 ### Event Approvals
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
@@ -410,12 +437,14 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 |--------|------|-------------|------|
 | GET | /api/v1/regattas/{id}/penalty-config | Get penalty configuration | regatta-scoped roles |
 | PUT | /api/v1/regattas/{id}/penalty-config | Update penalty configuration | regatta_admin, super_admin |
+Response schema: `{defaultPenaltySeconds: number, allowCustomSeconds: boolean}`
 
 ### Operator Tokens
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
 | GET | /api/v1/regattas/{id}/operator-tokens | List operator tokens | regatta_admin, super_admin |
 | POST | /api/v1/regattas/{id}/operator-tokens | Create operator token | regatta_admin, super_admin |
+Request body: `{blockIds: [], stationId: string, validityHours: number}`
 | GET | /api/v1/regattas/{id}/operator-tokens/{tokenId}/config | Get token config (validity window) | regatta_admin, super_admin |
 | PUT | /api/v1/regattas/{id}/operator-tokens/{tokenId}/config | Update token config | regatta_admin, super_admin |
 | DELETE | /api/v1/regattas/{id}/operator-tokens/{tokenId} | Revoke operator token | regatta_admin, super_admin |
@@ -424,9 +453,11 @@ All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with r
 ### Audit/Export
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| GET | /api/v1/regattas/{id}/audit-log | Query audit events (filter by entityType, entityId, actorId, action, fromDate, toDate) | regatta_admin, super_admin |
+| GET | /api/v1/regattas/{id}/audit-log | Query audit events | regatta_admin, super_admin |
+Query parameters: `entityType`, `entityId`, `actorId`, `action`, `fromDate`, `toDate`, `limit`, `offset`
 | GET | /api/v1/regattas/{id}/export/results | Export results (CSV/JSON: delimiter `,`, LF line endings, UTF-8 encoding; JSON schema includes all entry fields with penalties applied) | regatta-scoped roles |
 | GET | /api/v1/regattas/{id}/export/printables | Generate printable PDFs (async for large regattas; monochrome-friendly A4, header with regatta name, revision, timestamp, page number) | regatta_admin, super_admin |
+Async job endpoint: `POST /api/v1/regattas/{id}/export/printables` returns `{jobId: string}`, status polling via `GET /api/v1/jobs/{jobId}`
 
 ## Error Handling
 - Structured error responses `{code, message, details}`.

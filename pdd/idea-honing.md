@@ -40,6 +40,7 @@ This document consolidates the decisions made during requirements clarification 
 - Bib pools:
   - blocks can have multiple pools
   - regatta has a single overflow pool; all blocks may borrow from it
+  - Bib pools are immutable after draw publish. To change pools, unpublish draw first.
 - Payments (best practice):
   - payment_status enum (v0.1): `unpaid`, `paid` only (no partial/refund support)
   - default payment_status: `unpaid`
@@ -104,7 +105,7 @@ This document consolidates the decisions made during requirements clarification 
 - Public results ordering (best practice):
   - rank by elapsed time including penalties
   - ties share rank
-  - secondary sort for display: start time, then bib
+  - tie-breaker order for display: 1) elapsed time (tie), 2) start time, 3) bib number, 4) crew name alphabetically
   - non-finish statuses (dns/dnf/dsq/excluded/withdrawn) appear after ranked entries
 - if a start/finish marker is missing, block approval until the marker is added or the entry is set to DNS/DNF/DSQ/Excluded
 - Timing precision:
@@ -131,13 +132,15 @@ This document consolidates the decisions made during requirements clarification 
   - admin can view PIN remotely only if the active station cannot access the PIN flow
   - token display must not interrupt the active station UI (hidden unless opened intentionally)
 - Offline conflict policy (operator queue sync):
+  - Request format: `{actions: [{type, timestamp, deviceId, metadata}]}`
+  - Response format: `{synced: [], conflicts: [{action, reason, resolutionOptions}]}`
   - Last-write-wins: marker position/time adjustments and unlinking when entry is not approved.
   - Auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
 
 ## 7) Protests / investigations / penalties
 - Investigation is per result/entry
-- Outcomes: no action, penalty (seconds configurable per regatta), excluded (race), DSQ (entry)
+- Outcomes: no action, penalty (seconds configurable per regatta, max 300 seconds/5 minutes), excluded (race), DSQ (entry)
 - Best practice: regatta-wide DSQ is modeled as a bulk action applying DSQ (entry) to all affected entries, with per-entry audit events.
 - One penalty per investigation; multiple investigations allowed; not all entries in an investigation get penalties
 - Penalty seconds are added to computed elapsed time for ranking and delta; raw timing data is retained for audit.
@@ -178,6 +181,12 @@ This document consolidates the decisions made during requirements clarification 
 
 | Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
 | --- | --- | --- | --- | --- | --- | --- |
+| Create/update regatta | Yes | No | No | No | No | Yes |
+| Create/update events | Yes | No | No | No | No | Yes |
+| Create/update blocks | Yes | No | No | No | No | Yes |
+| Manage bib pools | Yes | No | No | No | No | Yes |
+| Create/update entries | Yes | No | Yes | No | No | Yes |
+| Create/update crews/athletes | Yes | No | Yes | No | No | Yes |
 | Publish draw | Yes | No | No | No | No | Yes |
 | Approve entry | Yes | Yes | No | No | No | Yes |
 | Approve event | Yes | Yes | No | No | No | Yes |
@@ -186,6 +195,13 @@ This document consolidates the decisions made during requirements clarification 
 | Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
 | Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
 | Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
+| Create investigations | Yes | Yes | No | No | No | Yes |
+| Assign penalties | Yes | Yes | No | No | No | Yes |
+| Close investigations | Yes | Yes | No | No | No | Yes |
+| View audit logs | Yes | No | No | No | No | Yes |
+| Export printables/PDFs | Yes | No | No | No | No | Yes |
+| Manage operator tokens | Yes | No | No | No | No | Yes |
+| Revoke operator access | Yes | No | No | No | No | Yes |
 
 ## 10) Rulesets (v0.1 minimal, extensible)
 - Rulesets are versioned, can be duplicated and updated
@@ -222,10 +238,15 @@ This document consolidates the decisions made during requirements clarification 
   - SSE event names + minimal payload (best practice):
     - event: `snapshot` | `draw_revision` | `results_revision`
     - data: `{draw_revision, results_revision, reason?}` (reason is optional)
+  - Additional SSE events (`investigation_created`, `penalty_assigned`) are deferred to post-v0.1
   - requires anon session cookie; 401 if missing/invalid
   - deterministic SSE id includes both revisions
   - reconnect: exp backoff + full jitter; min 100ms, base 500ms, cap 20s; retry forever
   - UI: minimal Live/Offline indicator (SSE state only)
+  - SSE event data payloads:
+    - `snapshot`: `{regatta: {...}, draw: {...}, results: {...}}`
+    - `draw_revision`: `{draw_revision: number, reason?: string}`
+    - `results_revision`: `{results_revision: number, reason?: string}`
 
 ## 12) Public anonymous session (for per-client limits)
 - POST /public/session mints/refreshes anon session cookie:
@@ -234,7 +255,7 @@ This document consolidates the decisions made during requirements clarification 
   - otherwise 204 with no Set-Cookie
 - Cookie is signed JWT (HS256) with iss/aud; key rotation with kid; two active keys; overlap ≥6 days
 - Cookie attributes: HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=5d
-- Sliding TTL 5 days; refresh window 20% of TTL; no Origin/Referer checks
+- Sliding TTL 5 days; refresh window 20% of TTL; if current time > session_expiry - (TTL * 0.2), refresh the session; otherwise return 204; no Origin/Referer checks
 - /public/session:
   - 204 No Content
   - idempotent; refresh only when needed
