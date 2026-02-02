@@ -9,65 +9,8 @@ WORKDIR="$SCRIPT_DIR"
 LOG_FILE="ralph-loop.log"
 
 # Provide prompts in order; each AI call uses the next prompt.
-# You can add as many as you want.
-# Each prompt is defined using a heredoc-style approach with a unique delimiter.
-read -r -d '' PROMPT_0 << 'PROMPT_0_EOF' || true
-## ROLE
-You are a meticulous documentation reviewer and project analyst.
-
-## TASK
-Review the entire pdd/ folder to identify inconsistencies, gaps, and missing information.
-
-## OUTPUT FORMAT
-Produce a structured report by updating todo.md with:
-- Clear, actionable items that another LLM can execute directly
-- Each item must specify: what to fix, where to find it, and the expected outcome
-
-## DECISION RULES
-- If ambiguity can be resolved by applying industry best practices: resolve it and document your reasoning
-- If no issues are found: create RALPH_DONE file containing "all done"
-- If you need user clarification: make an assumption and document it in assumptions.md, if an assumption is deemed too risky, create RALPH_DONE file containing a numbered list of all questions requiring answers
-
-## CONSTRAINTS
-- Do not make any code changes in this step
-- Focus only on analysis and reporting
-- idea-honing.md, and rough-idea.md are to be treated as read only.
-
-## CONTEXT
-- The pdd/ folder contains Product Design Documents (PDD) for the project
-- The project is a web application for managing regatta events
-- Key areas to review: user flows, data models, API specifications, UI/UX requirements
-PROMPT_0_EOF
-
-read -r -d '' PROMPT_1 << 'PROMPT_1_EOF' || true
-## ROLE
-You are an implementation engineer executing documented tasks.
-
-## TASK
-Execute the action items in todo.md one at a time.
-
-## WORKFLOW
-For each incomplete task in todo.md:
-1. Read and understand the task requirements
-2. Implement the necessary changes (code or documentation)
-3. Update todo.md to mark the task as complete with a brief summary of changes
-4. Proceed to the next task
-
-## SCOPE
-- Edit files only within: pdd/ folder and todo.md
-- Do not modify files outside this scope
-- idea-honing.md, and rough-idea.md are to be treated as read only.
-
-## COMPLETION
-When all tasks are done:
-1. Stage and commit all changes with a descriptive commit message
-2. Clean up todo.md by removing all completed task entries
-PROMPT_1_EOF
-
-PROMPTS=(
-  "$PROMPT_0"
-  "$PROMPT_1"
-)
+# Prompts are read from markdown files in ralph/prompts/ in alphabetical order.
+mapfile -t PROMPTS < <(find ralph/prompts -name "*.md" -type f | sort)
 
 # Optional controls
 MAX_ITERATIONS=2     # 0 = no limit
@@ -78,12 +21,12 @@ cd "$WORKDIR"
 i=0
 while true; do
   if [[ -f "$TARGET_FILE" ]]; then
-    echo "Target file exists: $TARGET_FILE"
+    echo "[$(date -Iseconds)] Target file exists: $TARGET_FILE"
     exit 0
   fi
 
   if (( MAX_ITERATIONS > 0 && i >= MAX_ITERATIONS )); then
-    echo "Reached MAX_ITERATIONS=$MAX_ITERATIONS without creating $TARGET_FILE"
+    echo "[$(date -Iseconds)] Reached MAX_ITERATIONS=$MAX_ITERATIONS without creating $TARGET_FILE"
     exit 1
   fi
 
@@ -93,7 +36,7 @@ while true; do
     kilocode --auto --yolo --mode orchestrator "$prompt" >> "$LOG_FILE" 2>&1
 
     if [[ -f "$TARGET_FILE" ]]; then
-      echo "Target file exists: $TARGET_FILE"
+      echo "[$(date -Iseconds)] Target file exists: $TARGET_FILE"
       exit 0
     fi
   done
