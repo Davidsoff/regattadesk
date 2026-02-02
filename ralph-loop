@@ -17,6 +17,7 @@ MAX_ITERATIONS=2     # 0 = no limit
 
 # === SCRIPT ===
 cd "$WORKDIR"
+rm -f $LOG_FILE
 
 i=0
 while true; do
