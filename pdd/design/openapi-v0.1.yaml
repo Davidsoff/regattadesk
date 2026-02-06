@@ -280,6 +280,50 @@ paths:
         '204':
           description: Club deleted
 
+  /api/v1/clubs/{club_id}/billing:
+    get:
+      tags: [Finance]
+      summary: Get club billing profile
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/club_id'
+      responses:
+        '200':
+          description: Club billing profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club_billing'
+        '404':
+          $ref: '#/components/responses/not_found'
+    put:
+      tags: [Finance]
+      summary: Create or update club billing profile
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/club_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/club_billing_upsert_request'
+      responses:
+        '200':
+          description: Club billing profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club_billing'
+        '400':
+          description: Invalid billing profile payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
+
   /api/v1/athletes:
     get:
       tags: [Staff Core]
@@ -877,6 +921,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/entry'
+        '400':
+          description: Invalid billing club assignment (e.g., missing `billing_club_id` for composite crews)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}:
     get:
@@ -917,6 +967,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/entry'
+        '400':
+          description: Invalid billing club assignment (e.g., missing `billing_club_id` for composite crews)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/status:
     post:
@@ -1527,10 +1583,23 @@ paths:
     post:
       tags: [Public]
       summary: Mint or refresh anonymous public session cookie
+      description: |
+        Cookie contract:
+        - Cookie name: `regattadesk_public_session`
+        - Attributes: `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=432000`
+        - Sliding TTL is 5 days; refresh occurs only in the final 20% of TTL.
+        - JWT uses HS256 with `kid`; exactly two active keys with >=6-day overlap during rotation.
       security: []
       responses:
         '204':
           description: Session valid or refreshed
+          headers:
+            Set-Cookie:
+              description: |
+                Session cookie is returned when a new session is minted or an existing one is refreshed within the refresh window.
+              schema:
+                type: string
+              example: regattadesk_public_session=<jwt>; Max-Age=432000; Path=/; HttpOnly; Secure; SameSite=Lax
 
   /public/regattas/{regatta_id}/versions:
     get:
@@ -1554,6 +1623,13 @@ paths:
     get:
       tags: [Public]
       summary: Subscribe to public SSE events
+      description: |
+        SSE contract:
+        - Event types: `snapshot`, `draw_revision`, `results_revision`.
+        - Event payloads include `draw_revision`, `results_revision`, and typed `data`.
+        - SSE `id` is deterministic from `{draw_revision}:{results_revision}:{event_type}`.
+        - Connection policy: max 20 concurrent connections per client-id per regatta.
+        - Reconnect policy: exponential backoff with full jitter (min 100ms, base 500ms, cap 20s), retry forever.
       security:
         - PublicSessionCookieAuth: []
       parameters:
@@ -1565,6 +1641,25 @@ paths:
             text/event-stream:
               schema:
                 type: string
+              examples:
+                snapshot:
+                  summary: Initial snapshot event
+                  value: |
+                    id: 12:41:snapshot
+                    event: snapshot
+                    data: {"draw_revision":12,"results_revision":41,"data":{"regatta_id":"<uuid>","schedule":[],"results":[]}}
+                draw_revision:
+                  summary: Draw revision tick
+                  value: |
+                    id: 13:41:draw_revision
+                    event: draw_revision
+                    data: {"draw_revision":13,"results_revision":41,"reason":"draw_published","data":{"changed":true}}
+                results_revision:
+                  summary: Results revision tick
+                  value: |
+                    id: 13:42:results_revision
+                    event: results_revision
+                    data: {"draw_revision":13,"results_revision":42,"reason":"entry_approved","data":{"changed":true}}
         '401':
           $ref: '#/components/responses/unauthorized'
         '429':
@@ -1629,7 +1724,19 @@ components:
       in: header
       name: x_forwarded_user
       description: |
-        Identity is verified by Traefik + Authelia. Backend trusts forwarded identity headers.
+        Identity is verified by Traefik + Authelia. Backend trusts forwarded identity/authorization headers.
+
+        Forwarded header contract for staff requests:
+        - `x_forwarded_user` (required): stable user identifier (email or subject id).
+        - `x_forwarded_groups` (optional): comma-separated IdP groups.
+        - `x_regatta_roles` (optional): comma-separated `<regatta_id>:<role>` grants where role is one of
+          `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`.
+        - `x_global_roles` (optional): comma-separated global roles (currently `super_admin`).
+
+        Authorization mapping expectations:
+        - `super_admin` in `x_global_roles` grants global access.
+        - Otherwise, access is scoped by matching `regatta_id` from route params against `x_regatta_roles`.
+        - Missing required role for the route returns `403`.
     OperatorTokenAuth:
       type: apiKey
       in: header
@@ -1743,6 +1850,24 @@ components:
       schema:
         type: string
         enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+    x_forwarded_groups:
+      in: header
+      name: x_forwarded_groups
+      required: false
+      schema: { type: string }
+      description: Optional comma-separated identity-provider groups forwarded by Traefik.
+    x_regatta_roles:
+      in: header
+      name: x_regatta_roles
+      required: false
+      schema: { type: string }
+      description: Optional comma-separated `<regatta_id>:<role>` values for regatta-scoped staff roles.
+    x_global_roles:
+      in: header
+      name: x_global_roles
+      required: false
+      schema: { type: string }
+      description: Optional comma-separated global roles; `super_admin` is currently supported.
 
   responses:
     unauthorized:
@@ -1911,6 +2036,32 @@ components:
           type: array
           items: { $ref: '#/components/schemas/club' }
         pagination: { $ref: '#/components/schemas/pagination' }
+
+    club_billing:
+      type: object
+      required: [club_id]
+      properties:
+        club_id: { type: string, format: uuid }
+        contact_name: { type: string, nullable: true }
+        contact_email: { type: string, format: email, nullable: true }
+        address: { type: string, nullable: true }
+        postal_code: { type: string, nullable: true }
+        city: { type: string, nullable: true }
+        country: { type: string, minLength: 2, maxLength: 2, nullable: true }
+        vat_number: { type: string, nullable: true }
+        reference: { type: string, nullable: true }
+
+    club_billing_upsert_request:
+      type: object
+      properties:
+        contact_name: { type: string }
+        contact_email: { type: string, format: email }
+        address: { type: string }
+        postal_code: { type: string }
+        city: { type: string }
+        country: { type: string, minLength: 2, maxLength: 2 }
+        vat_number: { type: string }
+        reference: { type: string }
 
     athlete:
       type: object
@@ -2164,27 +2315,58 @@ components:
 
     bib_pool:
       type: object
-      required: [id, regatta_id, name, start_bib, end_bib, is_overflow]
+      required: [id, regatta_id, name, allocation_mode, is_overflow]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
         block_id: { type: string, format: uuid, nullable: true }
         name: { type: string }
-        start_bib: { type: integer }
-        end_bib: { type: integer }
+        allocation_mode: { type: string, enum: [range, explicit_list] }
+        start_bib: { type: integer, nullable: true }
+        end_bib: { type: integer, nullable: true }
+        bib_numbers:
+          type: array
+          nullable: true
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, minimum: 1 }
         priority: { type: integer }
         is_overflow: { type: boolean }
+      oneOf:
+        - required: [allocation_mode, start_bib, end_bib]
+          properties:
+            allocation_mode: { type: string, enum: [range] }
+        - required: [allocation_mode, bib_numbers]
+          properties:
+            allocation_mode: { type: string, enum: [explicit_list] }
 
     bib_pool_create_request:
       type: object
-      required: [name, start_bib, end_bib]
+      required: [name, allocation_mode]
+      description: |
+        Validation rules:
+        - Exactly one allocation mode is allowed per pool (`range` or `explicit_list`).
+        - Bib numbers must not overlap with any other pool in the same regatta (validated server-side).
       properties:
         block_id: { type: string, format: uuid }
         name: { type: string }
+        allocation_mode: { type: string, enum: [range, explicit_list] }
         start_bib: { type: integer }
         end_bib: { type: integer }
+        bib_numbers:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, minimum: 1 }
         priority: { type: integer }
         is_overflow: { type: boolean }
+      oneOf:
+        - required: [allocation_mode, start_bib, end_bib]
+          properties:
+            allocation_mode: { type: string, enum: [range] }
+        - required: [allocation_mode, bib_numbers]
+          properties:
+            allocation_mode: { type: string, enum: [explicit_list] }
 
     bib_pool_list_response:
       type: object
@@ -2216,6 +2398,10 @@ components:
     entry_create_request:
       type: object
       required: [event_id, block_id, crew_id]
+      description: |
+        Conditional validation:
+        - `billing_club_id` is required when the selected crew is composite/multi-club.
+        - If omitted for a composite/multi-club crew, return `400` with code `BILLING_CLUB_REQUIRED_FOR_COMPOSITE_CREW`.
       properties:
         event_id: { type: string, format: uuid }
         block_id: { type: string, format: uuid }
@@ -2224,6 +2410,10 @@ components:
 
     entry_update_request:
       type: object
+      description: |
+        Conditional validation:
+        - If an entry's crew is composite/multi-club, `billing_club_id` must be present after the update.
+        - Missing value in that case returns `400` with code `BILLING_CLUB_REQUIRED_FOR_COMPOSITE_CREW`.
       properties:
         block_id: { type: string, format: uuid }
         bib: { type: integer }
@@ -2503,6 +2693,44 @@ components:
         draw_revision: { type: integer, minimum: 0 }
         results_revision: { type: integer, minimum: 0 }
 
+    public_sse_event_base:
+      type: object
+      required: [id, event, draw_revision, results_revision, data]
+      properties:
+        id:
+          type: string
+          description: Deterministic id formatted as `{draw_revision}:{results_revision}:{event}`.
+        event:
+          type: string
+          enum: [snapshot, draw_revision, results_revision]
+        draw_revision: { type: integer, minimum: 0 }
+        results_revision: { type: integer, minimum: 0 }
+        reason: { type: string, nullable: true }
+        data:
+          type: object
+          additionalProperties: true
+
+    public_sse_snapshot_event:
+      allOf:
+        - $ref: '#/components/schemas/public_sse_event_base'
+        - type: object
+          properties:
+            event: { type: string, enum: [snapshot] }
+
+    public_sse_draw_revision_event:
+      allOf:
+        - $ref: '#/components/schemas/public_sse_event_base'
+        - type: object
+          properties:
+            event: { type: string, enum: [draw_revision] }
+
+    public_sse_results_revision_event:
+      allOf:
+        - $ref: '#/components/schemas/public_sse_event_base'
+        - type: object
+          properties:
+            event: { type: string, enum: [results_revision] }
+
     public_schedule_row:
       type: object
       required: [entry_id, event_id, crew_name, status]
@@ -2513,7 +2741,9 @@ components:
         scheduled_start_time: { type: string, format: date-time, nullable: true }
         crew_name: { type: string }
         club_name: { type: string, nullable: true }
-        status: { type: string }
+        status:
+          type: string
+          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
 
     public_schedule_response:
       type: object
@@ -2537,7 +2767,9 @@ components:
         elapsed_time_ms: { type: integer, nullable: true }
         penalties_ms: { type: integer, nullable: true }
         rank: { type: integer, nullable: true }
-        status: { type: string }
+        status:
+          type: string
+          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
         is_provisional: { type: boolean }
         is_edited: { type: boolean }
         is_official: { type: boolean }

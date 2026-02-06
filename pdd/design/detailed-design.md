@@ -35,7 +35,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Equivalent formula for final crew: block_end = block_start + (event_index * event_interval) + (crew_index_within_event * crew_interval) + crew_interval
 - Entries/crews/athletes: CRUD via API; crew reusable across regattas; entry is regatta-scoped participation.
   - Club fields: id, name, short_name.
-  - Athlete fields: full name, DOB, gender, club, optional federation id.
+  - Athlete fields: first_name, middle_name (optional), last_name, DOB, gender, club, optional federation id.
     - Federation ID format: alphanumeric, max 20 chars; optional field for national federation integration.
     - Athlete search supports filtering by federation ID (documented in the OpenAPI contract).
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
@@ -54,6 +54,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Optional payment metadata fields: paid_at, paid_by, payment_reference.
   - Billing club source of truth: entry.billing_club_id when set; otherwise crew’s club (single-club crews only).
   - Composite/multi-club crews require explicit billing_club_id (and remain labeled as composite for reporting).
+  - API validation: create/update entry rejects composite/multi-club billing without `billing_club_id` using `400 BILLING_CLUB_REQUIRED_FOR_COMPOSITE_CREW`.
 
 ### Payment Workflow
 
@@ -194,7 +195,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
   - Conflict API exposes pending conflicts with resolution options.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
-- Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia, plus required Authelia backing services) + automated pipeline (CI/CD).
+- Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia); Authelia runs in DB-only backing mode in v0.1 (no Redis) + automated pipeline (CI/CD).
 - Observability: health + OpenTelemetry + metrics.
 - Audit: event sourcing + immutable log.
 
@@ -301,6 +302,7 @@ flowchart LR
 - Staff API: Traefik-forwarded identity (Authelia SSO), regatta-scoped roles (+ super_admin).
   - Contract details (security schemes, headers, and endpoint-level auth) are defined in `pdd/design/openapi-v0.1.yaml`.
   - Role model: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
+  - Forwarded headers: `x_forwarded_user` (required), `x_forwarded_groups` (optional), `x_regatta_roles` (optional), `x_global_roles` (optional).
   - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
