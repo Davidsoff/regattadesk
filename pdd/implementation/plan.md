@@ -6,8 +6,8 @@ Author: RegattaDesk Team
 (Each step yields a demoable increment.)
 
 ## Checklist
-- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + containerized deployment + CI/CD pipeline
-- [ ] Step 2: Auth0 integration + role model (regatta_admin, head_of_jury, info_desk, financial_manager; super_admin global)
+- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and any required Authelia backing services such as Redis or DB backend) + CI/CD pipeline
+- [ ] Step 2: Authelia SSO integration at Traefik edge + forwarded identity/role mapping model (regatta_admin, head_of_jury, info_desk, financial_manager; super_admin global)
 - [ ] Step 3: Event store schema + append/read primitives + audit log retention (retain indefinitely in v0.1)
 - [ ] Step 4: Core aggregates + projections scaffold
 - [ ] Step 5: Core domain CRUD + staff workflows (API-first; staff UI consumes same API; regatta setup: events/event group grouping, athlete/crew/entry CRUD, crew mutations/withdrawals)
@@ -41,7 +41,9 @@ Author: RegattaDesk Team
 | Frontend runtime | Node.js (LTS) | 22+ | Stay on active LTS; patch updates monthly |
 | Frontend framework | Vue | 3.4+ | Stay on latest stable minor in major 3; update quarterly |
 | Build tooling | Vite | 5.0+ | Stay on latest stable minor; patch updates monthly |
-| Auth | Auth0 | Managed SaaS | Follow Auth0 tenant deprecations and rotate secrets/keys per policy |
+| Container orchestration | Docker Compose | 2.24+ | Stay on latest stable minor; patch updates monthly |
+| Reverse proxy | Traefik | 3.0+ | Track latest stable minor; patch updates monthly |
+| SSO/AuthN | Authelia | 4.38+ | Track latest stable minor; patch updates monthly |
 | PDF generation | OpenPDF | 1.3+ | Patch updates quarterly; security advisories are expedited |
 | Testing (integration) | Testcontainers | 1.20+ | Keep within latest stable minor; update quarterly |
 | API contract testing | Pact | 4.6+ | Keep within latest stable minor; update quarterly |
@@ -53,6 +55,10 @@ Dependency governance:
 - Pin all dependency versions in lockfiles/build manifests.
 - Run automated dependency vulnerability scan weekly.
 - Security or critical bug fixes can bypass normal cadence.
+
+Docker Compose requirement:
+- For v0.1, Docker Compose is the canonical runtime for both local development and production deployment.
+- The `docker-compose` stack must include every required runtime dependency from this plan (no externally assumed core services).
 
 Step format:
 Step N: <objective>

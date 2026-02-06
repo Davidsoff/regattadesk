@@ -175,8 +175,9 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
 - Derived workflow/UI states: under_investigation, approved/immutable, offline_queued, provisional/edited/official.
 
 ### Non-functional
+- Primary database: PostgreSQL (v16+ in v0.1 baseline).
 - Operator offline: queued actions; sync with explicit conflict policy.
-  - Queue data structure: array of {action, timestamp, deviceId, metadata} objects.
+  - Queue data structure: array of {action, timestamp, device_id, metadata} objects.
   - **Queue size limits**: Max 1000 actions per device; oldest actions evicted when limit exceeded.
   - **Retry strategy for sync failures**:
     - Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, capped at 60s
@@ -193,7 +194,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
   - Conflict API exposes pending conflicts with resolution options.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
-- Containerized deployment + automated pipeline (CI/CD).
+- Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia, plus required Authelia backing services) + automated pipeline (CI/CD).
 - Observability: health + OpenTelemetry + metrics.
 - Audit: event sourcing + immutable log.
 
@@ -213,6 +214,8 @@ flowchart LR
   end
 
   subgraph Edge
+    RP[Traefik Reverse Proxy]
+    SSO[Authelia ForwardAuth]
     CDN[CDN/Cache]
     SSE[SSE Gateway (HTTP)]
   end
@@ -226,10 +229,10 @@ flowchart LR
     OBJ[(Object Storage: tiles + manifests)]
   end
 
-  Staff --> API
-  Ops --> API
-  Public --> CDN --> API
-  Public --> SSE --> API
+  Staff --> RP --> SSO --> API
+  Ops --> RP --> API
+  Public --> CDN --> RP --> API
+  Public --> SSE --> RP --> API
 
   API --> CMD --> ES
   ES --> PROJ --> RM
@@ -275,8 +278,8 @@ flowchart LR
   - Admin generates printables as A4 PDFs; monochrome-friendly output.
   - **PDF library selection**: OpenPDF (LGPL) for Java backend; supports A4, monochrome output, custom fonts.
   - **Async job status polling**:
-    - Print export uses an async job model with a returned `jobId`.
-    - Job status includes `pending|processing|completed|failed`, optional `downloadUrl`, and optional `error`.
+    - Print export uses an async job model with a returned `job_id`.
+    - Job status includes `pending|processing|completed|failed`, optional `download_url`, and optional `error`.
     - Job expires after 24 hours.
   - **Print template specifications**:
     - Page size: A4 (210mm x 297mm)
@@ -295,7 +298,7 @@ flowchart LR
   - PIN/token flows must not interrupt active capture UI.
 
 ## Components and Interfaces
-- Staff API: Auth0 JWT, regatta-scoped roles (+ super_admin).
+- Staff API: Traefik-forwarded identity (Authelia SSO), regatta-scoped roles (+ super_admin).
   - Contract details (security schemes, headers, and endpoint-level auth) are defined in `pdd/design/openapi-v0.1.yaml`.
   - Role model: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
   - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
@@ -340,8 +343,9 @@ OpenAPI contract source of truth: `pdd/design/openapi-v0.1.yaml`.
 This document intentionally avoids duplicating endpoint methods, paths, request/response schemas, and auth/header requirements that are already specified in OpenAPI.
 
 ### API Implementation Notes (Non-Contract)
-- Staff auth uses Auth0 JWT with role claims under `https://regattadesk.app/roles`.
-- Access tokens are short-lived (5 minutes) with refresh-token rotation; refresh should happen proactively when token lifetime is below 60 seconds.
+- Staff auth is enforced at the edge with Traefik + Authelia.
+- OAuth/OIDC session handling and JWT verification are offloaded to Traefik middleware to reduce backend auth complexity.
+- Backend authorization uses trusted forwarded identity/group headers from Traefik and maps them to regatta-scoped roles.
 - Operator access is token-scoped (station/block/validity) and accountless; this is separate from staff JWT role assignment.
 - Public bootstrap sequence is operationally important: version check, session establishment on auth failure, retry once, then SSE connect.
 - Concurrency behavior: write operations that require revision/version preconditions return conflict semantics when stale input is supplied.

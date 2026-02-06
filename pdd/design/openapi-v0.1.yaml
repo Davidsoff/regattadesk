@@ -3,216 +3,1369 @@ info:
   title: RegattaDesk API
   version: v0.1
   description: |
-    OpenAPI specification derived from `pdd/design/detailed-design.md`.
-    This spec covers documented v0.1 staff, operator, and public endpoints.
+    Canonical API contract for RegattaDesk v0.1.
+
+    Authentication architecture:
+    - Staff endpoints are protected at the edge by Traefik + Authelia.
+    - Backend trusts Traefik-forwarded identity headers for staff requests.
+    - Operator endpoints use scoped operator tokens.
+    - Public bootstrap endpoints use anonymous session cookies for SSE/version bootstrap.
 servers:
   - url: https://api.regattadesk.com
-    description: Production
+    description: Production (behind Traefik)
   - url: http://localhost:8080
-    description: Local development
+    description: Local backend
+
 tags:
-  - name: Staff
+  - name: Staff Core
+  - name: Staff Regatta
+  - name: Staff Draw Results
+  - name: Staff Rules
   - name: Finance
   - name: Operator
-  - name: Public
   - name: Jobs
-  - name: Auth
+  - name: Public
+
 paths:
-  /oauth/token:
+  /api/v1/categories:
+    get:
+      tags: [Staff Core]
+      summary: List categories
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/category_list_response'
     post:
-      tags: [Auth]
-      summary: Refresh Auth0 access token
-      description: Exchanges a refresh token for a new access token.
+      tags: [Staff Core]
+      summary: Create category
+      security:
+        - StaffProxyAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OAuthTokenRequest'
+              $ref: '#/components/schemas/category_create_request'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/category'
+
+  /api/v1/categories/{category_id}:
+    get:
+      tags: [Staff Core]
+      summary: Get category
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/category_id'
       responses:
         '200':
-          description: Token refreshed
+          description: Category
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OAuthTokenResponse'
-        '400':
-          description: Invalid request
+                $ref: '#/components/schemas/category'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Core]
+      summary: Update category
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/category_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/category_update_request'
+      responses:
+        '200':
+          description: Category updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/category'
+        '404':
+          $ref: '#/components/responses/not_found'
+    delete:
+      tags: [Staff Core]
+      summary: Delete category
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/category_id'
+      responses:
+        '204':
+          description: Category deleted
+
+  /api/v1/boat_types:
+    get:
+      tags: [Staff Core]
+      summary: List boat types
+      security:
+        - StaffProxyAuth: []
+      responses:
+        '200':
+          description: Boat type list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/boat_type_list_response'
+    post:
+      tags: [Staff Core]
+      summary: Create boat type
+      security:
+        - StaffProxyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/boat_type_create_request'
+      responses:
+        '201':
+          description: Boat type created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/boat_type'
+
+  /api/v1/boat_types/{boat_type_id}:
+    get:
+      tags: [Staff Core]
+      summary: Get boat type
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/boat_type_id'
+      responses:
+        '200':
+          description: Boat type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/boat_type'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Core]
+      summary: Update boat type
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/boat_type_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/boat_type_update_request'
+      responses:
+        '200':
+          description: Boat type updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/boat_type'
+        '404':
+          $ref: '#/components/responses/not_found'
+    delete:
+      tags: [Staff Core]
+      summary: Delete boat type
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/boat_type_id'
+      responses:
+        '204':
+          description: Boat type deleted
+
+  /api/v1/clubs:
+    get:
+      tags: [Staff Core]
+      summary: List clubs
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Club list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club_list_response'
+    post:
+      tags: [Staff Core]
+      summary: Create club
+      security:
+        - StaffProxyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/club_create_request'
+      responses:
+        '201':
+          description: Club created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+
+  /api/v1/clubs/{club_id}:
+    get:
+      tags: [Staff Core]
+      summary: Get club
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/club_id'
+      responses:
+        '200':
+          description: Club
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Core]
+      summary: Update club
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/club_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/club_update_request'
+      responses:
+        '200':
+          description: Club updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/club'
+        '404':
+          $ref: '#/components/responses/not_found'
+    delete:
+      tags: [Staff Core]
+      summary: Delete club
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/club_id'
+      responses:
+        '204':
+          description: Club deleted
 
   /api/v1/athletes:
     get:
-      tags: [Staff]
+      tags: [Staff Core]
       summary: List athletes
-      description: Supports federation ID search.
       security:
-        - StaffBearerAuth: []
+        - StaffProxyAuth: []
       parameters:
         - in: query
-          name: federationId
+          name: federation_id
           required: false
           schema:
             type: string
             maxLength: 20
             pattern: '^[A-Za-z0-9]+$'
-          description: Filter athletes by federation ID.
+        - $ref: '#/components/parameters/search'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/cursor'
       responses:
         '200':
-          description: Athletes list
+          description: Athlete list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AthleteListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/v1/regattas/{id}/invoices:
-    get:
-      tags: [Finance]
-      summary: List invoices
-      security:
-        - StaffBearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
-      responses:
-        '200':
-          description: Invoices list
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvoiceListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/v1/regattas/{id}/invoices/generate:
+                $ref: '#/components/schemas/athlete_list_response'
     post:
-      tags: [Finance]
-      summary: Generate invoices for unpaid entries
+      tags: [Staff Core]
+      summary: Create athlete
       security:
-        - StaffBearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
-      responses:
-        '202':
-          description: Invoice generation accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvoiceGenerationResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/v1/regattas/{id}/invoices/{invoiceId}:
-    get:
-      tags: [Finance]
-      summary: Get invoice details
-      security:
-        - StaffBearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
-        - $ref: '#/components/parameters/invoiceId'
-      responses:
-        '200':
-          description: Invoice details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoice'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/regattas/{id}/invoices/{invoiceId}/mark-paid:
-    post:
-      tags: [Finance]
-      summary: Mark invoice as paid
-      security:
-        - StaffBearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
-        - $ref: '#/components/parameters/invoiceId'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MarkInvoicePaidRequest'
-      responses:
-        '200':
-          description: Invoice marked paid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoice'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/regattas/{id}/entries/{entryId}/billing:
-    get:
-      tags: [Finance]
-      summary: Get billing details for an entry
-      security:
-        - StaffBearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
-        - $ref: '#/components/parameters/entryId'
-      responses:
-        '200':
-          description: Billing details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EntryBillingDetails'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/regattas/{id}/operator/sync:
-    post:
-      tags: [Operator]
-      summary: Sync offline operator actions
-      description: Accepts queued actions and returns conflict results.
-      security:
-        - OperatorTokenAuth: []
-      parameters:
-        - $ref: '#/components/parameters/regattaId'
+        - StaffProxyAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OperatorSyncRequest'
+              $ref: '#/components/schemas/athlete_create_request'
+      responses:
+        '201':
+          description: Athlete created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/athlete'
+
+  /api/v1/athletes/{athlete_id}:
+    get:
+      tags: [Staff Core]
+      summary: Get athlete
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/athlete_id'
+      responses:
+        '200':
+          description: Athlete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/athlete'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Core]
+      summary: Update athlete
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/athlete_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/athlete_update_request'
+      responses:
+        '200':
+          description: Athlete updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/athlete'
+        '404':
+          $ref: '#/components/responses/not_found'
+    delete:
+      tags: [Staff Core]
+      summary: Delete athlete
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/athlete_id'
+      responses:
+        '204':
+          description: Athlete deleted
+
+  /api/v1/crews:
+    get:
+      tags: [Staff Core]
+      summary: List crews
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/search'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Crew list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/crew_list_response'
+    post:
+      tags: [Staff Core]
+      summary: Create crew
+      security:
+        - StaffProxyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/crew_create_request'
+      responses:
+        '201':
+          description: Crew created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/crew'
+
+  /api/v1/crews/{crew_id}:
+    get:
+      tags: [Staff Core]
+      summary: Get crew
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/crew_id'
+      responses:
+        '200':
+          description: Crew
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/crew'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Core]
+      summary: Update crew
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/crew_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/crew_update_request'
+      responses:
+        '200':
+          description: Crew updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/crew'
+        '404':
+          $ref: '#/components/responses/not_found'
+    delete:
+      tags: [Staff Core]
+      summary: Delete crew
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/crew_id'
+      responses:
+        '204':
+          description: Crew deleted
+
+  /api/v1/rulesets:
+    get:
+      tags: [Staff Rules]
+      summary: List rulesets
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - in: query
+          name: is_global
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Ruleset list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ruleset_list_response'
+    post:
+      tags: [Staff Rules]
+      summary: Create ruleset
+      security:
+        - StaffProxyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ruleset_create_request'
+      responses:
+        '201':
+          description: Ruleset created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ruleset'
+
+  /api/v1/rulesets/{ruleset_id}:
+    get:
+      tags: [Staff Rules]
+      summary: Get ruleset
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ruleset_id'
+      responses:
+        '200':
+          description: Ruleset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ruleset'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Rules]
+      summary: Update ruleset
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ruleset_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ruleset_update_request'
+      responses:
+        '200':
+          description: Ruleset updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ruleset'
+        '404':
+          $ref: '#/components/responses/not_found'
+
+  /api/v1/rulesets/{ruleset_id}/promote:
+    post:
+      tags: [Staff Rules]
+      summary: Promote regatta-owned ruleset to global
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ruleset_id'
+      responses:
+        '200':
+          description: Ruleset promoted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ruleset'
+        '403':
+          $ref: '#/components/responses/forbidden'
+
+  /api/v1/regattas:
+    get:
+      tags: [Staff Regatta]
+      summary: List regattas
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Regatta list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/regatta_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create regatta
+      security:
+        - StaffProxyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/regatta_create_request'
+      responses:
+        '201':
+          description: Regatta created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/regatta'
+
+  /api/v1/regattas/{regatta_id}:
+    get:
+      tags: [Staff Regatta]
+      summary: Get regatta
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Regatta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/regatta'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Regatta]
+      summary: Update regatta
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/regatta_update_request'
+      responses:
+        '200':
+          description: Regatta updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/regatta'
+        '404':
+          $ref: '#/components/responses/not_found'
+
+  /api/v1/regattas/{regatta_id}/event_groups:
+    get:
+      tags: [Staff Regatta]
+      summary: List event groups
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Event group list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event_group_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create event group
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/event_group_create_request'
+      responses:
+        '201':
+          description: Event group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event_group'
+
+  /api/v1/regattas/{regatta_id}/event_groups/{event_group_id}:
+    patch:
+      tags: [Staff Regatta]
+      summary: Update event group
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/event_group_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/event_group_update_request'
+      responses:
+        '200':
+          description: Event group updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event_group'
+
+  /api/v1/regattas/{regatta_id}/events:
+    get:
+      tags: [Staff Regatta]
+      summary: List events
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - in: query
+          name: event_group_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create event
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/event_create_request'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+
+  /api/v1/regattas/{regatta_id}/events/{event_id}:
+    patch:
+      tags: [Staff Regatta]
+      summary: Update event
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/event_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/event_update_request'
+      responses:
+        '200':
+          description: Event updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/event'
+
+  /api/v1/regattas/{regatta_id}/blocks:
+    get:
+      tags: [Staff Regatta]
+      summary: List blocks
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Block list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/block_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create block
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/block_create_request'
+      responses:
+        '201':
+          description: Block created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/block'
+
+  /api/v1/regattas/{regatta_id}/bib_pools:
+    get:
+      tags: [Staff Regatta]
+      summary: List bib pools
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Bib pool list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bib_pool_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create bib pool
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bib_pool_create_request'
+      responses:
+        '201':
+          description: Bib pool created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bib_pool'
+
+  /api/v1/regattas/{regatta_id}/entries:
+    get:
+      tags: [Staff Regatta]
+      summary: List entries
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/status'
+        - in: query
+          name: event_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: club_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: updated_since
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Entry list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry_list_response'
+    post:
+      tags: [Staff Regatta]
+      summary: Create entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entry_create_request'
+      responses:
+        '201':
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry'
+
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}:
+    get:
+      tags: [Staff Regatta]
+      summary: Get entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/entry_id'
+      responses:
+        '200':
+          description: Entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry'
+        '404':
+          $ref: '#/components/responses/not_found'
+    patch:
+      tags: [Staff Regatta]
+      summary: Update entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/entry_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entry_update_request'
+      responses:
+        '200':
+          description: Entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry'
+
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/status:
+    post:
+      tags: [Staff Regatta]
+      summary: Set entry status
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/entry_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/entry_status_update_request'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry'
+
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/approve:
+    post:
+      tags: [Staff Draw Results]
+      summary: Approve entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/entry_id'
+      responses:
+        '200':
+          description: Entry approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
+        '409':
+          $ref: '#/components/responses/conflict'
+
+  /api/v1/regattas/{regatta_id}/events/{event_id}/approve:
+    post:
+      tags: [Staff Draw Results]
+      summary: Approve event results
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/event_id'
+      responses:
+        '200':
+          description: Event approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
+        '409':
+          $ref: '#/components/responses/conflict'
+
+  /api/v1/regattas/{regatta_id}/draw/generate:
+    post:
+      tags: [Staff Draw Results]
+      summary: Generate draw
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/draw_generate_request'
+      responses:
+        '200':
+          description: Draw generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/draw_generation_response'
+
+  /api/v1/regattas/{regatta_id}/draw/publish:
+    post:
+      tags: [Staff Draw Results]
+      summary: Publish draw
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Draw published and draw_revision incremented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/revision_response'
+
+  /api/v1/regattas/{regatta_id}/draw/unpublish:
+    post:
+      tags: [Staff Draw Results]
+      summary: Unpublish draw
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Draw unpublished
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/revision_response'
+
+  /api/v1/regattas/{regatta_id}/investigations:
+    get:
+      tags: [Staff Draw Results]
+      summary: List investigations
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/status'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Investigation list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation_list_response'
+    post:
+      tags: [Staff Draw Results]
+      summary: Create investigation
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/investigation_create_request'
+      responses:
+        '201':
+          description: Investigation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation'
+
+  /api/v1/regattas/{regatta_id}/investigations/{investigation_id}:
+    get:
+      tags: [Staff Draw Results]
+      summary: Get investigation
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/investigation_id'
+      responses:
+        '200':
+          description: Investigation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation'
+    patch:
+      tags: [Staff Draw Results]
+      summary: Update investigation
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/investigation_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/investigation_update_request'
+      responses:
+        '200':
+          description: Investigation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation'
+
+  /api/v1/regattas/{regatta_id}/investigations/{investigation_id}/close:
+    post:
+      tags: [Staff Draw Results]
+      summary: Close investigation
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/investigation_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/investigation_close_request'
+      responses:
+        '200':
+          description: Investigation closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation'
+
+  /api/v1/regattas/{regatta_id}/investigations/{investigation_id}/reopen:
+    post:
+      tags: [Staff Draw Results]
+      summary: Reopen investigation
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/investigation_id'
+      responses:
+        '200':
+          description: Investigation reopened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/investigation'
+
+  /api/v1/regattas/{regatta_id}/invoices:
+    get:
+      tags: [Finance]
+      summary: List invoices
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/cursor'
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/invoice_list_response'
+
+  /api/v1/regattas/{regatta_id}/invoices/generate:
+    post:
+      tags: [Finance]
+      summary: Generate invoices for unpaid entries
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '202':
+          description: Invoice generation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/job_created_response'
+
+  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}:
+    get:
+      tags: [Finance]
+      summary: Get invoice details
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/invoice_id'
+      responses:
+        '200':
+          description: Invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/invoice'
+
+  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid:
+    post:
+      tags: [Finance]
+      summary: Mark invoice as paid
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/invoice_id'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/mark_invoice_paid_request'
+      responses:
+        '200':
+          description: Invoice updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/invoice'
+
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/billing:
+    get:
+      tags: [Finance]
+      summary: Get billing details for entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/entry_id'
+      responses:
+        '200':
+          description: Entry billing details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/entry_billing_details'
+
+  /api/v1/regattas/{regatta_id}/payments/mark_bulk:
+    post:
+      tags: [Finance]
+      summary: Bulk mark entries paid or unpaid
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/payment_bulk_mark_request'
+      responses:
+        '200':
+          description: Bulk operation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
+
+  /api/v1/regattas/{regatta_id}/operator/tokens:
+    get:
+      tags: [Operator]
+      summary: List operator tokens
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Operator token list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operator_token_list_response'
+    post:
+      tags: [Operator]
+      summary: Create operator token
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/operator_token_create_request'
+      responses:
+        '201':
+          description: Operator token created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operator_token'
+
+  /api/v1/regattas/{regatta_id}/operator/tokens/{token_id}/revoke:
+    post:
+      tags: [Operator]
+      summary: Revoke operator token
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/token_id'
+      responses:
+        '200':
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
+
+  /api/v1/regattas/{regatta_id}/operator/tokens/{token_id}/export_pdf:
+    get:
+      tags: [Operator]
+      summary: Export operator token QR as PDF
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/token_id'
+      responses:
+        '200':
+          description: PDF bytes
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /api/v1/regattas/{regatta_id}/operator/sync:
+    post:
+      tags: [Operator]
+      summary: Sync offline operator actions
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/operator_sync_request'
       responses:
         '200':
           description: Sync result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OperatorSyncResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: '#/components/schemas/operator_sync_response'
         '409':
-          $ref: '#/components/responses/Conflict'
+          $ref: '#/components/responses/conflict'
 
-  /api/v1/regattas/{id}/operator/conflicts:
+  /api/v1/regattas/{regatta_id}/operator/conflicts:
     get:
       tags: [Operator]
       summary: List pending operator conflicts
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regattaId'
+        - $ref: '#/components/parameters/regatta_id'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/cursor'
       responses:
@@ -221,90 +1374,190 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OperatorConflictListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: '#/components/schemas/operator_conflict_list_response'
 
-  /api/v1/regattas/{id}/export/printables:
-    post:
-      tags: [Staff]
-      summary: Start async printables export job
+  /api/v1/regattas/{regatta_id}/operator/markers:
+    get:
+      tags: [Operator]
+      summary: List markers
       security:
-        - StaffBearerAuth: []
+        - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regattaId'
+        - $ref: '#/components/parameters/regatta_id'
+        - in: query
+          name: capture_session_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Marker list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/marker_list_response'
+    post:
+      tags: [Operator]
+      summary: Create marker
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/marker_create_request'
+      responses:
+        '201':
+          description: Marker created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/marker'
+
+  /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}:
+    patch:
+      tags: [Operator]
+      summary: Update marker
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/marker_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/marker_update_request'
+      responses:
+        '200':
+          description: Marker updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/marker'
+    delete:
+      tags: [Operator]
+      summary: Delete marker
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/marker_id'
+      responses:
+        '204':
+          description: Marker deleted
+
+  /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}/link:
+    post:
+      tags: [Operator]
+      summary: Link marker to entry
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/marker_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/marker_link_request'
+      responses:
+        '200':
+          description: Marker linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/marker'
+
+  /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}/unlink:
+    post:
+      tags: [Operator]
+      summary: Unlink marker from entry
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/marker_id'
+      responses:
+        '200':
+          description: Marker unlinked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/marker'
+
+  /api/v1/regattas/{regatta_id}/export/printables:
+    post:
+      tags: [Jobs]
+      summary: Start printables export job
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
       responses:
         '202':
           description: Export job created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExportJobCreated'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: '#/components/schemas/job_created_response'
 
-  /api/v1/jobs/{jobId}:
+  /api/v1/jobs/{job_id}:
     get:
       tags: [Jobs]
       summary: Get async job status
       security:
-        - StaffBearerAuth: []
+        - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/jobId'
+        - $ref: '#/components/parameters/job_id'
       responses:
         '200':
           description: Job status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JobStatusResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: '#/components/schemas/job_status_response'
 
   /public/session:
     post:
       tags: [Public]
       summary: Mint or refresh anonymous public session cookie
-      description: Idempotent endpoint for public-session bootstrap.
       security: []
       responses:
         '204':
           description: Session valid or refreshed
-          headers:
-            Set-Cookie:
-              schema:
-                type: string
-              description: Set when a new or refreshed anon session is issued.
 
-  /public/regattas/{id}/versions:
+  /public/regattas/{regatta_id}/versions:
     get:
       tags: [Public]
-      summary: Get public draw/results revisions
+      summary: Get draw/results revisions
       security:
         - PublicSessionCookieAuth: []
       parameters:
-        - $ref: '#/components/parameters/regattaId'
+        - $ref: '#/components/parameters/regatta_id'
       responses:
         '200':
-          description: Current revisions
+          description: Revision payload
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicVersionsResponse'
+                $ref: '#/components/schemas/public_versions_response'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/unauthorized'
 
-  /public/regattas/{id}/events:
+  /public/regattas/{regatta_id}/events:
     get:
       tags: [Public]
       summary: Subscribe to public SSE events
-      description: Returns `snapshot`, `draw_revision`, and `results_revision` server-sent events.
       security:
         - PublicSessionCookieAuth: []
       parameters:
-        - $ref: '#/components/parameters/regattaId'
+        - $ref: '#/components/parameters/regatta_id'
       responses:
         '200':
           description: SSE stream
@@ -312,104 +1565,219 @@ paths:
             text/event-stream:
               schema:
                 type: string
-                example: |
-                  event: snapshot
-                  id: d12-r33
-                  data: {"draw_revision":12,"results_revision":33}
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          $ref: '#/components/responses/unauthorized'
         '429':
-          description: Too many concurrent connections
+          $ref: '#/components/responses/rate_limited'
+
+  /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/schedule:
+    get:
+      tags: [Public]
+      summary: Get versioned public schedule
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/draw_revision'
+        - $ref: '#/components/parameters/results_revision'
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Schedule payload
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/public_schedule_response'
+
+  /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/results:
+    get:
+      tags: [Public]
+      summary: Get versioned public results
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/draw_revision'
+        - $ref: '#/components/parameters/results_revision'
+        - $ref: '#/components/parameters/regatta_id'
+      responses:
+        '200':
+          description: Results payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/public_results_response'
+
+  /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/events/{event_id}/results:
+    get:
+      tags: [Public]
+      summary: Get versioned public results for one event
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/draw_revision'
+        - $ref: '#/components/parameters/results_revision'
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/event_id'
+      responses:
+        '200':
+          description: Event results payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/public_results_response'
 
 components:
   securitySchemes:
-    StaffBearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: Auth0 JWT for staff roles.
+    StaffProxyAuth:
+      type: apiKey
+      in: header
+      name: x_forwarded_user
+      description: |
+        Identity is verified by Traefik + Authelia. Backend trusts forwarded identity headers.
     OperatorTokenAuth:
       type: apiKey
       in: header
-      name: X-Operator-Token
-      description: QR/PIN-scoped operator token.
+      name: x_operator_token
     PublicSessionCookieAuth:
       type: apiKey
       in: cookie
       name: regattadesk_public_session
-      description: Anonymous public session cookie for non-versioned public endpoints.
 
   parameters:
-    regattaId:
+    category_id:
       in: path
-      name: id
+      name: category_id
       required: true
-      schema:
-        type: string
-        format: uuid
-    invoiceId:
+      schema: { type: string, format: uuid }
+    boat_type_id:
       in: path
-      name: invoiceId
+      name: boat_type_id
       required: true
-      schema:
-        type: string
-        format: uuid
-    entryId:
+      schema: { type: string, format: uuid }
+    club_id:
       in: path
-      name: entryId
+      name: club_id
       required: true
-      schema:
-        type: string
-        format: uuid
-    jobId:
+      schema: { type: string, format: uuid }
+    athlete_id:
       in: path
-      name: jobId
+      name: athlete_id
       required: true
-      schema:
-        type: string
-        format: uuid
+      schema: { type: string, format: uuid }
+    crew_id:
+      in: path
+      name: crew_id
+      required: true
+      schema: { type: string, format: uuid }
+    ruleset_id:
+      in: path
+      name: ruleset_id
+      required: true
+      schema: { type: string, format: uuid }
+    regatta_id:
+      in: path
+      name: regatta_id
+      required: true
+      schema: { type: string, format: uuid }
+    event_group_id:
+      in: path
+      name: event_group_id
+      required: true
+      schema: { type: string, format: uuid }
+    event_id:
+      in: path
+      name: event_id
+      required: true
+      schema: { type: string, format: uuid }
+    entry_id:
+      in: path
+      name: entry_id
+      required: true
+      schema: { type: string, format: uuid }
+    investigation_id:
+      in: path
+      name: investigation_id
+      required: true
+      schema: { type: string, format: uuid }
+    invoice_id:
+      in: path
+      name: invoice_id
+      required: true
+      schema: { type: string, format: uuid }
+    token_id:
+      in: path
+      name: token_id
+      required: true
+      schema: { type: string, format: uuid }
+    marker_id:
+      in: path
+      name: marker_id
+      required: true
+      schema: { type: string, format: uuid }
+    job_id:
+      in: path
+      name: job_id
+      required: true
+      schema: { type: string, format: uuid }
+    draw_revision:
+      in: path
+      name: draw_revision
+      required: true
+      schema: { type: integer, minimum: 0 }
+    results_revision:
+      in: path
+      name: results_revision
+      required: true
+      schema: { type: integer, minimum: 0 }
     limit:
       in: query
       name: limit
-      required: false
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
     cursor:
       in: query
       name: cursor
-      required: false
+      schema: { type: string }
+    search:
+      in: query
+      name: search
+      schema: { type: string }
+    status:
+      in: query
+      name: status
       schema:
         type: string
+        enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
 
   responses:
-    Unauthorized:
+    unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    NotFound:
-      description: Resource not found
+            $ref: '#/components/schemas/error_response'
+    forbidden:
+      description: Forbidden
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
-    Conflict:
+            $ref: '#/components/schemas/error_response'
+    not_found:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_response'
+    conflict:
       description: Conflict
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/error_response'
+    rate_limited:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error_response'
 
   schemas:
-    ErrorResponse:
+    error_response:
       type: object
       required: [error]
       properties:
@@ -417,294 +1785,769 @@ components:
           type: object
           required: [code, message]
           properties:
-            code:
-              type: string
-              example: VALIDATION_ERROR
-            message:
-              type: string
+            code: { type: string }
+            message: { type: string }
             details:
               type: object
               additionalProperties: true
 
-    Pagination:
+    pagination:
       type: object
       required: [has_more, next_cursor]
       properties:
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
-          nullable: true
+        has_more: { type: boolean }
+        next_cursor: { type: string, nullable: true }
 
-    Athlete:
+    operation_result:
+      type: object
+      required: [success, message]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+
+    revision_response:
+      type: object
+      required: [draw_revision, results_revision]
+      properties:
+        draw_revision: { type: integer, minimum: 0 }
+        results_revision: { type: integer, minimum: 0 }
+
+    category:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        min_age: { type: integer, nullable: true }
+        max_age: { type: integer, nullable: true }
+        gender: { type: string, enum: [M, F, X, ANY], nullable: true }
+        skill_level: { type: string, nullable: true }
+        is_global: { type: boolean }
+
+    category_create_request:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        min_age: { type: integer }
+        max_age: { type: integer }
+        gender: { type: string, enum: [M, F, X, ANY] }
+        skill_level: { type: string }
+
+    category_update_request:
+      allOf:
+        - $ref: '#/components/schemas/category_create_request'
+
+    category_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/category' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    boat_type:
+      type: object
+      required: [id, code, name, rowers, coxswain, sculling]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        rowers: { type: integer }
+        coxswain: { type: boolean }
+        sculling: { type: boolean }
+
+    boat_type_create_request:
+      type: object
+      required: [code, name, rowers]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        rowers: { type: integer }
+        coxswain: { type: boolean }
+        sculling: { type: boolean }
+
+    boat_type_update_request:
+      allOf:
+        - $ref: '#/components/schemas/boat_type_create_request'
+
+    boat_type_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/boat_type' }
+
+    club:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        short_name: { type: string, nullable: true }
+
+    club_create_request:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        short_name: { type: string }
+
+    club_update_request:
+      allOf:
+        - $ref: '#/components/schemas/club_create_request'
+
+    club_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/club' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    athlete:
       type: object
       required: [id, first_name, last_name, date_of_birth, gender]
       properties:
-        id:
-          type: string
-          format: uuid
-        first_name:
-          type: string
-        middle_name:
-          type: string
-          nullable: true
-        last_name:
-          type: string
-        date_of_birth:
-          type: string
-          format: date
-        gender:
-          type: string
-          enum: [M, F, X]
-        club_id:
-          type: string
-          format: uuid
-          nullable: true
-        federation_id:
-          type: string
-          nullable: true
+        id: { type: string, format: uuid }
+        first_name: { type: string }
+        middle_name: { type: string, nullable: true }
+        last_name: { type: string }
+        date_of_birth: { type: string, format: date }
+        gender: { type: string, enum: [M, F, X] }
+        club_id: { type: string, format: uuid, nullable: true }
+        federation_id: { type: string, nullable: true }
 
-    AthleteListResponse:
+    athlete_create_request:
+      type: object
+      required: [first_name, last_name, date_of_birth, gender]
+      properties:
+        first_name: { type: string }
+        middle_name: { type: string }
+        last_name: { type: string }
+        date_of_birth: { type: string, format: date }
+        gender: { type: string, enum: [M, F, X] }
+        club_id: { type: string, format: uuid }
+        federation_id: { type: string, maxLength: 20, pattern: '^[A-Za-z0-9]+$' }
+
+    athlete_update_request:
+      allOf:
+        - $ref: '#/components/schemas/athlete_create_request'
+
+    athlete_list_response:
       type: object
       required: [data, pagination]
       properties:
         data:
           type: array
-          items:
-            $ref: '#/components/schemas/Athlete'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
+          items: { $ref: '#/components/schemas/athlete' }
+        pagination: { $ref: '#/components/schemas/pagination' }
 
-    Invoice:
+    crew_member:
       type: object
-      required:
-        - id
-        - regatta_id
-        - club_id
-        - invoice_number
-        - total_amount
-        - currency
-        - status
-        - generated_at
+      required: [athlete_id, seat_position]
       properties:
-        id:
-          type: string
-          format: uuid
-        regatta_id:
-          type: string
-          format: uuid
-        club_id:
-          type: string
-          format: uuid
-        invoice_number:
-          type: string
-        entries:
+        athlete_id: { type: string, format: uuid }
+        seat_position: { type: integer, minimum: 1 }
+
+    crew:
+      type: object
+      required: [id, display_name, is_composite]
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: string }
+        is_composite: { type: boolean }
+        club_id: { type: string, format: uuid, nullable: true }
+        members:
           type: array
-          items:
-            $ref: '#/components/schemas/InvoiceEntry'
-        total_amount:
-          type: number
-        currency:
-          type: string
-          minLength: 3
-          maxLength: 3
+          items: { $ref: '#/components/schemas/crew_member' }
+
+    crew_create_request:
+      type: object
+      required: [display_name, members]
+      properties:
+        display_name: { type: string }
+        club_id: { type: string, format: uuid }
+        members:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/crew_member' }
+
+    crew_update_request:
+      allOf:
+        - $ref: '#/components/schemas/crew_create_request'
+
+    crew_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/crew' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    ruleset:
+      type: object
+      required: [id, name, version, age_calculation_type, is_global]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        version: { type: string }
+        description: { type: string, nullable: true }
+        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+        is_global: { type: boolean }
+
+    ruleset_create_request:
+      type: object
+      required: [name, version, age_calculation_type]
+      properties:
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+
+    ruleset_update_request:
+      allOf:
+        - $ref: '#/components/schemas/ruleset_create_request'
+
+    ruleset_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ruleset' }
+
+    regatta:
+      type: object
+      required: [id, name, time_zone, status, draw_revision, results_revision]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        time_zone: { type: string }
+        status: { type: string, enum: [draft, published, archived, deleted] }
+        ruleset_id: { type: string, format: uuid, nullable: true }
+        entry_fee: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        default_penalty_seconds: { type: integer }
+        allow_custom_penalty_seconds: { type: boolean }
+        draw_revision: { type: integer, minimum: 0 }
+        results_revision: { type: integer, minimum: 0 }
+
+    regatta_create_request:
+      type: object
+      required: [name, time_zone]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        time_zone: { type: string }
+        ruleset_id: { type: string, format: uuid }
+        entry_fee: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        default_penalty_seconds: { type: integer }
+        allow_custom_penalty_seconds: { type: boolean }
+
+    regatta_update_request:
+      allOf:
+        - $ref: '#/components/schemas/regatta_create_request'
+
+    regatta_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/regatta' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    event_group:
+      type: object
+      required: [id, regatta_id, name]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        display_order: { type: integer }
+
+    event_group_create_request:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        display_order: { type: integer }
+
+    event_group_update_request:
+      allOf:
+        - $ref: '#/components/schemas/event_group_create_request'
+
+    event_group_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/event_group' }
+
+    event:
+      type: object
+      required: [id, regatta_id, boat_type_id, name]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        event_group_id: { type: string, format: uuid, nullable: true }
+        category_id: { type: string, format: uuid, nullable: true }
+        boat_type_id: { type: string, format: uuid }
+        name: { type: string }
+        display_order: { type: integer }
+
+    event_create_request:
+      type: object
+      required: [boat_type_id, name]
+      properties:
+        event_group_id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        boat_type_id: { type: string, format: uuid }
+        name: { type: string }
+        display_order: { type: integer }
+
+    event_update_request:
+      allOf:
+        - $ref: '#/components/schemas/event_create_request'
+
+    event_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/event' }
+
+    block:
+      type: object
+      required: [id, regatta_id, name, start_time, event_interval_seconds, crew_interval_seconds]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        name: { type: string }
+        start_time: { type: string, format: date-time }
+        event_interval_seconds: { type: integer }
+        crew_interval_seconds: { type: integer }
+        display_order: { type: integer }
+
+    block_create_request:
+      type: object
+      required: [name, start_time]
+      properties:
+        name: { type: string }
+        start_time: { type: string, format: date-time }
+        event_interval_seconds: { type: integer }
+        crew_interval_seconds: { type: integer }
+        display_order: { type: integer }
+
+    block_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/block' }
+
+    bib_pool:
+      type: object
+      required: [id, regatta_id, name, start_bib, end_bib, is_overflow]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        block_id: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        start_bib: { type: integer }
+        end_bib: { type: integer }
+        priority: { type: integer }
+        is_overflow: { type: boolean }
+
+    bib_pool_create_request:
+      type: object
+      required: [name, start_bib, end_bib]
+      properties:
+        block_id: { type: string, format: uuid }
+        name: { type: string }
+        start_bib: { type: integer }
+        end_bib: { type: integer }
+        priority: { type: integer }
+        is_overflow: { type: boolean }
+
+    bib_pool_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/bib_pool' }
+
+    entry:
+      type: object
+      required: [id, regatta_id, event_id, crew_id, status, payment_status]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        block_id: { type: string, format: uuid }
+        crew_id: { type: string, format: uuid }
+        bib: { type: integer, nullable: true }
+        billing_club_id: { type: string, format: uuid, nullable: true }
         status:
           type: string
-          enum: [draft, sent, paid, cancelled]
-        generated_at:
-          type: string
-          format: date-time
-        sent_at:
-          type: string
-          format: date-time
-          nullable: true
-        paid_at:
-          type: string
-          format: date-time
-          nullable: true
+          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+        payment_status: { type: string, enum: [unpaid, paid] }
+        paid_at: { type: string, format: date-time, nullable: true }
+        paid_by: { type: string, nullable: true }
+        payment_reference: { type: string, nullable: true }
 
-    InvoiceEntry:
+    entry_create_request:
       type: object
-      required: [entry_id, amount]
+      required: [event_id, block_id, crew_id]
       properties:
-        entry_id:
-          type: string
-          format: uuid
-        amount:
-          type: number
+        event_id: { type: string, format: uuid }
+        block_id: { type: string, format: uuid }
+        crew_id: { type: string, format: uuid }
+        billing_club_id: { type: string, format: uuid }
 
-    InvoiceListResponse:
+    entry_update_request:
+      type: object
+      properties:
+        block_id: { type: string, format: uuid }
+        bib: { type: integer }
+        billing_club_id: { type: string, format: uuid }
+
+    entry_status_update_request:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+        reason: { type: string }
+
+    entry_list_response:
       type: object
       required: [data, pagination]
       properties:
         data:
           type: array
-          items:
-            $ref: '#/components/schemas/Invoice'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
+          items: { $ref: '#/components/schemas/entry' }
+        pagination: { $ref: '#/components/schemas/pagination' }
 
-    InvoiceGenerationResponse:
-      type: object
-      required: [job_id]
-      properties:
-        job_id:
-          type: string
-          format: uuid
-
-    MarkInvoicePaidRequest:
+    draw_generate_request:
       type: object
       properties:
-        paid_at:
-          type: string
-          format: date-time
-        paid_by:
-          type: string
-        payment_reference:
-          type: string
+        seed: { type: integer, format: int64 }
 
-    EntryBillingDetails:
+    draw_generation_response:
       type: object
-      required: [entry_id, billing_club_id, payment_status]
+      required: [seed, generated_entry_count]
       properties:
-        entry_id:
-          type: string
-          format: uuid
-        billing_club_id:
-          type: string
-          format: uuid
-          nullable: true
-        payment_status:
-          type: string
-          enum: [unpaid, paid]
-        paid_at:
-          type: string
-          format: date-time
-          nullable: true
-        paid_by:
-          type: string
-          nullable: true
-        payment_reference:
-          type: string
-          nullable: true
+        seed: { type: integer, format: int64 }
+        generated_entry_count: { type: integer }
 
-    OperatorAction:
+    investigation:
       type: object
-      required: [action, timestamp, deviceId]
+      required: [id, regatta_id, entry_id, description]
       properties:
-        action:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-        deviceId:
-          type: string
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        entry_id: { type: string, format: uuid }
+        description: { type: string }
+        outcome: { type: string, enum: [no_action, penalty, excluded, dsq], nullable: true }
+        penalty_seconds: { type: integer, nullable: true }
+        closed_at: { type: string, format: date-time, nullable: true }
+
+    investigation_create_request:
+      type: object
+      required: [entry_id, description]
+      properties:
+        entry_id: { type: string, format: uuid }
+        description: { type: string }
+
+    investigation_update_request:
+      type: object
+      properties:
+        description: { type: string }
+        penalty_seconds: { type: integer }
+
+    investigation_close_request:
+      type: object
+      required: [outcome]
+      properties:
+        outcome: { type: string, enum: [no_action, penalty, excluded, dsq] }
+        penalty_seconds: { type: integer }
+
+    investigation_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/investigation' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    invoice:
+      type: object
+      required: [id, regatta_id, club_id, invoice_number, total_amount, currency, status, generated_at]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        club_id: { type: string, format: uuid }
+        invoice_number: { type: string }
+        total_amount: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        status: { type: string, enum: [draft, sent, paid, cancelled] }
+        generated_at: { type: string, format: date-time }
+        sent_at: { type: string, format: date-time, nullable: true }
+        paid_at: { type: string, format: date-time, nullable: true }
+
+    invoice_list_response:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/invoice' }
+        pagination: { $ref: '#/components/schemas/pagination' }
+
+    mark_invoice_paid_request:
+      type: object
+      properties:
+        paid_at: { type: string, format: date-time }
+        paid_by: { type: string }
+        payment_reference: { type: string }
+
+    entry_billing_details:
+      type: object
+      required: [entry_id, payment_status]
+      properties:
+        entry_id: { type: string, format: uuid }
+        billing_club_id: { type: string, format: uuid, nullable: true }
+        payment_status: { type: string, enum: [unpaid, paid] }
+        paid_at: { type: string, format: date-time, nullable: true }
+        paid_by: { type: string, nullable: true }
+        payment_reference: { type: string, nullable: true }
+
+    payment_bulk_mark_request:
+      type: object
+      required: [entry_ids, payment_status]
+      properties:
+        entry_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
+        payment_status: { type: string, enum: [unpaid, paid] }
+        payment_reference: { type: string }
+
+    operator_token:
+      type: object
+      required: [id, regatta_id, station, token, valid_from, valid_until, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        block_id: { type: string, format: uuid, nullable: true }
+        station: { type: string }
+        token: { type: string }
+        pin: { type: string, nullable: true }
+        valid_from: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+        is_active: { type: boolean }
+
+    operator_token_create_request:
+      type: object
+      required: [station, valid_from, valid_until]
+      properties:
+        block_id: { type: string, format: uuid }
+        station: { type: string }
+        valid_from: { type: string, format: date-time }
+        valid_until: { type: string, format: date-time }
+
+    operator_token_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/operator_token' }
+
+    operator_action:
+      type: object
+      required: [action, timestamp, device_id]
+      properties:
+        action: { type: string }
+        timestamp: { type: string, format: date-time }
+        device_id: { type: string }
         metadata:
           type: object
           additionalProperties: true
 
-    OperatorSyncRequest:
+    operator_sync_request:
       type: object
       required: [actions]
       properties:
         actions:
           type: array
           maxItems: 1000
-          items:
-            $ref: '#/components/schemas/OperatorAction'
+          items: { $ref: '#/components/schemas/operator_action' }
 
-    OperatorConflict:
+    operator_conflict:
       type: object
       required: [id, type, message]
       properties:
-        id:
-          type: string
-          format: uuid
-        type:
-          type: string
-          example: duplicate_link
-        message:
-          type: string
+        id: { type: string, format: uuid }
+        type: { type: string }
+        message: { type: string }
         details:
           type: object
           additionalProperties: true
 
-    OperatorSyncResponse:
+    operator_sync_response:
       type: object
       required: [accepted_count, conflicts]
       properties:
-        accepted_count:
-          type: integer
+        accepted_count: { type: integer }
         conflicts:
           type: array
-          items:
-            $ref: '#/components/schemas/OperatorConflict'
+          items: { $ref: '#/components/schemas/operator_conflict' }
 
-    OperatorConflictListResponse:
+    operator_conflict_list_response:
       type: object
       required: [data, pagination]
       properties:
         data:
           type: array
-          items:
-            $ref: '#/components/schemas/OperatorConflict'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
+          items: { $ref: '#/components/schemas/operator_conflict' }
+        pagination: { $ref: '#/components/schemas/pagination' }
 
-    ExportJobCreated:
+    marker:
       type: object
-      required: [jobId]
+      required: [id, capture_session_id, frame_offset, timestamp_ms, is_linked, is_approved]
       properties:
-        jobId:
-          type: string
-          format: uuid
+        id: { type: string, format: uuid }
+        capture_session_id: { type: string, format: uuid }
+        entry_id: { type: string, format: uuid, nullable: true }
+        frame_offset: { type: integer, format: int64 }
+        timestamp_ms: { type: integer, format: int64 }
+        is_linked: { type: boolean }
+        is_approved: { type: boolean }
+        tile_id: { type: string, nullable: true }
+        tile_x: { type: integer, nullable: true }
+        tile_y: { type: integer, nullable: true }
 
-    JobStatusResponse:
+    marker_create_request:
+      type: object
+      required: [capture_session_id, frame_offset, timestamp_ms]
+      properties:
+        capture_session_id: { type: string, format: uuid }
+        frame_offset: { type: integer, format: int64 }
+        timestamp_ms: { type: integer, format: int64 }
+        tile_id: { type: string }
+        tile_x: { type: integer }
+        tile_y: { type: integer }
+
+    marker_update_request:
+      type: object
+      properties:
+        frame_offset: { type: integer, format: int64 }
+        timestamp_ms: { type: integer, format: int64 }
+        tile_id: { type: string }
+        tile_x: { type: integer }
+        tile_y: { type: integer }
+
+    marker_link_request:
+      type: object
+      required: [entry_id]
+      properties:
+        entry_id: { type: string, format: uuid }
+
+    marker_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/marker' }
+
+    job_created_response:
+      type: object
+      required: [job_id]
+      properties:
+        job_id: { type: string, format: uuid }
+
+    job_status_response:
       type: object
       required: [status]
       properties:
-        status:
-          type: string
-          enum: [pending, processing, completed, failed]
-        downloadUrl:
-          type: string
-          nullable: true
-        error:
-          type: string
-          nullable: true
+        status: { type: string, enum: [pending, processing, completed, failed] }
+        download_url: { type: string, nullable: true }
+        error: { type: string, nullable: true }
 
-    PublicVersionsResponse:
+    public_versions_response:
       type: object
       required: [draw_revision, results_revision]
       properties:
-        draw_revision:
-          type: integer
-          minimum: 0
-        results_revision:
-          type: integer
-          minimum: 0
+        draw_revision: { type: integer, minimum: 0 }
+        results_revision: { type: integer, minimum: 0 }
 
-    OAuthTokenRequest:
+    public_schedule_row:
       type: object
-      required: [grant_type, refresh_token]
+      required: [entry_id, event_id, crew_name, status]
       properties:
-        grant_type:
-          type: string
-          enum: [refresh_token]
-        refresh_token:
-          type: string
+        entry_id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        bib: { type: integer, nullable: true }
+        scheduled_start_time: { type: string, format: date-time, nullable: true }
+        crew_name: { type: string }
+        club_name: { type: string, nullable: true }
+        status: { type: string }
 
-    OAuthTokenResponse:
+    public_schedule_response:
       type: object
-      required: [access_token, token_type, expires_in]
+      required: [draw_revision, results_revision, data]
       properties:
-        access_token:
-          type: string
-        token_type:
-          type: string
-          example: Bearer
-        expires_in:
-          type: integer
-        refresh_token:
-          type: string
-          nullable: true
+        draw_revision: { type: integer }
+        results_revision: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/public_schedule_row' }
+
+    public_result_row:
+      type: object
+      required: [entry_id, event_id, crew_name, status]
+      properties:
+        entry_id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        bib: { type: integer, nullable: true }
+        crew_name: { type: string }
+        club_name: { type: string, nullable: true }
+        elapsed_time_ms: { type: integer, nullable: true }
+        penalties_ms: { type: integer, nullable: true }
+        rank: { type: integer, nullable: true }
+        status: { type: string }
+        is_provisional: { type: boolean }
+        is_edited: { type: boolean }
+        is_official: { type: boolean }
+
+    public_results_response:
+      type: object
+      required: [draw_revision, results_revision, data]
+      properties:
+        draw_revision: { type: integer }
+        results_revision: { type: integer }
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/public_result_row' }
