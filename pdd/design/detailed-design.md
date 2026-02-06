@@ -37,7 +37,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Club fields: id, name, short_name.
   - Athlete fields: full name, DOB, gender, club, optional federation id.
     - Federation ID format: alphanumeric, max 20 chars; optional field for national federation integration.
-    - API for searching athletes by federation ID: GET /api/v1/athletes?federationId={id}.
+    - Athlete search supports filtering by federation ID (documented in the OpenAPI contract).
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
     - Derived club rule: if all athletes share the same club, use that club; otherwise mark crew as composite/multi-club.
   - Entry fields: bib, start position, status.
@@ -99,13 +99,7 @@ flowchart TD
 - Future consideration: credit notes system for post-v0.1
 
 #### Payment API Endpoints
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/v1/regattas/{id}/invoices | List invoices (paginated) |
-| POST | /api/v1/regattas/{id}/invoices/generate | Generate invoices for unpaid entries |
-| GET | /api/v1/regattas/{id}/invoices/{invoiceId} | Get invoice details |
-| POST | /api/v1/regattas/{id}/invoices/{invoiceId}/mark-paid | Mark invoice as paid |
-| GET | /api/v1/regattas/{id}/entries/{entryId}/billing | Get billing details for entry |
+All payment endpoints, methods, parameters, and schemas are defined in `pdd/design/openapi-v0.1.yaml`.
 
 - Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; events start sequentially but finishes can interleave.
   - Bib pools are immutable after draw publish. To change pools, unpublish draw first.
@@ -194,10 +188,10 @@ flowchart TD
     - Track last_successful_sync_timestamp
     - Display offline duration in UI when disconnected
     - Flag for admin review if offline duration > 1 hour
-  - Sync endpoint: POST /api/v1/regattas/{id}/operator/sync (accepts queued actions, returns conflicts).
+  - Sync API accepts queued actions and returns conflict results.
   - Conflict resolution: last-write-wins for marker position/time adjustments and unlinking when entry is not approved; auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
-  - Conflict resolution API: GET /api/v1/regattas/{id}/operator/conflicts returns pending conflicts with resolution options.
+  - Conflict API exposes pending conflicts with resolution options.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
 - Containerized deployment + automated pipeline (CI/CD).
 - Observability: health + OpenTelemetry + metrics.
@@ -281,9 +275,9 @@ flowchart LR
   - Admin generates printables as A4 PDFs; monochrome-friendly output.
   - **PDF library selection**: OpenPDF (LGPL) for Java backend; supports A4, monochrome output, custom fonts.
   - **Async job status polling**:
-    - Endpoint: `POST /api/v1/regattas/{id}/export/printables` returns `{jobId: "uuid"}`
-    - Status polling: `GET /api/v1/jobs/{jobId}` returns `{status: "pending|processing|completed|failed", downloadUrl?, error?}`
-    - Job expires after 24 hours
+    - Print export uses an async job model with a returned `jobId`.
+    - Job status includes `pending|processing|completed|failed`, optional `downloadUrl`, and optional `error`.
+    - Job expires after 24 hours.
   - **Print template specifications**:
     - Page size: A4 (210mm x 297mm)
     - Margins: 20mm top/bottom, 15mm left/right
@@ -302,38 +296,9 @@ flowchart LR
 
 ## Components and Interfaces
 - Staff API: Auth0 JWT, regatta-scoped roles (+ super_admin).
-  - Auth0 configuration:
-    - Tenant: configured via environment variable
-    - Audience: `https://api.regattadesk.com`
-    - Role claim format: `https://regattadesk.app/roles` array in JWT token
-    - Token refresh: automatic via Auth0 SDK; refresh token rotation enabled
-  - Regatta roles: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
+  - Contract details (security schemes, headers, and endpoint-level auth) are defined in `pdd/design/openapi-v0.1.yaml`.
+  - Role model: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
   - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
-  - Permissions matrix (best-practice defaults):
-  
-  | Action | regatta_admin | head_of_jury | info_desk | financial_manager | super_admin |
-  | --- | --- | --- | --- | --- | --- |
-  | Create/update regatta | Yes | No | No | No | Yes |
-  | Create/update events | Yes | No | No | No | Yes |
-  | Create/update blocks | Yes | No | No | No | Yes |
-  | Manage bib pools | Yes | No | No | No | Yes |
-  | Create/update entries | Yes | No | Yes | No | Yes |
-  | Create/update crews/athletes | Yes | No | Yes | No | Yes |
-  | Publish draw | Yes | No | No | No | Yes |
-  | Approve entry | Yes | Yes | No | No | Yes |
-  | Approve event | Yes | Yes | No | No | Yes |
-  | Mark DNS | Yes | Yes | No | No | Yes |
-  | Mark DNF | Yes | Yes | No | No | Yes |
-  | Mark withdrawn_before_draw | Yes | No | Yes | No | Yes |
-  | Mark withdrawn_after_draw | Yes | Yes | Yes | No | Yes |
-  | Mark paid/unpaid | Yes | No | No | Yes | Yes |
-  | Create investigations | Yes | Yes | No | No | Yes |
-  | Assign penalties | Yes | Yes | No | No | Yes |
-  | Close investigations | Yes | Yes | No | No | Yes |
-  | View audit logs | Yes | No | No | No | Yes |
-  | Export printables/PDFs | Yes | No | No | No | Yes |
-  | Manage operator tokens | Yes | No | No | No | Yes |
-  | Revoke operator access | Yes | No | No | No | Yes |
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.
@@ -342,31 +307,26 @@ flowchart LR
   - Token display must not interrupt capture UI (hidden unless opened intentionally).
   - QR tokens exportable to PDF with fallback instructions (short URL + token/PIN) if QR scan fails.
 - Public:
-  - POST /public/session (204) mints/refreshes anon HttpOnly JWT cookie (HS256; iss/aud; kid rotation).
-    - If missing/invalid anon cookie: mint a new one.
-    - If valid and within refresh window: refresh (new Set-Cookie).
-    - If valid and outside refresh window: 204 with no Set-Cookie.
-    - Sliding TTL 5 days; refresh window 20% of TTL.
-    - Key rotation: two active keys; overlap ≥6 days.
-    - Cookie attributes: HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=5d.
-    - Idempotent; Cache-Control: private, no-store; mild abuse protection (no Origin/Referer checks).
-    - CSRF: no token required (anonymous + idempotent); rely on SameSite=Lax.
-    - JWT includes a stable client-id claim used for per-client SSE caps.
-  - Bootstrap: call /versions first; if 401 missing/invalid then call /public/session and retry /versions once; then open SSE.
-  - GET /public/regattas/{id}/versions returns {draw_revision, results_revision}, requires anon session cookie; 401 if missing/invalid; Cache-Control: no-store; rate-limited per client-id.
-  - GET /public/regattas/{id}/events SSE: snapshot on connect + revision ticks; requires anon session cookie; 401 if missing/invalid.
+  - Endpoint contracts are defined in `pdd/design/openapi-v0.1.yaml`.
+  - Public session behavior:
+    - Missing or invalid anon cookie issues a new session.
+    - Valid cookie refreshes only within the refresh window; otherwise no cookie rotation.
+    - Sliding TTL is 5 days; refresh window is 20% of TTL.
+    - Key rotation uses two active keys with >=6-day overlap.
+    - Cookie policy is HttpOnly + Secure + SameSite=Lax.
+  - Bootstrap order: versions check first, then session establishment on auth failure, then retry, then open SSE.
   - SSE event types:
     - `snapshot` - initial state on connect (contains full regatta data needed for public display only)
     - `draw_revision` - draw-related changes (schedule, start order, bibs)
     - `results_revision` - results-related changes (times, penalties, approvals, status changes)
   - Multiplexed by event type (event: snapshot, draw_revision, results_revision).
     - Deterministic SSE id includes draw_revision + results_revision.
-    - Per-client cap: 20 concurrent connections per client-id per regatta; reject excess with 429.
+    - Per-client cap: 20 concurrent connections per client-id per regatta.
     - Reconnect: exponential backoff with full jitter; min 100ms, base 500ms, cap 20s; retry forever.
     - No per-IP concurrent cap or per-IP rate limiting until measured.
     - UI shows a minimal Live/Offline indicator based on SSE connection state only (no freshness claim).
-  - GET /public/v{d}-{r}/... versioned pages/data cacheable.
-    - Fully anonymous: no anon session cookie required; caches should ignore cookies for these endpoints.
+  - Versioned public delivery:
+    - Versioned pages/data are cacheable and fully anonymous.
     - Cache keys include draw_revision + results_revision; client soft-updates and replaces URL to latest version.
     - Schedule/start order content still only changes with draw_revision.
   - withdrawn_after_draw status changes bump both draw_revision and results_revision.
@@ -375,145 +335,13 @@ flowchart LR
 
 ## Staff API Endpoints
 
-### API Naming Convention
-All API endpoints use plural for collection resources:
-- Root-level collections: `/api/v1/categories`, `/api/v1/boat-types`, `/api/v1/athletes`, `/api/v1/clubs`
-- Regatta-scoped: `/api/v1/regattas/{id}/events`, `/api/v1/regattas/{id}/event-groups`, `/api/v1/regattas/{id}/investigations`
+OpenAPI contract source of truth: `pdd/design/openapi-v0.1.yaml`.
 
-All collection resources use plural naming.
+This document intentionally avoids duplicating endpoint methods, paths, request/response schemas, and auth/header requirements that are already specified in OpenAPI.
 
-### Authentication
-All endpoints require Auth0 JWT in `Authorization: Bearer <token>` header with regatta-scoped role claims.
-
-#### Token Refresh Implementation
-- Access tokens expire after 5 minutes (short-lived for security)
-- Refresh tokens are rotation tokens; each use invalidates the previous token
-- Refresh endpoint: `POST /oauth/token` with `grant_type: refresh_token`
-- Client should refresh token proactively when remaining lifetime < 60 seconds
-- Refresh token lifetime: 30 days with activity-based extension
-
-#### Role Claim Format
-Auth0 custom claims namespace: `https://regattadesk.app/`
-
-**Staff JWT claims:**
-```json
-{
-  "https://regattadesk.app/roles": ["regatta_admin"],
-  "https://regattadesk.app/regattas": ["uuid-1", "uuid-2"],
-  "https://regattadesk.app/permissions": [
-    "regattas:read",
-    "regattas:write",
-    "entries:read",
-    "entries:write"
-  ]
-}
-```
-
-**Role Hierarchy:**
-- `super_admin`: Full system access, all regattas
-- `regatta_admin`: Full access to assigned regattas
-- `head_of_jury`: Investigations, penalties, entry status changes
-- `info_desk`: Entry management, bib assignments
-- `financial_manager`: Finance workflows (billing, invoices, paid/unpaid updates)
-- `operator` is token-scoped and excluded from staff JWT role hierarchy
-
-#### Permission Inheritance Rules
-Permissions are derived from roles and are not assigned independently:
-- Each role has a predefined permission set
-- Regatta-scoped permissions require both role and regatta assignment
-- `super_admin` bypasses regatta scoping (all regattas)
-- Permissions check format: `{resource}:{action}` (e.g., `entries:write`)
-- Operator capabilities are evaluated from token scope (station/block/validity), not staff role claims.
-
-**Permission Matrix (staff JWT roles only):**
-| Permission | super_admin | regatta_admin | head_of_jury | info_desk | financial_manager |
-|------------|-------------|---------------|--------------|-----------|-------------------|
-| regattas:read | ✓ | ✓ (assigned) | ✓ (assigned) | ✓ (assigned) | ✓ (assigned) |
-| regattas:write | ✓ | ✓ (assigned) | ✗ | ✗ | ✗ |
-| entries:read | ✓ | ✓ | ✓ | ✓ | ✓ |
-| entries:write | ✓ | ✓ | ✗ | ✓ | ✗ |
-| investigations:write | ✓ | ✓ | ✓ | ✗ | ✗ |
-| payments:write | ✓ | ✓ | ✗ | ✗ | ✓ |
-| markers:write | ✓ | ✓ | ✗ | ✗ | ✗ |
-
-**Operator token capability matrix (non-JWT):**
-| Capability | operator token |
-|------------|----------------|
-| entries:read (scoped block) | ✓ |
-| markers:write (scoped block) | ✓ |
-| mark DNS/DNF (scoped block) | ✓ |
-| investigations:write | ✗ |
-| payments:write | ✗ |
-
-#### Token Validation
-- Validate signature using Auth0 JWKS endpoint
-- Validate `iss` claim matches Auth0 domain
-- Validate `aud` claim matches API identifier
-- Validate token is not expired (check `exp` claim)
-- Validate required role claims under `https://regattadesk.app/roles`
-
-### API Conventions
-
-#### Pagination
-All paginated endpoints use cursor-based pagination with the following query parameters:
-- `limit`: Number of items per page (default: 20, max: 100)
-- `cursor`: Opaque cursor for next page (returned in previous response)
-
-**Response schema for paginated endpoints:**
-```json
-{
-  "data": [...],
-  "pagination": {
-    "has_more": boolean,
-    "next_cursor": "string|null"
-  }
-}
-```
-
-#### Filtering
-Filterable endpoints support query parameters for common filters:
-- `status`: Filter by status (e.g., `status=dns&status=dsq`)
-- `eventId`: Filter by event
-- `clubId`: Filter by club
-- `search`: Text search across relevant fields
-- `updatedSince`: RFC 3339 timestamp for incremental sync
-
-**Example:** `GET /api/v1/regattas/{id}/entries?status=entered&status=dsq&limit=50`
-
-#### Request/Response Schemas
-All endpoints use JSON request/response bodies with consistent naming:
-- Field names: snake_case
-- UUIDs: String format (e.g., `"550e8400-e29b-41d4-a716-446655440000"`)
-- Timestamps: RFC 3339 (e.g., `"2026-02-01T12:00:00Z"`)
-
-**Error response schema:**
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message",
-    "details": {}
-  }
-}
-```
-
-#### Input Validation
-All API endpoints enforce input validation with the following rules:
-
-**Common validation rules:**
-- Required fields: All mandatory fields must be present (400 VALIDATION_ERROR if missing)
-- Data types: Fields must match expected type (string, number, boolean, array, object)
-- UUID format: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
-- String length limits: Enforce documented field min/max lengths
-- Enum values: Must be one of documented allowed values
-- Date/time format: RFC 3339 timestamps, ISO 8601 calendar dates (`YYYY-MM-DD`)
-
-**Validation error handling:**
-- Return HTTP 400 with `code: VALIDATION_ERROR` and field-level details
-- Include machine-readable field keys in `error.details` for client-side mapping
-- Reject unknown fields for command endpoints to avoid silent no-op behavior
-
-**Optimistic concurrency validation:**
-- Endpoints that mutate versioned resources must validate revision/version preconditions
-- Return HTTP 409 `CONFLICT` when the supplied version/revision is stale
-- Include current server version metadata in `error.details` when available
+### API Implementation Notes (Non-Contract)
+- Staff auth uses Auth0 JWT with role claims under `https://regattadesk.app/roles`.
+- Access tokens are short-lived (5 minutes) with refresh-token rotation; refresh should happen proactively when token lifetime is below 60 seconds.
+- Operator access is token-scoped (station/block/validity) and accountless; this is separate from staff JWT role assignment.
+- Public bootstrap sequence is operationally important: version check, session establishment on auth failure, retry once, then SSE connect.
+- Concurrency behavior: write operations that require revision/version preconditions return conflict semantics when stale input is supplied.
