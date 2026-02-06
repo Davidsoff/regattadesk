@@ -176,7 +176,7 @@ flowchart TD
     - if a single operation affects both schedule/start-order/bib display and result-affecting data, increment both together
 
 ### Status taxonomy
-- Domain status values: active, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq.
+- Domain status values: entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq.
   - `excluded` - entry was disqualified from the race (not the same as DSQ which is entry-level ban).
 - Derived workflow/UI states: under_investigation, approved/immutable, offline_queued, provisional/edited/official.
 
@@ -305,34 +305,35 @@ flowchart LR
   - Auth0 configuration:
     - Tenant: configured via environment variable
     - Audience: `https://api.regattadesk.com`
-    - Role claim format: `https://regattadesk.com/roles` array in JWT token
+    - Role claim format: `https://regattadesk.app/roles` array in JWT token
     - Token refresh: automatic via Auth0 SDK; refresh token rotation enabled
   - Regatta roles: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
+  - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
   - Permissions matrix (best-practice defaults):
   
-  | Action | regatta_admin | head_of_jury | info_desk | financial_manager | operator | super_admin |
-  | --- | --- | --- | --- | --- | --- | --- |
-  | Create/update regatta | Yes | No | No | No | No | Yes |
-  | Create/update events | Yes | No | No | No | No | Yes |
-  | Create/update blocks | Yes | No | No | No | No | Yes |
-  | Manage bib pools | Yes | No | No | No | No | Yes |
-  | Create/update entries | Yes | No | Yes | No | No | Yes |
-  | Create/update crews/athletes | Yes | No | Yes | No | No | Yes |
-  | Publish draw | Yes | No | No | No | No | Yes |
-  | Approve entry | Yes | Yes | No | No | No | Yes |
-  | Approve event | Yes | Yes | No | No | No | Yes |
-  | Mark DNS | Yes | Yes | No | No | Yes (within scoped block) | Yes |
-  | Mark DNF | Yes | Yes | No | No | Yes (within scoped block) | Yes |
-  | Mark withdrawn_before_draw | Yes | No | Yes | No | No | Yes |
-  | Mark withdrawn_after_draw | Yes | Yes | Yes | No | No | Yes |
-  | Mark paid/unpaid | Yes | No | No | Yes | No | Yes |
-  | Create investigations | Yes | Yes | No | No | No | Yes |
-  | Assign penalties | Yes | Yes | No | No | No | Yes |
-  | Close investigations | Yes | Yes | No | No | No | Yes |
-  | View audit logs | Yes | No | No | No | No | Yes |
-  | Export printables/PDFs | Yes | No | No | No | No | Yes |
-  | Manage operator tokens | Yes | No | No | No | No | Yes |
-  | Revoke operator access | Yes | No | No | No | No | Yes |
+  | Action | regatta_admin | head_of_jury | info_desk | financial_manager | super_admin |
+  | --- | --- | --- | --- | --- | --- |
+  | Create/update regatta | Yes | No | No | No | Yes |
+  | Create/update events | Yes | No | No | No | Yes |
+  | Create/update blocks | Yes | No | No | No | Yes |
+  | Manage bib pools | Yes | No | No | No | Yes |
+  | Create/update entries | Yes | No | Yes | No | Yes |
+  | Create/update crews/athletes | Yes | No | Yes | No | Yes |
+  | Publish draw | Yes | No | No | No | Yes |
+  | Approve entry | Yes | Yes | No | No | Yes |
+  | Approve event | Yes | Yes | No | No | Yes |
+  | Mark DNS | Yes | Yes | No | No | Yes |
+  | Mark DNF | Yes | Yes | No | No | Yes |
+  | Mark withdrawn_before_draw | Yes | No | Yes | No | Yes |
+  | Mark withdrawn_after_draw | Yes | Yes | Yes | No | Yes |
+  | Mark paid/unpaid | Yes | No | No | Yes | Yes |
+  | Create investigations | Yes | Yes | No | No | Yes |
+  | Assign penalties | Yes | Yes | No | No | Yes |
+  | Close investigations | Yes | Yes | No | No | Yes |
+  | View audit logs | Yes | No | No | No | Yes |
+  | Export printables/PDFs | Yes | No | No | No | Yes |
+  | Manage operator tokens | Yes | No | No | No | Yes |
+  | Revoke operator access | Yes | No | No | No | Yes |
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.
@@ -412,8 +413,9 @@ Auth0 custom claims namespace: `https://regattadesk.app/`
 - `super_admin`: Full system access, all regattas
 - `regatta_admin`: Full access to assigned regattas
 - `head_of_jury`: Investigations, penalties, entry status changes
-- `operator`: Timekeeping, marker creation/linking
 - `info_desk`: Entry management, bib assignments
+- `financial_manager`: Finance workflows (billing, invoices, paid/unpaid updates)
+- `operator` is token-scoped and excluded from staff JWT role hierarchy
 
 #### Permission Inheritance Rules
 Permissions are derived from roles and are not assigned independently:
@@ -421,22 +423,34 @@ Permissions are derived from roles and are not assigned independently:
 - Regatta-scoped permissions require both role and regatta assignment
 - `super_admin` bypasses regatta scoping (all regattas)
 - Permissions check format: `{resource}:{action}` (e.g., `entries:write`)
+- Operator capabilities are evaluated from token scope (station/block/validity), not staff role claims.
 
-**Permission Matrix:**
-| Permission | super_admin | regatta_admin | head_of_jury | operator | info_desk |
-|------------|-------------|---------------|--------------|----------|-----------|
+**Permission Matrix (staff JWT roles only):**
+| Permission | super_admin | regatta_admin | head_of_jury | info_desk | financial_manager |
+|------------|-------------|---------------|--------------|-----------|-------------------|
 | regattas:read | ✓ | ✓ (assigned) | ✓ (assigned) | ✓ (assigned) | ✓ (assigned) |
 | regattas:write | ✓ | ✓ (assigned) | ✗ | ✗ | ✗ |
 | entries:read | ✓ | ✓ | ✓ | ✓ | ✓ |
-| entries:write | ✓ | ✓ | ✗ | ✗ | ✓ |
-| markers:write | ✓ | ✓ | ✗ | ✓ | ✗ |
+| entries:write | ✓ | ✓ | ✗ | ✓ | ✗ |
 | investigations:write | ✓ | ✓ | ✓ | ✗ | ✗ |
+| payments:write | ✓ | ✓ | ✗ | ✗ | ✓ |
+| markers:write | ✓ | ✓ | ✗ | ✗ | ✗ |
+
+**Operator token capability matrix (non-JWT):**
+| Capability | operator token |
+|------------|----------------|
+| entries:read (scoped block) | ✓ |
+| markers:write (scoped block) | ✓ |
+| mark DNS/DNF (scoped block) | ✓ |
+| investigations:write | ✗ |
+| payments:write | ✗ |
 
 #### Token Validation
 - Validate signature using Auth0 JWKS endpoint
 - Validate `iss` claim matches Auth0 domain
 - Validate `aud` claim matches API identifier
 - Validate token is not expired (check `exp` claim)
+- Validate required role claims under `https://regattadesk.app/roles`
 
 ### API Conventions
 
@@ -489,4 +503,17 @@ All API endpoints enforce input validation with the following rules:
 **Common validation rules:**
 - Required fields: All mandatory fields must be present (400 VALIDATION_ERROR if missing)
 - Data types: Fields must match expected type (string, number, boolean, array, object)
-- UUID format: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}Version: v2 (2026-02-01)
+- UUID format: `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
+- String length limits: Enforce documented field min/max lengths
+- Enum values: Must be one of documented allowed values
+- Date/time format: RFC 3339 timestamps, ISO 8601 calendar dates (`YYYY-MM-DD`)
+
+**Validation error handling:**
+- Return HTTP 400 with `code: VALIDATION_ERROR` and field-level details
+- Include machine-readable field keys in `error.details` for client-side mapping
+- Reject unknown fields for command endpoints to avoid silent no-op behavior
+
+**Optimistic concurrency validation:**
+- Endpoints that mutate versioned resources must validate revision/version preconditions
+- Return HTTP 409 `CONFLICT` when the supplied version/revision is stale
+- Include current server version metadata in `error.details` when available

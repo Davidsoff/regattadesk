@@ -102,7 +102,7 @@ All chips must be understandable in monochrome print: **label + icon (optional) 
 Note: entry status values are primary domain states (DSQ is a status, not a separate flag); “under_investigation”, “approved/immutable”, “offline_queued”, and “provisional/edited/official” are derived workflow/UI states.
 
 - Entry statuses (v0.1):
-  - `active`: neutral outline
+  - `entered`: neutral outline
   - `withdrawn_before_draw`: muted (“not racing”)
   - `withdrawn_after_draw`: warn
   - `dns`: warn
@@ -283,8 +283,8 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Reduced motion: respect `prefers-reduced-motion`.
 
 ### 6.1 Accessibility compliance and testing requirements
-- Compliance baseline: WCAG 2.1 AA for release gating.
-- Target level: WCAG 2.2 AA where criteria apply, without regressing 2.1 AA compliance.
+- Compliance baseline (release gate): WCAG 2.2 AA for public pages.
+- Target level: Aim AAA where feasible for key schedule/results flows.
 - Automated testing (required in CI):
   - Run `axe-core` checks on key public pages (schedule, results, event detail) and core staff/operator flows.
   - Run Lighthouse accessibility audits on public schedule and results pages.

@@ -472,7 +472,7 @@ CREATE TABLE public_regatta_results (
     is_edited BOOLEAN DEFAULT FALSE,
     is_official BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (regatta_id, entry_id)
+    PRIMARY KEY (regatta_id, draw_revision, results_revision, entry_id)
 );
 
 CREATE INDEX idx_results_regatta_rev ON public_regatta_results(regatta_id, draw_revision, results_revision);
@@ -495,7 +495,7 @@ CREATE TABLE public_regatta_draw (
     club_name VARCHAR(255),
     status VARCHAR(50) NOT NULL DEFAULT 'entered',
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (regatta_id, entry_id)
+    PRIMARY KEY (regatta_id, draw_revision, entry_id)
 );
 
 CREATE INDEX idx_draw_regatta_rev ON public_regatta_draw(regatta_id, draw_revision);
