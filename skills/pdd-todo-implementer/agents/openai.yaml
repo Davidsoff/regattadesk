@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDD Todo Implementer"
+  short_description: "Execute todo.md documentation tasks in pdd/ one by one"
+  default_prompt: "Implement pending todo.md documentation items sequentially, updating todo status after each task."

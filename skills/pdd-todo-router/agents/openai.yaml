@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDD Todo Router"
+  short_description: "Route to PDD analysis or implementation skills by intent"
+  default_prompt: "Choose pdd-todo-analyzer for finding new issues and pdd-todo-implementer for executing existing todo items."

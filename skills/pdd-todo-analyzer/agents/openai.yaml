@@ -1,0 +1,4 @@
+interface:
+  display_name: "PDD Todo Analyzer"
+  short_description: "Analyze PDD docs and generate actionable todo items"
+  default_prompt: "Review pdd/ and update todo.md with pending documentation action items when current todos are complete."
