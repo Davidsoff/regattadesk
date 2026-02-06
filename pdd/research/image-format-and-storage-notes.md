@@ -1,4 +1,6 @@
-Version: v2 (2026-02-01)
+Version: v2
+Last Updated: 2026-02-06
+Author: RegattaDesk Team
 
 # Image format & storage notes for line-scan “infinite width” images
 
@@ -27,6 +29,10 @@ This meets “no width/height restriction” by construction and enables post-re
 - Manifest: include tile size, origin, and x-coordinate -> timestamp mapping.
 - Pruning: default delay 14 days after regatta end (configurable per regatta).
 - 1024x1024 tiles are acceptable only when validated on target devices (desktop/tablet) and bandwidth/memory budgets, and when reduced tile-count is preferred; default remains 512x512.
+
+## API version references
+- This research note aligns with the current API namespace: `/api/v1/...`.
+- Do not use deprecated or legacy versioned paths in implementation notes for this document.
 
 ## Sources (titles)
 - “Specification for WebP Lossless Bitstream” (Google Developers)

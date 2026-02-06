@@ -1,4 +1,6 @@
-Version: v2 (2026-02-01)
+Version: v2
+Last Updated: 2026-02-06
+Author: RegattaDesk Team
 
 # RegattaDesk v0.1 Style Guide (Implementation Spec)
 
@@ -257,7 +259,7 @@ Purpose: very fast event selection for experienced users while remaining accessi
 ### 4.4 Print (admin-generated PDFs, A4, mostly monochrome)
 - Header on every page:
   - regatta name
-  - generated timestamp (`dd-MM-yyyy HH:mm`)
+  - generated timestamp (ISO 8601, e.g. `2026-02-06T14:30:00+01:00`; final display can be locale-specific)
   - draw/results revision
   - page number
 - Typography: 10–11pt body, 8–9pt meta; avoid light weights.
@@ -269,6 +271,7 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Voice: calm, direct, operational (“Queued”, “Official”, “Needs approval”).
 - Public: expand acronyms on first appearance, e.g. “DNS (Did Not Start)”.
 - Confirmations: include consequence (“This will publish Results v13”).
+- Screenshot placeholders in all PDD docs must use: `Screenshot: [Brief description] - TODO: Add image`
 
 ---
 
@@ -278,6 +281,22 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Tables: correct semantics (caption/headers/scope), SR-friendly labels for dense data.
 - Touch targets: ≥44px everywhere; operator defaults ≥52px.
 - Reduced motion: respect `prefers-reduced-motion`.
+
+### 6.1 Accessibility compliance and testing requirements
+- Compliance baseline: WCAG 2.1 AA for release gating.
+- Target level: WCAG 2.2 AA where criteria apply, without regressing 2.1 AA compliance.
+- Automated testing (required in CI):
+  - Run `axe-core` checks on key public pages (schedule, results, event detail) and core staff/operator flows.
+  - Run Lighthouse accessibility audits on public schedule and results pages.
+  - Fail CI on critical or serious accessibility violations.
+- Manual testing (required before release):
+  - Keyboard-only navigation pass on public, staff, and operator critical flows.
+  - Screen reader smoke test with NVDA (Windows) and VoiceOver (macOS/iOS) on public results and operator capture.
+  - Zoom/reflow test at 200% and mobile viewport checks for clipping/overlap.
+  - Contrast verification for normal and `data-contrast="high"` modes.
+- Evidence and tracking:
+  - Store automated scan reports as CI artifacts.
+  - Track manual findings in release checklist with owner and remediation status.
 
 ---
 
