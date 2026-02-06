@@ -6,7 +6,7 @@ Author: RegattaDesk Team
 (Each step yields a demoable increment.)
 
 ## Checklist
-- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and any required Authelia backing services such as Redis or DB backend) + CI/CD pipeline
+- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, with DB-only Authelia backing in v0.1 and no Redis dependency) + CI/CD pipeline
 - [ ] Step 2: Authelia SSO integration at Traefik edge + forwarded identity/role mapping model (regatta_admin, head_of_jury, info_desk, financial_manager; super_admin global)
 - [ ] Step 3: Event store schema + append/read primitives + audit log retention (retain indefinitely in v0.1)
 - [ ] Step 4: Core aggregates + projections scaffold
@@ -22,15 +22,15 @@ Author: RegattaDesk Team
 - [ ] Step 14: Draw (random with stored seed) + publish draw + draw_revision; no insertion after draw in v0.1
 - [ ] Step 15: Finance: payment status per entry/club + bulk mark paid/unpaid
 - [ ] Step 16: Operator QR token model + PDF export (with fallback instructions) + validity logic + station handoff/PIN flow
-- [ ] Step 17: Operator PWA offline shell + local queue + sync protocol + conflict policy (LWW vs manual resolution)
-- [ ] Step 18: Line-scan storage: manifests + tiles API + marker CRUD + retention pruning (full scan during regatta; default 14-day delay after regatta end; do not prune until regatta archived or all entries approved; if delay elapses first, keep full scan and raise admin alert; then prune to +/-2s around approved markers)
+- [ ] Step 17: Line-scan storage: manifests + tiles API + marker CRUD + retention pruning (full scan during regatta; default 14-day delay after regatta end; do not prune until regatta archived or all entries approved; if delay elapses first, keep full scan and raise admin alert; then prune to +/-2s around approved markers)
+- [ ] Step 18: Operator PWA offline shell + local queue + sync protocol + conflict policy (LWW vs manual resolution)
 - [ ] Step 19: Link markers to entries + start/finish times + entry completion rule + approval gates
 - [ ] Step 20: Investigations + penalties (seconds configurable per regatta) + DSQ/exclusion + DSQ revert behavior (restore prior state) + result labels + results_revision
 - [ ] Step 21: Public schedule pages (read model + UI; content depends only on draw_revision)
 - [ ] Step 22: Public results pages + live updates via SSE ticks (implement /versions → /public/session retry → SSE bootstrap) + Live/Offline indicator (SSE state only)
 - [ ] Step 23: Observability: health + OTEL + metrics + dashboards
 - [ ] Step 24: Hardening: edge protections, load tests, runbooks
-- [ ] Step 25: Testing strategy: unit tests for command validation/rules, Postgres integration tests via Testcontainers, Pact contract tests for public/staff APIs
+- [ ] Step 25: Testing consolidation: expand and harden suite coverage (unit tests for command validation/rules, Postgres integration tests via Testcontainers, Pact contract tests for public/staff APIs), close coverage gaps from earlier steps, and enforce CI quality gates
 
 ## Third-party dependency inventory (v0.1 baseline)
 | Component | Dependency / Service | Minimum version | Update policy |
@@ -56,9 +56,19 @@ Dependency governance:
 - Run automated dependency vulnerability scan weekly.
 - Security or critical bug fixes can bypass normal cadence.
 
+Step quality gates:
+- Every implementation step must include minimum required tests before the step is considered complete.
+- Minimum test requirement per step:
+  - Domain/command logic changes: unit tests.
+  - Persistence/query changes: integration tests against PostgreSQL (Testcontainers where applicable).
+  - API contract changes (public or staff): contract tests (Pact) and endpoint integration checks.
+  - UI/UX changes: targeted component/page tests; accessibility checks for affected public flows.
+- CI must pass for the step branch/commit before moving to the next step.
+
 Docker Compose requirement:
 - For v0.1, Docker Compose is the canonical runtime for both local development and production deployment.
 - The `docker-compose` stack must include every required runtime dependency from this plan (no externally assumed core services).
+- Authelia backing mode is DB-only in v0.1 (no Redis service in compose).
 
 Step format:
 Step N: <objective>
