@@ -18,17 +18,31 @@ CREATE TABLE athletes (
     date_of_birth DATE NOT NULL,
     gender VARCHAR(20) NOT NULL CHECK (gender IN ('M', 'F', 'X')),
     club_id UUID REFERENCES clubs(id) ON DELETE SET NULL,
-    federation_id VARCHAR(20) NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(federation_id)
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_athletes_club ON athletes(club_id);
-CREATE INDEX idx_athletes_federation_id ON athletes(federation_id);
 CREATE INDEX idx_athletes_first_name ON athletes(first_name);
 CREATE INDEX idx_athletes_last_name ON athletes(last_name);
 CREATE INDEX idx_athletes_name_search ON athletes(first_name, last_name);
+```
+
+### athlete_federation_identifiers table
+```sql
+CREATE TABLE athlete_federation_identifiers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    athlete_id UUID NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+    federation_code VARCHAR(64) NOT NULL,
+    external_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(federation_code, external_id),
+    UNIQUE(athlete_id, federation_code)
+);
+
+CREATE INDEX idx_athlete_fed_ids_athlete ON athlete_federation_identifiers(athlete_id);
+CREATE INDEX idx_athlete_fed_ids_lookup ON athlete_federation_identifiers(federation_code, external_id);
 ```
 
 ### crews table
@@ -84,7 +98,7 @@ CREATE TABLE club_billing (
     address TEXT,
     postal_code VARCHAR(20),
     city VARCHAR(100),
-    country VARCHAR(100) DEFAULT 'NL',
+    country VARCHAR(3) DEFAULT 'NLD',
     vat_number VARCHAR(50),
     reference VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -154,6 +168,7 @@ CREATE TABLE regattas (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     time_zone VARCHAR(50) NOT NULL DEFAULT 'Europe/Amsterdam',
+    federation_code VARCHAR(64),
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
     ruleset_id UUID REFERENCES rulesets(id),
     entry_fee DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
@@ -172,6 +187,11 @@ CREATE TABLE regattas (
 CREATE INDEX idx_regattas_status ON regattas(status);
 CREATE INDEX idx_regattas_ruleset ON regattas(ruleset_id);
 CREATE INDEX idx_regattas_revisions ON regattas(draw_revision, results_revision);
+CREATE INDEX idx_regattas_federation_code ON regattas(federation_code);
+
+-- Validation enforced in application/service layer before writes:
+-- - `time_zone` must be a valid IANA time zone name (from the runtime tz database).
+-- - Invalid values are rejected with `INVALID_TIME_ZONE`.
 ```
 
 ### event_groups table
@@ -267,8 +287,9 @@ CREATE INDEX idx_bib_pools_priority ON bib_pools(priority);
 CREATE INDEX idx_bib_pools_overflow ON bib_pools(is_overflow);
 CREATE INDEX idx_bib_pools_numbers ON bib_pools USING GIN (bib_numbers);
 
--- Non-overlap across all pools in the same regatta (ranges and explicit lists)
--- is enforced in application/service validation before writes.
+-- Validation enforced in application/service layer before writes:
+-- 1) Non-overlap across all pools in the same regatta (ranges and explicit lists).
+-- 2) No duplicate values inside `bib_numbers` for explicit-list pools.
 ```
 
 ### entries table
@@ -540,6 +561,9 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_athletes_updated_at BEFORE UPDATE ON athletes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_athlete_federation_identifiers_updated_at BEFORE UPDATE ON athlete_federation_identifiers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_crews_updated_at BEFORE UPDATE ON crews
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -615,9 +639,11 @@ CREATE TRIGGER update_aggregates_updated_at BEFORE UPDATE ON aggregates
    - `operator_tokens` - QR tokens for operators
    - `capture_sessions` - timing capture sessions
    - `timing_markers` - line-scan markers
+   - `athlete_federation_identifiers` - federation-specific external IDs mapped to canonical athletes
 
 2. **Enhanced Existing Tables:**
-   - `athletes`: Added `ON DELETE SET NULL` for `club_id`, added composite index for name search
+   - `athletes`: Added `ON DELETE SET NULL` for `club_id`, added composite index for name search, moved federation IDs to dedicated mapping table
+   - `regattas`: Added optional `federation_code` for single active scheme selection per regatta
    - `crews`: Added `club_id` field and indexes, added `CHECK` constraint for seat positions
    - `club_billing`: Added `UNIQUE` constraint on `club_id` (1:1 relationship)
    - `aggregates`: Added `version`, `created_at`, `updated_at` fields

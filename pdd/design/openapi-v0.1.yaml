@@ -328,16 +328,26 @@ paths:
     get:
       tags: [Staff Core]
       summary: List athletes
+      description: |
+        Federation identifier lookup requires both `federation_code` and `federation_external_id`.
+        Supplying only one of the two returns `400`.
       security:
         - StaffProxyAuth: []
       parameters:
         - in: query
-          name: federation_id
+          name: federation_code
           required: false
+          description: Federation identifier namespace/code (for example, KNRB or FISA).
           schema:
             type: string
-            maxLength: 20
-            pattern: '^[A-Za-z0-9]+$'
+            maxLength: 64
+        - in: query
+          name: federation_external_id
+          required: false
+          description: External athlete id value in the given federation scheme. Use together with `federation_code`.
+          schema:
+            type: string
+            maxLength: 255
         - $ref: '#/components/parameters/search'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/cursor'
@@ -348,6 +358,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/athlete_list_response'
+        '400':
+          description: Invalid federation lookup parameters (missing paired federation query parameter)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
     post:
       tags: [Staff Core]
       summary: Create athlete
@@ -632,6 +648,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/regatta'
+        '400':
+          description: Invalid regatta payload (including invalid IANA time zone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
 
   /api/v1/regattas/{regatta_id}:
     get:
@@ -670,6 +692,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/regatta'
+        '400':
+          description: Invalid regatta payload (including invalid IANA time zone)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error_response'
         '404':
           $ref: '#/components/responses/not_found'
 
@@ -2047,7 +2075,7 @@ components:
         address: { type: string, nullable: true }
         postal_code: { type: string, nullable: true }
         city: { type: string, nullable: true }
-        country: { type: string, minLength: 2, maxLength: 2, nullable: true }
+        country: { type: string, minLength: 3, maxLength: 3, nullable: true, description: ISO 3166-1 alpha-3 country code }
         vat_number: { type: string, nullable: true }
         reference: { type: string, nullable: true }
 
@@ -2059,7 +2087,7 @@ components:
         address: { type: string }
         postal_code: { type: string }
         city: { type: string }
-        country: { type: string, minLength: 2, maxLength: 2 }
+        country: { type: string, minLength: 3, maxLength: 3, description: ISO 3166-1 alpha-3 country code }
         vat_number: { type: string }
         reference: { type: string }
 
@@ -2074,7 +2102,9 @@ components:
         date_of_birth: { type: string, format: date }
         gender: { type: string, enum: [M, F, X] }
         club_id: { type: string, format: uuid, nullable: true }
-        federation_id: { type: string, nullable: true }
+        federation_identifiers:
+          type: array
+          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
 
     athlete_create_request:
       type: object
@@ -2086,11 +2116,23 @@ components:
         date_of_birth: { type: string, format: date }
         gender: { type: string, enum: [M, F, X] }
         club_id: { type: string, format: uuid }
-        federation_id: { type: string, maxLength: 20, pattern: '^[A-Za-z0-9]+$' }
+        federation_identifiers:
+          type: array
+          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
 
     athlete_update_request:
       allOf:
         - $ref: '#/components/schemas/athlete_create_request'
+
+    athlete_federation_identifier:
+      type: object
+      required: [federation_code, external_id]
+      properties:
+        federation_code: { type: string, maxLength: 64 }
+        external_id:
+          type: string
+          maxLength: 255
+          description: Federation-defined identifier value (free text; format is not globally constrained).
 
     athlete_list_response:
       type: object
@@ -2183,9 +2225,16 @@ components:
         id: { type: string, format: uuid }
         name: { type: string }
         description: { type: string, nullable: true }
-        time_zone: { type: string }
+        time_zone:
+          type: string
+          description: IANA time zone name (for example, `Europe/Amsterdam`).
         status: { type: string, enum: [draft, published, archived, deleted] }
         ruleset_id: { type: string, format: uuid, nullable: true }
+        federation_code:
+          type: string
+          nullable: true
+          maxLength: 64
+          description: Active federation identifier scheme for this regatta (single scheme per regatta).
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }
         default_penalty_seconds: { type: integer }
@@ -2196,17 +2245,30 @@ components:
     regatta_create_request:
       type: object
       required: [name, time_zone]
+      description: |
+        Validation rules:
+        - `time_zone` must be a valid IANA time zone name from the runtime tz database.
+        - Invalid values return `400` with code `INVALID_TIME_ZONE`.
       properties:
         name: { type: string }
         description: { type: string }
-        time_zone: { type: string }
+        time_zone:
+          type: string
+          description: IANA time zone name (for example, `Europe/Amsterdam`).
         ruleset_id: { type: string, format: uuid }
+        federation_code:
+          type: string
+          maxLength: 64
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }
         default_penalty_seconds: { type: integer }
         allow_custom_penalty_seconds: { type: boolean }
 
     regatta_update_request:
+      description: |
+        Validation rules:
+        - If `time_zone` is supplied, it must be a valid IANA time zone name.
+        - Invalid values return `400` with code `INVALID_TIME_ZONE`.
       allOf:
         - $ref: '#/components/schemas/regatta_create_request'
 
@@ -2346,7 +2408,9 @@ components:
       description: |
         Validation rules:
         - Exactly one allocation mode is allowed per pool (`range` or `explicit_list`).
+        - In `explicit_list` mode, `bib_numbers` must contain unique values only.
         - Bib numbers must not overlap with any other pool in the same regatta (validated server-side).
+        - Violations return `400` with code `BIB_POOL_VALIDATION_ERROR`.
       properties:
         block_id: { type: string, format: uuid }
         name: { type: string }

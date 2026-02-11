@@ -25,6 +25,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Event group (optional): named grouping of events for awards or schedule organization (avoid using “class” as a standalone term).
   - Block: operational scheduling unit with an ordered list of events.
 - Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
+  - Federation scheme selection: each regatta may configure one active federation identifier scheme (`federation_code`) for regatta-specific imports/search flows; different regattas may use different schemes.
 - Regatta state lifecycle: draft → published (draw published) → archived → deleted.
 - Blocks: schedule start time plus interval between crews and interval between events (block-level config).
 - Regatta end definition (for retention windows): use explicit regatta_end_at timestamp when set; otherwise compute from the latest block’s scheduled end time.
@@ -35,9 +36,13 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Equivalent formula for final crew: block_end = block_start + (event_index * event_interval) + (crew_index_within_event * crew_interval) + crew_interval
 - Entries/crews/athletes: CRUD via API; crew reusable across regattas; entry is regatta-scoped participation.
   - Club fields: id, name, short_name.
-  - Athlete fields: first_name, middle_name (optional), last_name, DOB, gender, club, optional federation id.
-    - Federation ID format: alphanumeric, max 20 chars; optional field for national federation integration.
-    - Athlete search supports filtering by federation ID (documented in the OpenAPI contract).
+  - Athlete fields: first_name, middle_name (optional), last_name, DOB, gender, club, and optional federation identifiers.
+    - Federation identifiers are modeled as zero or more `(federation_code, external_id)` pairs per athlete.
+    - `external_id` format is federation-defined and can be any text (UUID, numeric, alphanumeric, etc.); no cross-federation format assumption.
+    - The same `external_id` value may appear in different federations; uniqueness is scoped to `(federation_code, external_id)`.
+    - Athletes can have identifiers for multiple federations (e.g., KNRB/FISA/national federation) and those identifiers map to the same athlete record.
+    - Athlete lookup by federation identifier uses both `federation_code` and `external_id` (not name matching).
+    - API federation lookup rejects partial identifier queries (must provide both values together).
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
     - Derived club rule: if all athletes share the same club, use that club; otherwise mark crew as composite/multi-club.
   - Entry fields: bib, start position, status.
@@ -118,6 +123,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - Drift handling: periodic resync; apply offset correction; if drift exceeds threshold, flag the capture session for review.
   - Fallback: if device time is invalid or sync fails, mark the capture session as unsynced and require manual timestamp correction before approvals (server-received timestamps are provisional only).
   - Time storage (best practice): regatta.time_zone stored as IANA TZ name (e.g., `Europe/Amsterdam`); store timestamps in UTC (Instant) and display in regatta-local time zone.
+  - API validation: regatta create/update rejects invalid IANA time zone values with `400 INVALID_TIME_ZONE`.
   - Marker metadata: timestamp, capture device id, image tile reference (tile coords/ids).
   - Tile defaults (best practice): 512x512 WebP lossless tiles with PNG fallback; manifest includes tile size, origin, and x-coordinate -> timestamp mapping.
   - Unlinked marker create/delete is not audited.
