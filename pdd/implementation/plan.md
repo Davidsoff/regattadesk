@@ -1,9 +1,68 @@
 Version: v2
-Last Updated: 2026-02-06
+Last Updated: 2026-02-11
 Author: RegattaDesk Team
 
 # Implementation Plan (v0.1)
 (Each step yields a demoable increment.)
+
+## Bounded Context Decomposition
+This implementation plan is decomposed into bounded contexts, each with functional and non-functional feature lists:
+
+1. [BC01 Platform and Delivery](bc01-platform-and-delivery.md)
+2. [BC02 Identity and Access](bc02-identity-and-access.md)
+3. [BC03 Core Regatta Management](bc03-core-regatta-management.md)
+4. [BC04 Rules, Scheduling, and Draw](bc04-rules-scheduling-and-draw.md)
+5. [BC05 Public Experience and Delivery](bc05-public-experience-and-delivery.md)
+6. [BC06 Operator Capture and Line Scan](bc06-operator-capture-and-line-scan.md)
+7. [BC07 Results and Adjudication](bc07-results-and-adjudication.md)
+8. [BC08 Finance and Payments](bc08-finance-and-payments.md)
+9. [BC09 Operability, Hardening, and Quality](bc09-operability-hardening-and-quality.md)
+
+## Functional Coverage Map (Checklist -> Bounded Context)
+| Plan requirement | Bounded context owner |
+| --- | --- |
+| Step 1 | BC01 |
+| Step 2 | BC02 |
+| Step 3 | BC03 |
+| Step 4 | BC03 |
+| Step 5 | BC03 |
+| Step 6 | BC02 |
+| Step 7 | BC05 (depends on BC02) |
+| Step 8 | BC05 |
+| Step 9 | BC05 and BC06 |
+| Step 10 | BC05 |
+| Step 11 | BC05 |
+| Step 12 | BC04 |
+| Step 13 | BC04 |
+| Step 14 | BC04 |
+| Step 15 | BC08 |
+| Step 16 | BC06 |
+| Step 17 | BC06 |
+| Step 18 | BC06 |
+| Step 19 | BC06 |
+| Step 20 | BC07 |
+| Step 21 | BC05 |
+| Step 22 | BC05 (depends on BC02 and BC07) |
+| Step 23 | BC09 |
+| Step 24 | BC09 |
+| Step 25 | BC09 |
+
+## Non-Functional Coverage Map
+| Non-functional requirement | Bounded context owner |
+| --- | --- |
+| Canonical Docker Compose runtime and complete in-stack dependencies | BC01 |
+| Minimum dependency versions and update cadence | BC01 |
+| Dependency pinning and weekly vulnerability scanning | BC01 and BC09 |
+| Security/identity constraints (roles, secure cookies, JWT rotation) | BC02 |
+| Indefinite audit-log retention and event traceability | BC03 |
+| Draw reproducibility and post-draw immutability | BC04 |
+| Public caching policy, immutable versioned delivery, SSE reconnect/cap behavior | BC05 |
+| WCAG 2.2 AA public target, localization/time formatting, printable output constraints | BC05 |
+| Operator high-contrast defaults, offline sync reliability, line-scan retention/pruning safety | BC06 |
+| Reversible adjudication and result-state consistency | BC07 |
+| Finance access control and auditable payment updates | BC08 |
+| Observability, hardening, load validation, runbooks, and CI test-gate enforcement | BC09 |
+| Step-level minimum testing policy (unit/integration/contract/UI + accessibility checks) | BC09 |
 
 ## Checklist
 - [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO object storage for line-scan tiles/manifests; DB-only Authelia backing in v0.1 and no Redis dependency) + CI/CD pipeline
