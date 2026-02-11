@@ -1,0 +1,210 @@
+bounded_context:
+  id: BC03
+  name: Core Regatta Management
+  source_spec: pdd/implementation/bc03-core-regatta-management.md
+
+tickets:
+  - id: BC03-001
+    title: "[BC03] Implement event-store schema, migrations, and retention policy"
+    labels:
+      - type:feature
+      - area:event-store
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-002
+    plan_coverage:
+      - Step 3
+    nfr_coverage:
+      - Indefinite audit retention in v0.1
+      - Append-only traceability
+    body: |
+      ## Summary
+      Implement PostgreSQL event-store schema and migrations that support append-only domain events and indefinite retention.
+
+      ## Background
+      Event sourcing is foundational for regatta workflows and later adjudication/revision functionality.
+
+      ## Scope
+      - Create event-store tables, indexes, and migration scripts.
+      - Define stream identifiers and ordering semantics.
+      - Add immutable append-only constraints.
+      - Define and document retention policy (indefinite in v0.1).
+
+      ## Out of Scope
+      - Aggregate-specific command handlers.
+      - Projection consumer implementations.
+
+      ## Implementation Tasks
+      1. Create migration scripts for event store and metadata tables.
+      2. Add DB constraints to prevent destructive updates/deletes of event rows.
+      3. Add archival/retention policy docs reflecting indefinite retention.
+      4. Add integration tests validating schema and constraints.
+
+      ## Acceptance Criteria
+      - Event-store schema is applied successfully from empty database.
+      - Events cannot be mutated after append.
+      - Retention policy is documented and enforced operationally.
+
+      ## Test Requirements
+      - Integration tests for migration correctness and append-only invariants.
+      - Performance sanity test for indexed stream reads.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc03-core-regatta-management.md
+
+  - id: BC03-002
+    title: "[BC03] Build event append/read primitives and repository abstraction"
+    labels:
+      - type:feature
+      - area:event-store
+      - area:backend
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC03-001
+    plan_coverage:
+      - Step 3
+    nfr_coverage:
+      - Transactional integrity for write workflows
+      - Deterministic event ordering
+    body: |
+      ## Summary
+      Implement the event-store access layer for appending and reading event streams with concurrency and integrity safeguards.
+
+      ## Background
+      Core aggregates and workflows depend on reliable append/read primitives before command handlers can be implemented.
+
+      ## Scope
+      - Implement append API with expected-version checking.
+      - Implement stream and global read APIs.
+      - Implement transaction boundaries and error mapping.
+      - Expose repository interface used by aggregate handlers.
+
+      ## Out of Scope
+      - Business command validation rules.
+      - Projection read-model materialization.
+
+      ## Implementation Tasks
+      1. Implement append operation with optimistic concurrency controls.
+      2. Implement read operations with pagination and ordering guarantees.
+      3. Add serialization/deserialization for event payload envelopes.
+      4. Add integration tests for concurrency conflict and retry behavior.
+
+      ## Acceptance Criteria
+      - Append succeeds for valid expected version and fails for conflicts.
+      - Reads return stable ordering and complete metadata.
+      - API is reusable by all aggregates in BC03/BC04/BC07.
+
+      ## Test Requirements
+      - Unit tests for event envelope serialization.
+      - PostgreSQL integration tests for concurrency and transaction semantics.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc03-core-regatta-management.md
+
+  - id: BC03-003
+    title: "[BC03] Scaffold core aggregates and projection pipeline"
+    labels:
+      - type:feature
+      - area:domain
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC03-002
+    plan_coverage:
+      - Step 4
+    nfr_coverage:
+      - Projection consistency with source events
+      - Command-centric testability
+    body: |
+      ## Summary
+      Create initial aggregate and projection scaffolding to support regatta setup workflows and future bounded contexts.
+
+      ## Background
+      Step 4 requires domain boundaries and projection plumbing before CRUD feature implementation in Step 5.
+
+      ## Scope
+      - Define aggregate base abstractions and command/result patterns.
+      - Define projection worker skeleton and checkpoint model.
+      - Create initial aggregate stubs for regatta setup entities.
+      - Create read-model table scaffolds and projection handlers.
+
+      ## Out of Scope
+      - Full domain rule implementation for all commands.
+      - Public schedule/results read-model projections.
+
+      ## Implementation Tasks
+      1. Build shared aggregate abstractions and event application pattern.
+      2. Add projection runner with idempotent replay support.
+      3. Define baseline domain events for setup entities.
+      4. Add tests for replay and projection idempotency.
+
+      ## Acceptance Criteria
+      - Aggregates can load from event streams and emit new events.
+      - Projections consume events and persist checkpointed read-model updates.
+      - Replay does not create duplicate projection side effects.
+
+      ## Test Requirements
+      - Unit tests for aggregate state reconstruction.
+      - Integration tests for projection checkpointing and replay behavior.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc03-core-regatta-management.md
+
+  - id: BC03-004
+    title: "[BC03] Deliver regatta setup CRUD APIs and staff workflows"
+    labels:
+      - type:feature
+      - area:domain
+      - area:staff-ui
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC03-003
+      - BC02-002
+    plan_coverage:
+      - Step 5
+    nfr_coverage:
+      - API-first parity between staff UI and API
+      - Auditable mutations for crew changes and withdrawals
+    body: |
+      ## Summary
+      Implement regatta setup workflows end-to-end: events, event groups, athletes, crews, entries, crew mutations, and withdrawals.
+
+      ## Background
+      Step 5 is the first domain-complete staff feature set and establishes the API-first pattern for all operator/staff workflows.
+
+      ## Scope
+      - Implement CRUD API endpoints for regatta setup entities.
+      - Implement crew mutation and withdrawal workflows.
+      - Build/extend staff UI flows that consume the same APIs.
+      - Emit domain events and update projections for all setup mutations.
+
+      ## Out of Scope
+      - Draw generation and publication.
+      - Finance, adjudication, or line-scan workflows.
+
+      ## Implementation Tasks
+      1. Implement command handlers and validations for setup operations.
+      2. Add REST endpoints and request/response contracts.
+      3. Build staff UI pages/forms calling these endpoints.
+      4. Add API contract tests and UI workflow tests.
+
+      ## Acceptance Criteria
+      - Staff can create/update/delete setup entities and perform crew mutations/withdrawals.
+      - Staff UI and API behavior remain consistent.
+      - All mutations are represented in event store and reflected in projections.
+
+      ## Test Requirements
+      - Unit tests for command validation.
+      - Integration tests for persistence and projections.
+      - Pact/contract tests for setup APIs.
+      - UI tests for critical setup flows.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc03-core-regatta-management.md

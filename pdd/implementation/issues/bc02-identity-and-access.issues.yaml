@@ -1,0 +1,214 @@
+bounded_context:
+  id: BC02
+  name: Identity and Access
+  source_spec: pdd/implementation/bc02-identity-and-access.md
+
+tickets:
+  - id: BC02-001
+    title: "[BC02] Integrate Traefik edge SSO with Authelia and role forwarding"
+    labels:
+      - type:feature
+      - area:identity
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-002
+    plan_coverage:
+      - Step 2
+    nfr_coverage:
+      - Least-privilege role boundaries
+      - Deterministic edge authentication behavior
+    body: |
+      ## Summary
+      Integrate Authelia SSO at the Traefik edge and forward authenticated identity/role claims needed by backend services.
+
+      ## Background
+      Staff/operator/admin surfaces must be protected by SSO at the edge, with explicit role mapping (`regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `super_admin`).
+
+      ## Scope
+      - Configure Traefik forward-auth with Authelia.
+      - Define mapping from identity provider groups/claims to application roles.
+      - Forward identity headers to backend in a trusted and documented format.
+      - Implement deny-by-default behavior for unauthenticated/unauthorized requests.
+
+      ## Out of Scope
+      - Business-level authorization logic inside domain handlers.
+      - Public anonymous session flow.
+
+      ## Implementation Tasks
+      1. Configure Traefik middlewares and protected routes.
+      2. Configure Authelia access-control rules and user/group mappings.
+      3. Document forwarded header contract and trust boundary.
+      4. Add edge integration tests for allowed/denied role scenarios.
+
+      ## Acceptance Criteria
+      - Protected routes require valid SSO session.
+      - Role claims are forwarded to backend in a stable, documented contract.
+      - Unauthorized roles are denied with correct status codes.
+      - Role model supports all required v0.1 roles.
+
+      ## Test Requirements
+      - Integration tests for each role and an unauthenticated request.
+      - Negative tests for missing/forged identity headers.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc02-identity-and-access.md
+
+  - id: BC02-002
+    title: "[BC02] Implement backend identity extraction and role-based authorization middleware"
+    labels:
+      - type:feature
+      - area:identity
+      - area:backend
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC02-001
+    plan_coverage:
+      - Step 2
+    nfr_coverage:
+      - Least-privilege role enforcement
+      - Deterministic authorization outcomes
+    body: |
+      ## Summary
+      Add backend middleware to consume forwarded identity and enforce role-based access on API endpoints.
+
+      ## Background
+      Edge authentication alone is insufficient. Services must consistently apply authorization policies across staff and operator APIs.
+
+      ## Scope
+      - Parse and validate forwarded identity headers from trusted proxy.
+      - Map identity claims to application principal model.
+      - Implement endpoint-level role guards.
+      - Add shared authorization utilities for command/query handlers.
+
+      ## Out of Scope
+      - UI permission rendering behavior.
+      - Anonymous public session cookie issuance.
+
+      ## Implementation Tasks
+      1. Create principal model with role set and tenancy fields.
+      2. Add middleware/interceptor for header validation and principal injection.
+      3. Add declarative role guard mechanism for endpoints.
+      4. Add test fixtures for role-based API testing.
+
+      ## Acceptance Criteria
+      - API endpoints reject unauthorized roles and allow authorized roles.
+      - Identity parsing fails safely on malformed or missing trusted headers.
+      - Authorization checks are reusable and consistently applied.
+
+      ## Test Requirements
+      - Unit tests for identity parser and role guard logic.
+      - Integration tests covering happy and denied paths per role.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc02-identity-and-access.md
+
+  - id: BC02-003
+    title: "[BC02] Implement public anonymous session endpoint and JWT cookie lifecycle"
+    labels:
+      - type:feature
+      - area:identity
+      - area:public-api
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC02-002
+    plan_coverage:
+      - Step 6
+    nfr_coverage:
+      - Secure cookie settings
+      - Idempotent refresh window behavior
+      - Stable anonymous auth semantics
+    body: |
+      ## Summary
+      Implement `POST /public/session` that issues/refreshes anonymous JWT cookie for public clients and returns `204`.
+
+      ## Background
+      Public pages require an anonymous session bootstrap with strict cookie and TTL behavior to support versions and SSE flows.
+
+      ## Scope
+      - Implement endpoint behavior with idempotent refresh window at 20% of 5-day TTL.
+      - Issue JWT signed with HS256 and include `kid` in header.
+      - Set required cookie attributes: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, `Max-Age=5d`.
+      - Return `204` for successful create/refresh operations.
+
+      ## Out of Scope
+      - `/versions` and SSE bootstrap logic.
+      - Key overlap rotation scheduler implementation details.
+
+      ## Implementation Tasks
+      1. Add endpoint/controller and service for anonymous principal issuance.
+      2. Implement cookie issuance/refresh policy and TTL calculations.
+      3. Add signer integration with current active key and `kid` header.
+      4. Add contract tests for `204` and cookie semantics.
+
+      ## Acceptance Criteria
+      - Endpoint returns `204` with correct cookie attributes.
+      - Refresh behavior is idempotent and honors 20% refresh window.
+      - Generated token includes valid `kid` and expected claims.
+
+      ## Test Requirements
+      - Unit tests for TTL and refresh-window logic.
+      - Integration and contract tests for response code, cookie flags, and auth validity.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc02-identity-and-access.md
+
+  - id: BC02-004
+    title: "[BC02] Implement JWT key rotation policy and bootstrap fallback contract"
+    labels:
+      - type:feature
+      - area:identity
+      - area:public-api
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC02-003
+      - BC05-001
+    plan_coverage:
+      - Step 6
+      - Step 7
+      - Step 22
+    nfr_coverage:
+      - Two active keys with >=6 day overlap
+      - Safe key rotation without public-session disruption
+    body: |
+      ## Summary
+      Implement and validate JWT key rotation with overlap guarantees and ensure the `/versions -> /public/session -> /versions` fallback flow remains stable during key transitions.
+
+      ## Background
+      The public bootstrap path depends on robust rotation semantics. Key rollover must not break anonymous session or revision fetch flow.
+
+      ## Scope
+      - Implement keyset model with two active keys and configured overlap >=6 days.
+      - Implement key selection and verification logic during overlap windows.
+      - Validate bootstrap fallback flow under valid, expired, and rotated key scenarios.
+      - Document operational key rotation runbook.
+
+      ## Out of Scope
+      - External KMS integration.
+      - Multi-region key distribution design.
+
+      ## Implementation Tasks
+      1. Add key registry abstraction with active/next states.
+      2. Implement token verification against overlapping active keys.
+      3. Add integration tests for rollover and fallback behavior.
+      4. Document rotation schedule and emergency rollback procedure.
+
+      ## Acceptance Criteria
+      - System supports two simultaneous active keys with required overlap.
+      - Tokens signed with previous active key remain valid during overlap.
+      - Bootstrap fallback still succeeds during and after rotation.
+
+      ## Test Requirements
+      - Unit tests for key selection and overlap validation.
+      - End-to-end bootstrap tests that simulate key rotation windows.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc02-identity-and-access.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md

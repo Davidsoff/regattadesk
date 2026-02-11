@@ -1,0 +1,211 @@
+bounded_context:
+  id: BC09
+  name: Operability, Hardening, and Quality
+  source_spec: pdd/implementation/bc09-operability-hardening-and-quality.md
+
+tickets:
+  - id: BC09-001
+    title: "[BC09] Implement service health model, OpenTelemetry instrumentation, and baseline dashboards"
+    labels:
+      - type:feature
+      - area:observability
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-002
+    plan_coverage:
+      - Step 23
+    nfr_coverage:
+      - Production diagnostics via health + telemetry
+      - Consistent observability across services
+    body: |
+      ## Summary
+      Implement runtime health endpoints, telemetry instrumentation, and operational dashboards for core services.
+
+      ## Background
+      Step 23 establishes minimum observability required to safely operate and debug v0.1 in production.
+
+      ## Scope
+      - Implement liveness/readiness/health endpoints for backend and supporting services where applicable.
+      - Add OpenTelemetry tracing and metrics instrumentation.
+      - Configure metric/tracing export and baseline dashboards.
+      - Define initial alert thresholds for critical service health signals.
+
+      ## Out of Scope
+      - Advanced anomaly detection.
+      - Organization-wide observability platform architecture.
+
+      ## Implementation Tasks
+      1. Add health probes and readiness gating.
+      2. Instrument key request paths and domain workflows.
+      3. Build dashboard templates for latency, error rate, throughput, and resource health.
+      4. Add observability smoke checks to deployment validation.
+
+      ## Acceptance Criteria
+      - Health/readiness endpoints expose actionable service state.
+      - Core workflows emit traces and metrics with consistent tags.
+      - Dashboards provide visibility into API health and processing latency.
+
+      ## Test Requirements
+      - Integration tests validating health endpoints.
+      - Telemetry smoke tests ensuring traces/metrics are emitted.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc09-operability-hardening-and-quality.md
+
+  - id: BC09-002
+    title: "[BC09] Implement edge hardening controls and operational runbooks"
+    labels:
+      - type:feature
+      - area:security
+      - area:operations
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC02-001
+      - BC09-001
+    plan_coverage:
+      - Step 24
+    nfr_coverage:
+      - Hardened edge posture
+      - Actionable incident response procedures
+    body: |
+      ## Summary
+      Implement security hardening controls at the edge and deliver runbooks for operational and incident response procedures.
+
+      ## Background
+      Step 24 requires practical hardening before broad rollout and documented operational procedures.
+
+      ## Scope
+      - Implement edge protections (rate limiting, secure headers, request size/time limits, abuse controls).
+      - Validate secure default TLS/proxy configurations.
+      - Produce runbooks for incident triage, recovery, and rollback.
+      - Document operational checks for auth/session/public endpoints.
+
+      ## Out of Scope
+      - Full SOC integration.
+      - Enterprise-wide policy governance.
+
+      ## Implementation Tasks
+      1. Configure edge middlewares and limits in Traefik.
+      2. Add automated security regression checks where feasible.
+      3. Write runbooks for common production incidents.
+      4. Validate runbooks via tabletop or simulated incidents.
+
+      ## Acceptance Criteria
+      - Edge protections are active and verified in integration tests.
+      - Runbooks exist for top operational and security failure modes.
+      - On-call engineers can execute recovery procedures without tribal knowledge.
+
+      ## Test Requirements
+      - Integration tests for rate limiting/header hardening behavior.
+      - Runbook validation exercises captured as checklists.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc09-operability-hardening-and-quality.md
+
+  - id: BC09-003
+    title: "[BC09] Implement load-testing suite and performance gates"
+    labels:
+      - type:feature
+      - area:performance
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC05-003
+      - BC09-001
+    plan_coverage:
+      - Step 24
+    nfr_coverage:
+      - Verified capacity under expected load profiles
+      - Measurable performance thresholds for release readiness
+    body: |
+      ## Summary
+      Build repeatable load-testing scenarios and define performance gates for release decisions.
+
+      ## Background
+      Hardening requires empirical evidence that the system meets latency and stability expectations.
+
+      ## Scope
+      - Define representative load profiles (public read traffic, SSE clients, operator ingest bursts, staff API usage).
+      - Implement load-test scripts and execution harness.
+      - Define pass/fail thresholds for key SLO-aligned metrics.
+      - Integrate performance checks into release readiness workflow.
+
+      ## Out of Scope
+      - Full-scale chaos engineering.
+      - Long-term autoscaling strategy.
+
+      ## Implementation Tasks
+      1. Author scenario scripts for critical traffic patterns.
+      2. Run baseline tests and capture performance metrics.
+      3. Set threshold gates for latency/error/resource utilization.
+      4. Document tuning recommendations from findings.
+
+      ## Acceptance Criteria
+      - Load tests are repeatable and version controlled.
+      - Release gating includes objective performance thresholds.
+      - Performance reports identify bottlenecks and regression risk.
+
+      ## Test Requirements
+      - CI-adjacent smoke load test for quick regression signal.
+      - Scheduled deeper load runs with archived reports.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc09-operability-hardening-and-quality.md
+
+  - id: BC09-004
+    title: "[BC09] Consolidate test strategy and enforce CI quality gates across all change types"
+    labels:
+      - type:feature
+      - area:quality
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-003
+      - BC09-001
+    plan_coverage:
+      - Step 25
+      - Step quality gates
+    nfr_coverage:
+      - "Required test matrix: unit, PostgreSQL integration, Pact contract, UI tests"
+      - Accessibility checks for affected public/staff/operator critical flows
+      - CI pass required before step progression
+    body: |
+      ## Summary
+      Implement and enforce the cross-cutting test matrix and CI quality gates required by the implementation plan.
+
+      ## Background
+      Step 25 closes quality gaps from earlier steps and enforces objective completion criteria for every feature change.
+
+      ## Scope
+      - Encode minimum test requirements by change type into CI policies.
+      - Expand missing coverage in unit, integration (PostgreSQL/Testcontainers), contract (Pact), and UI tests.
+      - Add accessibility checks for affected critical flows.
+      - Add merge/release gate enforcement and reporting.
+
+      ## Out of Scope
+      - Replacing existing test frameworks.
+      - Non-v0.1 experimental quality metrics.
+
+      ## Implementation Tasks
+      1. Define CI gate matrix mapping change categories to required tests.
+      2. Backfill key missing tests across bounded contexts.
+      3. Add accessibility automation and manual smoke checklist requirements.
+      4. Enforce branch protection checks tied to gate outcomes.
+
+      ## Acceptance Criteria
+      - CI blocks merges when required test categories are missing/failing.
+      - Coverage gaps identified in earlier steps are tracked and addressed.
+      - Accessibility verification is mandatory for affected critical flows.
+
+      ## Test Requirements
+      - Validate gate behavior with intentionally failing sample PR scenarios.
+      - Confirm each test category is discoverable and reportable in CI output.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc09-operability-hardening-and-quality.md

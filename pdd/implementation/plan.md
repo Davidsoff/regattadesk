@@ -18,6 +18,19 @@ This implementation plan is decomposed into bounded contexts, each with function
 8. [BC08 Finance and Payments](bc08-finance-and-payments.md)
 9. [BC09 Operability, Hardening, and Quality](bc09-operability-hardening-and-quality.md)
 
+## Bounded Context Ticket Backlogs (GitHub Export)
+1. [BC01 tickets](issues/bc01-platform-and-delivery.issues.yaml)
+2. [BC02 tickets](issues/bc02-identity-and-access.issues.yaml)
+3. [BC03 tickets](issues/bc03-core-regatta-management.issues.yaml)
+4. [BC04 tickets](issues/bc04-rules-scheduling-and-draw.issues.yaml)
+5. [BC05 tickets](issues/bc05-public-experience-and-delivery.issues.yaml)
+6. [BC06 tickets](issues/bc06-operator-capture-and-line-scan.issues.yaml)
+7. [BC07 tickets](issues/bc07-results-and-adjudication.issues.yaml)
+8. [BC08 tickets](issues/bc08-finance-and-payments.issues.yaml)
+9. [BC09 tickets](issues/bc09-operability-hardening-and-quality.issues.yaml)
+10. [Export instructions](issues/README.md)
+11. [Ticket coverage map](issues/coverage-map.md)
+
 ## Functional Coverage Map (Checklist -> Bounded Context)
 | Plan requirement | Bounded context owner |
 | --- | --- |

@@ -1,0 +1,110 @@
+bounded_context:
+  id: BC07
+  name: Results and Adjudication
+  source_spec: pdd/implementation/bc07-results-and-adjudication.md
+
+tickets:
+  - id: BC07-001
+    title: "[BC07] Implement investigations workflow and configurable penalty model"
+    labels:
+      - type:feature
+      - area:adjudication
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC06-004
+      - BC03-003
+    plan_coverage:
+      - Step 20
+    nfr_coverage:
+      - Auditable adjudication actions
+      - Role-scoped authority for result-affecting decisions
+    body: |
+      ## Summary
+      Implement investigations workflow and per-regatta configurable penalty seconds model.
+
+      ## Background
+      Adjudication requires structured review state and configurable penalty semantics before final results are published.
+
+      ## Scope
+      - Implement investigation entity lifecycle (open, review, resolve).
+      - Implement per-regatta penalty configuration and application.
+      - Link investigations to entries/markers.
+      - Enforce role restrictions for adjudication actions.
+
+      ## Out of Scope
+      - DSQ/exclusion and revert operations.
+      - Public results rendering.
+
+      ## Implementation Tasks
+      1. Define investigation and penalty domain events.
+      2. Implement commands and validations for transitions.
+      3. Add APIs for create/update/resolve workflows.
+      4. Add role-guarded permissions for adjudication endpoints.
+
+      ## Acceptance Criteria
+      - Investigations can be opened, reviewed, and resolved with full audit trail.
+      - Penalty seconds are configurable per regatta and applied correctly.
+      - Unauthorized users cannot perform adjudication actions.
+
+      ## Test Requirements
+      - Unit tests for penalty application rules.
+      - Integration tests for investigation lifecycle and authorization.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc07-results-and-adjudication.md
+
+  - id: BC07-002
+    title: "[BC07] Implement DSQ/exclusion, DSQ revert, result labels, and results revision propagation"
+    labels:
+      - type:feature
+      - area:adjudication
+      - area:results
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC07-001
+      - BC05-001
+    plan_coverage:
+      - Step 20
+      - Step 22
+    nfr_coverage:
+      - Reversible DSQ behavior restoring prior state
+      - Consistent `results_revision` progression for downstream consumers
+    body: |
+      ## Summary
+      Implement DSQ/exclusion operations, DSQ revert semantics, result labeling, and `results_revision` updates consumed by public results pages.
+
+      ## Background
+      Result-affecting adjudication requires reversible workflows and deterministic revision updates.
+
+      ## Scope
+      - Implement DSQ and exclusion commands.
+      - Implement DSQ revert that restores prior state exactly.
+      - Implement result labeling model and projection.
+      - Emit/propagate `results_revision` changes for public consumers.
+
+      ## Out of Scope
+      - Public UI implementation details.
+      - Non-adjudication schedule changes.
+
+      ## Implementation Tasks
+      1. Add domain events for DSQ/exclusion/revert and labels.
+      2. Implement prior-state snapshot/restore strategy for DSQ revert.
+      3. Update results projections and revision counters.
+      4. Add end-to-end tests with BC05 results pipeline.
+
+      ## Acceptance Criteria
+      - DSQ/exclusion updates outcomes and labels correctly.
+      - Revert operation restores pre-DSQ state without residual artifacts.
+      - `results_revision` increments and downstream readers observe updates.
+
+      ## Test Requirements
+      - Unit tests for state transition and revert logic.
+      - Integration tests for projection and revision updates.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc07-results-and-adjudication.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md

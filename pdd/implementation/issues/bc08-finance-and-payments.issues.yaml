@@ -1,0 +1,107 @@
+bounded_context:
+  id: BC08
+  name: Finance and Payments
+  source_spec: pdd/implementation/bc08-finance-and-payments.md
+
+tickets:
+  - id: BC08-001
+    title: "[BC08] Implement payment status model and APIs for entries and clubs"
+    labels:
+      - type:feature
+      - area:finance
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC03-004
+      - BC02-002
+    plan_coverage:
+      - Step 15
+    nfr_coverage:
+      - Role-based protection for financial data mutation
+      - Auditable payment status changes
+    body: |
+      ## Summary
+      Implement domain model and APIs to manage payment status at entry and club level.
+
+      ## Background
+      Finance workflows in v0.1 require explicit paid/unpaid state for operational and reporting purposes.
+
+      ## Scope
+      - Add payment status fields/model for entries and clubs.
+      - Implement single-item payment status update APIs.
+      - Enforce financial role permissions.
+      - Emit audit events for status changes.
+
+      ## Out of Scope
+      - Invoice generation.
+      - External payment gateway integration.
+
+      ## Implementation Tasks
+      1. Define payment-status domain events and invariants.
+      2. Implement command handlers and API endpoints.
+      3. Add authorization guard for finance-capable roles.
+      4. Add projection updates for finance views.
+
+      ## Acceptance Criteria
+      - Entry and club payment statuses can be queried and updated.
+      - Unauthorized roles are blocked from modifying payment status.
+      - Status changes are auditable.
+
+      ## Test Requirements
+      - Unit tests for payment status transitions.
+      - Integration tests for role-based endpoint behavior.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc08-finance-and-payments.md
+
+  - id: BC08-002
+    title: "[BC08] Implement bulk mark paid/unpaid workflow for finance staff"
+    labels:
+      - type:feature
+      - area:finance
+      - area:staff-ui
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC08-001
+    plan_coverage:
+      - Step 15
+    nfr_coverage:
+      - Safe, repeatable bulk operations
+      - Auditability for mass updates
+    body: |
+      ## Summary
+      Add bulk operations for finance staff to mark sets of entries/clubs as paid or unpaid.
+
+      ## Background
+      Step 15 explicitly requires bulk mark paid/unpaid capability for operational efficiency.
+
+      ## Scope
+      - Implement bulk update API with selection criteria/input IDs.
+      - Implement staff UI workflow for bulk status changes.
+      - Record summary audit event with actor, scope, and count.
+      - Return partial-failure diagnostics where applicable.
+
+      ## Out of Scope
+      - Automated reconciliation with external accounting systems.
+      - Payment reminder messaging workflows.
+
+      ## Implementation Tasks
+      1. Implement bulk command handling with validation and authorization.
+      2. Add idempotency safeguards for repeated submissions.
+      3. Build staff UI for selection, confirmation, and result feedback.
+      4. Add tests for large-batch success/failure paths.
+
+      ## Acceptance Criteria
+      - Finance staff can bulk mark selected records paid/unpaid.
+      - Repeated requests do not produce inconsistent states.
+      - Audit log captures bulk operation metadata.
+
+      ## Test Requirements
+      - Integration tests for batch operations and rollback/partial-failure behavior.
+      - UI tests for confirmation and error handling paths.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc08-finance-and-payments.md

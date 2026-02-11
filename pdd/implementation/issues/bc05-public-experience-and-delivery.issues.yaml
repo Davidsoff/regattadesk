@@ -1,0 +1,370 @@
+bounded_context:
+  id: BC05
+  name: Public Experience and Delivery
+  source_spec: pdd/implementation/bc05-public-experience-and-delivery.md
+
+tickets:
+  - id: BC05-001
+    title: "[BC05] Implement public versions endpoint and bootstrap retry contract"
+    labels:
+      - type:feature
+      - area:public-api
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC02-003
+    plan_coverage:
+      - Step 7
+      - Step 22
+    nfr_coverage:
+      - Stable bootstrap sequence (`/versions` -> `/public/session` -> retry)
+      - No-store cache requirement for versions endpoint
+    body: |
+      ## Summary
+      Implement `/public/regattas/{regatta_id}/versions` with draw/results revision tracking and explicit bootstrap retry behavior on 401.
+
+      ## Background
+      Public clients use this endpoint to discover the current version tuple and initialize immutable URL routing.
+
+      ## Scope
+      - Add versions endpoint returning current `{draw_revision, results_revision}`.
+      - Return `401` when anonymous session is missing/invalid.
+      - Document and test client bootstrap behavior: call `/versions`; on `401` call `/public/session`; retry `/versions` exactly once.
+      - Apply required response cache policy.
+
+      ## Out of Scope
+      - SSE transport implementation.
+      - Public schedule/results page rendering.
+
+      ## Implementation Tasks
+      1. Implement version projection/read path.
+      2. Expose endpoint with auth requirements aligned to public-session model.
+      3. Apply `Cache-Control: no-store, must-revalidate`.
+      4. Add contract tests for 200 and 401/retry scenarios.
+
+      ## Acceptance Criteria
+      - Endpoint returns latest revisions for authorized anonymous sessions.
+      - Missing session yields `401` and bootstrap retry path succeeds.
+      - Cache headers match required policy.
+
+      ## Test Requirements
+      - Endpoint integration tests for 200/401 flows.
+      - Contract tests for response shape and headers.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+      - pdd/implementation/bc02-identity-and-access.md
+
+  - id: BC05-002
+    title: "[BC05] Implement immutable versioned public routing and CDN cache policy"
+    labels:
+      - type:feature
+      - area:public-web
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC05-001
+    plan_coverage:
+      - Step 8
+    nfr_coverage:
+      - Immutable URL strategy `/public/v{draw}-{results}`
+      - Strict cache-control policy by endpoint type
+    body: |
+      ## Summary
+      Implement public route strategy where all public content is served under immutable versioned paths and cache headers match the plan.
+
+      ## Background
+      Versioned URLs enable safe long-lived CDN caching and deterministic rollback behavior.
+
+      ## Scope
+      - Route all public pages/resources under `/public/v{draw}-{results}/...`.
+      - Apply cache headers:
+        - `/public/session`: `no-store`
+        - `/public/regattas/{regatta_id}/versions`: `no-store, must-revalidate`
+        - `/public/v{draw}-{results}/...`: `public, max-age=31536000, immutable`
+      - Prevent non-versioned public content from serving stale data.
+
+      ## Out of Scope
+      - SSE event transport internals.
+      - Localization and printable output logic.
+
+      ## Implementation Tasks
+      1. Implement route resolver from versions tuple to versioned path.
+      2. Add middleware/header policy by route group.
+      3. Add tests that assert cache header values for each route category.
+      4. Update public bootstrap documentation.
+
+      ## Acceptance Criteria
+      - Public pages are only served through versioned URL prefix.
+      - Required cache headers are present and correct.
+      - Version change results in new immutable URL tuple.
+
+      ## Test Requirements
+      - Integration tests for cache headers and route behavior.
+      - Browser-level smoke test validating version switch behavior.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+
+  - id: BC05-003
+    title: "[BC05] Implement regatta SSE stream with deterministic IDs and reconnect policy"
+    labels:
+      - type:feature
+      - area:realtime
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC05-001
+    plan_coverage:
+      - Step 11
+      - Step 22
+    nfr_coverage:
+      - "Reconnect/backoff: min 100ms, base 500ms, cap 20s, full jitter, retry forever"
+      - Deterministic event IDs and per-client connection cap
+    body: |
+      ## Summary
+      Implement per-regatta SSE endpoint delivering `snapshot`, `draw_revision`, and `results_revision` events with deterministic IDs and required reconnect policy support.
+
+      ## Background
+      Public results and schedule UX depends on low-latency revision propagation and robust network resilience.
+
+      ## Scope
+      - Implement SSE stream opened after versions bootstrap.
+      - Emit event types: `snapshot`, `draw_revision`, `results_revision` with payload `{draw_revision, results_revision, reason?}`.
+      - Generate deterministic event IDs suitable for resume/replay.
+      - Enforce per-client connection cap and heartbeat/tick behavior.
+
+      ## Out of Scope
+      - UI rendering logic for schedule/results pages.
+      - Operator-side realtime requirements.
+
+      ## Implementation Tasks
+      1. Build SSE publisher/subscriber model per regatta.
+      2. Define event ID generation strategy tied to revision sequence.
+      3. Add server-side limits for concurrent client streams.
+      4. Add client helper implementing required backoff policy.
+
+      ## Acceptance Criteria
+      - Clients receive snapshot followed by incremental revision events.
+      - Stream reconnects with required backoff/jitter policy.
+      - Duplicate/disordered events are handled via deterministic IDs.
+
+      ## Test Requirements
+      - Integration tests for event ordering and payload contracts.
+      - Client-side tests for reconnect behavior and offline recovery.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+
+  - id: BC05-004
+    title: "[BC05] Build public schedule read model and schedule pages"
+    labels:
+      - type:feature
+      - area:public-web
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC04-003
+      - BC05-002
+    plan_coverage:
+      - Step 21
+    nfr_coverage:
+      - Schedule content depends only on `draw_revision`
+      - Deterministic rendering from read model
+    body: |
+      ## Summary
+      Implement public schedule pages backed by read models that vary only with draw revisions.
+
+      ## Background
+      Schedule views are versioned and should not be affected by non-draw changes.
+
+      ## Scope
+      - Build schedule projection/read model keyed by `draw_revision`.
+      - Implement public schedule API/view model.
+      - Implement schedule page UI under versioned route.
+      - Ensure pagination/filtering does not violate immutability semantics.
+
+      ## Out of Scope
+      - Results-specific content or adjudication state.
+      - Operator internal schedule tools.
+
+      ## Implementation Tasks
+      1. Add projection updates for draw publication events.
+      2. Build schedule query endpoints.
+      3. Implement responsive schedule pages using table primitives.
+      4. Add regression tests ensuring schedule unaffected by `results_revision` changes.
+
+      ## Acceptance Criteria
+      - Schedule pages load from versioned URLs and reflect draw revision correctly.
+      - Results-only changes do not change schedule content.
+      - UI is usable on mobile and desktop.
+
+      ## Test Requirements
+      - Integration tests for draw-revision isolation.
+      - UI tests for key schedule workflows and rendering.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+
+  - id: BC05-005
+    title: "[BC05] Build public results pages with live SSE updates and connection state"
+    labels:
+      - type:feature
+      - area:public-web
+      - area:realtime
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC05-003
+      - BC07-002
+    plan_coverage:
+      - Step 22
+    nfr_coverage:
+      - Live/Offline indicator based only on SSE state
+      - Correct bootstrap flow integration with session/versions
+    body: |
+      ## Summary
+      Implement public results pages that consume versions + SSE and expose explicit Live/Offline state driven only by SSE connection status.
+
+      ## Background
+      Results experience must be resilient and clearly communicate realtime connectivity.
+
+      ## Scope
+      - Build results projection/read model API.
+      - Implement results page UI under versioned routes.
+      - Connect SSE stream updates to results UI refresh model.
+      - Implement Live/Offline indicator based strictly on SSE state.
+
+      ## Out of Scope
+      - Staff/operator adjudication UI.
+      - Historical analytics views.
+
+      ## Implementation Tasks
+      1. Implement results view model bound to `results_revision`.
+      2. Wire client bootstrap (`/versions` fallback) + SSE subscription.
+      3. Add UI state management for live/offline signal and stale-data banner.
+      4. Add tests for transition between online/offline and resync.
+
+      ## Acceptance Criteria
+      - Results pages update in near real-time when revisions change.
+      - Live/Offline indicator changes only on SSE connectivity changes.
+      - Bootstrap fallback works with expired/missing public session.
+
+      ## Test Requirements
+      - End-to-end tests covering bootstrap + SSE update flow.
+      - UI tests for live/offline indicator behavior.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+
+  - id: BC05-006
+    title: "[BC05] Implement public design tokens, table primitives, and WCAG targets"
+    labels:
+      - type:feature
+      - area:design-system
+      - area:accessibility
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC01-001
+    plan_coverage:
+      - Step 9
+    nfr_coverage:
+      - WCAG 2.2 AA minimum on public flows (aim AAA)
+      - Consistent style-guide compliance
+    body: |
+      ## Summary
+      Implement design tokens and reusable table primitives aligned to `pdd/design/style-guide.md`, with public accessibility checks.
+
+      ## Background
+      Public schedule/results pages depend on coherent UI primitives and accessibility baseline from the start.
+
+      ## Scope
+      - Implement token system (spacing, type, color, semantic states).
+      - Build reusable table primitives used by public schedule/results views.
+      - Add accessibility patterns for keyboard navigation, contrast, and focus management.
+      - Integrate automated accessibility checks into UI test workflows.
+
+      ## Out of Scope
+      - Operator-specific high-contrast default behavior.
+      - Locale/date formatting rules.
+
+      ## Implementation Tasks
+      1. Add token definitions and component theme bindings.
+      2. Implement table components for sortable/filterable race data display.
+      3. Add a11y utility hooks and test helpers.
+      4. Validate against WCAG 2.2 AA for affected public flows.
+
+      ## Acceptance Criteria
+      - Public pages consume shared tokens and table components.
+      - Accessibility checks pass for affected public routes at AA level.
+      - Style-guide-conformant visual behavior is documented.
+
+      ## Test Requirements
+      - Component tests for table primitives.
+      - Automated axe-core checks for impacted public pages.
+      - Manual keyboard navigation smoke test.
+
+      ## References
+      - pdd/design/style-guide.md
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md
+
+  - id: BC05-007
+    title: "[BC05] Implement i18n, locale formatting, timezone handling, and printable A4 outputs"
+    labels:
+      - type:feature
+      - area:public-web
+      - area:i18n
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC05-006
+    plan_coverage:
+      - Step 10
+    nfr_coverage:
+      - "`nl`/`en` localization"
+      - 24h time + ISO 8601 (`YYYY-MM-DD`) technical formatting
+      - Regatta-local timezone correctness
+      - Monochrome-friendly print output
+    body: |
+      ## Summary
+      Implement localization and formatting standards for public/staff-facing outputs, plus printable A4 PDFs with required metadata.
+
+      ## Background
+      Step 10 requires deterministic technical formats while preserving locale-specific user display rules.
+
+      ## Scope
+      - Add i18n support for Dutch and English.
+      - Implement locale-dependent UI formatting with regatta-local timezone.
+      - Enforce ISO 8601 `YYYY-MM-DD` in technical docs/APIs.
+      - Implement A4 print/PDF layouts with monochrome-friendly design.
+      - Include PDF header fields: regatta name, generated timestamp, draw/results revisions, page number.
+
+      ## Out of Scope
+      - Additional locales beyond `nl`/`en`.
+      - Complex report builder features.
+
+      ## Implementation Tasks
+      1. Configure translation catalog and locale switching.
+      2. Implement date/time utility layer for display vs technical formats.
+      3. Build print templates and PDF generation integration.
+      4. Add tests for timezone correctness and PDF metadata rendering.
+
+      ## Acceptance Criteria
+      - UI supports `nl` and `en` with correct localized labels and formats.
+      - Technical endpoints/docs use ISO date format as required.
+      - Printable outputs are A4, monochrome-friendly, and include all required headers.
+
+      ## Test Requirements
+      - Unit tests for formatter utilities and timezone conversions.
+      - Snapshot/integration tests for printable PDF output.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc05-public-experience-and-delivery.md

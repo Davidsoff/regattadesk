@@ -1,0 +1,168 @@
+bounded_context:
+  id: BC01
+  name: Platform and Delivery
+  source_spec: pdd/implementation/bc01-platform-and-delivery.md
+
+tickets:
+  - id: BC01-001
+    title: "[BC01] Bootstrap Quarkus/Vue repository skeleton and developer workflow"
+    labels:
+      - type:feature
+      - area:platform
+      - priority:p0
+      - milestone:v0.1
+    depends_on: []
+    plan_coverage:
+      - Step 1
+    nfr_coverage:
+      - Reproducible builds across environments
+      - Canonical local developer setup
+    body: |
+      ## Summary
+      Create the baseline repository structure for v0.1 with a Quarkus backend and Vue frontend, including standard scripts and local developer workflow documentation.
+
+      ## Background
+      Step 1 requires a demoable baseline that all subsequent bounded contexts can build on. This ticket is limited to project skeleton and developer ergonomics; runtime composition is handled in BC01-002.
+
+      ## Scope
+      - Create backend service scaffold (Quarkus, Java 21 baseline) with health endpoint placeholder.
+      - Create frontend scaffold (Vue 3 + Vite + Node 22 baseline) with a minimal app shell.
+      - Define repository structure conventions (apps, infra, docs, tests).
+      - Add root-level scripts for install/build/test/lint to standardize local and CI commands.
+      - Add onboarding documentation for first-run local setup.
+
+      ## Out of Scope
+      - Full business domain implementation.
+      - Production-grade CI/CD workflow details.
+      - Full runtime dependency wiring in Docker Compose.
+
+      ## Implementation Tasks
+      1. Scaffold backend and frontend projects with pinned toolchain versions.
+      2. Add shared task runner commands (or make targets) used by both local and CI.
+      3. Add repository README sections for prerequisites, bootstrap, and common commands.
+      4. Add a smoke test command verifying both apps build.
+
+      ## Acceptance Criteria
+      - Backend and frontend projects both build successfully from a fresh checkout.
+      - One documented command sequence can bootstrap and run both apps locally.
+      - Directory and script conventions are documented and consistent.
+      - Toolchain versions align with `pdd/implementation/plan.md` minimums.
+
+      ## Test Requirements
+      - Build smoke checks for backend and frontend run in CI.
+      - Basic lints (or equivalent static checks) are wired for both apps.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc01-platform-and-delivery.md
+
+  - id: BC01-002
+    title: "[BC01] Implement canonical Docker Compose runtime stack for v0.1"
+    labels:
+      - type:feature
+      - area:platform
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-001
+    plan_coverage:
+      - Step 1
+      - Docker Compose requirement
+    nfr_coverage:
+      - Canonical runtime in local and production deployment
+      - No externally assumed core services
+      - Authelia DB-only mode (no Redis)
+    body: |
+      ## Summary
+      Build the v0.1 Docker Compose stack that includes all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO.
+
+      ## Background
+      The plan explicitly states Docker Compose is the canonical runtime for v0.1 in both local development and production deployment. This stack must be self-contained.
+
+      ## Scope
+      - Add Compose services for backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO.
+      - Configure networking, persistent volumes, and health checks.
+      - Configure Authelia in DB-only mode and ensure Redis is not required.
+      - Wire service-to-service connectivity and startup dependencies.
+      - Provide environment templates and secrets placeholders.
+
+      ## Out of Scope
+      - Full production autoscaling/orchestration beyond Compose.
+      - Cloud-managed external object storage.
+
+      ## Implementation Tasks
+      1. Create compose manifests and environment files for all required services.
+      2. Add health checks and startup ordering to reduce nondeterministic boot failures.
+      3. Configure MinIO buckets/policies for line-scan tiles/manifests baseline use.
+      4. Validate end-to-end startup and cross-service connectivity.
+
+      ## Acceptance Criteria
+      - `docker compose up` starts all required services successfully.
+      - No external core runtime service is required for a functional stack.
+      - Authelia runs in DB-only mode and does not depend on Redis.
+      - MinIO is reachable from backend and ready for object storage integration.
+
+      ## Test Requirements
+      - Automated compose smoke test for service health endpoints.
+      - Startup regression check in CI for compose config validity.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc01-platform-and-delivery.md
+
+  - id: BC01-003
+    title: "[BC01] Establish CI/CD and dependency governance baseline"
+    labels:
+      - type:feature
+      - area:platform
+      - area:quality
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC01-001
+    plan_coverage:
+      - Step 1
+      - Third-party dependency inventory
+      - Dependency governance
+    nfr_coverage:
+      - Dependency pinning in manifests and lockfiles
+      - Weekly vulnerability scans
+      - Controlled patch cadence with security fast-path
+    body: |
+      ## Summary
+      Implement CI/CD baseline and dependency governance automation required by the v0.1 implementation plan.
+
+      ## Background
+      The plan requires pinned dependencies, regular scanning, and reliable CI quality gates before moving between steps.
+
+      ## Scope
+      - Create CI pipelines for build/test across backend and frontend.
+      - Enforce lockfile/build-manifest pinning checks.
+      - Add weekly dependency vulnerability scanning job.
+      - Document patch/update cadence and security exception workflow.
+      - Add release/deploy pipeline skeleton consistent with Compose deployment model.
+
+      ## Out of Scope
+      - Full release automation for every environment.
+      - Organization-wide governance beyond this repository.
+
+      ## Implementation Tasks
+      1. Define CI workflow stages: lint, unit/integration, packaging, compose smoke.
+      2. Add jobs that fail when dependency manifests are unpinned or drift unexpectedly.
+      3. Add scheduled vulnerability scan workflow with artifact/report output.
+      4. Document emergency patch process for security or critical defects.
+
+      ## Acceptance Criteria
+      - CI runs on pull requests and blocks merges on failed checks.
+      - Weekly scan executes automatically and reports vulnerabilities.
+      - Pinned dependency policy is both documented and automatically enforced.
+      - Security fast-path process is documented and actionable.
+
+      ## Test Requirements
+      - CI workflow self-test on a sample branch.
+      - Validation tests for dependency pinning rules.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc01-platform-and-delivery.md
+      - pdd/implementation/bc09-operability-hardening-and-quality.md

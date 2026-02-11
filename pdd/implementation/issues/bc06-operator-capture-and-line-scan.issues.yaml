@@ -1,0 +1,327 @@
+bounded_context:
+  id: BC06
+  name: Operator Capture and Line Scan
+  source_spec: pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+tickets:
+  - id: BC06-001
+    title: "[BC06] Implement operator QR token domain model and validity rules"
+    labels:
+      - type:feature
+      - area:operator
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC02-002
+    plan_coverage:
+      - Step 16
+    nfr_coverage:
+      - Secure station-scoped operator authentication
+      - Deterministic token validity behavior
+    body: |
+      ## Summary
+      Implement operator QR token lifecycle (issue, validate, revoke/expire) used for station authentication.
+
+      ## Background
+      Operator workflows require secure, low-friction station access that can be delegated and rotated during regatta operations.
+
+      ## Scope
+      - Define operator token entity and state transitions.
+      - Implement token issuance and validation rules.
+      - Bind token claims to regatta and station scope.
+      - Support expiration and invalidation workflows.
+
+      ## Out of Scope
+      - PDF export format.
+      - Offline sync mechanics.
+
+      ## Implementation Tasks
+      1. Design token schema and persistence model.
+      2. Implement issue/validate/revoke handlers.
+      3. Integrate token auth with operator endpoints.
+      4. Add audit events for token lifecycle transitions.
+
+      ## Acceptance Criteria
+      - Valid tokens grant scoped operator access.
+      - Expired/revoked tokens are rejected consistently.
+      - Token lifecycle changes are auditable.
+
+      ## Test Requirements
+      - Unit tests for validity window and scope checks.
+      - Integration tests for authorized/unauthorized endpoint access.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+  - id: BC06-002
+    title: "[BC06] Add operator token PDF export, fallback instructions, and station handoff PIN flow"
+    labels:
+      - type:feature
+      - area:operator
+      - area:documents
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC06-001
+    plan_coverage:
+      - Step 16
+    nfr_coverage:
+      - Operational resilience during station handoff
+      - Human-readable fallback path when QR scan fails
+    body: |
+      ## Summary
+      Implement token distribution artifacts and handoff workflow: PDF export with fallback instructions and station handoff secured by PIN flow.
+
+      ## Background
+      Regatta-day operations need practical handoff workflows that work in degraded conditions and maintain security.
+
+      ## Scope
+      - Generate printable/exportable PDF token sheets.
+      - Include fallback text instructions for manual operator login path.
+      - Implement station handoff flow requiring PIN confirmation.
+      - Track handoff actions in audit trail.
+
+      ## Out of Scope
+      - Line-scan ingest API details.
+      - Long-term retention rules.
+
+      ## Implementation Tasks
+      1. Build PDF template and token rendering.
+      2. Implement PIN challenge/verification service.
+      3. Add handoff endpoint/UI flow for operators/staff.
+      4. Add tests for successful and failed handoff scenarios.
+
+      ## Acceptance Criteria
+      - Staff can export valid operator token PDFs.
+      - Fallback instructions are present and usable.
+      - Station handoff requires valid PIN and is audited.
+
+      ## Test Requirements
+      - Integration tests for handoff and PIN validation paths.
+      - Snapshot tests for PDF content requirements.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+  - id: BC06-003
+    title: "[BC06] Implement line-scan manifest and tile APIs with auth boundaries"
+    labels:
+      - type:feature
+      - area:line-scan
+      - area:api
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC06-001
+      - BC01-002
+    plan_coverage:
+      - Step 17
+    nfr_coverage:
+      - Ingest via `OperatorTokenAuth`
+      - Retrieval via `OperatorTokenAuth` or `StaffProxyAuth`
+      - In-stack object storage usage via MinIO
+    body: |
+      ## Summary
+      Implement line-scan storage APIs and object-storage integration for manifests and tiles using canonical endpoints and required auth policy.
+
+      ## Background
+      Step 17 defines the core data plane for finish-line capture and later adjudication.
+
+      ## Scope
+      - Implement endpoints:
+        - `POST /api/v1/regattas/{regatta_id}/line_scan/manifests`
+        - `GET /api/v1/regattas/{regatta_id}/line_scan/manifests/{manifest_id}`
+        - `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
+        - `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
+      - Persist metadata and payload references.
+      - Enforce auth modes per ingest/retrieval requirement.
+      - Integrate MinIO bucket/object naming conventions.
+
+      ## Out of Scope
+      - Marker CRUD semantics.
+      - Retention pruning rules.
+
+      ## Implementation Tasks
+      1. Implement API contracts and handlers.
+      2. Add storage adapter for manifests and tiles.
+      3. Enforce auth policy by endpoint and operation type.
+      4. Add API contract and integration tests.
+
+      ## Acceptance Criteria
+      - All canonical endpoints function as specified.
+      - Auth restrictions match ingest/retrieval policy.
+      - Stored objects are retrievable with metadata integrity.
+
+      ## Test Requirements
+      - Pact/contract tests for endpoint shapes.
+      - Integration tests using MinIO in compose/test environment.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+  - id: BC06-004
+    title: "[BC06] Implement marker CRUD, entry linking, completion rule, and approval gates"
+    labels:
+      - type:feature
+      - area:line-scan
+      - area:results
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC06-003
+      - BC03-004
+    plan_coverage:
+      - Step 17
+      - Step 19
+    nfr_coverage:
+      - End-to-end traceability from marker to entry outcome
+      - Approval-gated state transitions
+    body: |
+      ## Summary
+      Build marker management and linking workflows that connect line-scan evidence to entries, start/finish times, and completion status.
+
+      ## Background
+      Marker processing bridges operator capture and adjudicated results.
+
+      ## Scope
+      - Implement marker CRUD operations.
+      - Link markers to entries and set derived start/finish times.
+      - Implement completion rule for entries.
+      - Implement approval gates before marker-derived outcomes are finalized.
+
+      ## Out of Scope
+      - Penalty/DSQ adjudication policy.
+      - Data-retention pruning mechanics.
+
+      ## Implementation Tasks
+      1. Define marker domain events and linking commands.
+      2. Build API endpoints/UI actions for marker review/edit.
+      3. Implement entry completion evaluator and approval status model.
+      4. Add integration tests for marker-to-entry lifecycle.
+
+      ## Acceptance Criteria
+      - Markers can be created, edited, linked, and approved.
+      - Entry completion status updates correctly from linked markers.
+      - Unapproved markers cannot finalize entry outcomes.
+
+      ## Test Requirements
+      - Unit tests for completion-rule logic.
+      - Integration tests for approval gate enforcement.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+  - id: BC06-005
+    title: "[BC06] Build operator PWA offline shell, sync queue, conflict policy, and high-contrast defaults"
+    labels:
+      - type:feature
+      - area:operator
+      - area:pwa
+      - area:accessibility
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC06-003
+      - BC06-004
+    plan_coverage:
+      - Step 18
+      - Step 9
+    nfr_coverage:
+      - Offline-first reliability with eventual consistency
+      - Configurable conflict strategy (LWW vs manual)
+      - Operator default high-contrast with per-device persistence
+    body: |
+      ## Summary
+      Implement operator PWA offline capability with local queue and sync protocol, including conflict handling and accessibility defaults.
+
+      ## Background
+      Operator stations must continue capturing events during connectivity drops while preserving usability and accessibility.
+
+      ## Scope
+      - Implement installable/offline-capable PWA shell.
+      - Implement local operation queue and sync protocol.
+      - Implement conflict handling strategy switch (LWW vs manual resolution).
+      - Set default operator high-contrast mode and persist preference per device.
+
+      ## Out of Scope
+      - Public-site UI high-contrast behavior.
+      - Long-term retention pruning scheduler.
+
+      ## Implementation Tasks
+      1. Add service worker and offline asset/data strategy.
+      2. Implement queued mutation storage and replay.
+      3. Implement conflict resolution workflows and UX.
+      4. Add operator theme defaults and persistence.
+
+      ## Acceptance Criteria
+      - Operator workflows remain functional without network.
+      - Queued actions sync after reconnection without silent data loss.
+      - Conflict resolution follows configured policy.
+      - High-contrast mode is default and persists per device.
+
+      ## Test Requirements
+      - Offline/online transition tests.
+      - Integration tests for queue replay and conflict cases.
+      - Accessibility checks for operator critical flows.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md
+
+  - id: BC06-006
+    title: "[BC06] Implement line-scan retention pruning, safeguards, and admin alerting"
+    labels:
+      - type:feature
+      - area:line-scan
+      - area:operations
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC06-003
+      - BC06-004
+    plan_coverage:
+      - Step 17
+    nfr_coverage:
+      - Keep full scans during regatta
+      - 14-day post-regatta delay default
+      - Do not prune before archive or all entries approved
+      - Preserve +/-2s around approved markers after prune
+    body: |
+      ## Summary
+      Implement retention/pruning lifecycle for line-scan data with mandatory safety gates and alerting behavior.
+
+      ## Background
+      Storage cost must be controlled without losing evidence needed for unresolved entries or active regattas.
+
+      ## Scope
+      - Implement pruning scheduler and eligibility checks.
+      - Enforce retention safety rules from plan.
+      - Raise admin alert when delay elapses before prune preconditions are met.
+      - Implement pruning to keep full scan slices +/-2s around approved markers.
+
+      ## Out of Scope
+      - Broader archival policies unrelated to line-scan data.
+      - External SIEM/alert routing integrations.
+
+      ## Implementation Tasks
+      1. Build retention state evaluator per regatta.
+      2. Add safety gate checks (archive state and approval completion).
+      3. Implement prune executor with marker-window preservation.
+      4. Add alert generation and operational logs.
+
+      ## Acceptance Criteria
+      - No pruning occurs while regatta is active or approvals are incomplete.
+      - If delay elapses first, full scan is retained and admin alert is emitted.
+      - Eligible pruning retains only required marker-adjacent windows.
+
+      ## Test Requirements
+      - Integration tests for each gating rule and delay scenario.
+      - Data integrity tests verifying retained window accuracy.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc06-operator-capture-and-line-scan.md

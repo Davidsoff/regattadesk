@@ -1,0 +1,161 @@
+bounded_context:
+  id: BC04
+  name: Rules, Scheduling, and Draw
+  source_spec: pdd/implementation/bc04-rules-scheduling-and-draw.md
+
+tickets:
+  - id: BC04-001
+    title: "[BC04] Implement ruleset lifecycle, versioning, and eligibility validation"
+    labels:
+      - type:feature
+      - area:rules
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC03-003
+      - BC02-002
+    plan_coverage:
+      - Step 12
+    nfr_coverage:
+      - Validation correctness for gender and age bounds
+      - Ruleset immutability guarantees after draw
+    body: |
+      ## Summary
+      Build ruleset management with versioning, duplication/update flows, and eligibility validation constraints.
+
+      ## Background
+      Rulesets control entry validity and scheduling rules. They must remain configurable before draw and immutable after draw publication.
+
+      ## Scope
+      - Implement ruleset create/version/duplicate/update operations.
+      - Implement age-calculation configuration model.
+      - Implement validation rules: gender, min age, max age.
+      - Enforce post-draw immutability of active ruleset configuration.
+
+      ## Out of Scope
+      - Block timing and bib assignment.
+      - Draw randomization logic.
+
+      ## Implementation Tasks
+      1. Define ruleset domain model and events.
+      2. Implement validation engine and error reporting contract.
+      3. Gate ruleset mutations based on draw publication state.
+      4. Add API endpoints and tests.
+
+      ## Acceptance Criteria
+      - Rulesets can be versioned and duplicated before draw.
+      - Eligibility validation correctly rejects invalid entries.
+      - Ruleset updates are blocked after draw publication.
+
+      ## Test Requirements
+      - Unit tests for age/gender validation edge cases.
+      - Integration tests for pre/post-draw mutability rules.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc04-rules-scheduling-and-draw.md
+
+  - id: BC04-002
+    title: "[BC04] Implement super-admin promotion of regatta rulesets to global catalog"
+    labels:
+      - type:feature
+      - area:rules
+      - area:identity
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC04-001
+      - BC02-002
+    plan_coverage:
+      - Step 12
+    nfr_coverage:
+      - Governance control for global ruleset changes
+      - Role-scoped authorization
+    body: |
+      ## Summary
+      Implement promotion workflow allowing only `super_admin` to promote regatta-owned rulesets into globally selectable rulesets.
+
+      ## Background
+      The plan requires strict governance over shared rulesets to prevent accidental global policy drift.
+
+      ## Scope
+      - Add promotion command and audit event.
+      - Restrict promotion action to `super_admin` role.
+      - Add global ruleset selection/query endpoints.
+      - Surface promotion action in staff admin UI where applicable.
+
+      ## Out of Scope
+      - External approval workflows.
+      - Multi-stage review/approval system.
+
+      ## Implementation Tasks
+      1. Implement domain command for promotion and immutable provenance metadata.
+      2. Add authorization guard for `super_admin` only.
+      3. Add read model for global ruleset catalog.
+      4. Add tests for authorized and unauthorized paths.
+
+      ## Acceptance Criteria
+      - Non-`super_admin` callers cannot promote rulesets.
+      - Promoted rulesets are visible in global selection list.
+      - Promotion events are auditable with actor and timestamp.
+
+      ## Test Requirements
+      - Unit tests for promotion invariants.
+      - Authorization integration tests for role enforcement.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc04-rules-scheduling-and-draw.md
+
+  - id: BC04-003
+    title: "[BC04] Implement block scheduling, bib pool allocation, and draw publication"
+    labels:
+      - type:feature
+      - area:scheduling
+      - priority:p0
+      - milestone:v0.1
+    depends_on:
+      - BC04-001
+      - BC03-004
+    plan_coverage:
+      - Step 13
+      - Step 14
+    nfr_coverage:
+      - Draw reproducibility via stored seed
+      - Post-draw insertion prohibition in v0.1
+      - Revision traceability (`draw_revision`)
+    body: |
+      ## Summary
+      Implement scheduling blocks and bib allocation, then generate and publish draw using deterministic random seed persistence.
+
+      ## Background
+      Steps 13 and 14 define the transition from setup to published competition schedule. Publication freezes insertion in v0.1.
+
+      ## Scope
+      - Implement block configuration: start time and inter-crew/event-group intervals.
+      - Implement multiple bib pools per block plus regatta-level overflow pool and assignment rules.
+      - Implement draw generation using persisted random seed.
+      - Implement draw publication, `draw_revision` increment, and no-insertion-after-draw rule.
+
+      ## Out of Scope
+      - Results adjudication and penalties.
+      - Public results page rendering.
+
+      ## Implementation Tasks
+      1. Build scheduling model and validation rules.
+      2. Implement bib allocator with overflow handling.
+      3. Implement seeded random draw generation and seed storage.
+      4. Implement publish command and enforce post-publication insertion ban.
+
+      ## Acceptance Criteria
+      - Block schedules and bib assignments are generated per configured rules.
+      - Draw generation is reproducible using stored seed.
+      - Publishing increments `draw_revision` and blocks further insertion.
+
+      ## Test Requirements
+      - Unit tests for allocator and scheduling calculations.
+      - Integration tests for deterministic draw reproduction and publication constraints.
+
+      ## References
+      - pdd/implementation/plan.md
+      - pdd/implementation/bc04-rules-scheduling-and-draw.md
