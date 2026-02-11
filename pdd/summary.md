@@ -25,13 +25,17 @@ Author: RegattaDesk Team
   - Browser matrix is reviewed quarterly.
   - Current and current-1 support windows are maintained throughout each quarter; changes are announced in release notes.
 
-# Demo mode specification
+# Demo mode specification (Out of scope for v0.1)
+- Status:
+  - Deferred to post-v0.1.
+  - `/demo` and `POST /demo/reset` are not part of the v0.1 implementation scope.
 - Access method:
   - Dedicated environment URL: `/demo`
   - Login uses a pre-provisioned demo staff account and a demo public session endpoint.
 - Sample data set:
   - 1 sample regatta with 3 blocks, 12 events, and ~120 entries.
-  - Includes representative statuses: finished, DNS, DNF, withdrawn_after_draw, under investigation.
+  - Includes representative domain statuses: entered, dns, dnf, withdrawn_after_draw, dsq, excluded.
+  - Includes derived workflow/result states: pending approval, under_investigation, provisional, official.
   - Includes sample invoices, penalties, and audit log entries.
 - Reset behavior:
   - Automatic full reset every 24 hours at 00:00 UTC.

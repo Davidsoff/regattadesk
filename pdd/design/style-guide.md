@@ -283,8 +283,10 @@ Purpose: very fast event selection for experienced users while remaining accessi
 - Reduced motion: respect `prefers-reduced-motion`.
 
 ### 6.1 Accessibility compliance and testing requirements
-- Compliance baseline (release gate): WCAG 2.2 AA for public pages.
-- Target level: Aim AAA where feasible for key schedule/results flows.
+- Compliance matrix:
+  - Public: WCAG 2.2 AA is the release gate.
+  - Staff and Operator: no WCAG level gate in v0.1, but critical-flow accessibility checks are mandatory.
+- Target level: Aim AAA where feasible for key public schedule/results flows.
 - Automated testing (required in CI):
   - Run `axe-core` checks on key public pages (schedule, results, event detail) and core staff/operator flows.
   - Run Lighthouse accessibility audits on public schedule and results pages.

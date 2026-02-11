@@ -8,6 +8,20 @@ This document contains the complete database schema design for RegattaDesk v0.1.
 
 ## Core Tables
 
+### clubs table
+```sql
+CREATE TABLE clubs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    short_name VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_clubs_name ON clubs(name);
+CREATE INDEX idx_clubs_short_name ON clubs(short_name);
+```
+
 ### athletes table
 ```sql
 CREATE TABLE athletes (
@@ -73,20 +87,6 @@ CREATE TABLE crew_athletes (
 
 CREATE INDEX idx_crew_athletes_crew ON crew_athletes(crew_id);
 CREATE INDEX idx_crew_athletes_athlete ON crew_athletes(athlete_id);
-```
-
-### clubs table
-```sql
-CREATE TABLE clubs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    short_name VARCHAR(50),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_clubs_name ON clubs(name);
-CREATE INDEX idx_clubs_short_name ON clubs(short_name);
 ```
 
 ### club_billing table
@@ -176,6 +176,8 @@ CREATE TABLE regattas (
     currency VARCHAR(3) NOT NULL DEFAULT 'EUR',
     default_penalty_seconds INTEGER NOT NULL DEFAULT 30,
     allow_custom_penalty_seconds BOOLEAN NOT NULL DEFAULT FALSE,
+    start_time_display_mode VARCHAR(20) NOT NULL DEFAULT 'per_entry',
+    bib_assignment_direction VARCHAR(20) NOT NULL DEFAULT 'smallest',
     draw_revision INTEGER NOT NULL DEFAULT 0,
     results_revision INTEGER NOT NULL DEFAULT 0,
     regatta_end_at TIMESTAMPTZ,
@@ -183,6 +185,9 @@ CREATE TABLE regattas (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (status IN ('draft', 'published', 'archived', 'deleted')),
+    CHECK (start_time_display_mode IN ('per_entry', 'block_only')),
+    CHECK (bib_assignment_direction IN ('smallest', 'largest')),
+    CHECK (retention_days >= 1),
     CHECK (federation_code IS NULL OR federation_code ~ '^[A-Z0-9_-]{2,64}$')
 );
 
@@ -219,7 +224,7 @@ CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
     event_group_id UUID REFERENCES event_groups(id) ON DELETE SET NULL,
-    category_id UUID REFERENCES categories(id),
+    category_id UUID NOT NULL REFERENCES categories(id),
     boat_type_id UUID NOT NULL REFERENCES boat_types(id),
     name VARCHAR(255) NOT NULL,
     display_order INTEGER NOT NULL DEFAULT 0,

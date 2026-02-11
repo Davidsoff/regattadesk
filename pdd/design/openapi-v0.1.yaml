@@ -861,6 +861,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/block'
 
+  /api/v1/regattas/{regatta_id}/blocks/{block_id}:
+    patch:
+      tags: [Staff Regatta]
+      summary: Update block
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/block_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/block_update_request'
+      responses:
+        '200':
+          description: Block updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/block'
+    delete:
+      tags: [Staff Regatta]
+      summary: Delete block
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/block_id'
+      responses:
+        '204':
+          description: Block deleted
+
+  /api/v1/regattas/{regatta_id}/blocks/reorder:
+    post:
+      tags: [Staff Regatta]
+      summary: Reorder blocks
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/block_reorder_request'
+      responses:
+        '200':
+          description: Block order updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
+
   /api/v1/regattas/{regatta_id}/bib_pools:
     get:
       tags: [Staff Regatta]
@@ -896,6 +952,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bib_pool'
+
+  /api/v1/regattas/{regatta_id}/bib_pools/{bib_pool_id}:
+    patch:
+      tags: [Staff Regatta]
+      summary: Update bib pool
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/bib_pool_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bib_pool_update_request'
+      responses:
+        '200':
+          description: Bib pool updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bib_pool'
+    delete:
+      tags: [Staff Regatta]
+      summary: Delete bib pool
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+        - $ref: '#/components/parameters/bib_pool_id'
+      responses:
+        '204':
+          description: Bib pool deleted
+
+  /api/v1/regattas/{regatta_id}/bib_pools/reorder:
+    post:
+      tags: [Staff Regatta]
+      summary: Reorder bib pools
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: '#/components/parameters/regatta_id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bib_pool_reorder_request'
+      responses:
+        '200':
+          description: Bib pool order updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/operation_result'
 
   /api/v1/regattas/{regatta_id}/entries:
     get:
@@ -1658,6 +1770,7 @@ paths:
         - Event payloads include `draw_revision`, `results_revision`, and typed `data`.
         - SSE `id` is deterministic from `{draw_revision}:{results_revision}:{event_type}`.
         - Connection policy: max 20 concurrent connections per client-id per regatta.
+        - `client-id` is derived from the anonymous session cookie JWT `sid` claim.
         - Reconnect policy: exponential backoff with full jitter (min 100ms, base 500ms, cap 20s), retry forever.
       security:
         - PublicSessionCookieAuth: []
@@ -1846,6 +1959,16 @@ components:
       name: marker_id
       required: true
       schema: { type: string, format: uuid }
+    block_id:
+      in: path
+      name: block_id
+      required: true
+      schema: { type: string, format: uuid }
+    bib_pool_id:
+      in: path
+      name: bib_pool_id
+      required: true
+      schema: { type: string, format: uuid }
     job_id:
       in: path
       name: job_id
@@ -1991,8 +2114,14 @@ components:
         skill_level: { type: string }
 
     category_update_request:
-      allOf:
-        - $ref: '#/components/schemas/category_create_request'
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        min_age: { type: integer }
+        max_age: { type: integer }
+        gender: { type: string, enum: [M, F, X, ANY] }
+        skill_level: { type: string }
 
     category_list_response:
       type: object
@@ -2027,8 +2156,14 @@ components:
         sculling: { type: boolean }
 
     boat_type_update_request:
-      allOf:
-        - $ref: '#/components/schemas/boat_type_create_request'
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        description: { type: string }
+        rowers: { type: integer }
+        coxswain: { type: boolean }
+        sculling: { type: boolean }
 
     boat_type_list_response:
       type: object
@@ -2054,8 +2189,10 @@ components:
         short_name: { type: string }
 
     club_update_request:
-      allOf:
-        - $ref: '#/components/schemas/club_create_request'
+      type: object
+      properties:
+        name: { type: string }
+        short_name: { type: string }
 
     club_list_response:
       type: object
@@ -2122,8 +2259,17 @@ components:
           items: { $ref: '#/components/schemas/athlete_federation_identifier' }
 
     athlete_update_request:
-      allOf:
-        - $ref: '#/components/schemas/athlete_create_request'
+      type: object
+      properties:
+        first_name: { type: string }
+        middle_name: { type: string }
+        last_name: { type: string }
+        date_of_birth: { type: string, format: date }
+        gender: { type: string, enum: [M, F, X] }
+        club_id: { type: string, format: uuid }
+        federation_identifiers:
+          type: array
+          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
 
     athlete_federation_identifier:
       type: object
@@ -2179,8 +2325,14 @@ components:
           items: { $ref: '#/components/schemas/crew_member' }
 
     crew_update_request:
-      allOf:
-        - $ref: '#/components/schemas/crew_create_request'
+      type: object
+      properties:
+        display_name: { type: string }
+        club_id: { type: string, format: uuid }
+        members:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/crew_member' }
 
     crew_list_response:
       type: object
@@ -2212,8 +2364,12 @@ components:
         age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
 
     ruleset_update_request:
-      allOf:
-        - $ref: '#/components/schemas/ruleset_create_request'
+      type: object
+      properties:
+        name: { type: string }
+        version: { type: string }
+        description: { type: string }
+        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
 
     ruleset_list_response:
       type: object
@@ -2245,6 +2401,10 @@ components:
         currency: { type: string, minLength: 3, maxLength: 3 }
         default_penalty_seconds: { type: integer }
         allow_custom_penalty_seconds: { type: boolean }
+        start_time_display_mode: { type: string, enum: [per_entry, block_only] }
+        bib_assignment_direction: { type: string, enum: [smallest, largest] }
+        regatta_end_at: { type: string, format: date-time, nullable: true }
+        retention_days: { type: integer, minimum: 1 }
         draw_revision: { type: integer, minimum: 0 }
         results_revision: { type: integer, minimum: 0 }
 
@@ -2255,6 +2415,7 @@ components:
         Validation rules:
         - `time_zone` must be a valid IANA time zone name from the runtime tz database.
         - Invalid values return `400` with code `INVALID_TIME_ZONE`.
+        - `retention_days` must be >= 1.
       properties:
         name: { type: string }
         description: { type: string }
@@ -2270,14 +2431,37 @@ components:
         currency: { type: string, minLength: 3, maxLength: 3 }
         default_penalty_seconds: { type: integer }
         allow_custom_penalty_seconds: { type: boolean }
+        start_time_display_mode: { type: string, enum: [per_entry, block_only] }
+        bib_assignment_direction: { type: string, enum: [smallest, largest] }
+        regatta_end_at: { type: string, format: date-time }
+        retention_days: { type: integer, minimum: 1 }
 
     regatta_update_request:
+      type: object
       description: |
         Validation rules:
         - If `time_zone` is supplied, it must be a valid IANA time zone name.
         - Invalid values return `400` with code `INVALID_TIME_ZONE`.
-      allOf:
-        - $ref: '#/components/schemas/regatta_create_request'
+        - If `retention_days` is supplied, it must be >= 1.
+      properties:
+        name: { type: string }
+        description: { type: string }
+        time_zone:
+          type: string
+          description: IANA time zone name (for example, `Europe/Amsterdam`).
+        ruleset_id: { type: string, format: uuid }
+        federation_code:
+          type: string
+          pattern: '^[A-Z0-9_-]{2,64}$'
+          maxLength: 64
+        entry_fee: { type: number }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        default_penalty_seconds: { type: integer }
+        allow_custom_penalty_seconds: { type: boolean }
+        start_time_display_mode: { type: string, enum: [per_entry, block_only] }
+        bib_assignment_direction: { type: string, enum: [smallest, largest] }
+        regatta_end_at: { type: string, format: date-time, nullable: true }
+        retention_days: { type: integer, minimum: 1 }
 
     regatta_list_response:
       type: object
@@ -2307,8 +2491,11 @@ components:
         display_order: { type: integer }
 
     event_group_update_request:
-      allOf:
-        - $ref: '#/components/schemas/event_group_create_request'
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+        display_order: { type: integer }
 
     event_group_list_response:
       type: object
@@ -2320,19 +2507,19 @@ components:
 
     event:
       type: object
-      required: [id, regatta_id, boat_type_id, name]
+      required: [id, regatta_id, category_id, boat_type_id, name]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
         event_group_id: { type: string, format: uuid, nullable: true }
-        category_id: { type: string, format: uuid, nullable: true }
+        category_id: { type: string, format: uuid }
         boat_type_id: { type: string, format: uuid }
         name: { type: string }
         display_order: { type: integer }
 
     event_create_request:
       type: object
-      required: [boat_type_id, name]
+      required: [category_id, boat_type_id, name]
       properties:
         event_group_id: { type: string, format: uuid }
         category_id: { type: string, format: uuid }
@@ -2341,8 +2528,13 @@ components:
         display_order: { type: integer }
 
     event_update_request:
-      allOf:
-        - $ref: '#/components/schemas/event_create_request'
+      type: object
+      properties:
+        event_group_id: { type: string, format: uuid }
+        category_id: { type: string, format: uuid }
+        boat_type_id: { type: string, format: uuid }
+        name: { type: string }
+        display_order: { type: integer }
 
     event_list_response:
       type: object
@@ -2373,6 +2565,31 @@ components:
         event_interval_seconds: { type: integer }
         crew_interval_seconds: { type: integer }
         display_order: { type: integer }
+
+    block_update_request:
+      type: object
+      properties:
+        name: { type: string }
+        start_time: { type: string, format: date-time }
+        event_interval_seconds: { type: integer }
+        crew_interval_seconds: { type: integer }
+        display_order: { type: integer }
+
+    block_reorder_item:
+      type: object
+      required: [block_id, display_order]
+      properties:
+        block_id: { type: string, format: uuid }
+        display_order: { type: integer }
+
+    block_reorder_request:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/block_reorder_item' }
 
     block_list_response:
       type: object
@@ -2446,6 +2663,45 @@ components:
         data:
           type: array
           items: { $ref: '#/components/schemas/bib_pool' }
+
+    bib_pool_update_request:
+      type: object
+      description: |
+        Validation rules:
+        - Exactly one allocation mode is allowed per pool (`range` or `explicit_list`) if allocation fields are supplied.
+        - In `explicit_list` mode, `bib_numbers` must contain unique values only.
+        - Bib numbers must not overlap with any other pool in the same regatta (validated server-side).
+        - Violations return `400` with code `BIB_POOL_VALIDATION_ERROR`.
+      properties:
+        block_id: { type: string, format: uuid, nullable: true }
+        name: { type: string }
+        allocation_mode: { type: string, enum: [range, explicit_list] }
+        start_bib: { type: integer, nullable: true }
+        end_bib: { type: integer, nullable: true }
+        bib_numbers:
+          type: array
+          nullable: true
+          minItems: 1
+          uniqueItems: true
+          items: { type: integer, minimum: 1 }
+        priority: { type: integer }
+        is_overflow: { type: boolean }
+
+    bib_pool_reorder_item:
+      type: object
+      required: [bib_pool_id, priority]
+      properties:
+        bib_pool_id: { type: string, format: uuid }
+        priority: { type: integer }
+
+    bib_pool_reorder_request:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/bib_pool_reorder_item' }
 
     entry:
       type: object

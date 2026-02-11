@@ -24,7 +24,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Event: a Category × Boat type pairing; primary unit for entries, scheduling, and results.
   - Event group (optional): named grouping of events for awards or schedule organization (avoid using “class” as a standalone term).
   - Block: operational scheduling unit with an ordered list of events.
-- Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
+- Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (`start_time_display_mode`: `per_entry` or `block_only`), penalties (seconds configurable per regatta), ruleset selection.
   - Federation scheme selection: each regatta may configure one active federation identifier scheme (`federation_code`) for regatta-specific imports/search flows; different regattas may use different schemes.
   - Federation code normalization: `federation_code` is stored and compared in uppercase; canonical example is `FISA`.
 - Regatta state lifecycle: draft → published (draw published) → archived → deleted.
@@ -47,7 +47,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.
     - Derived club rule: if all athletes share the same club, use that club; otherwise mark crew as composite/multi-club.
   - Entry fields: bib, start position, status.
-- Events: category × boat type; may be grouped into event groups per regatta.
+- Events: category × boat type (`category_id` and `boat_type_id` are both required); may be grouped into event groups per regatta.
 - Rulesets: versioned; can be duplicated and updated; global rulesets immutable once linked to a regatta with a published draw; regatta cannot change ruleset after draw; age calculation config (actual age at start vs age as of Jan 1).
   - Only super_admin can promote regatta-owned rulesets to global selection.
   - Validation checks: gender compatibility and min/max age constraints.
@@ -111,7 +111,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
 - Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; events start sequentially but finishes can interleave.
   - Bib pools are immutable after draw publish. To change pools, unpublish draw first.
   - Draw generation uses the bib pool allocation algorithm. If a pool is exhausted, continue to the next pool. If overflow is exhausted, throw error.
-- Bibs: regatta-wide unique; collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (smallest/largest) configurable per regatta (no per-pool override in v0.1); blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
+- Bibs: regatta-wide unique; collision resolution assigns next available bib to changing entry; missing bib replacement affects only that entry; default assignment direction (`bib_assignment_direction`: `smallest` or `largest`) configurable per regatta (no per-pool override in v0.1); blocks can have multiple bib pools; overflow pool usage bounded by physical inventory.
   - Pools/overflow must be defined as non-overlapping inclusive numeric ranges (or explicit lists); validate uniqueness across all pools at setup.
   - Allocation priority: use the entry’s block primary pool first, then additional block pools in configured order, then overflow.
   - Next available bib = first unused number in the current pool when scanning in the configured direction; if exhausted, continue to the next pool in priority order.
@@ -210,6 +210,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
 - Side-by-side racing, multi-distance, handicap/conversion factors (beyond “winner time” ranking).
 - OCR bib recognition.
 - Built-in CSV import UI (API-only; import tools later).
+- Demo mode environment and reset endpoints (`/demo`, `POST /demo/reset`).
 
 ## Architecture Overview
 
@@ -257,7 +258,9 @@ flowchart LR
   - Headless Vue components for reuse across Staff/Operator/Public.
   - Theme/density controlled via `<html>` attributes (e.g. `data-contrast`, `data-density`).
 - Public accessibility target: WCAG 2.2 AA minimum; aim AAA where feasible for key schedule/results flows.
-- Staff accessibility: no hard requirement, but avoid obviously inaccessible patterns (focus visibility, contrast, touch targets).
+- Accessibility compliance matrix:
+  - Public: WCAG 2.2 AA release gate; aim AAA where feasible for key schedule/results flows.
+  - Staff and Operator: no WCAG level gate in v0.1, but accessibility verification of critical flows is required (keyboard navigation, screen reader smoke checks, contrast and touch-target checks).
 - Internationalization and formatting:
   - Initial locales: Dutch (`nl`) and English (`en`).
   - Time: 24h.
@@ -334,6 +337,7 @@ flowchart LR
   - Multiplexed by event type (event: snapshot, draw_revision, results_revision).
     - Deterministic SSE id includes draw_revision + results_revision.
     - Per-client cap: 20 concurrent connections per client-id per regatta.
+    - `client-id` is derived from the anonymous public session JWT `sid` claim.
     - Reconnect: exponential backoff with full jitter; min 100ms, base 500ms, cap 20s; retry forever.
     - No per-IP concurrent cap or per-IP rate limiting until measured.
     - UI shows a minimal Live/Offline indicator based on SSE connection state only (no freshness claim).

@@ -62,7 +62,7 @@ Step quality gates:
   - Domain/command logic changes: unit tests.
   - Persistence/query changes: integration tests against PostgreSQL (Testcontainers where applicable).
   - API contract changes (public or staff): contract tests (Pact) and endpoint integration checks.
-  - UI/UX changes: targeted component/page tests; accessibility checks for affected public flows.
+  - UI/UX changes: targeted component/page tests; WCAG 2.2 AA checks for affected public flows; mandatory accessibility checks for affected staff/operator critical flows (keyboard, screen reader smoke, contrast/touch-target).
 - CI must pass for the step branch/commit before moving to the next step.
 
 Docker Compose requirement:
