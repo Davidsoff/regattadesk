@@ -26,6 +26,7 @@ API-first for all operations; staff/operator/public clients consume the same API
   - Block: operational scheduling unit with an ordered list of events.
 - Regatta setup: events (with optional event grouping), blocks, bib pools (multiple per block), overflow pool, display prefs (per-entry vs block-only start time), penalties (seconds configurable per regatta), ruleset selection.
   - Federation scheme selection: each regatta may configure one active federation identifier scheme (`federation_code`) for regatta-specific imports/search flows; different regattas may use different schemes.
+  - Federation code normalization: `federation_code` is stored and compared in uppercase; canonical example is `FISA`.
 - Regatta state lifecycle: draft → published (draw published) → archived → deleted.
 - Blocks: schedule start time plus interval between crews and interval between events (block-level config).
 - Regatta end definition (for retention windows): use explicit regatta_end_at timestamp when set; otherwise compute from the latest block’s scheduled end time.
@@ -40,7 +41,7 @@ API-first for all operations; staff/operator/public clients consume the same API
     - Federation identifiers are modeled as zero or more `(federation_code, external_id)` pairs per athlete.
     - `external_id` format is federation-defined and can be any text (UUID, numeric, alphanumeric, etc.); no cross-federation format assumption.
     - The same `external_id` value may appear in different federations; uniqueness is scoped to `(federation_code, external_id)`.
-    - Athletes can have identifiers for multiple federations (e.g., KNRB/FISA/national federation) and those identifiers map to the same athlete record.
+    - Athletes can have identifiers for multiple federations (e.g., `FISA` and national federation schemes) and those identifiers map to the same athlete record.
     - Athlete lookup by federation identifier uses both `federation_code` and `external_id` (not name matching).
     - API federation lookup rejects partial identifier queries (must provide both values together).
   - Crew fields: display name; explicit club assignment when provided, otherwise derived from athletes; list of athletes + seat order.

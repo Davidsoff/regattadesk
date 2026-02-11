@@ -337,9 +337,10 @@ paths:
         - in: query
           name: federation_code
           required: false
-          description: Federation identifier namespace/code (for example, KNRB or FISA).
+          description: Federation identifier namespace/code (uppercase, for example `FISA`).
           schema:
             type: string
+            pattern: '^[A-Z0-9_-]{2,64}$'
             maxLength: 64
         - in: query
           name: federation_external_id
@@ -2128,7 +2129,11 @@ components:
       type: object
       required: [federation_code, external_id]
       properties:
-        federation_code: { type: string, maxLength: 64 }
+        federation_code:
+          type: string
+          maxLength: 64
+          pattern: '^[A-Z0-9_-]{2,64}$'
+          description: Uppercase federation code (canonical example: `FISA`).
         external_id:
           type: string
           maxLength: 255
@@ -2233,8 +2238,9 @@ components:
         federation_code:
           type: string
           nullable: true
+          pattern: '^[A-Z0-9_-]{2,64}$'
           maxLength: 64
-          description: Active federation identifier scheme for this regatta (single scheme per regatta).
+          description: Active uppercase federation identifier scheme for this regatta (single scheme per regatta), for example `FISA`.
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }
         default_penalty_seconds: { type: integer }
@@ -2258,6 +2264,7 @@ components:
         ruleset_id: { type: string, format: uuid }
         federation_code:
           type: string
+          pattern: '^[A-Z0-9_-]{2,64}$'
           maxLength: 64
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }

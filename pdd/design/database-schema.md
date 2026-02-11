@@ -37,6 +37,7 @@ CREATE TABLE athlete_federation_identifiers (
     external_id TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (federation_code ~ '^[A-Z0-9_-]{2,64}$'),
     UNIQUE(federation_code, external_id),
     UNIQUE(athlete_id, federation_code)
 );
@@ -181,7 +182,8 @@ CREATE TABLE regattas (
     retention_days INTEGER NOT NULL DEFAULT 14,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CHECK (status IN ('draft', 'published', 'archived', 'deleted'))
+    CHECK (status IN ('draft', 'published', 'archived', 'deleted')),
+    CHECK (federation_code IS NULL OR federation_code ~ '^[A-Z0-9_-]{2,64}$')
 );
 
 CREATE INDEX idx_regattas_status ON regattas(status);
@@ -192,6 +194,7 @@ CREATE INDEX idx_regattas_federation_code ON regattas(federation_code);
 -- Validation enforced in application/service layer before writes:
 -- - `time_zone` must be a valid IANA time zone name (from the runtime tz database).
 -- - Invalid values are rejected with `INVALID_TIME_ZONE`.
+-- - `federation_code` values are normalized to uppercase and validated against `^[A-Z0-9_-]{2,64}$` (canonical example: `FISA`).
 ```
 
 ### event_groups table
