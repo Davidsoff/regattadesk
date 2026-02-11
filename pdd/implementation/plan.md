@@ -6,14 +6,14 @@ Author: RegattaDesk Team
 (Each step yields a demoable increment.)
 
 ## Checklist
-- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, with DB-only Authelia backing in v0.1 and no Redis dependency) + CI/CD pipeline
+- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO object storage for line-scan tiles/manifests; DB-only Authelia backing in v0.1 and no Redis dependency) + CI/CD pipeline
 - [ ] Step 2: Authelia SSO integration at Traefik edge + forwarded identity/role mapping model (regatta_admin, head_of_jury, info_desk, financial_manager; super_admin global)
 - [ ] Step 3: Event store schema + append/read primitives + audit log retention (retain indefinitely in v0.1)
 - [ ] Step 4: Core aggregates + projections scaffold
 - [ ] Step 5: Core domain CRUD + staff workflows (API-first; staff UI consumes same API; regatta setup: events/event group grouping, athlete/crew/entry CRUD, crew mutations/withdrawals)
 - [ ] Step 6: Public session endpoint + anon JWT cookie (POST /public/session returns 204; idempotent refresh window at 20% of 5d TTL; HttpOnly/Secure/SameSite=Lax/Path=/; Max-Age=5d; HS256 JWT with `kid` rotation using two active keys with ≥6-day overlap) + rotation config (used by bootstrap on /versions 401)
 - [ ] Step 7: Public versions endpoint + revision tracking + bootstrap flow (call /versions first; on 401 call /public/session then retry /versions once)
-- [ ] Step 8: Public site versioned delivery (all pages use /public/v{draw}-{results}) + CDN headers
+- [ ] Step 8: Public site versioned delivery (all pages use /public/v{draw}-{results}) + CDN headers (`/public/session`: `Cache-Control: no-store`; `/public/regattas/{regatta_id}/versions`: `Cache-Control: no-store, must-revalidate`; `/public/v{draw}-{results}/...`: `Cache-Control: public, max-age=31536000, immutable`)
 - [ ] Step 9: Design tokens + table primitives per design/style-guide.md + public accessibility targets (WCAG 2.2 AA min, aim AAA) + operator default high-contrast mode toggle with per-device persistence
 - [ ] Step 10: i18n/formatting (nl/en, 24h, ISO 8601 `YYYY-MM-DD` in technical docs/APIs, locale-dependent UI display, regatta-local timezone) + printables (A4 PDFs, monochrome-friendly, header with regatta name + generated timestamp + draw/results revisions + page number)
 - [ ] Step 11: SSE per regatta (snapshot + multiplexed event types + ticks; events: `snapshot`/`draw_revision`/`results_revision` with data `{draw_revision, results_revision, reason?}`) + deterministic id + reconnect/backoff (min 100ms, base 500ms, cap 20s, full jitter, retry forever) + per-client cap (open after /versions bootstrap)
@@ -22,7 +22,7 @@ Author: RegattaDesk Team
 - [ ] Step 14: Draw (random with stored seed) + publish draw + draw_revision; no insertion after draw in v0.1
 - [ ] Step 15: Finance: payment status per entry/club + bulk mark paid/unpaid
 - [ ] Step 16: Operator QR token model + PDF export (with fallback instructions) + validity logic + station handoff/PIN flow
-- [ ] Step 17: Line-scan storage: manifests + tiles API + marker CRUD + retention pruning (full scan during regatta; default 14-day delay after regatta end; do not prune until regatta archived or all entries approved; if delay elapses first, keep full scan and raise admin alert; then prune to +/-2s around approved markers)
+- [ ] Step 17: Line-scan storage: manifests + tiles API + marker CRUD + retention pruning (canonical endpoints: `POST /api/v1/regattas/{regatta_id}/line_scan/manifests`, `GET /api/v1/regattas/{regatta_id}/line_scan/manifests/{manifest_id}`, `PUT|GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`; ingest via OperatorTokenAuth; retrieval via OperatorTokenAuth or StaffProxyAuth; full scan during regatta; default 14-day delay after regatta end; do not prune until regatta archived or all entries approved; if delay elapses first, keep full scan and raise admin alert; then prune to +/-2s around approved markers)
 - [ ] Step 18: Operator PWA offline shell + local queue + sync protocol + conflict policy (LWW vs manual resolution)
 - [ ] Step 19: Link markers to entries + start/finish times + entry completion rule + approval gates
 - [ ] Step 20: Investigations + penalties (seconds configurable per regatta) + DSQ/exclusion + DSQ revert behavior (restore prior state) + result labels + results_revision
@@ -44,6 +44,7 @@ Author: RegattaDesk Team
 | Container orchestration | Docker Compose | 2.24+ | Stay on latest stable minor; patch updates monthly |
 | Reverse proxy | Traefik | 3.0+ | Track latest stable minor; patch updates monthly |
 | SSO/AuthN | Authelia | 4.38+ | Track latest stable minor; patch updates monthly |
+| Object storage | MinIO (S3-compatible) | latest stable | Track latest stable release; patch updates monthly |
 | PDF generation | OpenPDF | 1.3+ | Patch updates quarterly; security advisories are expedited |
 | Testing (integration) | Testcontainers | 1.20+ | Keep within latest stable minor; update quarterly |
 | API contract testing | Pact | 4.6+ | Keep within latest stable minor; update quarterly |
@@ -68,6 +69,7 @@ Step quality gates:
 Docker Compose requirement:
 - For v0.1, Docker Compose is the canonical runtime for both local development and production deployment.
 - The `docker-compose` stack must include every required runtime dependency from this plan (no externally assumed core services).
+- Line-scan tile/manifest storage must be provided by in-stack object storage (MinIO) in v0.1; external object storage is not assumed.
 - Authelia backing mode is DB-only in v0.1 (no Redis service in compose).
 
 Step format:

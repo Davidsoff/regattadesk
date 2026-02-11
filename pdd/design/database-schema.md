@@ -438,6 +438,12 @@ CREATE INDEX idx_capture_sessions_device ON capture_sessions(device_id);
 CREATE INDEX idx_capture_sessions_type ON capture_sessions(session_type);
 ```
 
+Capture session lifecycle in API contract (`pdd/design/openapi-v0.1.yaml`):
+- Start/list: `POST|GET /api/v1/regattas/{regatta_id}/operator/capture_sessions`
+- Read/update: `GET|PATCH /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`
+- Sync state updates: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state`
+- Close: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close`
+
 ### timing_markers table
 ```sql
 CREATE TABLE timing_markers (

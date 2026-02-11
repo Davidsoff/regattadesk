@@ -34,15 +34,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Category list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/category_list_response'
+                $ref: "#/components/schemas/category_list_response"
     post:
       tags: [Staff Core]
       summary: Create category
@@ -53,14 +53,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/category_create_request'
+              $ref: "#/components/schemas/category_create_request"
       responses:
-        '201':
+        "201":
           description: Category created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/category'
+                $ref: "#/components/schemas/category"
 
   /api/v1/categories/{category_id}:
     get:
@@ -69,47 +69,47 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/category_id'
+        - $ref: "#/components/parameters/category_id"
       responses:
-        '200':
+        "200":
           description: Category
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/category'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/category"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Core]
       summary: Update category
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/category_id'
+        - $ref: "#/components/parameters/category_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/category_update_request'
+              $ref: "#/components/schemas/category_update_request"
       responses:
-        '200':
+        "200":
           description: Category updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/category'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/category"
+        "404":
+          $ref: "#/components/responses/not_found"
     delete:
       tags: [Staff Core]
       summary: Delete category
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/category_id'
+        - $ref: "#/components/parameters/category_id"
       responses:
-        '204':
+        "204":
           description: Category deleted
 
   /api/v1/boat_types:
@@ -119,12 +119,12 @@ paths:
       security:
         - StaffProxyAuth: []
       responses:
-        '200':
+        "200":
           description: Boat type list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/boat_type_list_response'
+                $ref: "#/components/schemas/boat_type_list_response"
     post:
       tags: [Staff Core]
       summary: Create boat type
@@ -135,14 +135,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/boat_type_create_request'
+              $ref: "#/components/schemas/boat_type_create_request"
       responses:
-        '201':
+        "201":
           description: Boat type created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/boat_type'
+                $ref: "#/components/schemas/boat_type"
 
   /api/v1/boat_types/{boat_type_id}:
     get:
@@ -151,47 +151,47 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/boat_type_id'
+        - $ref: "#/components/parameters/boat_type_id"
       responses:
-        '200':
+        "200":
           description: Boat type
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/boat_type'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/boat_type"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Core]
       summary: Update boat type
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/boat_type_id'
+        - $ref: "#/components/parameters/boat_type_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/boat_type_update_request'
+              $ref: "#/components/schemas/boat_type_update_request"
       responses:
-        '200':
+        "200":
           description: Boat type updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/boat_type'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/boat_type"
+        "404":
+          $ref: "#/components/responses/not_found"
     delete:
       tags: [Staff Core]
       summary: Delete boat type
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/boat_type_id'
+        - $ref: "#/components/parameters/boat_type_id"
       responses:
-        '204':
+        "204":
           description: Boat type deleted
 
   /api/v1/clubs:
@@ -201,16 +201,16 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/search'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/search"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Club list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club_list_response'
+                $ref: "#/components/schemas/club_list_response"
     post:
       tags: [Staff Core]
       summary: Create club
@@ -221,14 +221,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/club_create_request'
+              $ref: "#/components/schemas/club_create_request"
       responses:
-        '201':
+        "201":
           description: Club created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club'
+                $ref: "#/components/schemas/club"
 
   /api/v1/clubs/{club_id}:
     get:
@@ -237,47 +237,47 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/club_id'
+        - $ref: "#/components/parameters/club_id"
       responses:
-        '200':
+        "200":
           description: Club
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/club"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Core]
       summary: Update club
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/club_id'
+        - $ref: "#/components/parameters/club_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/club_update_request'
+              $ref: "#/components/schemas/club_update_request"
       responses:
-        '200':
+        "200":
           description: Club updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/club"
+        "404":
+          $ref: "#/components/responses/not_found"
     delete:
       tags: [Staff Core]
       summary: Delete club
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/club_id'
+        - $ref: "#/components/parameters/club_id"
       responses:
-        '204':
+        "204":
           description: Club deleted
 
   /api/v1/clubs/{club_id}/billing:
@@ -287,42 +287,42 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/club_id'
+        - $ref: "#/components/parameters/club_id"
       responses:
-        '200':
+        "200":
           description: Club billing profile
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club_billing'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/club_billing"
+        "404":
+          $ref: "#/components/responses/not_found"
     put:
       tags: [Finance]
       summary: Create or update club billing profile
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/club_id'
+        - $ref: "#/components/parameters/club_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/club_billing_upsert_request'
+              $ref: "#/components/schemas/club_billing_upsert_request"
       responses:
-        '200':
+        "200":
           description: Club billing profile updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/club_billing'
-        '400':
+                $ref: "#/components/schemas/club_billing"
+        "400":
           description: Invalid billing profile payload
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
+                $ref: "#/components/schemas/error_response"
 
   /api/v1/athletes:
     get:
@@ -340,7 +340,7 @@ paths:
           description: Federation identifier namespace/code (uppercase, for example `FISA`).
           schema:
             type: string
-            pattern: '^[A-Z0-9_-]{2,64}$'
+            pattern: "^[A-Z0-9_-]{2,64}$"
             maxLength: 64
         - in: query
           name: federation_external_id
@@ -349,22 +349,22 @@ paths:
           schema:
             type: string
             maxLength: 255
-        - $ref: '#/components/parameters/search'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/search"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Athlete list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/athlete_list_response'
-        '400':
+                $ref: "#/components/schemas/athlete_list_response"
+        "400":
           description: Invalid federation lookup parameters (missing paired federation query parameter)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
+                $ref: "#/components/schemas/error_response"
     post:
       tags: [Staff Core]
       summary: Create athlete
@@ -375,14 +375,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/athlete_create_request'
+              $ref: "#/components/schemas/athlete_create_request"
       responses:
-        '201':
+        "201":
           description: Athlete created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/athlete'
+                $ref: "#/components/schemas/athlete"
 
   /api/v1/athletes/{athlete_id}:
     get:
@@ -391,47 +391,47 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/athlete_id'
+        - $ref: "#/components/parameters/athlete_id"
       responses:
-        '200':
+        "200":
           description: Athlete
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/athlete'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/athlete"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Core]
       summary: Update athlete
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/athlete_id'
+        - $ref: "#/components/parameters/athlete_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/athlete_update_request'
+              $ref: "#/components/schemas/athlete_update_request"
       responses:
-        '200':
+        "200":
           description: Athlete updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/athlete'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/athlete"
+        "404":
+          $ref: "#/components/responses/not_found"
     delete:
       tags: [Staff Core]
       summary: Delete athlete
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/athlete_id'
+        - $ref: "#/components/parameters/athlete_id"
       responses:
-        '204':
+        "204":
           description: Athlete deleted
 
   /api/v1/crews:
@@ -441,16 +441,16 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/search'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/search"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Crew list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/crew_list_response'
+                $ref: "#/components/schemas/crew_list_response"
     post:
       tags: [Staff Core]
       summary: Create crew
@@ -461,14 +461,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/crew_create_request'
+              $ref: "#/components/schemas/crew_create_request"
       responses:
-        '201':
+        "201":
           description: Crew created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/crew'
+                $ref: "#/components/schemas/crew"
 
   /api/v1/crews/{crew_id}:
     get:
@@ -477,47 +477,47 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/crew_id'
+        - $ref: "#/components/parameters/crew_id"
       responses:
-        '200':
+        "200":
           description: Crew
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/crew'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/crew"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Core]
       summary: Update crew
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/crew_id'
+        - $ref: "#/components/parameters/crew_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/crew_update_request'
+              $ref: "#/components/schemas/crew_update_request"
       responses:
-        '200':
+        "200":
           description: Crew updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/crew'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/crew"
+        "404":
+          $ref: "#/components/responses/not_found"
     delete:
       tags: [Staff Core]
       summary: Delete crew
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/crew_id'
+        - $ref: "#/components/parameters/crew_id"
       responses:
-        '204':
+        "204":
           description: Crew deleted
 
   /api/v1/rulesets:
@@ -532,12 +532,12 @@ paths:
           schema:
             type: boolean
       responses:
-        '200':
+        "200":
           description: Ruleset list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ruleset_list_response'
+                $ref: "#/components/schemas/ruleset_list_response"
     post:
       tags: [Staff Rules]
       summary: Create ruleset
@@ -548,14 +548,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ruleset_create_request'
+              $ref: "#/components/schemas/ruleset_create_request"
       responses:
-        '201':
+        "201":
           description: Ruleset created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ruleset'
+                $ref: "#/components/schemas/ruleset"
 
   /api/v1/rulesets/{ruleset_id}:
     get:
@@ -564,38 +564,38 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/ruleset_id'
+        - $ref: "#/components/parameters/ruleset_id"
       responses:
-        '200':
+        "200":
           description: Ruleset
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ruleset'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/ruleset"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Rules]
       summary: Update ruleset
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/ruleset_id'
+        - $ref: "#/components/parameters/ruleset_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ruleset_update_request'
+              $ref: "#/components/schemas/ruleset_update_request"
       responses:
-        '200':
+        "200":
           description: Ruleset updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ruleset'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/ruleset"
+        "404":
+          $ref: "#/components/responses/not_found"
 
   /api/v1/rulesets/{ruleset_id}/promote:
     post:
@@ -604,16 +604,16 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/ruleset_id'
+        - $ref: "#/components/parameters/ruleset_id"
       responses:
-        '200':
+        "200":
           description: Ruleset promoted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ruleset'
-        '403':
-          $ref: '#/components/responses/forbidden'
+                $ref: "#/components/schemas/ruleset"
+        "403":
+          $ref: "#/components/responses/forbidden"
 
   /api/v1/regattas:
     get:
@@ -622,15 +622,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Regatta list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/regatta_list_response'
+                $ref: "#/components/schemas/regatta_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create regatta
@@ -641,20 +641,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/regatta_create_request'
+              $ref: "#/components/schemas/regatta_create_request"
       responses:
-        '201':
+        "201":
           description: Regatta created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/regatta'
-        '400':
+                $ref: "#/components/schemas/regatta"
+        "400":
           description: Invalid regatta payload (including invalid IANA time zone)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
+                $ref: "#/components/schemas/error_response"
 
   /api/v1/regattas/{regatta_id}:
     get:
@@ -663,44 +663,44 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Regatta
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/regatta'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/regatta"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Regatta]
       summary: Update regatta
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/regatta_update_request'
+              $ref: "#/components/schemas/regatta_update_request"
       responses:
-        '200':
+        "200":
           description: Regatta updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/regatta'
-        '400':
+                $ref: "#/components/schemas/regatta"
+        "400":
           description: Invalid regatta payload (including invalid IANA time zone)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/error_response"
+        "404":
+          $ref: "#/components/responses/not_found"
 
   /api/v1/regattas/{regatta_id}/event_groups:
     get:
@@ -709,34 +709,34 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Event group list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event_group_list_response'
+                $ref: "#/components/schemas/event_group_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create event group
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_group_create_request'
+              $ref: "#/components/schemas/event_group_create_request"
       responses:
-        '201':
+        "201":
           description: Event group created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event_group'
+                $ref: "#/components/schemas/event_group"
 
   /api/v1/regattas/{regatta_id}/event_groups/{event_group_id}:
     patch:
@@ -745,21 +745,21 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/event_group_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/event_group_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_group_update_request'
+              $ref: "#/components/schemas/event_group_update_request"
       responses:
-        '200':
+        "200":
           description: Event group updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event_group'
+                $ref: "#/components/schemas/event_group"
 
   /api/v1/regattas/{regatta_id}/events:
     get:
@@ -768,39 +768,39 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
         - in: query
           name: event_group_id
           schema:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Event list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event_list_response'
+                $ref: "#/components/schemas/event_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create event
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_create_request'
+              $ref: "#/components/schemas/event_create_request"
       responses:
-        '201':
+        "201":
           description: Event created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event'
+                $ref: "#/components/schemas/event"
 
   /api/v1/regattas/{regatta_id}/events/{event_id}:
     patch:
@@ -809,21 +809,21 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/event_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/event_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/event_update_request'
+              $ref: "#/components/schemas/event_update_request"
       responses:
-        '200':
+        "200":
           description: Event updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/event'
+                $ref: "#/components/schemas/event"
 
   /api/v1/regattas/{regatta_id}/blocks:
     get:
@@ -832,34 +832,34 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Block list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/block_list_response'
+                $ref: "#/components/schemas/block_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create block
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/block_create_request'
+              $ref: "#/components/schemas/block_create_request"
       responses:
-        '201':
+        "201":
           description: Block created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/block'
+                $ref: "#/components/schemas/block"
 
   /api/v1/regattas/{regatta_id}/blocks/{block_id}:
     patch:
@@ -868,31 +868,31 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/block_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/block_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/block_update_request'
+              $ref: "#/components/schemas/block_update_request"
       responses:
-        '200':
+        "200":
           description: Block updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/block'
+                $ref: "#/components/schemas/block"
     delete:
       tags: [Staff Regatta]
       summary: Delete block
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/block_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/block_id"
       responses:
-        '204':
+        "204":
           description: Block deleted
 
   /api/v1/regattas/{regatta_id}/blocks/reorder:
@@ -902,20 +902,20 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/block_reorder_request'
+              $ref: "#/components/schemas/block_reorder_request"
       responses:
-        '200':
+        "200":
           description: Block order updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
+                $ref: "#/components/schemas/operation_result"
 
   /api/v1/regattas/{regatta_id}/bib_pools:
     get:
@@ -924,34 +924,34 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Bib pool list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bib_pool_list_response'
+                $ref: "#/components/schemas/bib_pool_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create bib pool
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bib_pool_create_request'
+              $ref: "#/components/schemas/bib_pool_create_request"
       responses:
-        '201':
+        "201":
           description: Bib pool created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bib_pool'
+                $ref: "#/components/schemas/bib_pool"
 
   /api/v1/regattas/{regatta_id}/bib_pools/{bib_pool_id}:
     patch:
@@ -960,31 +960,31 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/bib_pool_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/bib_pool_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bib_pool_update_request'
+              $ref: "#/components/schemas/bib_pool_update_request"
       responses:
-        '200':
+        "200":
           description: Bib pool updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bib_pool'
+                $ref: "#/components/schemas/bib_pool"
     delete:
       tags: [Staff Regatta]
       summary: Delete bib pool
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/bib_pool_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/bib_pool_id"
       responses:
-        '204':
+        "204":
           description: Bib pool deleted
 
   /api/v1/regattas/{regatta_id}/bib_pools/reorder:
@@ -994,20 +994,20 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/bib_pool_reorder_request'
+              $ref: "#/components/schemas/bib_pool_reorder_request"
       responses:
-        '200':
+        "200":
           description: Bib pool order updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
+                $ref: "#/components/schemas/operation_result"
 
   /api/v1/regattas/{regatta_id}/entries:
     get:
@@ -1016,8 +1016,8 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/status'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/status"
         - in: query
           name: event_id
           schema:
@@ -1033,41 +1033,41 @@ paths:
           schema:
             type: string
             format: date-time
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Entry list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry_list_response'
+                $ref: "#/components/schemas/entry_list_response"
     post:
       tags: [Staff Regatta]
       summary: Create entry
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/entry_create_request'
+              $ref: "#/components/schemas/entry_create_request"
       responses:
-        '201':
+        "201":
           description: Entry created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry'
-        '400':
+                $ref: "#/components/schemas/entry"
+        "400":
           description: Invalid billing club assignment (e.g., missing `billing_club_id` for composite crews)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
+                $ref: "#/components/schemas/error_response"
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}:
     get:
@@ -1076,44 +1076,44 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/entry_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
       responses:
-        '200':
+        "200":
           description: Entry
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry'
-        '404':
-          $ref: '#/components/responses/not_found'
+                $ref: "#/components/schemas/entry"
+        "404":
+          $ref: "#/components/responses/not_found"
     patch:
       tags: [Staff Regatta]
       summary: Update entry
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/entry_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/entry_update_request'
+              $ref: "#/components/schemas/entry_update_request"
       responses:
-        '200':
+        "200":
           description: Entry updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry'
-        '400':
+                $ref: "#/components/schemas/entry"
+        "400":
           description: Invalid billing club assignment (e.g., missing `billing_club_id` for composite crews)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/error_response'
+                $ref: "#/components/schemas/error_response"
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/status:
     post:
@@ -1122,21 +1122,21 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/entry_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/entry_status_update_request'
+              $ref: "#/components/schemas/entry_status_update_request"
       responses:
-        '200':
+        "200":
           description: Status updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry'
+                $ref: "#/components/schemas/entry"
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/approve:
     post:
@@ -1145,17 +1145,17 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/entry_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
       responses:
-        '200':
+        "200":
           description: Entry approved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
-        '409':
-          $ref: '#/components/responses/conflict'
+                $ref: "#/components/schemas/operation_result"
+        "409":
+          $ref: "#/components/responses/conflict"
 
   /api/v1/regattas/{regatta_id}/events/{event_id}/approve:
     post:
@@ -1164,17 +1164,17 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/event_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/event_id"
       responses:
-        '200':
+        "200":
           description: Event approved
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
-        '409':
-          $ref: '#/components/responses/conflict'
+                $ref: "#/components/schemas/operation_result"
+        "409":
+          $ref: "#/components/responses/conflict"
 
   /api/v1/regattas/{regatta_id}/draw/generate:
     post:
@@ -1183,20 +1183,20 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/draw_generate_request'
+              $ref: "#/components/schemas/draw_generate_request"
       responses:
-        '200':
+        "200":
           description: Draw generated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/draw_generation_response'
+                $ref: "#/components/schemas/draw_generation_response"
 
   /api/v1/regattas/{regatta_id}/draw/publish:
     post:
@@ -1205,14 +1205,14 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Draw published and draw_revision incremented
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/revision_response'
+                $ref: "#/components/schemas/revision_response"
 
   /api/v1/regattas/{regatta_id}/draw/unpublish:
     post:
@@ -1221,14 +1221,14 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Draw unpublished
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/revision_response'
+                $ref: "#/components/schemas/revision_response"
 
   /api/v1/regattas/{regatta_id}/investigations:
     get:
@@ -1237,37 +1237,48 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/status'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/regatta_id"
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [open, closed]
+          description: Investigation lifecycle state (`open` = `closed_at` is null; `closed` = `closed_at` is set).
+        - in: query
+          name: outcome
+          schema:
+            type: string
+            enum: [no_action, penalty, excluded, dsq]
+          description: Filter closed investigations by recorded outcome.
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Investigation list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation_list_response'
+                $ref: "#/components/schemas/investigation_list_response"
     post:
       tags: [Staff Draw Results]
       summary: Create investigation
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/investigation_create_request'
+              $ref: "#/components/schemas/investigation_create_request"
       responses:
-        '201':
+        "201":
           description: Investigation created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation'
+                $ref: "#/components/schemas/investigation"
 
   /api/v1/regattas/{regatta_id}/investigations/{investigation_id}:
     get:
@@ -1276,36 +1287,36 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/investigation_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/investigation_id"
       responses:
-        '200':
+        "200":
           description: Investigation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation'
+                $ref: "#/components/schemas/investigation"
     patch:
       tags: [Staff Draw Results]
       summary: Update investigation
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/investigation_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/investigation_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/investigation_update_request'
+              $ref: "#/components/schemas/investigation_update_request"
       responses:
-        '200':
+        "200":
           description: Investigation updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation'
+                $ref: "#/components/schemas/investigation"
 
   /api/v1/regattas/{regatta_id}/investigations/{investigation_id}/close:
     post:
@@ -1314,21 +1325,21 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/investigation_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/investigation_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/investigation_close_request'
+              $ref: "#/components/schemas/investigation_close_request"
       responses:
-        '200':
+        "200":
           description: Investigation closed
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation'
+                $ref: "#/components/schemas/investigation"
 
   /api/v1/regattas/{regatta_id}/investigations/{investigation_id}/reopen:
     post:
@@ -1337,15 +1348,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/investigation_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/investigation_id"
       responses:
-        '200':
+        "200":
           description: Investigation reopened
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/investigation'
+                $ref: "#/components/schemas/investigation"
 
   /api/v1/regattas/{regatta_id}/invoices:
     get:
@@ -1354,16 +1365,16 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Invoice list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/invoice_list_response'
+                $ref: "#/components/schemas/invoice_list_response"
 
   /api/v1/regattas/{regatta_id}/invoices/generate:
     post:
@@ -1372,14 +1383,14 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '202':
+        "202":
           description: Invoice generation job accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/job_created_response'
+                $ref: "#/components/schemas/job_created_response"
 
   /api/v1/regattas/{regatta_id}/invoices/{invoice_id}:
     get:
@@ -1388,15 +1399,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/invoice_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/invoice_id"
       responses:
-        '200':
+        "200":
           description: Invoice
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/invoice'
+                $ref: "#/components/schemas/invoice"
 
   /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid:
     post:
@@ -1405,21 +1416,21 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/invoice_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/invoice_id"
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/mark_invoice_paid_request'
+              $ref: "#/components/schemas/mark_invoice_paid_request"
       responses:
-        '200':
+        "200":
           description: Invoice updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/invoice'
+                $ref: "#/components/schemas/invoice"
 
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/billing:
     get:
@@ -1428,15 +1439,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/entry_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
       responses:
-        '200':
+        "200":
           description: Entry billing details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/entry_billing_details'
+                $ref: "#/components/schemas/entry_billing_details"
 
   /api/v1/regattas/{regatta_id}/payments/mark_bulk:
     post:
@@ -1445,20 +1456,20 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/payment_bulk_mark_request'
+              $ref: "#/components/schemas/payment_bulk_mark_request"
       responses:
-        '200':
+        "200":
           description: Bulk operation result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
+                $ref: "#/components/schemas/operation_result"
 
   /api/v1/regattas/{regatta_id}/operator/tokens:
     get:
@@ -1467,34 +1478,34 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Operator token list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operator_token_list_response'
+                $ref: "#/components/schemas/operator_token_list_response"
     post:
       tags: [Operator]
       summary: Create operator token
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/operator_token_create_request'
+              $ref: "#/components/schemas/operator_token_create_request"
       responses:
-        '201':
+        "201":
           description: Operator token created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operator_token'
+                $ref: "#/components/schemas/operator_token"
 
   /api/v1/regattas/{regatta_id}/operator/tokens/{token_id}/revoke:
     post:
@@ -1503,15 +1514,15 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/token_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/token_id"
       responses:
-        '200':
+        "200":
           description: Token revoked
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operation_result'
+                $ref: "#/components/schemas/operation_result"
 
   /api/v1/regattas/{regatta_id}/operator/tokens/{token_id}/export_pdf:
     get:
@@ -1520,16 +1531,406 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/token_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/token_id"
       responses:
-        '200':
+        "200":
           description: PDF bytes
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
+
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs:
+    post:
+      tags: [Operator]
+      summary: Request second-device station handoff
+      description: |
+        Starts non-interrupting handoff flow. New device receives a short PIN to display.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/operator_station_handoff_create_request"
+      responses:
+        "201":
+          description: Handoff requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:
+    get:
+      tags: [Operator]
+      summary: Get handoff status
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/handoff_id"
+      responses:
+        "200":
+          description: Handoff status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff"
+        "404":
+          $ref: "#/components/responses/not_found"
+
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin:
+    post:
+      tags: [Operator]
+      summary: Reveal handoff PIN on active station
+      description: |
+        Active station explicitly reveals the matching PIN. Intended for non-blocking UI banner/drawer flows.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/handoff_id"
+      responses:
+        "200":
+          description: PIN revealed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff_pin_response"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete:
+    post:
+      tags: [Operator]
+      summary: Complete handoff with PIN verification
+      description: |
+        Verifies PIN and transfers active control to the requesting device.
+        Previous active device is demoted to read-only.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/handoff_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/operator_station_handoff_complete_request"
+      responses:
+        "200":
+          description: Handoff completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff"
+        "400":
+          description: Invalid PIN (`INVALID_PIN`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error_response"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel:
+    post:
+      tags: [Operator]
+      summary: Cancel pending handoff request
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/handoff_id"
+      responses:
+        "200":
+          description: Handoff cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions:
+    get:
+      tags: [Operator]
+      summary: List capture sessions
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - in: query
+          name: block_id
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: station
+          schema:
+            type: string
+        - in: query
+          name: session_type
+          schema:
+            type: string
+            enum: [start, finish]
+        - in: query
+          name: state
+          schema:
+            type: string
+            enum: [open, closed]
+      responses:
+        "200":
+          description: Capture session list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session_list_response"
+    post:
+      tags: [Operator]
+      summary: Start capture session
+      description: |
+        Starts a capture session used by marker APIs. The returned `id` is required as `capture_session_id`
+        when creating timing markers.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/capture_session_create_request"
+      responses:
+        "201":
+          description: Capture session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}:
+    get:
+      tags: [Operator]
+      summary: Get capture session
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/capture_session_id"
+      responses:
+        "200":
+          description: Capture session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session"
+        "404":
+          $ref: "#/components/responses/not_found"
+    patch:
+      tags: [Operator]
+      summary: Update capture session metadata
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/capture_session_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/capture_session_update_request"
+      responses:
+        "200":
+          description: Capture session updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state:
+    post:
+      tags: [Operator]
+      summary: Update capture session sync state
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/capture_session_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/capture_session_sync_state_request"
+      responses:
+        "200":
+          description: Sync state updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close:
+    post:
+      tags: [Operator]
+      summary: Close capture session
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/capture_session_id"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/capture_session_close_request"
+      responses:
+        "200":
+          description: Capture session closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/capture_session"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/line_scan/manifests:
+    post:
+      tags: [Operator]
+      summary: Upsert line-scan tile manifest
+      description: |
+        Stores or replaces the manifest describing tile grid and x-coordinate to timestamp mapping for one capture session.
+        Auth model: operator token only.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/line_scan_manifest_upsert_request"
+      responses:
+        "201":
+          description: Manifest stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/line_scan_manifest"
+        "409":
+          $ref: "#/components/responses/conflict"
+
+  /api/v1/regattas/{regatta_id}/line_scan/manifests/{manifest_id}:
+    get:
+      tags: [Operator]
+      summary: Get line-scan manifest
+      description: |
+        Returns tile-grid mapping and retention status for a manifest.
+        Auth model: operator token or staff proxy auth.
+      security:
+        - OperatorTokenAuth: []
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/manifest_id"
+      responses:
+        "200":
+          description: Manifest payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/line_scan_manifest"
+        "404":
+          $ref: "#/components/responses/not_found"
+
+  /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}:
+    put:
+      tags: [Operator]
+      summary: Upload/replace one line-scan tile
+      description: |
+        Uploads tile binary data for a tile id referenced by a manifest.
+        Auth model: operator token only.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/tile_id"
+      requestBody:
+        required: true
+        content:
+          image/webp:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Tile stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operation_result"
+    get:
+      tags: [Operator]
+      summary: Download one line-scan tile
+      description: |
+        Retrieves tile binary by id.
+        Auth model: operator token or staff proxy auth.
+      security:
+        - OperatorTokenAuth: []
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/tile_id"
+      responses:
+        "200":
+          description: Tile bytes
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/not_found"
 
   /api/v1/regattas/{regatta_id}/operator/sync:
     post:
@@ -1538,22 +1939,22 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/operator_sync_request'
+              $ref: "#/components/schemas/operator_sync_request"
       responses:
-        '200':
+        "200":
           description: Sync result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operator_sync_response'
-        '409':
-          $ref: '#/components/responses/conflict'
+                $ref: "#/components/schemas/operator_sync_response"
+        "409":
+          $ref: "#/components/responses/conflict"
 
   /api/v1/regattas/{regatta_id}/operator/conflicts:
     get:
@@ -1562,16 +1963,45 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/limit'
-        - $ref: '#/components/parameters/cursor'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/cursor"
       responses:
-        '200':
+        "200":
           description: Conflict list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/operator_conflict_list_response'
+                $ref: "#/components/schemas/operator_conflict_list_response"
+
+  /api/v1/regattas/{regatta_id}/operator/conflicts/{conflict_id}/resolve:
+    post:
+      tags: [Operator]
+      summary: Resolve one operator conflict
+      description: |
+        Applies explicit conflict resolution for a pending conflict and replays/updates affected queued actions.
+      security:
+        - OperatorTokenAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/conflict_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/operator_conflict_resolution_request"
+      responses:
+        "200":
+          description: Conflict resolution result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_conflict_resolution_response"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
 
   /api/v1/regattas/{regatta_id}/operator/markers:
     get:
@@ -1580,39 +2010,39 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
         - in: query
           name: capture_session_id
           schema:
             type: string
             format: uuid
       responses:
-        '200':
+        "200":
           description: Marker list
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/marker_list_response'
+                $ref: "#/components/schemas/marker_list_response"
     post:
       tags: [Operator]
       summary: Create marker
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/marker_create_request'
+              $ref: "#/components/schemas/marker_create_request"
       responses:
-        '201':
+        "201":
           description: Marker created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/marker'
+                $ref: "#/components/schemas/marker"
 
   /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}:
     patch:
@@ -1621,31 +2051,31 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/marker_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/marker_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/marker_update_request'
+              $ref: "#/components/schemas/marker_update_request"
       responses:
-        '200':
+        "200":
           description: Marker updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/marker'
+                $ref: "#/components/schemas/marker"
     delete:
       tags: [Operator]
       summary: Delete marker
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/marker_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/marker_id"
       responses:
-        '204':
+        "204":
           description: Marker deleted
 
   /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}/link:
@@ -1655,21 +2085,21 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/marker_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/marker_id"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/marker_link_request'
+              $ref: "#/components/schemas/marker_link_request"
       responses:
-        '200':
+        "200":
           description: Marker linked
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/marker'
+                $ref: "#/components/schemas/marker"
 
   /api/v1/regattas/{regatta_id}/operator/markers/{marker_id}/unlink:
     post:
@@ -1678,15 +2108,15 @@ paths:
       security:
         - OperatorTokenAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/marker_id'
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/marker_id"
       responses:
-        '200':
+        "200":
           description: Marker unlinked
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/marker'
+                $ref: "#/components/schemas/marker"
 
   /api/v1/regattas/{regatta_id}/export/printables:
     post:
@@ -1695,14 +2125,14 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '202':
+        "202":
           description: Export job created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/job_created_response'
+                $ref: "#/components/schemas/job_created_response"
 
   /api/v1/jobs/{job_id}:
     get:
@@ -1711,14 +2141,14 @@ paths:
       security:
         - StaffProxyAuth: []
       parameters:
-        - $ref: '#/components/parameters/job_id'
+        - $ref: "#/components/parameters/job_id"
       responses:
-        '200':
+        "200":
           description: Job status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/job_status_response'
+                $ref: "#/components/schemas/job_status_response"
 
   /public/session:
     post:
@@ -1732,9 +2162,14 @@ paths:
         - JWT uses HS256 with `kid`; exactly two active keys with >=6-day overlap during rotation.
       security: []
       responses:
-        '204':
+        "204":
           description: Session valid or refreshed
           headers:
+            Cache-Control:
+              description: Session bootstrap responses are never cacheable.
+              schema:
+                type: string
+              example: no-store
             Set-Cookie:
               description: |
                 Session cookie is returned when a new session is minted or an existing one is refreshed within the refresh window.
@@ -1749,16 +2184,22 @@ paths:
       security:
         - PublicSessionCookieAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Revision payload
+          headers:
+            Cache-Control:
+              description: Versions endpoint must not be cached.
+              schema:
+                type: string
+              example: no-store, must-revalidate
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/public_versions_response'
-        '401':
-          $ref: '#/components/responses/unauthorized'
+                $ref: "#/components/schemas/public_versions_response"
+        "401":
+          $ref: "#/components/responses/unauthorized"
 
   /public/regattas/{regatta_id}/events:
     get:
@@ -1775,9 +2216,9 @@ paths:
       security:
         - PublicSessionCookieAuth: []
       parameters:
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: SSE stream
           content:
             text/event-stream:
@@ -1802,10 +2243,10 @@ paths:
                     id: 13:42:results_revision
                     event: results_revision
                     data: {"draw_revision":13,"results_revision":42,"reason":"entry_approved","data":{"changed":true}}
-        '401':
-          $ref: '#/components/responses/unauthorized'
-        '429':
-          $ref: '#/components/responses/rate_limited'
+        "401":
+          $ref: "#/components/responses/unauthorized"
+        "429":
+          $ref: "#/components/responses/rate_limited"
 
   /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/schedule:
     get:
@@ -1813,16 +2254,22 @@ paths:
       summary: Get versioned public schedule
       security: []
       parameters:
-        - $ref: '#/components/parameters/draw_revision'
-        - $ref: '#/components/parameters/results_revision'
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/draw_revision"
+        - $ref: "#/components/parameters/results_revision"
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Schedule payload
+          headers:
+            Cache-Control:
+              description: Versioned public payload is immutable for this revision pair.
+              schema:
+                type: string
+              example: public, max-age=31536000, immutable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/public_schedule_response'
+                $ref: "#/components/schemas/public_schedule_response"
 
   /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/results:
     get:
@@ -1830,16 +2277,22 @@ paths:
       summary: Get versioned public results
       security: []
       parameters:
-        - $ref: '#/components/parameters/draw_revision'
-        - $ref: '#/components/parameters/results_revision'
-        - $ref: '#/components/parameters/regatta_id'
+        - $ref: "#/components/parameters/draw_revision"
+        - $ref: "#/components/parameters/results_revision"
+        - $ref: "#/components/parameters/regatta_id"
       responses:
-        '200':
+        "200":
           description: Results payload
+          headers:
+            Cache-Control:
+              description: Versioned public payload is immutable for this revision pair.
+              schema:
+                type: string
+              example: public, max-age=31536000, immutable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/public_results_response'
+                $ref: "#/components/schemas/public_results_response"
 
   /public/v{draw_revision}-{results_revision}/regattas/{regatta_id}/events/{event_id}/results:
     get:
@@ -1847,17 +2300,23 @@ paths:
       summary: Get versioned public results for one event
       security: []
       parameters:
-        - $ref: '#/components/parameters/draw_revision'
-        - $ref: '#/components/parameters/results_revision'
-        - $ref: '#/components/parameters/regatta_id'
-        - $ref: '#/components/parameters/event_id'
+        - $ref: "#/components/parameters/draw_revision"
+        - $ref: "#/components/parameters/results_revision"
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/event_id"
       responses:
-        '200':
+        "200":
           description: Event results payload
+          headers:
+            Cache-Control:
+              description: Versioned public payload is immutable for this revision pair.
+              schema:
+                type: string
+              example: public, max-age=31536000, immutable
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/public_results_response'
+                $ref: "#/components/schemas/public_results_response"
 
 components:
   securitySchemes:
@@ -1959,6 +2418,31 @@ components:
       name: marker_id
       required: true
       schema: { type: string, format: uuid }
+    capture_session_id:
+      in: path
+      name: capture_session_id
+      required: true
+      schema: { type: string, format: uuid }
+    handoff_id:
+      in: path
+      name: handoff_id
+      required: true
+      schema: { type: string, format: uuid }
+    conflict_id:
+      in: path
+      name: conflict_id
+      required: true
+      schema: { type: string, format: uuid }
+    manifest_id:
+      in: path
+      name: manifest_id
+      required: true
+      schema: { type: string, format: uuid }
+    tile_id:
+      in: path
+      name: tile_id
+      required: true
+      schema: { type: string }
     block_id:
       in: path
       name: block_id
@@ -2001,7 +2485,16 @@ components:
       name: status
       schema:
         type: string
-        enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+        enum:
+          [
+            entered,
+            withdrawn_before_draw,
+            withdrawn_after_draw,
+            dns,
+            dnf,
+            excluded,
+            dsq,
+          ]
     x_forwarded_groups:
       in: header
       name: x_forwarded_groups
@@ -2027,31 +2520,31 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error_response'
+            $ref: "#/components/schemas/error_response"
     forbidden:
       description: Forbidden
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error_response'
+            $ref: "#/components/schemas/error_response"
     not_found:
       description: Not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error_response'
+            $ref: "#/components/schemas/error_response"
     conflict:
       description: Conflict
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error_response'
+            $ref: "#/components/schemas/error_response"
     rate_limited:
       description: Too many requests
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/error_response'
+            $ref: "#/components/schemas/error_response"
 
   schemas:
     error_response:
@@ -2129,8 +2622,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/category' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/category" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     boat_type:
       type: object
@@ -2171,7 +2664,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/boat_type' }
+          items: { $ref: "#/components/schemas/boat_type" }
 
     club:
       type: object
@@ -2200,8 +2693,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/club' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/club" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     club_billing:
       type: object
@@ -2213,7 +2706,14 @@ components:
         address: { type: string, nullable: true }
         postal_code: { type: string, nullable: true }
         city: { type: string, nullable: true }
-        country: { type: string, minLength: 3, maxLength: 3, nullable: true, description: ISO 3166-1 alpha-3 country code }
+        country:
+          {
+            type: string,
+            minLength: 3,
+            maxLength: 3,
+            nullable: true,
+            description: ISO 3166-1 alpha-3 country code,
+          }
         vat_number: { type: string, nullable: true }
         reference: { type: string, nullable: true }
 
@@ -2225,7 +2725,13 @@ components:
         address: { type: string }
         postal_code: { type: string }
         city: { type: string }
-        country: { type: string, minLength: 3, maxLength: 3, description: ISO 3166-1 alpha-3 country code }
+        country:
+          {
+            type: string,
+            minLength: 3,
+            maxLength: 3,
+            description: ISO 3166-1 alpha-3 country code,
+          }
         vat_number: { type: string }
         reference: { type: string }
 
@@ -2242,7 +2748,7 @@ components:
         club_id: { type: string, format: uuid, nullable: true }
         federation_identifiers:
           type: array
-          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
+          items: { $ref: "#/components/schemas/athlete_federation_identifier" }
 
     athlete_create_request:
       type: object
@@ -2256,7 +2762,7 @@ components:
         club_id: { type: string, format: uuid }
         federation_identifiers:
           type: array
-          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
+          items: { $ref: "#/components/schemas/athlete_federation_identifier" }
 
     athlete_update_request:
       type: object
@@ -2269,7 +2775,7 @@ components:
         club_id: { type: string, format: uuid }
         federation_identifiers:
           type: array
-          items: { $ref: '#/components/schemas/athlete_federation_identifier' }
+          items: { $ref: "#/components/schemas/athlete_federation_identifier" }
 
     athlete_federation_identifier:
       type: object
@@ -2278,8 +2784,8 @@ components:
         federation_code:
           type: string
           maxLength: 64
-          pattern: '^[A-Z0-9_-]{2,64}$'
-          description: Uppercase federation code (canonical example: `FISA`).
+          pattern: "^[A-Z0-9_-]{2,64}$"
+          description: "Uppercase federation code (canonical example: `FISA`)."
         external_id:
           type: string
           maxLength: 255
@@ -2291,8 +2797,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/athlete' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/athlete" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     crew_member:
       type: object
@@ -2311,7 +2817,7 @@ components:
         club_id: { type: string, format: uuid, nullable: true }
         members:
           type: array
-          items: { $ref: '#/components/schemas/crew_member' }
+          items: { $ref: "#/components/schemas/crew_member" }
 
     crew_create_request:
       type: object
@@ -2322,7 +2828,7 @@ components:
         members:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/crew_member' }
+          items: { $ref: "#/components/schemas/crew_member" }
 
     crew_update_request:
       type: object
@@ -2332,7 +2838,7 @@ components:
         members:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/crew_member' }
+          items: { $ref: "#/components/schemas/crew_member" }
 
     crew_list_response:
       type: object
@@ -2340,8 +2846,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/crew' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/crew" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     ruleset:
       type: object
@@ -2351,7 +2857,8 @@ components:
         name: { type: string }
         version: { type: string }
         description: { type: string, nullable: true }
-        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+        age_calculation_type:
+          { type: string, enum: [actual_at_start, age_as_of_jan_1] }
         is_global: { type: boolean }
 
     ruleset_create_request:
@@ -2361,7 +2868,8 @@ components:
         name: { type: string }
         version: { type: string }
         description: { type: string }
-        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+        age_calculation_type:
+          { type: string, enum: [actual_at_start, age_as_of_jan_1] }
 
     ruleset_update_request:
       type: object
@@ -2369,7 +2877,8 @@ components:
         name: { type: string }
         version: { type: string }
         description: { type: string }
-        age_calculation_type: { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+        age_calculation_type:
+          { type: string, enum: [actual_at_start, age_as_of_jan_1] }
 
     ruleset_list_response:
       type: object
@@ -2377,7 +2886,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/ruleset' }
+          items: { $ref: "#/components/schemas/ruleset" }
 
     regatta:
       type: object
@@ -2394,7 +2903,7 @@ components:
         federation_code:
           type: string
           nullable: true
-          pattern: '^[A-Z0-9_-]{2,64}$'
+          pattern: "^[A-Z0-9_-]{2,64}$"
           maxLength: 64
           description: Active uppercase federation identifier scheme for this regatta (single scheme per regatta), for example `FISA`.
         entry_fee: { type: number }
@@ -2425,7 +2934,7 @@ components:
         ruleset_id: { type: string, format: uuid }
         federation_code:
           type: string
-          pattern: '^[A-Z0-9_-]{2,64}$'
+          pattern: "^[A-Z0-9_-]{2,64}$"
           maxLength: 64
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }
@@ -2452,7 +2961,7 @@ components:
         ruleset_id: { type: string, format: uuid }
         federation_code:
           type: string
-          pattern: '^[A-Z0-9_-]{2,64}$'
+          pattern: "^[A-Z0-9_-]{2,64}$"
           maxLength: 64
         entry_fee: { type: number }
         currency: { type: string, minLength: 3, maxLength: 3 }
@@ -2469,8 +2978,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/regatta' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/regatta" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     event_group:
       type: object
@@ -2503,7 +3012,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/event_group' }
+          items: { $ref: "#/components/schemas/event_group" }
 
     event:
       type: object
@@ -2542,11 +3051,19 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/event' }
+          items: { $ref: "#/components/schemas/event" }
 
     block:
       type: object
-      required: [id, regatta_id, name, start_time, event_interval_seconds, crew_interval_seconds]
+      required:
+        [
+          id,
+          regatta_id,
+          name,
+          start_time,
+          event_interval_seconds,
+          crew_interval_seconds,
+        ]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
@@ -2589,7 +3106,7 @@ components:
         items:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/block_reorder_item' }
+          items: { $ref: "#/components/schemas/block_reorder_item" }
 
     block_list_response:
       type: object
@@ -2597,7 +3114,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/block' }
+          items: { $ref: "#/components/schemas/block" }
 
     bib_pool:
       type: object
@@ -2662,7 +3179,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/bib_pool' }
+          items: { $ref: "#/components/schemas/bib_pool" }
 
     bib_pool_update_request:
       type: object
@@ -2701,7 +3218,7 @@ components:
         items:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/bib_pool_reorder_item' }
+          items: { $ref: "#/components/schemas/bib_pool_reorder_item" }
 
     entry:
       type: object
@@ -2716,7 +3233,16 @@ components:
         billing_club_id: { type: string, format: uuid, nullable: true }
         status:
           type: string
-          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+          description: Public payload never emits `withdrawn_before_draw`; those entries are excluded from public schedule/results.
+          enum:
+            [
+              entered,
+              withdrawn_after_draw,
+              dns,
+              dnf,
+              excluded,
+              dsq,
+            ]
         payment_status: { type: string, enum: [unpaid, paid] }
         paid_at: { type: string, format: date-time, nullable: true }
         paid_by: { type: string, nullable: true }
@@ -2752,7 +3278,16 @@ components:
       properties:
         status:
           type: string
-          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+          description: Public payload never emits `withdrawn_before_draw`; those entries are excluded from public schedule/results.
+          enum:
+            [
+              entered,
+              withdrawn_after_draw,
+              dns,
+              dnf,
+              excluded,
+              dsq,
+            ]
         reason: { type: string }
 
     entry_list_response:
@@ -2761,8 +3296,8 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/entry' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/entry" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     draw_generate_request:
       type: object
@@ -2784,7 +3319,12 @@ components:
         regatta_id: { type: string, format: uuid }
         entry_id: { type: string, format: uuid }
         description: { type: string }
-        outcome: { type: string, enum: [no_action, penalty, excluded, dsq], nullable: true }
+        outcome:
+          {
+            type: string,
+            enum: [no_action, penalty, excluded, dsq],
+            nullable: true,
+          }
         penalty_seconds: { type: integer, nullable: true }
         closed_at: { type: string, format: date-time, nullable: true }
 
@@ -2814,12 +3354,22 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/investigation' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/investigation" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     invoice:
       type: object
-      required: [id, regatta_id, club_id, invoice_number, total_amount, currency, status, generated_at]
+      required:
+        [
+          id,
+          regatta_id,
+          club_id,
+          invoice_number,
+          total_amount,
+          currency,
+          status,
+          generated_at,
+        ]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
@@ -2838,11 +3388,14 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/invoice' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/invoice" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     mark_invoice_paid_request:
       type: object
+      description: |
+        v0.1 does not accept a client-supplied payment amount in this request.
+        Invoice totals are derived from stored invoice and invoice-entry data.
       properties:
         paid_at: { type: string, format: date-time }
         paid_by: { type: string }
@@ -2872,7 +3425,8 @@ components:
 
     operator_token:
       type: object
-      required: [id, regatta_id, station, token, valid_from, valid_until, is_active]
+      required:
+        [id, regatta_id, station, token, valid_from, valid_until, is_active]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
@@ -2899,7 +3453,228 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/operator_token' }
+          items: { $ref: "#/components/schemas/operator_token" }
+
+    operator_station_handoff:
+      type: object
+      required:
+        [
+          id,
+          regatta_id,
+          station,
+          requesting_device_id,
+          active_device_id,
+          status,
+          expires_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        station: { type: string }
+        requesting_device_id: { type: string }
+        active_device_id: { type: string }
+        status: { type: string, enum: [pending, completed, cancelled, expired] }
+        expires_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+        previous_device_mode:
+          type: string
+          enum: [active, read_only]
+          nullable: true
+        new_device_mode:
+          type: string
+          enum: [active, read_only]
+          nullable: true
+
+    operator_station_handoff_create_request:
+      type: object
+      required: [station, requesting_device_id]
+      properties:
+        station: { type: string }
+        requesting_device_id: { type: string }
+        ttl_seconds:
+          type: integer
+          minimum: 30
+          maximum: 600
+          default: 180
+
+    operator_station_handoff_pin_response:
+      type: object
+      required: [handoff_id, pin, expires_at]
+      properties:
+        handoff_id: { type: string, format: uuid }
+        pin: { type: string }
+        expires_at: { type: string, format: date-time }
+
+    operator_station_handoff_complete_request:
+      type: object
+      required: [pin, completing_device_id]
+      properties:
+        pin: { type: string }
+        completing_device_id: { type: string }
+
+    capture_session:
+      type: object
+      required:
+        [
+          id,
+          regatta_id,
+          block_id,
+          station,
+          device_id,
+          session_type,
+          state,
+          server_time_at_start,
+          fps,
+          is_synced,
+          drift_exceeded_threshold,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        block_id: { type: string, format: uuid }
+        station: { type: string }
+        device_id: { type: string }
+        session_type: { type: string, enum: [start, finish] }
+        state: { type: string, enum: [open, closed] }
+        server_time_at_start: { type: string, format: date-time }
+        device_monotonic_offset_ms: { type: integer, format: int64, nullable: true }
+        fps: { type: integer }
+        is_synced: { type: boolean }
+        drift_exceeded_threshold: { type: boolean }
+        unsynced_reason: { type: string, nullable: true }
+        closed_at: { type: string, format: date-time, nullable: true }
+        close_reason: { type: string, nullable: true }
+
+    capture_session_create_request:
+      type: object
+      required: [block_id, station, device_id, session_type, server_time_at_start, fps]
+      properties:
+        block_id: { type: string, format: uuid }
+        station: { type: string }
+        device_id: { type: string }
+        session_type: { type: string, enum: [start, finish] }
+        server_time_at_start: { type: string, format: date-time }
+        device_monotonic_offset_ms: { type: integer, format: int64 }
+        fps: { type: integer, minimum: 1 }
+        is_synced: { type: boolean, default: true }
+        unsynced_reason: { type: string }
+
+    capture_session_update_request:
+      type: object
+      properties:
+        fps: { type: integer, minimum: 1 }
+        device_monotonic_offset_ms: { type: integer, format: int64 }
+        drift_exceeded_threshold: { type: boolean }
+        unsynced_reason: { type: string, nullable: true }
+
+    capture_session_sync_state_request:
+      type: object
+      required: [is_synced]
+      properties:
+        is_synced: { type: boolean }
+        device_monotonic_offset_ms: { type: integer, format: int64 }
+        drift_exceeded_threshold: { type: boolean }
+        unsynced_reason: { type: string, nullable: true }
+        observed_at: { type: string, format: date-time }
+
+    capture_session_close_request:
+      type: object
+      properties:
+        closed_at: { type: string, format: date-time }
+        close_reason: { type: string }
+
+    capture_session_list_response:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/capture_session" }
+
+    line_scan_manifest_tile:
+      type: object
+      required: [tile_id, tile_x, tile_y]
+      properties:
+        tile_id: { type: string }
+        tile_x: { type: integer }
+        tile_y: { type: integer }
+        content_type: { type: string, enum: [image/webp, image/png] }
+        byte_size: { type: integer, minimum: 0, nullable: true }
+
+    line_scan_manifest:
+      type: object
+      required:
+        [
+          id,
+          regatta_id,
+          capture_session_id,
+          tile_size_px,
+          primary_format,
+          fallback_format,
+          x_origin_timestamp_ms,
+          ms_per_pixel,
+          tiles,
+          retention_days,
+          retention_state,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        regatta_id: { type: string, format: uuid }
+        capture_session_id: { type: string, format: uuid }
+        tile_size_px: { type: integer, enum: [512, 1024] }
+        primary_format: { type: string, enum: [webp_lossless, png] }
+        fallback_format: { type: string, enum: [png], nullable: true }
+        x_origin_timestamp_ms: { type: integer, format: int64 }
+        ms_per_pixel: { type: number }
+        tiles:
+          type: array
+          items: { $ref: "#/components/schemas/line_scan_manifest_tile" }
+        retention_days: { type: integer, minimum: 1 }
+        prune_window_seconds:
+          type: integer
+          minimum: 1
+          default: 2
+          description: Approved-marker retention window on each side, in seconds.
+        retention_state:
+          type: string
+          enum:
+            [
+              full_retained,
+              pending_delay,
+              eligible_waiting_archive_or_approvals,
+              pruned,
+            ]
+        prune_eligible_at: { type: string, format: date-time, nullable: true }
+        pruned_at: { type: string, format: date-time, nullable: true }
+      description: |
+        Pruning behavior for v0.1:
+        - Keep full scan during regatta.
+        - Default prune eligibility is regatta_end + retention_days.
+        - Do not prune until regatta is archived or all entries are approved.
+        - If delay elapses first, retain full scan and raise admin alert.
+
+    line_scan_manifest_upsert_request:
+      type: object
+      required:
+        [
+          capture_session_id,
+          tile_size_px,
+          primary_format,
+          x_origin_timestamp_ms,
+          ms_per_pixel,
+          tiles,
+        ]
+      properties:
+        capture_session_id: { type: string, format: uuid }
+        tile_size_px: { type: integer, enum: [512, 1024] }
+        primary_format: { type: string, enum: [webp_lossless, png] }
+        fallback_format: { type: string, enum: [png] }
+        x_origin_timestamp_ms: { type: integer, format: int64 }
+        ms_per_pixel: { type: number }
+        tiles:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/line_scan_manifest_tile" }
 
     operator_action:
       type: object
@@ -2919,7 +3694,7 @@ components:
         actions:
           type: array
           maxItems: 1000
-          items: { $ref: '#/components/schemas/operator_action' }
+          items: { $ref: "#/components/schemas/operator_action" }
 
     operator_conflict:
       type: object
@@ -2928,9 +3703,47 @@ components:
         id: { type: string, format: uuid }
         type: { type: string }
         message: { type: string }
+        resolution_options:
+          type: array
+          items:
+            type: string
+            enum:
+              [
+                accept_server,
+                relink_to_entry,
+                force_unlink,
+                retry_action_batch,
+                discard_action_batch,
+              ]
+        status: { type: string, enum: [pending, resolved], default: pending }
         details:
           type: object
           additionalProperties: true
+
+    operator_conflict_resolution_request:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          enum:
+            [
+              accept_server,
+              relink_to_entry,
+              force_unlink,
+              retry_action_batch,
+              discard_action_batch,
+            ]
+        target_entry_id: { type: string, format: uuid }
+        note: { type: string }
+
+    operator_conflict_resolution_response:
+      type: object
+      required: [success, conflict]
+      properties:
+        success: { type: boolean }
+        conflict: { $ref: "#/components/schemas/operator_conflict" }
+        message: { type: string }
 
     operator_sync_response:
       type: object
@@ -2939,7 +3752,7 @@ components:
         accepted_count: { type: integer }
         conflicts:
           type: array
-          items: { $ref: '#/components/schemas/operator_conflict' }
+          items: { $ref: "#/components/schemas/operator_conflict" }
 
     operator_conflict_list_response:
       type: object
@@ -2947,12 +3760,20 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/operator_conflict' }
-        pagination: { $ref: '#/components/schemas/pagination' }
+          items: { $ref: "#/components/schemas/operator_conflict" }
+        pagination: { $ref: "#/components/schemas/pagination" }
 
     marker:
       type: object
-      required: [id, capture_session_id, frame_offset, timestamp_ms, is_linked, is_approved]
+      required:
+        [
+          id,
+          capture_session_id,
+          frame_offset,
+          timestamp_ms,
+          is_linked,
+          is_approved,
+        ]
       properties:
         id: { type: string, format: uuid }
         capture_session_id: { type: string, format: uuid }
@@ -2997,7 +3818,7 @@ components:
       properties:
         data:
           type: array
-          items: { $ref: '#/components/schemas/marker' }
+          items: { $ref: "#/components/schemas/marker" }
 
     job_created_response:
       type: object
@@ -3039,21 +3860,21 @@ components:
 
     public_sse_snapshot_event:
       allOf:
-        - $ref: '#/components/schemas/public_sse_event_base'
+        - $ref: "#/components/schemas/public_sse_event_base"
         - type: object
           properties:
             event: { type: string, enum: [snapshot] }
 
     public_sse_draw_revision_event:
       allOf:
-        - $ref: '#/components/schemas/public_sse_event_base'
+        - $ref: "#/components/schemas/public_sse_event_base"
         - type: object
           properties:
             event: { type: string, enum: [draw_revision] }
 
     public_sse_results_revision_event:
       allOf:
-        - $ref: '#/components/schemas/public_sse_event_base'
+        - $ref: "#/components/schemas/public_sse_event_base"
         - type: object
           properties:
             event: { type: string, enum: [results_revision] }
@@ -3065,12 +3886,22 @@ components:
         entry_id: { type: string, format: uuid }
         event_id: { type: string, format: uuid }
         bib: { type: integer, nullable: true }
-        scheduled_start_time: { type: string, format: date-time, nullable: true }
+        scheduled_start_time:
+          { type: string, format: date-time, nullable: true }
         crew_name: { type: string }
         club_name: { type: string, nullable: true }
         status:
           type: string
-          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+          enum:
+            [
+              entered,
+              withdrawn_before_draw,
+              withdrawn_after_draw,
+              dns,
+              dnf,
+              excluded,
+              dsq,
+            ]
 
     public_schedule_response:
       type: object
@@ -3080,7 +3911,7 @@ components:
         results_revision: { type: integer }
         data:
           type: array
-          items: { $ref: '#/components/schemas/public_schedule_row' }
+          items: { $ref: "#/components/schemas/public_schedule_row" }
 
     public_result_row:
       type: object
@@ -3096,7 +3927,16 @@ components:
         rank: { type: integer, nullable: true }
         status:
           type: string
-          enum: [entered, withdrawn_before_draw, withdrawn_after_draw, dns, dnf, excluded, dsq]
+          enum:
+            [
+              entered,
+              withdrawn_before_draw,
+              withdrawn_after_draw,
+              dns,
+              dnf,
+              excluded,
+              dsq,
+            ]
         is_provisional: { type: boolean }
         is_edited: { type: boolean }
         is_official: { type: boolean }
@@ -3109,4 +3949,4 @@ components:
         results_revision: { type: integer }
         data:
           type: array
-          items: { $ref: '#/components/schemas/public_result_row' }
+          items: { $ref: "#/components/schemas/public_result_row" }

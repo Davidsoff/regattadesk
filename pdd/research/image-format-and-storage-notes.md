@@ -30,6 +30,14 @@ This meets “no width/height restriction” by construction and enables post-re
 - Pruning: default delay 14 days after regatta end (configurable per regatta).
 - 1024x1024 tiles are acceptable only when validated on target devices (desktop/tablet) and bandwidth/memory budgets, and when reduced tile-count is preferred; default remains 512x512.
 
+## Canonical v0.1 API/storage contract
+- Manifest ingestion: `POST /api/v1/regattas/{regatta_id}/line_scan/manifests` (Operator token auth).
+- Manifest retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/manifests/{manifest_id}` (Operator token or staff proxy auth).
+- Tile ingestion: `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (Operator token auth; `image/webp` or `image/png`).
+- Tile retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (Operator token or staff proxy auth).
+- Manifest is the source of truth for tile grid and `x_origin_timestamp_ms` + `ms_per_pixel` mapping.
+- Retention metadata in manifest tracks `retention_days`, prune eligibility, and prune status.
+
 ## API version references
 - This research note aligns with the current API namespace: `/api/v1/...`.
 - Do not use deprecated or legacy versioned paths in implementation notes for this document.

@@ -95,10 +95,11 @@ flowchart TD
 
 #### Payment Reconciliation Process
 1. Manual payment entry: Staff records payment details via API
-2. System validates: invoice exists, amount matches
-3. Update payment status: mark entries as `paid`
-4. Audit event: record who marked paid, when, payment reference
-5. Update club status: recalculate based on all entries
+2. System validates: invoice exists and is payable (`draft`/`sent`)
+3. System uses stored invoice totals/entry lines as source of truth (no client-supplied payment amount field in v0.1 mark-paid request)
+4. Update payment status: mark entries as `paid`
+5. Audit event: record who marked paid, when, payment reference
+6. Update club status: recalculate based on all entries
 
 #### Refund Handling
 - **Refunds are NOT supported in v0.1**
@@ -127,6 +128,12 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - API validation: regatta create/update rejects invalid IANA time zone values with `400 INVALID_TIME_ZONE`.
   - Marker metadata: timestamp, capture device id, image tile reference (tile coords/ids).
   - Tile defaults (best practice): 512x512 WebP lossless tiles with PNG fallback; manifest includes tile size, origin, and x-coordinate -> timestamp mapping.
+  - Line-scan storage contract (v0.1):
+    - Manifest ingestion: `POST /api/v1/regattas/{regatta_id}/line_scan/manifests` (OperatorTokenAuth).
+    - Manifest retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/manifests/{manifest_id}` (OperatorTokenAuth or StaffProxyAuth).
+    - Tile ingestion: `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (OperatorTokenAuth; `image/webp` or `image/png`).
+    - Tile retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (OperatorTokenAuth or StaffProxyAuth).
+    - Manifest payload is canonical for tile grid plus `x_origin_timestamp_ms` and `ms_per_pixel` mapping.
   - Unlinked marker create/delete is not audited.
   - Link/unlink actions and edits to linked markers are always audited.
   - Pre-approval deletes of linked markers emit audit events.
@@ -171,6 +178,10 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
     - edited: manual adjustment or penalty applied (still provisional until approval)
     - official: event approved
 - Public: cacheable versioned paths with draw/results revision keys; /versions no-store; SSE ticks and snapshot.
+  - Cache header contract:
+    - `POST /public/session`: `Cache-Control: no-store`
+    - `GET /public/regattas/{regatta_id}/versions`: `Cache-Control: no-store, must-revalidate`
+    - `GET /public/v{draw_revision}-{results_revision}/...`: `Cache-Control: public, max-age=31536000, immutable`
   - Schedule/start order content depends only on draw_revision, even though cache keys include both revisions.
   - Revision bump rules (best practice):
     - draw_revision: draw publish + any schedule/start-order/bib display change
@@ -200,9 +211,9 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - Sync API accepts queued actions and returns conflict results.
   - Conflict resolution: last-write-wins for marker position/time adjustments and unlinking when entry is not approved; auto-accept link if entry has no linked marker at that station and marker is not linked elsewhere.
   - Manual resolution required: duplicate links (entry already linked to a different marker), marker linked to a different entry, or any edits against approved/immutable entries (reject and surface conflict).
-  - Conflict API exposes pending conflicts with resolution options.
+  - Conflict API exposes pending conflicts with resolution options via `GET /api/v1/regattas/{regatta_id}/operator/conflicts` and `POST /api/v1/regattas/{regatta_id}/operator/conflicts/{conflict_id}/resolve`.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
-- Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia); Authelia runs in DB-only backing mode in v0.1 (no Redis) + automated pipeline (CI/CD).
+- Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia, MinIO object storage for line-scan artifacts); Authelia runs in DB-only backing mode in v0.1 (no Redis) + automated pipeline (CI/CD).
 - Observability: health + OpenTelemetry + metrics.
 - Audit: event sourcing + immutable log.
 
@@ -315,12 +326,26 @@ flowchart LR
   - Forwarded headers: `x_forwarded_user` (required), `x_forwarded_groups` (optional), `x_regatta_roles` (optional), `x_global_roles` (optional).
   - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
 - Operator API: QR token scoped to block(s), station, validity window, revocable; operators are accountless (QR/token only).
+  - Capture session lifecycle is explicit in API contract:
+    - Start/list via `/api/v1/regattas/{regatta_id}/operator/capture_sessions`.
+    - Read/update via `/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`.
+    - Sync state via `/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state`.
+    - Close via `/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close`.
+    - Marker creation requires `capture_session_id` from an open capture session.
   - Station model: single active station per token; second device can request access without interrupting active station.
   - Handoff: new device shows a PIN; active station can reveal the matching PIN to complete handover.
+  - Handoff API contract (OperatorTokenAuth):
+    - Request: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs` (creates pending handoff + PIN TTL).
+    - Status polling: `GET /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}`.
+    - Active-station PIN reveal: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin`.
+    - Complete transfer: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete` with PIN verification.
+    - Cancel pending request: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel`.
+    - Error semantics: invalid PIN returns `400 INVALID_PIN`; stale/competing requests return `409`.
   - After PIN handover, the previous device is demoted to read-only and must re-auth to regain control.
   - Admin can view PIN remotely in case the active station cannot access the PIN flow.
   - Token display must not interrupt capture UI (hidden unless opened intentionally).
   - QR tokens exportable to PDF with fallback instructions (short URL + token/PIN) if QR scan fails.
+  - Line-scan tiles/manifests are API-managed artifacts; operator ingestion uses token-auth endpoints and staff/operator retrieval uses authenticated endpoints defined in OpenAPI.
 - Public:
   - Endpoint contracts are defined in `pdd/design/openapi-v0.1.yaml`.
   - Public session behavior:

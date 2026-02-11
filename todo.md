@@ -8,5 +8,5 @@ Last Updated: 2026-02-11
 - No pending documentation action items remain.
 
 ## Notes
-- Completed items were removed per workflow cleanup after resolution.
-- See git history on/after 2026-02-11 for detailed per-item changes.
+- Completed items were removed per workflow cleanup after resolution on 2026-02-11.
+- See git history for per-item implementation details.
