@@ -413,6 +413,76 @@ CREATE INDEX idx_operator_tokens_validity ON operator_tokens(valid_from, valid_u
 CREATE INDEX idx_operator_tokens_active ON operator_tokens(is_active);
 ```
 
+### operator_station_handoffs table
+```sql
+CREATE TABLE operator_station_handoffs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
+    station VARCHAR(100) NOT NULL,
+    requesting_device_id VARCHAR(255) NOT NULL,
+    active_device_id VARCHAR(255) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    pin VARCHAR(10) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    completed_at TIMESTAMPTZ,
+    cancelled_at TIMESTAMPTZ,
+    previous_device_mode VARCHAR(20),
+    new_device_mode VARCHAR(20),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (status IN ('pending', 'completed', 'cancelled', 'expired')),
+    CHECK (previous_device_mode IS NULL OR previous_device_mode IN ('active', 'read_only')),
+    CHECK (new_device_mode IS NULL OR new_device_mode IN ('active', 'read_only'))
+);
+
+CREATE INDEX idx_station_handoffs_regatta ON operator_station_handoffs(regatta_id);
+CREATE INDEX idx_station_handoffs_station ON operator_station_handoffs(station);
+CREATE INDEX idx_station_handoffs_status ON operator_station_handoffs(status);
+CREATE INDEX idx_station_handoffs_expires_at ON operator_station_handoffs(expires_at);
+CREATE INDEX idx_station_handoffs_created_at ON operator_station_handoffs(created_at);
+```
+
+### operator_conflicts table
+```sql
+CREATE TABLE operator_conflicts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
+    capture_session_id UUID,
+    conflict_type VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    resolution_options JSONB NOT NULL DEFAULT '[]'::jsonb,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    resolution VARCHAR(50),
+    target_entry_id UUID REFERENCES entries(id) ON DELETE SET NULL,
+    note TEXT,
+    resolved_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (status IN ('pending', 'resolved')),
+    CHECK (
+        resolution IS NULL OR resolution IN (
+            'accept_server',
+            'relink_to_entry',
+            'force_unlink',
+            'retry_action_batch',
+            'discard_action_batch'
+        )
+    )
+);
+
+CREATE INDEX idx_operator_conflicts_regatta ON operator_conflicts(regatta_id);
+CREATE INDEX idx_operator_conflicts_status ON operator_conflicts(status);
+CREATE INDEX idx_operator_conflicts_capture_session ON operator_conflicts(capture_session_id);
+CREATE INDEX idx_operator_conflicts_target_entry ON operator_conflicts(target_entry_id);
+CREATE INDEX idx_operator_conflicts_created_at ON operator_conflicts(created_at);
+```
+
+Persistence model notes for operator handoffs/conflicts:
+- `operator_station_handoffs` backs `/operator/station_handoffs/*` resources (`handoff_id`) and lifecycle state transitions.
+- `operator_conflicts` backs `/operator/conflicts*` resources (`conflict_id`), including resolution options, chosen resolution, and operator notes.
+- Conflict list pagination uses `created_at` descending with `id` tiebreakers.
+
 ### capture_sessions table
 ```sql
 CREATE TABLE capture_sessions (
@@ -422,20 +492,31 @@ CREATE TABLE capture_sessions (
     station VARCHAR(100) NOT NULL,
     device_id VARCHAR(255) NOT NULL,
     session_type VARCHAR(50) NOT NULL,
+    state VARCHAR(20) NOT NULL DEFAULT 'open',
     server_time_at_start TIMESTAMPTZ NOT NULL,
-    device_monotonic_offset BIGINT,
+    device_monotonic_offset_ms BIGINT,
     fps INTEGER NOT NULL,
     is_synced BOOLEAN NOT NULL DEFAULT TRUE,
     drift_exceeded_threshold BOOLEAN NOT NULL DEFAULT FALSE,
+    unsynced_reason TEXT,
+    closed_at TIMESTAMPTZ,
+    close_reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    CHECK (session_type IN ('start', 'finish'))
+    CHECK (session_type IN ('start', 'finish')),
+    CHECK (state IN ('open', 'closed'))
 );
 
 CREATE INDEX idx_capture_sessions_regatta ON capture_sessions(regatta_id);
 CREATE INDEX idx_capture_sessions_block ON capture_sessions(block_id);
 CREATE INDEX idx_capture_sessions_device ON capture_sessions(device_id);
 CREATE INDEX idx_capture_sessions_type ON capture_sessions(session_type);
+CREATE INDEX idx_capture_sessions_state ON capture_sessions(state);
+CREATE INDEX idx_capture_sessions_closed_at ON capture_sessions(closed_at);
+
+ALTER TABLE operator_conflicts
+    ADD CONSTRAINT fk_operator_conflicts_capture_session
+    FOREIGN KEY (capture_session_id) REFERENCES capture_sessions(id) ON DELETE SET NULL;
 ```
 
 Capture session lifecycle in API contract (`pdd/design/openapi-v0.1.yaml`):
@@ -443,6 +524,12 @@ Capture session lifecycle in API contract (`pdd/design/openapi-v0.1.yaml`):
 - Read/update: `GET|PATCH /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`
 - Sync state updates: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state`
 - Close: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close`
+
+Capture session field mapping notes:
+- `device_monotonic_offset_ms` is stored in milliseconds to match API naming/units.
+- `state`, `closed_at`, and `close_reason` persist close lifecycle state directly.
+- `unsynced_reason` stores operator/device sync diagnostics when `is_synced=false`.
+- `capture_session_sync_state_request.observed_at` is request metadata and is not persisted in this table in v0.1.
 
 ### timing_markers table
 ```sql

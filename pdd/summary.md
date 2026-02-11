@@ -8,6 +8,8 @@ Author: RegattaDesk Team
 - research/image-format-and-storage-notes.md
 - design/detailed-design.md
 - design/style-guide.md
+- design/database-schema.md
+- design/openapi-v0.1.yaml
 - implementation/plan.md
 - summary.md
 

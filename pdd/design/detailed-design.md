@@ -341,6 +341,8 @@ flowchart LR
     - Complete transfer: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete` with PIN verification.
     - Cancel pending request: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel`.
     - Error semantics: invalid PIN returns `400 INVALID_PIN`; stale/competing requests return `409`.
+  - Admin fallback API contract (StaffProxyAuth):
+    - Remote PIN reveal fallback: `POST /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin` (for `regatta_admin` or `super_admin`).
   - After PIN handover, the previous device is demoted to read-only and must re-auth to regain control.
   - Admin can view PIN remotely in case the active station cannot access the PIN flow.
   - Token display must not interrupt capture UI (hidden unless opened intentionally).

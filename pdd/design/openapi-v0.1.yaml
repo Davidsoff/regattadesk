@@ -1610,6 +1610,32 @@ paths:
         "409":
           $ref: "#/components/responses/conflict"
 
+  /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin:
+    post:
+      tags: [Operator]
+      summary: Admin fallback to reveal handoff PIN remotely
+      description: |
+        Staff fallback path when the active station cannot access PIN reveal.
+        Requires staff authorization for `regatta_admin` on the target regatta or global `super_admin`.
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/handoff_id"
+      responses:
+        "200":
+          description: PIN revealed by admin fallback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/operator_station_handoff_pin_response"
+        "403":
+          $ref: "#/components/responses/forbidden"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "409":
+          $ref: "#/components/responses/conflict"
+
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete:
     post:
       tags: [Operator]
@@ -3233,10 +3259,11 @@ components:
         billing_club_id: { type: string, format: uuid, nullable: true }
         status:
           type: string
-          description: Public payload never emits `withdrawn_before_draw`; those entries are excluded from public schedule/results.
+          description: Canonical entry status values for staff entry resources.
           enum:
             [
               entered,
+              withdrawn_before_draw,
               withdrawn_after_draw,
               dns,
               dnf,
@@ -3278,10 +3305,11 @@ components:
       properties:
         status:
           type: string
-          description: Public payload never emits `withdrawn_before_draw`; those entries are excluded from public schedule/results.
+          description: Canonical entry status values for staff status updates.
           enum:
             [
               entered,
+              withdrawn_before_draw,
               withdrawn_after_draw,
               dns,
               dnf,
@@ -3892,10 +3920,10 @@ components:
         club_name: { type: string, nullable: true }
         status:
           type: string
+          description: Public payload excludes `withdrawn_before_draw`; those entries are not returned in schedule/results views.
           enum:
             [
               entered,
-              withdrawn_before_draw,
               withdrawn_after_draw,
               dns,
               dnf,
@@ -3927,10 +3955,10 @@ components:
         rank: { type: integer, nullable: true }
         status:
           type: string
+          description: Public payload excludes `withdrawn_before_draw`; those entries are not returned in schedule/results views.
           enum:
             [
               entered,
-              withdrawn_before_draw,
               withdrawn_after_draw,
               dns,
               dnf,
