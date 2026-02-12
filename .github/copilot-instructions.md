@@ -52,7 +52,7 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 
 - **`.codex/skills/`** - Codex AI skill definitions for OpenAPI workflows
 
-- **`styleprompt.md`** - Comprehensive LLM prompt for design system guidance (reference this for UI/UX work)
+- **`pdd/design/style-guide.md`** - Design system and UI/UX style guide (reference this for UI/UX work)
 
 - **`todo.md`** - Documentation review action items (currently empty)
 
@@ -100,7 +100,7 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 1. **Primary Specification:** `pdd/design/detailed-design.md` is the authoritative product specification - always reference this first
 2. **API Contract:** Use `pdd/design/openapi-v0.1.yaml` for API structure
 3. **Database:** Use `pdd/design/database-schema.md` for data model
-4. **Design System:** Reference `styleprompt.md` for comprehensive UI/UX guidance
+4. **Design System:** Reference `pdd/design/style-guide.md` for UI/UX guidance
 5. **Implementation Tickets:** Check `pdd/implementation/issues/*.yaml` for planned work
 6. **Note:** `pdd/rough-idea.md` is outdated - use `pdd/design/detailed-design.md` instead
 
@@ -150,7 +150,7 @@ Demo mode is planned but not part of v0.1. Deferred to post-v0.1 implementation.
 ## When You Need More Information
 
 - **Product requirements:** Check `pdd/design/detailed-design.md` (primary) and `pdd/idea-honing.md`
-- **UI/UX decisions:** Check `styleprompt.md` and `pdd/design/style-guide.md`
+- **UI/UX decisions:** Check `pdd/design/style-guide.md`
 - **API design:** Check `pdd/design/openapi-v0.1.yaml`
 - **Database schema:** Check `pdd/design/database-schema.md`
 - **Implementation plan:** Check `pdd/implementation/plan.md` and bounded context files
