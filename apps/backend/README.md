@@ -31,6 +31,20 @@ If you want to build an _über-jar_, execute the following command:
 
 The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
 
+## Building a container image (Quarkus Jib)
+
+This backend uses Quarkus container-image extension with Jib.
+
+Build a local container image:
+```shell script
+./mvnw package -Dquarkus.container-image.build=true
+```
+
+To push to a registry:
+```shell script
+./mvnw package -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true
+```
+
 ## Creating a native executable
 
 You can create a native executable using: 

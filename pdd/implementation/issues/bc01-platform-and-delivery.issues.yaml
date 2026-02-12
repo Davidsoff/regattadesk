@@ -25,7 +25,7 @@ tickets:
       Step 1 requires a demoable baseline that all subsequent bounded contexts can build on. This ticket is limited to project skeleton and developer ergonomics; runtime composition is handled in BC01-002.
 
       ## Scope
-      - Create backend service scaffold (Quarkus, Java 21 baseline) with health endpoint placeholder.
+      - Create backend service scaffold (Quarkus, Java 25 baseline) with health endpoint placeholder.
       - Create frontend scaffold (Vue 3 + Vite + Node 22 baseline) with a minimal app shell.
       - Define repository structure conventions (apps, infra, docs, tests).
       - Add root-level scripts for install/build/test/lint to standardize local and CI commands.

@@ -7,10 +7,8 @@
 
     <properties>
         <compiler-plugin.version>3.12.1</compiler-plugin.version>
-        <!-- TODO: Upgrade to Java 21 when available in build environment -->
-        <!-- Target version is Java 21 per pdd/implementation/plan.md -->
-        <!-- This will be updated as part of BC01-002 or when CI environment supports Java 21 -->
-        <maven.compiler.release>17</maven.compiler.release>
+        <!-- Repository baseline is Java 25 -->
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -48,6 +46,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

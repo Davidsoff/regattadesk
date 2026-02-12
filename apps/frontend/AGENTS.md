@@ -90,7 +90,7 @@ const count = ref(0)
 - `npm run dev` - Start dev server with HMR
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
-- `npm install` - Install dependencies
+- `npm ci` - Install dependencies from lockfile
 
 ## Future Enhancements
 - TypeScript migration
