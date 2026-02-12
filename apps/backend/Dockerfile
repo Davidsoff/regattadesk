@@ -11,18 +11,11 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first for better layer caching
-COPY .mvn .mvn
-COPY mvnw mvnw.cmd pom.xml ./
+# Copy all source files
+COPY . .
 
-# Download dependencies (cached if pom.xml hasn't changed)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
-
-# Build the application
-RUN ./mvnw package -DskipTests -B
+# Build the application (skip tests for faster builds)
+RUN mvn package -DskipTests -B
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine

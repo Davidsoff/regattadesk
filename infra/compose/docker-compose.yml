@@ -105,9 +105,6 @@ services:
     image: traefik:v3.0
     container_name: regattadesk-traefik
     restart: unless-stopped
-    # Remove authelia dependency for now
-    # depends_on:
-    #   - authelia
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
@@ -127,8 +124,6 @@ services:
     networks:
       - regattadesk-edge
       - regattadesk-internal
-    depends_on:
-      - authelia
 
   # Backend (Quarkus)
   backend:
