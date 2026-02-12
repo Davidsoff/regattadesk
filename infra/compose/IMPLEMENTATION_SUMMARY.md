@@ -28,8 +28,8 @@
 
 ### Application Services (Configured, Build Pending)
 
-4. **Backend (Quarkus + Java 21)**
-   - Multi-stage Dockerfile with Maven build
+4. **Backend (Quarkus + Java 25)**
+   - Quarkus-provided Dockerfile for JVM mode
    - Health check endpoint configured
    - Database and MinIO integration ready
    - Traefik labels configured
@@ -247,7 +247,7 @@ docker compose down -v     # Also remove volumes
 ## Deliverables
 
 ✅ Complete Docker Compose configuration  
-✅ Multi-stage Dockerfiles for backend and frontend  
+✅ Quarkus-provided Dockerfile for backend and custom Dockerfile for frontend  
 ✅ Network segmentation (edge/internal)  
 ✅ Persistent volume configuration  
 ✅ Health checks and startup ordering  

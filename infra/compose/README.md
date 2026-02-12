@@ -6,7 +6,7 @@ This directory contains Docker Compose configurations for the RegattaDesk v0.1 r
 
 The full Docker Compose stack includes:
 
-- **Backend**: Quarkus application (Java 21)
+- **Backend**: Quarkus application (Java 25)
 - **Frontend**: Vue.js application served via Nginx
 - **PostgreSQL**: Database (version 16+)
 - **Traefik**: Reverse proxy and load balancer (version 3.0+)
