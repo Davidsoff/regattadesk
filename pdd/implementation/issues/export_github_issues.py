@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import glob
+import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -66,6 +68,65 @@ def load_issue_files(issues_dir: str) -> list[dict[str, Any]]:
     return all_entries
 
 
+def _run_checked(cmd: list[str], *, verbose: bool) -> subprocess.CompletedProcess[str]:
+    if verbose:
+        print("RUN:", shlex.join(cmd))
+    return subprocess.run(cmd, check=True, text=True, capture_output=True)
+
+
+def _label_color(label: str) -> str:
+    # Keep deterministic colors by label namespace to make scanning easier in GitHub UI.
+    if label.startswith("type:"):
+        return "0E8A16"
+    if label.startswith("area:"):
+        return "1D76DB"
+    if label.startswith("priority:"):
+        return "D93F0B"
+    if label.startswith("milestone:"):
+        return "5319E7"
+    return "BFD4F2"
+
+
+def ensure_labels_exist(
+    *,
+    labels_needed: list[str],
+    repo: str | None,
+    dry_run: bool,
+    verbose: bool,
+) -> None:
+    if not labels_needed:
+        return
+
+    if dry_run:
+        print(f"DRY RUN: would ensure {len(labels_needed)} labels exist")
+        for label in labels_needed:
+            color = _label_color(label)
+            cmd = ["gh", "label", "create", label, "--color", color]
+            if repo:
+                cmd.extend(["--repo", repo])
+            cmd.extend(["--description", "Auto-created by issue exporter"])
+            print("DRY RUN:", shlex.join(cmd))
+        return
+
+    list_cmd = ["gh", "label", "list", "--limit", "1000", "--json", "name"]
+    if repo:
+        list_cmd.extend(["--repo", repo])
+    result = _run_checked(list_cmd, verbose=verbose)
+    existing = {item["name"] for item in json.loads(result.stdout)}
+
+    missing = [label for label in labels_needed if label not in existing]
+    if not missing:
+        return
+
+    for label in missing:
+        color = _label_color(label)
+        create_cmd = ["gh", "label", "create", label, "--color", color]
+        if repo:
+            create_cmd.extend(["--repo", repo])
+        create_cmd.extend(["--description", "Auto-created by issue exporter"])
+        _run_checked(create_cmd, verbose=verbose)
+
+
 def render_issue_body(entry: dict[str, Any]) -> str:
     t = entry["ticket"]
     depends_on = t.get("depends_on", []) or []
@@ -117,6 +178,7 @@ def run_gh_issue_create(
     labels: list[str],
     repo: str | None,
     dry_run: bool,
+    verbose: bool,
 ) -> None:
     cmd = ["gh", "issue", "create", "--title", title]
     if repo:
@@ -141,6 +203,8 @@ def run_gh_issue_create(
 
     try:
         create_cmd = cmd + ["--body-file", tmp_path]
+        if verbose:
+            print("RUN:", shlex.join(create_cmd))
         subprocess.run(create_cmd, check=True)
     finally:
         os.unlink(tmp_path)
@@ -173,14 +237,32 @@ def main() -> int:
         default="",
         help="Optional prefix added to every label, e.g. 'regattadesk/'",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print the gh command before each create call.",
+    )
     args = parser.parse_args()
 
     entries = load_issue_files(args.issues_dir)
+    all_labels = sorted(
+        {
+            f"{args.label_prefix}{label}"
+            for entry in entries
+            for label in entry.get("labels", [])
+        }
+    )
 
     dry_run = args.dry_run or not args.apply
     mode = "DRY RUN" if dry_run else "APPLY"
     print(f"Mode: {mode}")
     print(f"Found {len(entries)} tickets")
+    ensure_labels_exist(
+        labels_needed=all_labels,
+        repo=args.repo,
+        dry_run=dry_run,
+        verbose=args.verbose,
+    )
 
     for entry in entries:
         t = entry["ticket"]
@@ -192,6 +274,7 @@ def main() -> int:
             labels=labels,
             repo=args.repo,
             dry_run=dry_run,
+            verbose=args.verbose,
         )
 
     print("Done")
