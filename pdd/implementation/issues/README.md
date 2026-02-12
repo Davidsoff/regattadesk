@@ -25,6 +25,7 @@ Use the provided exporter script:
 ```bash
 python3 pdd/implementation/issues/export_github_issues.py --dry-run
 python3 pdd/implementation/issues/export_github_issues.py --apply
+python3 pdd/implementation/issues/export_github_issues.py --apply --verbose
 ```
 
 Optional flags:
@@ -32,9 +33,12 @@ Optional flags:
 ```bash
 python3 pdd/implementation/issues/export_github_issues.py --apply --repo owner/repo
 python3 pdd/implementation/issues/export_github_issues.py --apply --label-prefix regattadesk/
+python3 pdd/implementation/issues/export_github_issues.py --apply --verbose --repo owner/repo
 ```
 
 ## Notes
 - `--dry-run` prints issue titles, labels, dependencies, and generated body previews without creating issues.
 - `--apply` requires `gh` CLI authentication.
+- `--verbose` prints the exact `gh issue create ...` command before each create call.
+- The exporter ensures required labels exist before creating issues (it auto-creates missing labels).
 - Export order is deterministic by file name, then ticket ID.
