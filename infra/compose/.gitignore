@@ -1,0 +1,9 @@
+# Environment files with secrets
+.env
+
+# Authelia notification file (generated at runtime)
+authelia/notification.txt
+
+# Runtime data
+*.log
+*.pid

@@ -1,0 +1,27 @@
+# Traefik Dynamic Configuration
+# This file defines dynamic routing rules and middlewares
+
+http:
+  middlewares:
+    # Authelia ForwardAuth middleware
+    authelia:
+      forwardAuth:
+        address: http://authelia:9091/api/verify?rd=https://localhost
+        trustForwardHeader: true
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+          - Remote-Name
+          - Remote-Email
+
+    # Security headers middleware
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        frameDeny: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
