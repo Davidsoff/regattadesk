@@ -43,15 +43,44 @@ The full Docker Compose stack includes:
 - At least 4GB RAM available for Docker
 - Ports 80, 443, 5432, 8080, 9000, 9001 available on host
 
+## Building the Backend Image
+
+The backend uses the Quarkus Container Image Jib extension to build the container image. The configuration uses Quarkus defaults for maximum compatibility.
+
+**Default Image Name:** `${user.name}/regattadesk-backend:0.1.0-SNAPSHOT`
+
+To build the image:
+
+```bash
+cd apps/backend
+./mvnw clean package -Dquarkus.container-image.build=true
+```
+
+Or using the Quarkus CLI:
+
+```bash
+cd apps/backend
+quarkus image build
+```
+
+This creates a container image using Jib, which optimizes the image layers without requiring a Docker daemon during the build process. The image name uses Quarkus defaults based on your username and the application name/version.
+
 ## Quick Start
 
-1. **Copy the environment template:**
+1. **Build the backend image:**
+   ```bash
+   cd apps/backend
+   ./mvnw clean package -Dquarkus.container-image.build=true
+   cd ../../infra/compose
+   ```
+
+2. **Copy the environment template:**
    ```bash
    cd infra/compose
    cp .env.example .env
    ```
 
-2. **Edit `.env` and set secure passwords:**
+3. **Edit `.env` and set secure passwords:**
    ```bash
    # Generate secure secrets with:
    openssl rand -base64 32
@@ -64,18 +93,18 @@ The full Docker Compose stack includes:
    # - AUTHELIA_STORAGE_ENCRYPTION_KEY (min 32 chars)
    ```
 
-3. **Start the stack:**
+4. **Start the stack:**
    ```bash
    docker compose up -d
    ```
 
-4. **Check service health:**
+5. **Check service health:**
    ```bash
    docker compose ps
    docker compose logs -f
    ```
 
-5. **Access the application:**
+6. **Access the application:**
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - Traefik Dashboard: http://localhost:8080

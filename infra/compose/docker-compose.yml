@@ -126,10 +126,11 @@ services:
       - regattadesk-internal
 
   # Backend (Quarkus)
+  # Build the image with: cd ../../apps/backend && ./mvnw clean package -Dquarkus.container-image.build=true
+  # Default image name uses: ${user.name}/${quarkus.application.name}:${quarkus.application.version}
+  # Example: runner/regattadesk-backend:0.1.0-SNAPSHOT
   backend:
-    build:
-      context: ../../apps/backend
-      dockerfile: src/main/docker/Dockerfile.jvm
+    image: ${BACKEND_IMAGE:-runner/regattadesk-backend:0.1.0-SNAPSHOT}
     container_name: regattadesk-backend
     restart: unless-stopped
     depends_on:
