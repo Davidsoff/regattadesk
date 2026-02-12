@@ -1,0 +1,84 @@
+# Agent Instructions: Applications Directory
+
+## Context
+This directory contains the main application components of RegattaDesk.
+
+## Structure
+```
+apps/
+├── backend/     # Quarkus backend service (Java 21)
+└── frontend/    # Vue.js frontend application (Node 22)
+```
+
+## Overview
+
+### Backend (`apps/backend/`)
+- **Technology**: Quarkus 3.8+ with Java 21
+- **Purpose**: REST API, business logic, event sourcing, database access
+- **Development**: `cd apps/backend && ./mvnw quarkus:dev`
+- **Port**: 8080 (default)
+
+See [apps/backend/AGENTS.md](backend/AGENTS.md) for detailed instructions.
+
+### Frontend (`apps/frontend/`)
+- **Technology**: Vue 3 + Vite 7
+- **Purpose**: User interface, staff workflows, public pages
+- **Development**: `cd apps/frontend && npm run dev`
+- **Port**: 5173 (default)
+
+See [apps/frontend/AGENTS.md](frontend/AGENTS.md) for detailed instructions.
+
+## Development Workflow
+
+### Starting Both Applications
+```bash
+# Terminal 1 - Backend
+cd apps/backend
+./mvnw quarkus:dev
+
+# Terminal 2 - Frontend  
+cd apps/frontend
+npm run dev
+```
+
+Or from the root directory:
+```bash
+make backend-dev  # Terminal 1
+make frontend-dev # Terminal 2
+```
+
+### Building Both Applications
+```bash
+# From root directory
+make build
+
+# Or individually
+cd apps/backend && ./mvnw clean package
+cd apps/frontend && npm run build
+```
+
+## Integration Points
+
+### API Communication
+- Backend exposes REST API at `http://localhost:8080/api/`
+- Frontend will proxy API requests through Vite during development
+- Production: Traefik will route requests based on path
+
+### Health Checks
+- Backend: `http://localhost:8080/api/health`
+- Backend (Quarkus): `http://localhost:8080/q/health`
+
+## Important Notes for Agents
+
+1. **Each app is self-contained**: Backend and frontend can be developed independently
+2. **Consistent Versioning**: Both use version 0.1.0-SNAPSHOT
+3. **Toolchain Requirements**: Java 21 for backend, Node 22+ for frontend
+4. **Build Isolation**: Each app has its own build system (Maven vs npm)
+5. **Future Integration**: Docker Compose will orchestrate both apps together
+
+## Future Enhancements
+- Shared TypeScript types between backend and frontend
+- API contract testing (Pact)
+- Integrated E2E testing
+- Shared CI/CD pipeline
+- Docker images for each application
