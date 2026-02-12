@@ -19,10 +19,10 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 
 **Backend:** Quarkus (Java) + PostgreSQL
 **Frontend:** Vue.js (3 separate surfaces: staff web, operator PWA, public web)
-**Authentication:** Auth0 for staff; QR token links for operators (no personal accounts)
+**Authentication:** Authelia SSO (Traefik ForwardAuth) for staff; QR token links for operators (no personal accounts)
 **Data Architecture:** Event sourcing for auditability; projections for read models
 **Real-time:** Server-Sent Events (SSE) for live updates to public results
-**Deployment:** Containerized (Docker); CI/CD pipeline planned
+**Deployment:** Containerized (Docker Compose with Traefik, Authelia, MinIO); CI/CD pipeline planned
 
 ## Project Structure
 
@@ -118,7 +118,7 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 ### Bounded Contexts (v0.1 Implementation Scope):
 
 1. **BC01 Platform and Delivery** - Infrastructure, deployment, health checks
-2. **BC02 Identity and Access** - Auth0 integration, operator tokens
+2. **BC02 Identity and Access** - Authelia SSO integration, operator tokens
 3. **BC03 Core Regatta Management** - Regatta, events, entries CRUD
 4. **BC04 Rules, Scheduling, and Draw** - Draw generation, bib assignment
 5. **BC05 Public Experience and Delivery** - Public site, SSE, caching

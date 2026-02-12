@@ -11,7 +11,7 @@ This document consolidates the decisions made during requirements clarification 
 - Entries, events, blocks, draw, bib assignment, start/finish timing, results publishing
 - Jury investigations, penalties, excluded outcomes, DSQ, approvals
 - Public read-only site (high cacheability) with live updates
-- Staff UI (Auth0) + operator UI (QR/token, offline-capable)
+- Staff UI (Authelia SSO) + operator UI (QR/token, offline-capable)
 - Finance: payment status per entry or per club; bulk mark paid/unpaid
 - API-first for all operations; staff/operator/public UIs consume the same API surface (imports can be external tools later)
 - Event sourcing for auditability and reversibility
@@ -167,7 +167,7 @@ This document consolidates the decisions made during requirements clarification 
   - official: event approved
 
 ## 9) Authn/Authz and roles
-- Staff auth: Auth0; one account per person
+- Staff auth: Authelia SSO (Traefik ForwardAuth); one account per person
 - Per-regatta roles:
   - regatta_admin: full access within regatta
   - head_of_jury: approve, close investigations, assign penalties
