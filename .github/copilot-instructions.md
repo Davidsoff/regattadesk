@@ -29,14 +29,14 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 ### Core Directories
 
 - **`pdd/`** - Product Design Documents (source of truth for all decisions)
-  - `rough-idea.md` - Initial concept (historical reference)
-  - `idea-honing.md` - Refined product definition
-  - `summary.md` - Artifacts index and next steps
-  - `design/` - Detailed design docs:
-    - `detailed-design.md` - Complete product specification
+  - `design/` - **Primary design documents (authoritative source):**
+    - `detailed-design.md` - **Complete product specification (primary reference)**
     - `style-guide.md` - UI/UX design system
     - `database-schema.md` - PostgreSQL schema
     - `openapi-v0.1.yaml` - REST API specification
+  - `idea-honing.md` - Refined product definition
+  - `summary.md` - Artifacts index and next steps
+  - `rough-idea.md` - Initial concept (historical reference only, superseded by detailed-design.md)
   - `implementation/` - Implementation planning:
     - `plan.md` - Bounded context decomposition
     - `bc01-bc09` files - Feature lists per bounded context
@@ -80,11 +80,11 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 ## Development Status
 
 **Current Phase:** Design and documentation
-- ✅ Product definition complete (`pdd/idea-honing.md`)
-- ✅ Detailed design complete (`pdd/design/detailed-design.md`)
+- ✅ **Detailed design complete** (`pdd/design/detailed-design.md` - **primary specification**)
 - ✅ Database schema defined (`pdd/design/database-schema.md`)
 - ✅ API specification complete (`pdd/design/openapi-v0.1.yaml`)
 - ✅ Style guide complete (`pdd/design/style-guide.md`)
+- ✅ Product definition complete (`pdd/idea-honing.md`)
 - ✅ Implementation plan with bounded contexts (`pdd/implementation/`)
 - ⏳ Implementation: Not yet started
 
@@ -97,11 +97,12 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 
 ### When Working with This Repository:
 
-1. **Documentation is Source of Truth:** Always reference PDD files in `pdd/` before making assumptions
-2. **Design System:** Reference `styleprompt.md` for comprehensive UI/UX guidance
-3. **API Contract:** Use `pdd/design/openapi-v0.1.yaml` for API structure
-4. **Database:** Use `pdd/design/database-schema.md` for data model
+1. **Primary Specification:** `pdd/design/detailed-design.md` is the authoritative product specification - always reference this first
+2. **API Contract:** Use `pdd/design/openapi-v0.1.yaml` for API structure
+3. **Database:** Use `pdd/design/database-schema.md` for data model
+4. **Design System:** Reference `styleprompt.md` for comprehensive UI/UX guidance
 5. **Implementation Tickets:** Check `pdd/implementation/issues/*.yaml` for planned work
+6. **Note:** `pdd/rough-idea.md` is outdated - use `pdd/design/detailed-design.md` instead
 
 ### Style & Design Principles:
 
@@ -148,11 +149,12 @@ Demo mode is planned but not part of v0.1. Deferred to post-v0.1 implementation.
 
 ## When You Need More Information
 
-- **Product requirements:** Check `pdd/idea-honing.md` and `pdd/design/detailed-design.md`
+- **Product requirements:** Check `pdd/design/detailed-design.md` (primary) and `pdd/idea-honing.md`
 - **UI/UX decisions:** Check `styleprompt.md` and `pdd/design/style-guide.md`
 - **API design:** Check `pdd/design/openapi-v0.1.yaml`
 - **Database schema:** Check `pdd/design/database-schema.md`
 - **Implementation plan:** Check `pdd/implementation/plan.md` and bounded context files
 - **Specific features:** Check corresponding `pdd/implementation/bc0X-*.md` file
+- **Note:** Ignore `pdd/rough-idea.md` (superseded by detailed-design.md)
 
 **Trust these instructions.** Only perform additional searches if the information here is incomplete or found to be in error.
