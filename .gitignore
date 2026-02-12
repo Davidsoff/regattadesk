@@ -6,3 +6,22 @@ node_modules/
 .env
 dist/
 ralph-loop.log
+
+# Backend build artifacts
+apps/backend/target/
+apps/backend/.quarkus/
+apps/backend/*.log
+
+# Frontend build artifacts
+apps/frontend/dist/
+apps/frontend/node_modules/
+
+# IDE files
+.idea/
+*.iml
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

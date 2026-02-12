@@ -1,0 +1,89 @@
+# Agent Instructions: Backend Application
+
+## Context
+This directory contains the Quarkus backend service for RegattaDesk.
+
+## Technology Stack
+- **Framework**: Quarkus 3.8+
+- **Language**: Java 21
+- **Build Tool**: Maven 3.9+
+- **Key Extensions**: 
+  - RESTEasy Reactive (REST endpoints)
+  - SmallRye Health (health checks)
+  - Jackson (JSON serialization)
+
+## Project Structure
+```
+apps/backend/
+├── src/
+│   ├── main/
+│   │   ├── java/com/regattadesk/
+│   │   │   └── health/           # Health check endpoints
+│   │   ├── resources/
+│   │   │   └── application.properties  # Configuration
+│   │   └── docker/               # Dockerfile templates
+│   └── test/                     # Unit and integration tests
+├── pom.xml                       # Maven dependencies
+└── mvnw                          # Maven wrapper
+```
+
+## Development Guidelines
+
+### Running the Backend
+```bash
+./mvnw quarkus:dev
+```
+This starts the application with live reload on `http://localhost:8080`.
+
+### Building
+```bash
+./mvnw clean package
+```
+
+### Testing
+```bash
+./mvnw test
+```
+
+### Adding Dependencies
+Edit `pom.xml` and add the dependency within the `<dependencies>` section. Use Quarkus extensions when possible:
+```bash
+./mvnw quarkus:list-extensions        # List available extensions
+./mvnw quarkus:add-extension -Dextensions="extension-name"
+```
+
+### Code Conventions
+- Package structure: `com.regattadesk.<feature>`
+- Use Jakarta EE annotations (jakarta.ws.rs.*, jakarta.inject.*)
+- REST endpoints should be under `/api/` path
+- Health checks are at `/q/health` (Quarkus standard) and `/api/health` (custom)
+- Use Java 21 features (records, pattern matching, etc.) where appropriate
+
+### Configuration
+Application configuration is in `src/main/resources/application.properties`:
+- Use `quarkus.*` prefix for Quarkus-specific config
+- Use environment-specific profiles (dev, test, prod)
+
+### Health Endpoints
+- Standard Quarkus health: `GET /q/health`
+- Custom health endpoint: `GET /api/health`
+
+## Important Notes for Agents
+
+1. **Java Version**: Must be Java 21 (set in pom.xml)
+2. **Quarkus Version**: 3.8+ is the baseline
+3. **Build Tool**: Use Maven wrapper (`./mvnw`) not global Maven
+4. **Dev Mode**: Always test changes in Quarkus dev mode before building
+5. **Testing**: Add tests for new endpoints and business logic
+
+## Common Commands
+- `./mvnw quarkus:dev` - Start in dev mode
+- `./mvnw clean package` - Build
+- `./mvnw test` - Run tests
+- `./mvnw clean install -DskipTests` - Install without tests
+
+## Future Enhancements
+- Database integration (PostgreSQL via Hibernate ORM with Panache)
+- Event sourcing support
+- API documentation (OpenAPI/Swagger)
+- Security (JWT, OIDC integration)
