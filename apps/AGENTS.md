@@ -6,14 +6,14 @@ This directory contains the main application components of RegattaDesk.
 ## Structure
 ```
 apps/
-├── backend/     # Quarkus backend service (Java 21)
+├── backend/     # Quarkus backend service (Java 25)
 └── frontend/    # Vue.js frontend application (Node 22)
 ```
 
 ## Overview
 
 ### Backend (`apps/backend/`)
-- **Technology**: Quarkus 3.8+ with Java 21
+- **Technology**: Quarkus 3.8+ with Java 25
 - **Purpose**: REST API, business logic, event sourcing, database access
 - **Development**: `cd apps/backend && ./mvnw quarkus:dev`
 - **Port**: 8080 (default)
@@ -55,6 +55,9 @@ make build
 # Or individually
 cd apps/backend && ./mvnw clean package
 cd apps/frontend && npm run build
+
+# Backend container image (Quarkus Jib)
+cd apps/backend && ./mvnw package -Dquarkus.container-image.build=true
 ```
 
 ## Integration Points
@@ -72,7 +75,7 @@ cd apps/frontend && npm run build
 
 1. **Each app is self-contained**: Backend and frontend can be developed independently
 2. **Consistent Versioning**: Both use version 0.1.0-SNAPSHOT
-3. **Toolchain Requirements**: Java 21 for backend, Node 22+ for frontend
+3. **Toolchain Requirements**: Java 25 for backend, Node 22+ for frontend
 4. **Build Isolation**: Each app has its own build system (Maven vs npm)
 5. **Future Integration**: Docker Compose will orchestrate both apps together
 

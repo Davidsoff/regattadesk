@@ -107,7 +107,7 @@ This implementation plan is decomposed into bounded contexts, each with function
 ## Third-party dependency inventory (v0.1 baseline)
 | Component | Dependency / Service | Minimum version | Update policy |
 | --- | --- | --- | --- |
-| Backend runtime | Java (LTS) | 21 | Track latest Java 21 patch monthly; evaluate next LTS in quarterly review |
+| Backend runtime | Java | 25 | Track latest Java 25 patch monthly; evaluate next release cycle in quarterly review |
 | Backend framework | Quarkus | 3.8+ | Stay on latest stable minor in current major; patch updates monthly |
 | Database | PostgreSQL | 16+ | Stay within supported major versions; apply minor patches monthly |
 | Frontend runtime | Node.js (LTS) | 22+ | Stay on active LTS; patch updates monthly |

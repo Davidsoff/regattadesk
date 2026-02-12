@@ -1,4 +1,4 @@
-.PHONY: help install build test lint clean dev backend-dev frontend-dev
+.PHONY: help install build test lint clean dev backend-dev frontend-dev backend-image
 
 help:
 	@echo "RegattaDesk Build Commands"
@@ -11,6 +11,7 @@ help:
 	@echo "dev            - Run both backend and frontend in dev mode (requires separate terminals)"
 	@echo "backend-dev    - Run backend in dev mode"
 	@echo "frontend-dev   - Run frontend in dev mode"
+	@echo "backend-image  - Build backend container image via Quarkus Jib"
 
 install: install-backend install-frontend
 
@@ -20,7 +21,7 @@ install-backend:
 
 install-frontend:
 	@echo "Installing frontend dependencies..."
-	cd apps/frontend && npm install
+	cd apps/frontend && npm ci
 
 build: build-backend build-frontend
 
@@ -69,3 +70,7 @@ backend-dev:
 frontend-dev:
 	@echo "Starting frontend in dev mode..."
 	cd apps/frontend && npm run dev
+
+backend-image:
+	@echo "Building backend container image with Quarkus Jib..."
+	cd apps/backend && ./mvnw package -Dquarkus.container-image.build=true

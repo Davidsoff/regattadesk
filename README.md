@@ -6,7 +6,8 @@ A modern regatta management system with a Quarkus backend and Vue.js frontend.
 
 Before you begin, ensure you have the following installed:
 
-- **Java 21** (LTS) - [Download OpenJDK 21](https://adoptium.net/)
+- **Java 25** - [Download OpenJDK 25](https://ado
+- ptium.net/)
 - **Node.js 22+** (LTS) - [Download Node.js](https://nodejs.org/)
 - **Docker & Docker Compose 2.24+** - [Download Docker](https://www.docker.com/products/docker-desktop)
 - **Make** (optional, for convenience commands)
@@ -14,7 +15,7 @@ Before you begin, ensure you have the following installed:
 ### Verify Prerequisites
 
 ```bash
-java -version   # Should show Java 21
+java -version   # Should show Java 25
 node --version  # Should show v22.x or higher
 docker --version
 docker compose version
@@ -41,7 +42,7 @@ Or manually:
 cd apps/backend && ./mvnw clean install -DskipTests
 
 # Frontend
-cd apps/frontend && npm install
+cd apps/frontend && npm ci
 ```
 
 ### 3. Build Applications
@@ -102,10 +103,12 @@ regattadesk/
 | `make clean` | Clean build artifacts |
 | `make backend-dev` | Start backend in dev mode |
 | `make frontend-dev` | Start frontend in dev mode |
+| `make backend-image` | Build backend container image via Quarkus Jib |
 
 ## Backend (Quarkus)
 
-The backend is built with Quarkus 3.8+ and Java 21.
+The backend is built with Quarkus 3.8+ and Java 25.
+Container images are built with Quarkus container-image Jib extension.
 
 ### Backend Commands
 
@@ -123,6 +126,9 @@ cd apps/backend
 
 # Package for production
 ./mvnw clean package -Dquarkus.package.type=uber-jar
+
+# Build container image with Quarkus Jib
+./mvnw package -Dquarkus.container-image.build=true
 ```
 
 ### Backend Endpoints
@@ -141,7 +147,7 @@ The frontend is built with Vue 3, Vite 5+, and Node.js 22.
 cd apps/frontend
 
 # Install dependencies
-npm install
+npm ci
 
 # Run dev server
 npm run dev
@@ -173,7 +179,7 @@ The project uses the following minimum versions (as defined in `pdd/implementati
 
 | Tool | Minimum Version | Update Policy |
 |------|----------------|---------------|
-| Java | 21 (LTS) | Track latest Java 21 patches monthly |
+| Java | 25 | Track latest Java 25 patches monthly |
 | Node.js | 22+ (LTS) | Stay on active LTS |
 | Quarkus | 3.8+ | Latest stable minor in current major |
 | Vue | 3.4+ | Latest stable minor in major 3 |

@@ -5,32 +5,32 @@ This guide will help you set up the RegattaDesk development environment for the 
 ## Overview
 
 RegattaDesk is a full-stack application with:
-- **Backend**: Quarkus (Java 21) REST API
+- **Backend**: Quarkus (Java 25) REST API
 - **Frontend**: Vue 3 + Vite single-page application
 - **Infrastructure**: Docker Compose stack (future: PostgreSQL, Traefik, Authelia, MinIO)
 
 ## Prerequisites Installation
 
-### 1. Install Java 21
+### 1. Install Java 25
 
 #### macOS (using Homebrew)
 ```bash
-brew install openjdk@21
+brew install openjdk@25
 ```
 
 #### Linux (Ubuntu/Debian)
 ```bash
 sudo apt update
-sudo apt install openjdk-21-jdk
+sudo apt install openjdk-25-jdk
 ```
 
 #### Windows
-Download and install from [Adoptium](https://adoptium.net/temurin/releases/?version=21).
+Download and install from [Adoptium](https://adoptium.net/temurin/releases/?version=25).
 
 Verify installation:
 ```bash
 java -version
-# Should output: openjdk version "21.x.x"
+# Should output: openjdk version "25.x.x"
 ```
 
 ### 2. Install Node.js 22+
@@ -115,7 +115,7 @@ cd ../..
 
 # Frontend dependencies
 cd apps/frontend
-npm install
+npm ci
 cd ../..
 ```
 
@@ -203,6 +203,12 @@ cd apps/frontend
 npm run build
 ```
 
+Build backend container image with Quarkus Jib:
+```bash
+cd apps/backend
+./mvnw package -Dquarkus.container-image.build=true
+```
+
 ## IDE Setup
 
 ### Visual Studio Code (Recommended)
@@ -234,11 +240,11 @@ Import as existing Maven project:
 
 **Error**: `Unsupported class file major version`
 
-**Solution**: Ensure you're using Java 21:
+**Solution**: Ensure you're using Java 25:
 ```bash
 java -version
-# If wrong version, set JAVA_HOME to Java 21
-export JAVA_HOME=/path/to/java-21
+# If wrong version, set JAVA_HOME to Java 25
+export JAVA_HOME=/path/to/java-25
 ```
 
 ### Node Version Mismatch

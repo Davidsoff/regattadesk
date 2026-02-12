@@ -5,7 +5,7 @@ This directory contains the Quarkus backend service for RegattaDesk.
 
 ## Technology Stack
 - **Framework**: Quarkus 3.8+
-- **Language**: Java 21
+- **Language**: Java 25
 - **Build Tool**: Maven 3.9+
 - **Key Extensions**: 
   - RESTEasy Reactive (REST endpoints)
@@ -21,7 +21,7 @@ apps/backend/
 │   │   │   └── health/           # Health check endpoints
 │   │   ├── resources/
 │   │   │   └── application.properties  # Configuration
-│   │   └── docker/               # Dockerfile templates
+│   │   └── docker/               # Optional Dockerfile templates
 │   └── test/                     # Unit and integration tests
 ├── pom.xml                       # Maven dependencies
 └── mvnw                          # Maven wrapper
@@ -38,6 +38,11 @@ This starts the application with live reload on `http://localhost:8080`.
 ### Building
 ```bash
 ./mvnw clean package
+```
+
+### Building Container Image (Quarkus Jib)
+```bash
+./mvnw package -Dquarkus.container-image.build=true
 ```
 
 ### Testing
@@ -57,7 +62,7 @@ Edit `pom.xml` and add the dependency within the `<dependencies>` section. Use Q
 - Use Jakarta EE annotations (jakarta.ws.rs.*, jakarta.inject.*)
 - REST endpoints should be under `/api/` path
 - Health checks are at `/q/health` (Quarkus standard) and `/api/health` (custom)
-- Use Java 21 features (records, pattern matching, etc.) where appropriate
+- Use Java 25 features where appropriate
 
 ### Configuration
 Application configuration is in `src/main/resources/application.properties`:
@@ -70,7 +75,7 @@ Application configuration is in `src/main/resources/application.properties`:
 
 ## Important Notes for Agents
 
-1. **Java Version**: Must be Java 21 (set in pom.xml)
+1. **Java Version**: Must be Java 25 (set in pom.xml)
 2. **Quarkus Version**: 3.8+ is the baseline
 3. **Build Tool**: Use Maven wrapper (`./mvnw`) not global Maven
 4. **Dev Mode**: Always test changes in Quarkus dev mode before building
@@ -79,6 +84,7 @@ Application configuration is in `src/main/resources/application.properties`:
 ## Common Commands
 - `./mvnw quarkus:dev` - Start in dev mode
 - `./mvnw clean package` - Build
+- `./mvnw package -Dquarkus.container-image.build=true` - Build container image via Quarkus Jib
 - `./mvnw test` - Run tests
 - `./mvnw clean install -DskipTests` - Install without tests
 
