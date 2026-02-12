@@ -2,7 +2,8 @@ Version: v2 (2026-02-02)
 
 # Rough idea
 
-> NOTE: Superseded by `idea-honing.md` v2. This document retained for historical reference only.
+> NOTE: Superseded by `idea-honing.md` v2 and `design/detailed-design.md`. This document retained for historical reference only.
+> **Authentication Note:** This early document mentions Auth0; the final architecture uses Authelia SSO (see detailed-design.md).
 
 Build a regatta management system for rowing head races (single distance) with:
 
@@ -25,6 +26,6 @@ Key capabilities (v0.1):
 - Photo-finish line camera UI for start and finish (markers create/move/delete; overview + draggable detail window)
 - Strong auditability (adopt event sourcing)
 - Public pages cacheable; results auto-update via server push
-- Staff auth via Auth0; per-regatta roles; operators use QR token links (no personal accounts)
+- Staff auth via Authelia SSO; per-regatta roles; operators use QR token links (no personal accounts)
 - Operators pages work without stable internet; offline conflict policy uses LWW for marker adjustments/unlinks when entry is not approved, and requires manual resolution for duplicate links or edits against approved/immutable entries
 - Health endpoint + OpenTelemetry endpoint
