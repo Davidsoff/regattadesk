@@ -61,7 +61,7 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 **Rowing Head Races:**
 - Sequential class starts with interleaved finishes
 - Random draw with stored seed (designed for future algorithms)
-- Entry statuses: `active`, `withdrawn_before_draw`, `withdrawn_after_draw`, `dns`, `dnf`, `excluded`, `dsq`
+- Entry statuses: `active`, `withdrawn_before_draw`, `withdrawn_after_draw`, `dns` (Did Not Start), `dnf` (Did Not Finish), `excluded`, `dsq` (Disqualified)
 - Draw publishing increments `draw_revision`
 - Results publishing increments `results_revision`
 - Public URLs are versioned: `/public/v{draw_revision}-{results_revision}/...`
@@ -110,7 +110,7 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 - **Fast scanning of dense tabular data** - results tables are primary UI
 - **Error prevention** - offline conflicts, approval gates, immutability after approval
 - **Accessibility:** WCAG 2.2 AA minimum for public flows; aim for AAA where feasible
-- **Internationalization:** Dutch (nl) and English (en) primary; 24h time; dd-MM-yyyy dates
+- **Internationalization:** Dutch (nl) and English (en) primary; 24h time; DD-MM-YYYY date format
 - **Density options:** Comfortable default with compact/dense toggle
 - **Sunlight readability:** Operator UI must work outdoors
 
