@@ -47,6 +47,9 @@ if [ -f "$OUTPUT_FILE" ]; then
     fi
 fi
 
+# Always recreate output from template before replacement to avoid stale hashes.
+cp "$TEMPLATE_FILE" "$OUTPUT_FILE"
+
 # Check if Docker is available
 if ! command -v docker &> /dev/null; then
     log_error "Docker is required to generate password hashes"
@@ -80,11 +83,6 @@ for user in "${USERS[@]}"; do
     
     # Escape special characters in hash for sed
     HASH_ESCAPED=$(echo "$HASH" | sed 's/[\/&]/\\&/g')
-    
-    # Replace placeholder with actual hash
-    if [ ! -f "$OUTPUT_FILE" ]; then
-        cp "$TEMPLATE_FILE" "$OUTPUT_FILE"
-    fi
     
     # Replace the first occurrence of REPLACE_WITH_YOUR_HASH with the actual hash
     sed -i "0,/REPLACE_WITH_YOUR_HASH/s/REPLACE_WITH_YOUR_HASH/$HASH_ESCAPED/" "$OUTPUT_FILE"

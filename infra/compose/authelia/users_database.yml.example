@@ -22,7 +22,7 @@ users:
   # Super Admin - global access
   superadmin:
     displayname: "Super Admin"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: superadmin@regattadesk.local
     groups:
       - super_admin
@@ -30,7 +30,7 @@ users:
   # Regatta Admin - full access to regatta
   regattaadmin:
     displayname: "Regatta Admin"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: regattaadmin@regattadesk.local
     groups:
       - regatta_admin
@@ -38,7 +38,7 @@ users:
   # Head of Jury - approve entries, investigations, penalties
   headofjury:
     displayname: "Head of Jury"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: headofjury@regattadesk.local
     groups:
       - head_of_jury
@@ -46,7 +46,7 @@ users:
   # Info Desk - crew mutations, bib changes, withdrawals
   infodesk:
     displayname: "Info Desk"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: infodesk@regattadesk.local
     groups:
       - info_desk
@@ -54,7 +54,7 @@ users:
   # Financial Manager - payment tracking
   financialmanager:
     displayname: "Financial Manager"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: financialmanager@regattadesk.local
     groups:
       - financial_manager
@@ -62,7 +62,7 @@ users:
   # Operator - line-scan camera UI
   operator:
     displayname: "Operator"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
+    password: "REPLACE_WITH_YOUR_HASH"
     email: operator@regattadesk.local
     groups:
       - operator
