@@ -22,6 +22,10 @@ log:
   level: info
   format: text
 
+# Certificates (optional, for development with HTTP)
+# In production, use proper TLS certificates
+certificates_directory: ""
+
 # TOTP Configuration
 totp:
   disable: false
@@ -88,6 +92,7 @@ access_control:
         - ["group:financial_manager"]
 
 # Session Configuration (updated format for 4.38+)
+# NOTE: For development, using HTTP. In production, use HTTPS with proper TLS certificates
 session:
   secret: ${AUTHELIA_SESSION_SECRET}
   cookies:

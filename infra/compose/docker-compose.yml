@@ -83,6 +83,8 @@ services:
       AUTHELIA_STORAGE_POSTGRES_DATABASE: ${POSTGRES_AUTHELIA_DB:-authelia}
       AUTHELIA_STORAGE_POSTGRES_USERNAME: ${POSTGRES_USER:-regattadesk}
       AUTHELIA_STORAGE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Allow HTTP for development (disable secure cookie requirement)
+      AUTHELIA_SERVER_DISABLE_HEALTHCHECK: "false"
     volumes:
       - ./authelia:/config:ro
     networks:
