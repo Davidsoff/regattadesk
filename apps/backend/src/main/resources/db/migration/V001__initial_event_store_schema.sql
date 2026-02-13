@@ -99,6 +99,20 @@ CREATE TRIGGER enforce_event_store_no_deletes
     FOR EACH ROW
     EXECUTE FUNCTION prevent_event_store_deletes();
 
+-- Prevent truncate from event_store (immutable audit trail)
+-- TRUNCATE bypasses row-level triggers, so we need statement-level protection
+CREATE OR REPLACE FUNCTION prevent_event_store_truncate()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'event_store is immutable: truncate is not allowed';
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER enforce_event_store_no_truncate
+    BEFORE TRUNCATE ON event_store
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION prevent_event_store_truncate();
+
 -- ========================================
 -- COMMENTS (Schema Documentation)
 -- ========================================

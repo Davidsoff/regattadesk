@@ -55,3 +55,7 @@ CREATE TRIGGER enforce_event_store_no_deletes
     BEFORE DELETE ON event_store
     FOR EACH ROW
     CALL 'com.regattadesk.eventstore.PreventDeletesTrigger';
+
+-- Note: H2 does not support BEFORE TRUNCATE triggers
+-- In test environment, this is acceptable as tests are isolated
+-- Production PostgreSQL has TRUNCATE protection via enforce_event_store_no_truncate trigger

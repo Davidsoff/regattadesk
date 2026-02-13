@@ -28,9 +28,12 @@ Given these requirements and the relatively low volume expected in v0.1 deployme
 The event store schema enforces immutability through:
 - **No Updates**: Database trigger prevents UPDATE operations on `event_store` table
 - **No Deletes**: Database trigger prevents DELETE operations on `event_store` table
+- **No Truncate**: Database trigger prevents TRUNCATE operations on `event_store` table (PostgreSQL only)
 - **Append-Only**: Events can only be inserted, never modified or removed
 
 See migration `V001__initial_event_store_schema.sql` for implementation details.
+
+**Note**: PostgreSQL TRUNCATE operations bypass row-level triggers, so a separate statement-level trigger is used to prevent mass deletion of audit data.
 
 ### Storage Considerations
 
@@ -55,6 +58,13 @@ Operations should monitor:
 Alert thresholds (recommended):
 - Table size exceeds 10 GB: Review retention policy
 - Read queries exceed 500ms p99: Review indexing strategy
+
+**Note**: Performance tests in v0.1 are informational and do not block builds. Target performance:
+- Stream reads (100 events): < 100ms
+- Event type queries: < 50ms
+- Temporal range queries: < 50ms
+
+These targets serve as development guidelines but are not enforced in CI due to unstable test environments.
 
 ## Operational Procedures
 
