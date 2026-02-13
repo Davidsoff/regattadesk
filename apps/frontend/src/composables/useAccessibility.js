@@ -46,7 +46,7 @@ export function useFocusTrap() {
     if (focusableElements.length === 0) return;
 
     const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
+    const lastElement = focusableElements.at(-1);
 
     if (event.shiftKey && document.activeElement === firstElement) {
       event.preventDefault();
@@ -105,24 +105,26 @@ export function useFocusTrap() {
  * const { announce } = useLiveAnnouncer();
  * announce('12 entries selected', 'polite');
  */
+
+// Helper function moved to module scope
+function ensureLiveRegion(liveRegion) {
+  if (!liveRegion) {
+    liveRegion = document.getElementById('rd-live-announcer');
+    
+    if (!liveRegion) {
+      liveRegion = document.createElement('div');
+      liveRegion.id = 'rd-live-announcer';
+      liveRegion.ariaLive = 'polite';
+      liveRegion.ariaAtomic = 'true';
+      liveRegion.className = 'rd-sr-only';
+      document.body.appendChild(liveRegion);
+    }
+  }
+  return liveRegion;
+}
+
 export function useLiveAnnouncer() {
   let liveRegion = null;
-
-  function ensureLiveRegion() {
-    if (!liveRegion) {
-      liveRegion = document.getElementById('rd-live-announcer');
-      
-      if (!liveRegion) {
-        liveRegion = document.createElement('div');
-        liveRegion.id = 'rd-live-announcer';
-        liveRegion.setAttribute('aria-live', 'polite');
-        liveRegion.setAttribute('aria-atomic', 'true');
-        liveRegion.className = 'rd-sr-only';
-        document.body.appendChild(liveRegion);
-      }
-    }
-    return liveRegion;
-  }
 
   /**
    * Announce a message to screen readers
@@ -131,18 +133,18 @@ export function useLiveAnnouncer() {
    * @param {'polite'|'assertive'} priority - Announcement priority
    */
   function announce(message, priority = 'polite') {
-    const region = ensureLiveRegion();
-    region.setAttribute('aria-live', priority);
+    liveRegion = ensureLiveRegion(liveRegion);
+    liveRegion.ariaLive = priority;
     
     // Clear and re-add to ensure announcement
-    region.textContent = '';
+    liveRegion.textContent = '';
     setTimeout(() => {
-      region.textContent = message;
+      liveRegion.textContent = message;
     }, 100);
   }
 
   onMounted(() => {
-    ensureLiveRegion();
+    liveRegion = ensureLiveRegion(liveRegion);
   });
 
   return {
@@ -180,7 +182,7 @@ export function useArrowNavigation(options = {}) {
 
   function getCurrentIndex() {
     const items = getItems();
-    return items.findIndex(item => item === document.activeElement);
+    return items.indexOf(document.activeElement);
   }
 
   function focusItem(index) {
@@ -190,66 +192,69 @@ export function useArrowNavigation(options = {}) {
     }
   }
 
+  function calculateNextIndex(currentIndex, direction, itemsLength) {
+    let nextIndex = currentIndex;
+    
+    if (direction === 'forward') {
+      nextIndex = currentIndex + 1;
+      if (loop && nextIndex >= itemsLength) {
+        nextIndex = 0;
+      }
+    } else if (direction === 'backward') {
+      nextIndex = currentIndex - 1;
+      if (loop && nextIndex < 0) {
+        nextIndex = itemsLength - 1;
+      }
+    }
+    
+    return nextIndex;
+  }
+
+  function shouldHandleVertical(key) {
+    return (key === 'ArrowDown' || key === 'ArrowUp') && 
+           (orientation === 'vertical' || orientation === 'both');
+  }
+
+  function shouldHandleHorizontal(key) {
+    return (key === 'ArrowRight' || key === 'ArrowLeft') && 
+           (orientation === 'horizontal' || orientation === 'both');
+  }
+
   function handleKeyDown(event) {
     const currentIndex = getCurrentIndex();
     if (currentIndex === -1) return;
 
     const items = getItems();
     let nextIndex = currentIndex;
+    let handled = false;
 
-    switch (event.key) {
-      case 'ArrowDown':
-        if (orientation === 'vertical' || orientation === 'both') {
-          event.preventDefault();
-          nextIndex = currentIndex + 1;
-          if (loop && nextIndex >= items.length) {
-            nextIndex = 0;
-          }
-        }
-        break;
-      
-      case 'ArrowUp':
-        if (orientation === 'vertical' || orientation === 'both') {
-          event.preventDefault();
-          nextIndex = currentIndex - 1;
-          if (loop && nextIndex < 0) {
-            nextIndex = items.length - 1;
-          }
-        }
-        break;
-      
-      case 'ArrowRight':
-        if (orientation === 'horizontal' || orientation === 'both') {
-          event.preventDefault();
-          nextIndex = currentIndex + 1;
-          if (loop && nextIndex >= items.length) {
-            nextIndex = 0;
-          }
-        }
-        break;
-      
-      case 'ArrowLeft':
-        if (orientation === 'horizontal' || orientation === 'both') {
-          event.preventDefault();
-          nextIndex = currentIndex - 1;
-          if (loop && nextIndex < 0) {
-            nextIndex = items.length - 1;
-          }
-        }
-        break;
-      
-      case 'Home':
-        event.preventDefault();
-        nextIndex = 0;
-        break;
-      
-      case 'End':
-        event.preventDefault();
-        nextIndex = items.length - 1;
-        break;
+    if (event.key === 'ArrowDown' && shouldHandleVertical('ArrowDown')) {
+      event.preventDefault();
+      nextIndex = calculateNextIndex(currentIndex, 'forward', items.length);
+      handled = true;
+    } else if (event.key === 'ArrowUp' && shouldHandleVertical('ArrowUp')) {
+      event.preventDefault();
+      nextIndex = calculateNextIndex(currentIndex, 'backward', items.length);
+      handled = true;
+    } else if (event.key === 'ArrowRight' && shouldHandleHorizontal('ArrowRight')) {
+      event.preventDefault();
+      nextIndex = calculateNextIndex(currentIndex, 'forward', items.length);
+      handled = true;
+    } else if (event.key === 'ArrowLeft' && shouldHandleHorizontal('ArrowLeft')) {
+      event.preventDefault();
+      nextIndex = calculateNextIndex(currentIndex, 'backward', items.length);
+      handled = true;
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      nextIndex = 0;
+      handled = true;
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      nextIndex = items.length - 1;
+      handled = true;
     }
 
-    if (nextIndex !== currentIndex && nextIndex >= 0 && nextIndex < items.length) {
+    if (handled && nextIndex !== currentIndex && nextIndex >= 0 && nextIndex < items.length) {
       focusItem(nextIndex);
     }
   }
@@ -275,7 +280,7 @@ export function useSkipLink() {
   function skipToMain(mainId = 'main-content') {
     const mainElement = document.getElementById(mainId);
     if (mainElement) {
-      mainElement.setAttribute('tabindex', '-1');
+      mainElement.tabIndex = -1;
       mainElement.focus();
       
       // Remove tabindex after focus moves away or after a short delay
@@ -314,7 +319,7 @@ export function useFocusManagement() {
     await nextTick();
     const heading = document.querySelector(selector);
     if (heading) {
-      heading.setAttribute('tabindex', '-1');
+      heading.tabIndex = -1;
       heading.focus();
       
       const cleanup = () => {
@@ -332,7 +337,7 @@ export function useFocusManagement() {
     await nextTick();
     const errorContainer = document.querySelector(containerSelector);
     if (errorContainer) {
-      errorContainer.setAttribute('tabindex', '-1');
+      errorContainer.tabIndex = -1;
       errorContainer.focus();
       
       const cleanup = () => {

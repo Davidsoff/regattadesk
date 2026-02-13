@@ -71,13 +71,6 @@
   --rd-leading-normal: 1.5;
   --rd-leading-relaxed: 1.75;
 
-  /* ==================== Breakpoints ==================== */
-  /* Note: Use in media queries like @media (min-width: 480px) */
-  /* --rd-breakpoint-sm: 480px; */
-  /* --rd-breakpoint-md: 768px; */
-  /* --rd-breakpoint-lg: 1024px; */
-  /* --rd-breakpoint-xl: 1280px; */
-
   /* ==================== Motion ==================== */
   --rd-transition-fast: 120ms ease-in-out;
   --rd-transition-base: 180ms ease-in-out;

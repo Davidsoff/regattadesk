@@ -29,11 +29,12 @@
     </div>
     <div v-if="loading" class="rd-table-loading">
       <slot name="loading">
-        <div 
+        <img 
           v-for="n in skeletonRows" 
           :key="n" 
           class="rd-table-skeleton-row"
-          role="presentation"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"
+          alt=""
           aria-hidden="true"
         />
       </slot>
