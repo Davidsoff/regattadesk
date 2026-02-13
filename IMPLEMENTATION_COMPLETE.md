@@ -10,7 +10,7 @@ Successfully implemented Traefik edge SSO integration with Authelia and role for
 
 1. **Authelia SSO Configuration**
    - All 6 v0.1 roles configured: `super_admin`, `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `operator`
-   - Test users created for each role (password: `changeme`)
+   - Users database template with secure password generation script
    - Deny-by-default access control policy
    - Role-based access rules for staff and operator endpoints
    - Public endpoints bypass authentication
@@ -107,14 +107,19 @@ This limitation does not affect the completion of BC02-001 requirements. The con
 ## Files Changed
 
 - `infra/compose/authelia/configuration.yml` - Access control rules, role mappings
-- `infra/compose/authelia/users_database.yml` - User roles and test accounts
 - `infra/compose/traefik/dynamic.yml` - ForwardAuth middleware, header config
 - `infra/compose/docker-compose.yml` - Authelia service, routing labels
 - `infra/compose/README.md` - Authentication documentation
 - `infra/compose/.env.example` - Authelia secrets (already present)
+- `infra/compose/.gitignore` - Exclude users_database.yml for security
 - `docs/IDENTITY_FORWARDING.md` - NEW: Identity contract specification
 - `infra/compose/edge-auth-test.sh` - NEW: Integration test script
 - `infra/compose/BC02-001-STATUS.md` - NEW: Implementation status
+- `infra/compose/authelia/users_database.yml.example` - NEW: Secure user template
+- `infra/compose/generate-users-database.sh` - NEW: Password generation script
+- `IMPLEMENTATION_COMPLETE.md` - NEW: Final summary
+
+**Total**: 12 files (6 modified, 6 created)
 
 ## References
 

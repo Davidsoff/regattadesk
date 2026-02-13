@@ -3,12 +3,9 @@
 #                         Users Database                      #
 ###############################################################
 
-# This file is for local development only.
+# This file is a template for local development only.
+# Copy this file to users_database.yml and update with your own password hashes.
 # In production, users should be managed via LDAP or other authentication backends.
-# Passwords are hashed using argon2id.
-
-# Default password for all users: "changeme"
-# Generated with: docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'changeme'
 
 # Role Mapping:
 # - super_admin: Global admin role, access to all regattas
@@ -18,11 +15,14 @@
 # - financial_manager: Mark paid per entry or per club
 # - operator: Start/finish line operators with line-scan camera UI
 
+# To generate password hashes, run:
+# docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'your-password-here'
+
 users:
   # Super Admin - global access
   superadmin:
     displayname: "Super Admin"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: superadmin@regattadesk.local
     groups:
       - super_admin
@@ -30,7 +30,7 @@ users:
   # Regatta Admin - full access to regatta
   regattaadmin:
     displayname: "Regatta Admin"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: regattaadmin@regattadesk.local
     groups:
       - regatta_admin
@@ -38,7 +38,7 @@ users:
   # Head of Jury - approve entries, investigations, penalties
   headofjury:
     displayname: "Head of Jury"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: headofjury@regattadesk.local
     groups:
       - head_of_jury
@@ -46,7 +46,7 @@ users:
   # Info Desk - crew mutations, bib changes, withdrawals
   infodesk:
     displayname: "Info Desk"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: infodesk@regattadesk.local
     groups:
       - info_desk
@@ -54,7 +54,7 @@ users:
   # Financial Manager - payment tracking
   financialmanager:
     displayname: "Financial Manager"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: financialmanager@regattadesk.local
     groups:
       - financial_manager
@@ -62,7 +62,7 @@ users:
   # Operator - line-scan camera UI
   operator:
     displayname: "Operator"
-    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$REPLACE_WITH_YOUR_HASH"
     email: operator@regattadesk.local
     groups:
       - operator

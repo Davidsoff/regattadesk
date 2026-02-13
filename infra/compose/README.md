@@ -93,18 +93,36 @@ This creates a container image using Jib, which optimizes the image layers witho
    # - AUTHELIA_STORAGE_ENCRYPTION_KEY (min 32 chars)
    ```
 
-4. **Start the stack:**
+4. **Generate Authelia users database:**
+   ```bash
+   # Option 1: Use the generation script (recommended)
+   ./generate-users-database.sh
+   
+   # This will:
+   # - Generate random passwords for all users
+   # - Create password hashes using Authelia
+   # - Create authelia/users_database.yml with the hashes
+   # - Display the passwords (save them securely!)
+   
+   # Option 2: Manual setup
+   cp authelia/users_database.yml.example authelia/users_database.yml
+   # Then generate hashes manually:
+   docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'your-password'
+   # Update the hashes in authelia/users_database.yml
+   ```
+
+5. **Start the stack:**
    ```bash
    docker compose up -d
    ```
 
-5. **Check service health:**
+6. **Check service health:**
    ```bash
    docker compose ps
    docker compose logs -f
    ```
 
-6. **Access the application:**
+7. **Access the application:**
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - Authelia SSO: http://localhost.local/auth
@@ -175,16 +193,11 @@ For detailed information about the identity forwarding contract and trust bounda
 - **Image**: `authelia/authelia:4.38`
 - **Mode**: DB-only (no Redis required)
 - **Storage**: PostgreSQL
-- **Default Users** (development only):
-  - **Super Admin**: `superadmin` / `changeme`
-  - **Regatta Admin**: `regattaadmin` / `changeme`
-  - **Head of Jury**: `headofjury` / `changeme`
-  - **Info Desk**: `infodesk` / `changeme`
-  - **Financial Manager**: `financialmanager` / `changeme`
-  - **Operator**: `operator` / `changeme`
 - **Configuration**: `./authelia/configuration.yml`
+- **Users**: Configured via `./authelia/users_database.yml` (not in git for security)
 - **Roles**: `super_admin`, `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `operator`
 - **Access**: http://localhost.local/auth
+- **Setup**: Use `./generate-users-database.sh` to create users with secure passwords
 
 ### Traefik
 
@@ -317,11 +330,12 @@ Services show as "healthy" when ready.
 ### Security
 
 1. **Change all default passwords** in `.env`
-2. **Use strong secrets** (min 32 characters) for Authelia
-3. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
-4. **Update Authelia users** or integrate with LDAP/OIDC
-5. **Restrict Traefik dashboard** access
-6. **Review access control rules** in `authelia/configuration.yml`
+2. **Generate secure users database** with `./generate-users-database.sh`
+3. **Never commit `authelia/users_database.yml`** to version control
+4. **Use strong secrets** (min 32 characters) for Authelia
+5. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
+6. **Restrict Traefik dashboard** access
+7. **Review access control rules** in `authelia/configuration.yml`
 
 ### Performance
 

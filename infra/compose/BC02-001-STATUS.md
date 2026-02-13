@@ -8,9 +8,10 @@ This ticket implements Traefik edge SSO integration with Authelia and role forwa
 
 ### ✅ Configuration Files
 
-1. **Authelia Users Database** (`authelia/users_database.yml`)
-   - Added all required v0.1 roles: `super_admin`, `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `operator`
-   - Created test users for each role (password: `changeme`)
+1. **Authelia Users Database** (`authelia/users_database.yml.example`)
+   - Template file with all required v0.1 roles: `super_admin`, `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `operator`
+   - Actual `users_database.yml` excluded from git for security
+   - Generation script provided (`generate-users-database.sh`)
    - Properly documented role responsibilities
 
 2. **Authelia Configuration** (`authelia/configuration.yml`)

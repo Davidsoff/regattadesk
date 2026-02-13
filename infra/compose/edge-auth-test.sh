@@ -239,27 +239,28 @@ test_forwarded_headers() {
 
 # Test: Verify role configuration in Authelia
 test_role_configuration() {
-    test_start "Role configuration in Authelia users database"
+    test_start "Role configuration in Authelia users database template"
     
-    if [ -f "./authelia/users_database.yml" ]; then
+    # Check the template file instead of the actual users database
+    if [ -f "./authelia/users_database.yml.example" ]; then
         local roles=("super_admin" "regatta_admin" "head_of_jury" "info_desk" "financial_manager" "operator")
         local all_found=true
         
         for role in "${roles[@]}"; do
-            if ! grep -q "$role" ./authelia/users_database.yml; then
-                log_error "Role '$role' not found in users database"
+            if ! grep -q "$role" ./authelia/users_database.yml.example; then
+                log_error "Role '$role' not found in users database template"
                 all_found=false
             fi
         done
         
         if [ "$all_found" = true ]; then
-            log_info "All required roles configured"
+            log_info "All required roles configured in template"
             test_pass
         else
-            test_fail "Missing required roles in users database"
+            test_fail "Missing required roles in users database template"
         fi
     else
-        test_fail "Users database file not found"
+        test_fail "Users database template file not found"
     fi
 }
 
