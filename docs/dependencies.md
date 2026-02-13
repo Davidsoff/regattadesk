@@ -98,7 +98,7 @@ This document tracks all third-party dependencies used in RegattaDesk v0.1.
 
 | Component | Current Version | EOL Date | Migration Plan |
 |-----------|----------------|----------|----------------|
-| Java 25 | 25 | TBD (non-LTS) | Using latest Java version for development |
+| Java 25 | 25 | March 2026 (estimated) | Repository baseline uses Java 25; monitor Quarkus compatibility for Java 25 LTS or plan migration to next LTS version |
 | Node.js 22 | 22 (LTS) | April 2027 | Plan upgrade cycle for Node.js 24 LTS |
 | PostgreSQL 16 | 16 | November 2028 | Monitor PostgreSQL 17+ compatibility |
 | Quarkus 3.x | 3.8.6 | TBD | Stay on minor update cadence |
