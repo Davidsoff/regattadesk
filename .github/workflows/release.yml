@@ -27,6 +27,8 @@ jobs:
   build-and-package:
     name: Build and Package Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -115,6 +117,8 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: build-and-package
     if: |
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging') ||
@@ -154,6 +158,8 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: build-and-package
     if: |
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') ||

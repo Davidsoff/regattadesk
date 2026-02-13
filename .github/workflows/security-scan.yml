@@ -15,6 +15,8 @@ jobs:
   backend-security-scan:
     name: Backend Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/backend
@@ -48,6 +50,8 @@ jobs:
   frontend-security-scan:
     name: Frontend Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: apps/frontend
@@ -82,6 +86,7 @@ jobs:
   docker-image-scan:
     name: Docker Image Vulnerability Scan
     runs-on: ubuntu-latest
+    permissions: {}
     strategy:
       matrix:
         image:
@@ -112,6 +117,7 @@ jobs:
   consolidate-results:
     name: Consolidate Security Scan Results
     runs-on: ubuntu-latest
+    permissions: {}
     needs: [backend-security-scan, frontend-security-scan, docker-image-scan]
     if: always()
     steps:
