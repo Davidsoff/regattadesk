@@ -28,11 +28,13 @@ public final class Principal {
      * @param displayName the user's display name (from Remote-Name header)
      * @param email the user's email address (from Remote-Email header)
      * @param roles the set of roles assigned to the user (from Remote-Groups header)
-     * @throws IllegalArgumentException if username is null or blank
+     * @throws IllegalArgumentException if username is null, empty, or contains only whitespace
      */
     public Principal(String username, String displayName, String email, Set<Role> roles) {
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Username cannot be null or blank");
+            throw new IllegalArgumentException(
+                "Username cannot be null, empty, or contain only whitespace"
+            );
         }
         
         this.username = username;

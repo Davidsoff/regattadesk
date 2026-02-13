@@ -45,8 +45,9 @@ public class IdentityHeaderExtractor {
      */
     public Principal extractPrincipal(String remoteUser, String remoteName, 
                                      String remoteEmail, String remoteGroups) {
-        // Validate required header
-        if (remoteUser == null || remoteUser.isBlank()) {
+        // Trim and validate required header
+        String trimmedUser = remoteUser != null ? remoteUser.trim() : null;
+        if (trimmedUser == null || trimmedUser.isBlank()) {
             throw new InvalidIdentityHeaderException(
                 "Missing or invalid Remote-User header - authentication required"
             );
@@ -57,7 +58,7 @@ public class IdentityHeaderExtractor {
         
         // Create and return principal
         return new Principal(
-            remoteUser.trim(),
+            trimmedUser,
             remoteName != null ? remoteName.trim() : null,
             remoteEmail != null ? remoteEmail.trim() : null,
             roles
