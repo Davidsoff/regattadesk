@@ -159,7 +159,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.routers.backend.entrypoints=web,websecure"
+      - "traefik.http.routers.backend.tls=true"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
       # ForwardAuth for staff endpoints - TO BE ENABLED when Authelia is configured
       # - "traefik.http.routers.backend-staff.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/staff`)"

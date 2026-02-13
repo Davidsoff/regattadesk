@@ -1,5 +1,7 @@
 # Traefik Dynamic Configuration
 # This file defines dynamic routing rules and middlewares
+# TLS certificates for production are typically managed by Traefik via Let's Encrypt (ACME)
+# using static configuration on the Traefik service, which must be added separately and is not part of this file.
 
 http:
   middlewares:

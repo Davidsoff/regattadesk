@@ -149,8 +149,16 @@ This creates a container image using Jib, which optimizes the image layers witho
 - **Dashboard Port**: 8080
 - **Features**:
   - Automatic service discovery
+  - Let's Encrypt (ACME) certificate management for TLS
   - ForwardAuth integration with Authelia
   - Security headers middleware
+
+### TLS Certificate Strategy
+
+- **Production TLS**: Use Traefik ACME with Let's Encrypt as the certificate resolver.
+- **DNS/Host requirement**: Certificates are issued for a real domain pointing to the Traefik edge.
+- **Local development TLS**: Use Traefik with self-signed certificates.
+- **Local ACME note**: Do not use production ACME against localhost/local-only hosts.
 
 ### Backend
 
@@ -265,7 +273,7 @@ Services show as "healthy" when ready.
 
 1. **Change all default passwords** in `.env`
 2. **Use strong secrets** (min 32 characters) for Authelia
-3. **Configure HTTPS** with proper TLS certificates in Traefik
+3. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
 4. **Update Authelia users** or integrate with LDAP/OIDC
 5. **Restrict Traefik dashboard** access
 6. **Review access control rules** in `authelia/configuration.yml`

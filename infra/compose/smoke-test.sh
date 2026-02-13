@@ -18,6 +18,13 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Escape values for safe use in sed replacement strings.
+escape_sed_replacement() {
+    local value="$1"
+    printf '%s' "$value" | sed -e 's/[\/&]/\\&/g'
+    return 0
+}
+
 # Check if .env exists
 if [ ! -f .env ]; then
     echo -e "${YELLOW}Warning: .env file not found. Creating from .env.example...${NC}"
@@ -31,12 +38,18 @@ if [ ! -f .env ]; then
     SESSION_SECRET=$(openssl rand -base64 32)
     ENCRYPTION_KEY=$(openssl rand -base64 32)
     
-    # Update .env with generated secrets
-    sed -i "s/changeme_postgres_password/$POSTGRES_PASS/" .env
-    sed -i "s/changeme_minio_password/$MINIO_PASS/" .env
-    sed -i "s/changeme_jwt_secret_min_32_chars/$JWT_SECRET/" .env
-    sed -i "s/changeme_session_secret_min_32_chars/$SESSION_SECRET/" .env
-    sed -i "s/changeme_encryption_key_min_32_chars/$ENCRYPTION_KEY/" .env
+    # Update .env with generated secrets using escaped replacements.
+    POSTGRES_PASS_ESCAPED=$(escape_sed_replacement "$POSTGRES_PASS")
+    MINIO_PASS_ESCAPED=$(escape_sed_replacement "$MINIO_PASS")
+    JWT_SECRET_ESCAPED=$(escape_sed_replacement "$JWT_SECRET")
+    SESSION_SECRET_ESCAPED=$(escape_sed_replacement "$SESSION_SECRET")
+    ENCRYPTION_KEY_ESCAPED=$(escape_sed_replacement "$ENCRYPTION_KEY")
+
+    sed -i "s/changeme_postgres_password/$POSTGRES_PASS_ESCAPED/" .env
+    sed -i "s/changeme_minio_password/$MINIO_PASS_ESCAPED/" .env
+    sed -i "s/changeme_jwt_secret_min_32_chars/$JWT_SECRET_ESCAPED/" .env
+    sed -i "s/changeme_session_secret_min_32_chars/$SESSION_SECRET_ESCAPED/" .env
+    sed -i "s/changeme_encryption_key_min_32_chars/$ENCRYPTION_KEY_ESCAPED/" .env
     
     echo -e "${GREEN}✓ .env file created with secure secrets${NC}"
 fi
@@ -174,7 +187,10 @@ fi
 
 echo
 echo "Step 5: Verifying MinIO buckets..."
-BUCKETS=$(docker compose exec -T minio mc ls regattadesk 2>/dev/null || echo "")
+BUCKETS=$(docker compose exec -T minio sh -c '
+    mc alias set regattadesk http://localhost:9000 "${MINIO_ROOT_USER:-regattadesk}" "${MINIO_ROOT_PASSWORD}" >/dev/null 2>&1 &&
+    mc ls regattadesk
+' 2>/dev/null || echo "")
 if echo "$BUCKETS" | grep -q "line-scan-tiles" && echo "$BUCKETS" | grep -q "line-scan-manifests"; then
     echo -e "${GREEN}✓ MinIO buckets created successfully${NC}"
 else

@@ -78,7 +78,7 @@ This implementation plan is decomposed into bounded contexts, each with function
 | Step-level minimum testing policy (unit/integration/contract/UI + accessibility checks) | BC09 |
 
 ## Checklist
-- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO object storage for line-scan tiles/manifests; DB-only Authelia backing in v0.1 and no Redis dependency) + CI/CD pipeline
+- [ ] Step 1: Repo + baseline Quarkus/Vue skeleton + Docker Compose stack (must include all runtime dependencies: backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO object storage for line-scan tiles/manifests; DB-only Authelia backing in v0.1 and no Redis dependency; TLS strategy: Let's Encrypt ACME in production and self-signed certificates for local development) + CI/CD pipeline
 - [ ] Step 2: Authelia SSO integration at Traefik edge + forwarded identity/role mapping model (regatta_admin, head_of_jury, info_desk, financial_manager; super_admin global)
 - [ ] Step 3: Event store schema + append/read primitives + audit log retention (retain indefinitely in v0.1)
 - [ ] Step 4: Core aggregates + projections scaffold

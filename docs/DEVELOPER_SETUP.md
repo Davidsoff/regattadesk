@@ -9,6 +9,10 @@ RegattaDesk is a full-stack application with:
 - **Frontend**: Vue 3 + Vite single-page application
 - **Infrastructure**: Docker Compose stack (future: PostgreSQL, Traefik, Authelia, MinIO)
 
+TLS policy:
+- Production uses Traefik with Let's Encrypt (ACME).
+- Local development TLS uses Traefik with self-signed certificates.
+
 ## Prerequisites Installation
 
 ### 1. Install Java 25
