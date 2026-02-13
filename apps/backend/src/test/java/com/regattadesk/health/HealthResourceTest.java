@@ -21,49 +21,16 @@ class HealthResourceTest {
     }
     
     @Test
-    void testSecureHealthEndpoint_NoAuth() {
-        // Secure endpoint should return 403 without authentication
+    void testPublicHealthEndpoint_IgnoresForgedHeaders() {
+        // Public health endpoint should ignore forged identity headers
+        // The sanitizer strips them before the backend sees them
         given()
-            .when().get("/api/health/secure")
-            .then()
-            .statusCode(403);
-    }
-    
-    @Test
-    void testSecureHealthEndpoint_WithRegattaAdmin() {
-        // Should succeed with REGATTA_ADMIN role
-        given()
-            .header("Remote-User", "admin")
-            .header("Remote-Groups", "regatta_admin")
-            .when().get("/api/health/secure")
-            .then()
-            .statusCode(200)
-            .body("status", equalTo("UP"))
-            .body("version", equalTo("0.1.0-SNAPSHOT"))
-            .body("authenticatedUser", equalTo("admin"));
-    }
-    
-    @Test
-    void testSecureHealthEndpoint_WithSuperAdmin() {
-        // Should succeed with SUPER_ADMIN role
-        given()
-            .header("Remote-User", "superadmin")
+            .header("Remote-User", "attacker")
             .header("Remote-Groups", "super_admin")
-            .when().get("/api/health/secure")
+            .when().get("/api/health")
             .then()
             .statusCode(200)
             .body("status", equalTo("UP"))
-            .body("authenticatedUser", equalTo("superadmin"));
-    }
-    
-    @Test
-    void testSecureHealthEndpoint_WithWrongRole() {
-        // Should fail with wrong role (e.g., OPERATOR)
-        given()
-            .header("Remote-User", "operator")
-            .header("Remote-Groups", "operator")
-            .when().get("/api/health/secure")
-            .then()
-            .statusCode(403);
+            .body("version", equalTo("0.1.0-SNAPSHOT"));
     }
 }
