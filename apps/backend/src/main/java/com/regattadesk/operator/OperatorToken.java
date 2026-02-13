@@ -175,7 +175,8 @@ public final class OperatorToken {
      * @return true if the current time is past the validUntil time
      */
     public boolean isExpired() {
-        return Instant.now().isAfter(validUntil) || Instant.now().equals(validUntil);
+        Instant now = Instant.now();
+        return !now.isBefore(validUntil);
     }
     
     /**
