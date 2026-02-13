@@ -19,15 +19,21 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    local message="$1"
+    echo -e "${GREEN}[INFO]${NC} ${message}"
+    return 0
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    local message="$1"
+    echo -e "${YELLOW}[WARN]${NC} ${message}"
+    return 0
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" >&2
+    local message="$1"
+    echo -e "${RED}[ERROR]${NC} ${message}" >&2
+    return 0
 }
 
 # Check if template exists
