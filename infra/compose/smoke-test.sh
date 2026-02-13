@@ -20,7 +20,9 @@ NC='\033[0m' # No Color
 
 # Escape values for safe use in sed replacement strings.
 escape_sed_replacement() {
-    printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
+    local value="$1"
+    printf '%s' "$value" | sed -e 's/[\/&]/\\&/g'
+    return 0
 }
 
 # Check if .env exists
