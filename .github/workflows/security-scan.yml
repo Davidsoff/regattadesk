@@ -89,6 +89,9 @@ jobs:
     permissions: {}
     strategy:
       matrix:
+        # NOTE: Scanning actual images from docker-compose.yml
+        # Action items: Pin minio/minio and authelia/authelia to specific tags
+        # See docs/dependencies.md for tracking
         image:
           - postgres:16-alpine
           - minio/minio:latest
