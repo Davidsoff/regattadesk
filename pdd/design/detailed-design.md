@@ -214,6 +214,8 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
   - Conflict API exposes pending conflicts with resolution options via `GET /api/v1/regattas/{regatta_id}/operator/conflicts` and `POST /api/v1/regattas/{regatta_id}/operator/conflicts/{conflict_id}/resolve`.
 - High read scalability: CDN caching + versioned paths + SSE ticks.
 - Containerized deployment via Docker Compose for both local and production in v0.1, with complete runtime dependency coverage (backend, frontend, PostgreSQL, Traefik, Authelia, MinIO object storage for line-scan artifacts); Authelia runs in DB-only backing mode in v0.1 (no Redis) + automated pipeline (CI/CD).
+- TLS certificates are managed at the Traefik edge using Let's Encrypt (ACME) in production.
+- Local development TLS uses self-signed certificates managed by Traefik (no production ACME against localhost/local-only hosts).
 - Observability: health + OpenTelemetry + metrics.
 - Audit: event sourcing + immutable log.
 

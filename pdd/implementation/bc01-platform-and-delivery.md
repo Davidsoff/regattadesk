@@ -6,6 +6,8 @@ Foundational platform setup, runtime composition, dependency baseline, and deliv
 ## Functional Features to Implement
 - Bootstrap repository structure with Quarkus backend and Vue frontend skeletons.
 - Provide canonical Docker Compose stack with backend, frontend, PostgreSQL, Traefik, Authelia, and MinIO.
+- Configure Traefik to manage TLS certificates with Let's Encrypt (ACME) for edge HTTPS.
+- Provide local-development TLS via Traefik-managed self-signed certificates.
 - Build CI/CD pipeline for build, test, and deployment flow.
 - Establish and maintain third-party dependency inventory with minimum versions and update policy.
 - Provide baseline environment configuration to run the full stack in local and production-like environments.
