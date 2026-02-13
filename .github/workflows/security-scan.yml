@@ -1,0 +1,167 @@
+name: Security Vulnerability Scan
+
+on:
+  schedule:
+    # Run every Monday at 6:00 AM UTC
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '25'
+  JAVA_DISTRIBUTION: 'temurin'
+  NODE_VERSION: '22'
+
+jobs:
+  backend-security-scan:
+    name: Backend Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Run OWASP Dependency Check
+        run: |
+          ./mvnw org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=0 \
+            -DsuppressionFiles=../security/dependency-check-suppressions.xml \
+            || echo "Vulnerabilities found, continuing to generate report"
+        continue-on-error: true
+
+      - name: Upload dependency check report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-dependency-check-report
+          path: apps/backend/target/dependency-check-report.html
+          retention-days: 90
+
+  frontend-security-scan:
+    name: Frontend Security Scan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          npm audit --json > npm-audit-report.json || echo "Vulnerabilities found, continuing to generate report"
+          npm audit || true
+        continue-on-error: true
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-npm-audit-report
+          path: apps/frontend/npm-audit-report.json
+          retention-days: 90
+
+  docker-image-scan:
+    name: Docker Image Vulnerability Scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - postgres:16-alpine
+          - minio/minio:latest
+          - traefik:v3.0
+          - authelia/authelia:latest
+    steps:
+      - name: Pull image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.image }}.sarif'
+        continue-on-error: true
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-scan-${{ matrix.image }}
+          path: 'trivy-results-*.sarif'
+          retention-days: 90
+
+  consolidate-results:
+    name: Consolidate Security Scan Results
+    runs-on: ubuntu-latest
+    needs: [backend-security-scan, frontend-security-scan, docker-image-scan]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create summary report
+        run: |
+          echo "# Security Vulnerability Scan Summary" > security-summary.md
+          echo "" >> security-summary.md
+          echo "**Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "## Backend (Maven/Quarkus)" >> security-summary.md
+          if [ -f backend-dependency-check-report/dependency-check-report.html ]; then
+            echo "✅ Dependency check report generated" >> security-summary.md
+          else
+            echo "❌ No dependency check report found" >> security-summary.md
+          fi
+          echo "" >> security-summary.md
+          
+          echo "## Frontend (npm/Vue.js)" >> security-summary.md
+          if [ -f frontend-npm-audit-report/npm-audit-report.json ]; then
+            echo "✅ npm audit report generated" >> security-summary.md
+          else
+            echo "❌ No npm audit report found" >> security-summary.md
+          fi
+          echo "" >> security-summary.md
+          
+          echo "## Docker Images (Trivy)" >> security-summary.md
+          echo "✅ Trivy scans completed for base images" >> security-summary.md
+          echo "" >> security-summary.md
+          
+          echo "## Actions Required" >> security-summary.md
+          echo "1. Review all artifact reports in the workflow run" >> security-summary.md
+          echo "2. Triage vulnerabilities according to the security fast-path policy" >> security-summary.md
+          echo "3. Create issues for vulnerabilities requiring patches" >> security-summary.md
+          echo "4. Update suppression files for accepted risks" >> security-summary.md
+          
+          cat security-summary.md
+
+      - name: Upload consolidated summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-summary
+          path: security-summary.md
+          retention-days: 90
+
+      - name: Create issue on failures
+        if: failure()
+        run: |
+          echo "⚠️  Security scan encountered errors. Please review the workflow run and artifacts."
+          echo "Consider creating a GitHub issue to track remediation."

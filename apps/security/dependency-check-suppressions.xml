@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+    This file contains suppression rules for OWASP Dependency Check.
+    
+    Add suppressions for:
+    1. False positives (vulnerabilities that don't apply to our usage)
+    2. Accepted risks (documented with justification and expiry date)
+    3. Vulnerabilities pending fix (with linked tracking issue)
+    
+    Format:
+    <suppress>
+       <notes><![CDATA[
+       Reason for suppression
+       ]]></notes>
+       <packageUrl regex="true">^pkg:maven/.*$</packageUrl>
+       <cve>CVE-XXXX-XXXXX</cve>
+       <until>YYYY-MM-DD</until>
+    </suppress>
+    -->
+</suppressions>
