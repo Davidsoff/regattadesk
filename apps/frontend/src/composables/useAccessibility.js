@@ -277,9 +277,16 @@ export function useSkipLink() {
     if (mainElement) {
       mainElement.setAttribute('tabindex', '-1');
       mainElement.focus();
-      mainElement.addEventListener('blur', () => {
+      
+      // Remove tabindex after focus moves away or after a short delay
+      const cleanup = () => {
         mainElement.removeAttribute('tabindex');
-      }, { once: true });
+        mainElement.removeEventListener('blur', cleanup);
+        mainElement.removeEventListener('focusout', cleanup);
+      };
+      
+      mainElement.addEventListener('blur', cleanup, { once: true });
+      mainElement.addEventListener('focusout', cleanup, { once: true });
     }
   }
 
@@ -309,9 +316,15 @@ export function useFocusManagement() {
     if (heading) {
       heading.setAttribute('tabindex', '-1');
       heading.focus();
-      heading.addEventListener('blur', () => {
+      
+      const cleanup = () => {
         heading.removeAttribute('tabindex');
-      }, { once: true });
+        heading.removeEventListener('blur', cleanup);
+        heading.removeEventListener('focusout', cleanup);
+      };
+      
+      heading.addEventListener('blur', cleanup, { once: true });
+      heading.addEventListener('focusout', cleanup, { once: true });
     }
   }
 
@@ -321,6 +334,17 @@ export function useFocusManagement() {
     if (errorContainer) {
       errorContainer.setAttribute('tabindex', '-1');
       errorContainer.focus();
+      
+      const cleanup = () => {
+        errorContainer.removeAttribute('tabindex');
+        errorContainer.removeEventListener('blur', cleanup);
+        errorContainer.removeEventListener('focusout', cleanup);
+      };
+      
+      errorContainer.addEventListener('blur', cleanup, { once: true });
+      errorContainer.addEventListener('focusout', cleanup, { once: true });
+    }
+  }
     }
   }
 
