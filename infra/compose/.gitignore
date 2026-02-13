@@ -1,6 +1,9 @@
 # Environment files with secrets
 .env
 
+# Authelia configuration with sensitive data
+authelia/users_database.yml
+
 # Authelia notification file (generated at runtime)
 authelia/notification.txt
 

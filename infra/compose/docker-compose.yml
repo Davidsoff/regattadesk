@@ -67,38 +67,45 @@ services:
       "
 
   # Authelia SSO/Authentication (v4.38+, DB-only mode)
-  # NOTE: Commented out for initial testing. Enable after basic stack is validated.
-  # Authelia requires HTTPS in production mode, which needs TLS certificates.
-  # For local development, self-signed certs or Let's Encrypt staging can be used.
-  # authelia:
-  #   image: authelia/authelia:4.38
-  #   container_name: regattadesk-authelia
-  #   restart: unless-stopped
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   environment:
-  #     AUTHELIA_JWT_SECRET: ${AUTHELIA_JWT_SECRET:?AUTHELIA_JWT_SECRET is required}
-  #     AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET is required}
-  #     AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY is required}
-  #     AUTHELIA_STORAGE_POSTGRES_HOST: postgres
-  #     AUTHELIA_STORAGE_POSTGRES_PORT: 5432
-  #     AUTHELIA_STORAGE_POSTGRES_DATABASE: ${POSTGRES_AUTHELIA_DB:-authelia}
-  #     AUTHELIA_STORAGE_POSTGRES_USERNAME: ${POSTGRES_USER:-regattadesk}
-  #     AUTHELIA_STORAGE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-  #   volumes:
-  #     - ./authelia:/config:ro
-  #   networks:
-  #     - regattadesk-internal
-  #     - regattadesk-edge
-  #   expose:
-  #     - "9091"
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/api/health"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 30s
+  authelia:
+    image: authelia/authelia:4.38
+    container_name: regattadesk-authelia
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AUTHELIA_JWT_SECRET: ${AUTHELIA_JWT_SECRET:?AUTHELIA_JWT_SECRET is required}
+      AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET is required}
+      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY is required}
+      AUTHELIA_STORAGE_POSTGRES_HOST: postgres
+      AUTHELIA_STORAGE_POSTGRES_PORT: 5432
+      AUTHELIA_STORAGE_POSTGRES_DATABASE: ${POSTGRES_AUTHELIA_DB:-authelia}
+      AUTHELIA_STORAGE_POSTGRES_USERNAME: ${POSTGRES_USER:-regattadesk}
+      AUTHELIA_STORAGE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Allow HTTP for development (disable secure cookie requirement)
+      AUTHELIA_SERVER_DISABLE_HEALTHCHECK: "false"
+    volumes:
+      - ./authelia:/config:ro
+    networks:
+      - regattadesk-internal
+      - regattadesk-edge
+    expose:
+      - "9091"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authelia.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/auth`)"
+      - "traefik.http.routers.authelia.entrypoints=web"
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+      - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=http://${DOMAIN:-localhost.local}/auth"
+      - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
 
   # Traefik Reverse Proxy (v3.0+)
   traefik:
@@ -138,6 +145,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      authelia:
+        condition: service_healthy
     environment:
       QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-regattadesk}
       QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-regattadesk}
@@ -158,16 +167,24 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.backend.entrypoints=web,websecure"
-      - "traefik.http.routers.backend.tls=true"
-      - "traefik.http.services.backend.loadbalancer.server.port=8080"
-      # ForwardAuth for staff endpoints - TO BE ENABLED when Authelia is configured
-      # - "traefik.http.routers.backend-staff.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/staff`)"
-      # - "traefik.http.routers.backend-staff.middlewares=authelia@docker"
-      # - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://${DOMAIN:-localhost.local}"
-      # - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
-      # - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
+      # Public and health endpoints (no auth)
+      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`))"
+      - "traefik.http.routers.backend-public.entrypoints=web,websecure"
+      - "traefik.http.routers.backend-public.tls=true"
+      - "traefik.http.services.backend-public.loadbalancer.server.port=8080"
+      # Staff endpoints with ForwardAuth
+      - "traefik.http.routers.backend-staff.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/staff`)"
+      - "traefik.http.routers.backend-staff.entrypoints=web,websecure"
+      - "traefik.http.routers.backend-staff.tls=true"
+      - "traefik.http.routers.backend-staff.middlewares=authelia@docker"
+      - "traefik.http.services.backend-staff.loadbalancer.server.port=8080"
+      # Operator endpoints with ForwardAuth
+      # Note: $$ escapes to single $ in Docker Compose YAML for regex end-of-string anchor
+      - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator(/.*)?$$`)"
+      - "traefik.http.routers.backend-operator.entrypoints=web,websecure"
+      - "traefik.http.routers.backend-operator.tls=true"
+      - "traefik.http.routers.backend-operator.middlewares=authelia@docker"
+      - "traefik.http.services.backend-operator.loadbalancer.server.port=8080"
 
   # Frontend (Vue.js served via Nginx)
   frontend:
