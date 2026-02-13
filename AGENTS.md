@@ -45,6 +45,12 @@ If implementation and docs diverge, update docs in the same change.
 - Prefer idempotent command handling for retry-prone paths.
 - Keep configuration centralized and environment-driven.
 
+### Bash scripting
+- Use `[[` instead of `[` for conditional tests (safer and more feature-rich).
+- Quote variables to prevent word splitting and glob expansion.
+- Use `set -e` for scripts that should fail on first error.
+- Prefer explicit error handling over silent failures.
+
 ## Data and persistence
 - Use migrations for all schema changes.
 - Define indexes with observed query patterns in mind.

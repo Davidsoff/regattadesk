@@ -27,7 +27,7 @@ test_endpoint() {
     
     status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
     
-    if [ "$status" = "$expected_status" ]; then
+    if [[ "$status" = "$expected_status" ]]; then
         echo -e "${GREEN}✓ OK${NC} (HTTP $status)"
         return 0
     else
@@ -80,7 +80,7 @@ test_content "Backend Target" "$PROMETHEUS_URL/api/v1/targets" "regattadesk-back
 echo ""
 
 echo "==================================="
-if [ $failures -eq 0 ]; then
+if [[ $failures -eq 0 ]]; then
     echo -e "${GREEN}All tests passed!${NC}"
     exit 0
 else
