@@ -154,6 +154,8 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-regattadesk}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      # OpenTelemetry configuration (when observability stack is enabled)
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
     networks:
       - regattadesk-internal
       - regattadesk-edge
@@ -168,7 +170,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Public and health endpoints (no auth)
-      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`))"
+      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`) || PathPrefix(`/q/metrics`))"
       - "traefik.http.routers.backend-public.entrypoints=web,websecure"
       - "traefik.http.routers.backend-public.tls=true"
       - "traefik.http.services.backend-public.loadbalancer.server.port=8080"

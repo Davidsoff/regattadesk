@@ -1,0 +1,28 @@
+# RegattaDesk Prometheus Configuration
+# Scrapes metrics from backend service and Prometheus itself
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'regattadesk'
+    environment: 'local'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # RegattaDesk backend metrics
+  - job_name: 'regattadesk-backend'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['backend:8080']
+        labels:
+          service: 'backend'
+          component: 'api'
+
+# Alert rules for critical service health signals
+rule_files:
+  - 'alerts.yml'

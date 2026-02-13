@@ -425,6 +425,37 @@ docker compose config --quiet
 - [Implementation Plan](../../pdd/implementation/plan.md) - Step 1
 - [BC01 Platform Spec](../../pdd/implementation/bc01-platform-and-delivery.md)
 - [Detailed Design](../../pdd/design/detailed-design.md)
+- [Observability Setup](./OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
+
+## Observability
+
+RegattaDesk includes comprehensive observability infrastructure for monitoring, tracing, and operational visibility.
+
+### Running with Observability
+
+To start RegattaDesk with full observability stack (Prometheus, Jaeger, Grafana):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+```
+
+### Observability Services
+
+- **Prometheus**: Metrics collection and alerting (http://localhost:9090)
+- **Jaeger**: Distributed tracing backend (http://localhost:16686)
+- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana)
+
+### Available Endpoints
+
+- Health: `http://localhost/q/health/ready`, `/q/health/live`, `/q/health/started`
+- Metrics: `http://localhost/q/metrics`
+- Custom health: `http://localhost/api/health`
+
+See [OBSERVABILITY.md](./OBSERVABILITY.md) for complete documentation including:
+- Dashboard setup and usage
+- Alert rules and thresholds
+- Tracing configuration
+- Production considerations
 
 ## Status
 
