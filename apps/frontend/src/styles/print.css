@@ -1,0 +1,251 @@
+/**
+ * RegattaDesk Print Stylesheet
+ * A4 (210mm x 297mm) monochrome-friendly layout
+ * Margins: 20mm top/bottom, 15mm left/right
+ */
+
+@media print {
+  /* Reset and page setup */
+  * {
+    box-sizing: border-box;
+  }
+
+  @page {
+    size: A4;
+    margin: 20mm 15mm;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Liberation Sans', 'Arial', sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Hide non-printable elements */
+  .no-print,
+  nav,
+  .navigation,
+  button:not(.print-visible),
+  .action-bar,
+  .filters,
+  .pagination {
+    display: none !important;
+  }
+
+  /* Print header - appears on every page */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 8pt;
+    margin-bottom: 12pt;
+    border-bottom: 2pt solid #000;
+    font-size: 9pt;
+  }
+
+  .print-header__title {
+    font-size: 14pt;
+    font-weight: 600;
+    margin: 0 0 4pt 0;
+  }
+
+  .print-header__meta {
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .print-header__meta-item {
+    display: block;
+    margin-bottom: 2pt;
+  }
+
+  /* Print footer - page numbers */
+  .print-footer {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #666;
+    padding-top: 8pt;
+    border-top: 1pt solid #ccc;
+  }
+
+  /* Typography - monochrome friendly */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 8pt;
+  }
+
+  h1 {
+    font-size: 14pt;
+  }
+
+  h2 {
+    font-size: 12pt;
+  }
+
+  h3 {
+    font-size: 11pt;
+  }
+
+  p {
+    margin: 0 0 8pt 0;
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Tables - primary data display */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    page-break-inside: auto;
+    margin-bottom: 12pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  th,
+  td {
+    padding: 4pt 6pt;
+    text-align: left;
+    border: 1pt solid #333;
+  }
+
+  th {
+    font-weight: 600;
+    background: #f0f0f0;
+    border-bottom: 2pt solid #000;
+  }
+
+  /* Zebra striping for readability (grayscale) */
+  tbody tr:nth-child(even) {
+    background: #f8f8f8;
+  }
+
+  /* Numeric/time columns - tabular numerals */
+  .numeric,
+  .time,
+  .bib,
+  .rank {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  /* Status chips/badges - text only, no color dependency */
+  .chip,
+  .status-chip {
+    display: inline-block;
+    padding: 1pt 4pt;
+    border: 1pt solid #333;
+    border-radius: 2pt;
+    font-size: 8pt;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  /* Specific status styles - patterns for monochrome */
+  .chip--entered {
+    border-style: solid;
+  }
+
+  .chip--withdrawn,
+  .chip--dns,
+  .chip--dnf {
+    border-style: dashed;
+  }
+
+  .chip--excluded,
+  .chip--dsq {
+    border-style: double;
+    border-width: 2pt;
+  }
+
+  .chip--approved,
+  .chip--official {
+    border-style: solid;
+    border-width: 2pt;
+  }
+
+  .chip--provisional {
+    border-style: dotted;
+  }
+
+  /* Links - show URLs */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    color: #666;
+  }
+
+  a[href^="#"]:after,
+  a[href^="javascript:"]:after {
+    content: "";
+  }
+
+  /* Avoid page breaks inside important elements */
+  .avoid-break,
+  .event-section,
+  .results-group {
+    page-break-inside: avoid;
+  }
+
+  /* Section breaks */
+  .page-break {
+    page-break-after: always;
+  }
+
+  /* Logo/wordmark in footer */
+  .print-footer__logo {
+    font-size: 8pt;
+    font-weight: 600;
+    color: #666;
+    margin-top: 4pt;
+  }
+
+  /* Contrast and readability */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure minimum 300 DPI equivalent spacing */
+  .fine-detail {
+    min-height: 0.8mm;
+  }
+}
+
+/* Print preview styles (applied when .print-preview class is on body) */
+body.print-preview {
+  background: #e0e0e0;
+  padding: 20px;
+}
+
+body.print-preview .print-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin: 0 auto 20px;
+  padding: 20mm 15mm;
+}
