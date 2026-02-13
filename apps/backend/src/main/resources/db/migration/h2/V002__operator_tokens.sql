@@ -6,18 +6,18 @@
 -- OPERATOR_TOKENS TABLE
 -- ========================================
 CREATE TABLE operator_tokens (
-    id UUID PRIMARY KEY DEFAULT random_uuid(),
+    id UUID PRIMARY KEY,
     regatta_id UUID NOT NULL,
     block_id UUID,
     station VARCHAR(100) NOT NULL,
     token VARCHAR(255) NOT NULL UNIQUE,
     pin VARCHAR(10),
-    valid_from TIMESTAMP WITH TIME ZONE NOT NULL,
-    valid_until TIMESTAMP WITH TIME ZONE NOT NULL,
+    valid_from TIMESTAMP NOT NULL,
+    valid_until TIMESTAMP NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp(),
-    CONSTRAINT chk_valid_until_after_from CHECK (valid_until > valid_from)
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    CHECK (valid_until > valid_from)
 );
 
 CREATE INDEX idx_operator_tokens_regatta ON operator_tokens(regatta_id);
