@@ -1,0 +1,160 @@
+/**
+ * RegattaDesk Design Tokens v0.1
+ * Source: pdd/design/style-guide.md
+ * 
+ * This file defines all design tokens for the RegattaDesk application.
+ * Tokens can be controlled via data attributes on <html>:
+ * - data-contrast="high" - High contrast mode (default for operators)
+ * - data-density="compact" - Compact spacing mode
+ */
+
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ==================== Neutrals ==================== */
+  --rd-bg: #ffffff;
+  --rd-surface: #f8fafc;
+  --rd-surface-2: #eef2f7;
+  --rd-border: #d0d7e2;
+  --rd-text: #0b1220;
+  --rd-text-muted: #475569;
+
+  /* ==================== Accents ==================== */
+  --rd-accent: #2563eb;     /* primary */
+  --rd-accent-2: #0f766e;   /* secondary */
+
+  /* ==================== Semantic ==================== */
+  --rd-info: #2563eb;
+  --rd-success: #166534;
+  --rd-warn: #a16207;
+  --rd-danger: #b91c1c;
+
+  /* ==================== Focus ==================== */
+  --rd-focus: #2563eb;
+  --rd-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+
+  /* ==================== Elevation ==================== */
+  --rd-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.08);
+
+  /* ==================== Spacing ==================== */
+  --rd-space-1: 4px;
+  --rd-space-2: 8px;
+  --rd-space-3: 12px;
+  --rd-space-4: 16px;
+  --rd-space-5: 24px;
+  --rd-space-6: 32px;
+
+  /* ==================== Touch targets ==================== */
+  --rd-hit: 44px;           /* minimum touch target */
+  --rd-hit-operator: 52px;  /* operator default */
+
+  /* ==================== Typography ==================== */
+  --rd-font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --rd-font-numeric: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+
+  /* Font sizes (base 16px) */
+  --rd-text-xs: 0.75rem;    /* 12px - meta text */
+  --rd-text-sm: 0.875rem;   /* 14px - small body */
+  --rd-text-base: 1rem;     /* 16px - body */
+  --rd-text-lg: 1.125rem;   /* 18px - section headers */
+  --rd-text-xl: 1.25rem;    /* 20px - page headers */
+  --rd-text-2xl: 1.5rem;    /* 24px - large headers */
+
+  /* Font weights */
+  --rd-weight-normal: 400;
+  --rd-weight-medium: 500;
+  --rd-weight-semibold: 600;
+
+  /* Line heights */
+  --rd-leading-tight: 1.25;
+  --rd-leading-normal: 1.5;
+  --rd-leading-relaxed: 1.75;
+
+  /* ==================== Motion ==================== */
+  --rd-transition-fast: 120ms ease-in-out;
+  --rd-transition-base: 180ms ease-in-out;
+
+  /* ==================== Borders ==================== */
+  --rd-border-width: 1px;
+  --rd-border-radius: 4px;
+  --rd-border-radius-lg: 8px;
+}
+
+/* ==================== Operator "sunlight/high-contrast" mode ==================== */
+:root[data-contrast="high"] {
+  --rd-bg: #ffffff;
+  --rd-surface: #ffffff;
+  --rd-surface-2: #f1f5f9;
+  --rd-border: #0b1220;
+  --rd-text: #0b1220;
+  --rd-text-muted: #111827;
+  --rd-focus-ring: 0 0 0 4px rgba(37, 99, 235, 0.45);
+}
+
+/* ==================== Compact density mode ==================== */
+:root[data-density="compact"] {
+  --rd-space-1: 3px;
+  --rd-space-2: 6px;
+  --rd-space-3: 10px;
+  --rd-space-4: 14px;
+}
+
+/* ==================== Base resets and utilities ==================== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--rd-font-ui);
+  font-size: var(--rd-text-base);
+  line-height: var(--rd-leading-normal);
+  color: var(--rd-text);
+  background-color: var(--rd-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-width: 320px;
+}
+
+/* ==================== Tabular numerals utility ==================== */
+.rd-tabular-nums {
+  font-family: var(--rd-font-numeric);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================== Focus visible utility ==================== */
+*:focus-visible {
+  outline: 2px solid var(--rd-focus);
+  outline-offset: 2px;
+  box-shadow: var(--rd-focus-ring);
+}
+
+/* Remove default focus outline when focus-visible is used */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ==================== Reduced motion ==================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==================== Accessible hidden (SR only) ==================== */
+.rd-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
