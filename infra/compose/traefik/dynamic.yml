@@ -6,15 +6,18 @@
 http:
   middlewares:
     # Authelia ForwardAuth middleware
+    # Forwards authenticated user identity and groups to backend
     authelia:
       forwardAuth:
-        address: http://authelia:9091/api/verify?rd=https://localhost
+        address: http://authelia:9091/api/verify?rd=https://localhost.local
         trustForwardHeader: true
+        # Identity headers forwarded from Authelia to backend services
+        # These headers establish the trust boundary between edge auth and backend
         authResponseHeaders:
-          - Remote-User
-          - Remote-Groups
-          - Remote-Name
-          - Remote-Email
+          - Remote-User        # Username (email or login identifier)
+          - Remote-Groups      # Comma-separated list of groups
+          - Remote-Name        # Display name
+          - Remote-Email       # Email address
 
     # Security headers middleware
     security-headers:

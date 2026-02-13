@@ -107,8 +107,47 @@ This creates a container image using Jib, which optimizes the image layers witho
 6. **Access the application:**
    - Frontend: http://localhost
    - Backend API: http://localhost/api
+   - Authelia SSO: http://localhost.local/auth
    - Traefik Dashboard: http://localhost:8080
    - MinIO Console: http://localhost:9001
+
+## Authentication and Authorization
+
+### Edge SSO with Authelia
+
+RegattaDesk uses Authelia for Single Sign-On (SSO) at the Traefik edge. Protected routes require authentication before reaching the backend.
+
+**Authentication Flow:**
+1. User accesses protected route (e.g., `/api/v1/staff/*`)
+2. Traefik forwards request to Authelia for verification
+3. If not authenticated, redirect to Authelia login page
+4. After successful authentication, Authelia forwards identity headers to backend
+5. Backend receives trusted identity headers and enforces authorization
+
+**Identity Headers:**
+- `Remote-User`: Username/login identifier
+- `Remote-Groups`: Comma-separated list of user groups (roles)
+- `Remote-Name`: User's display name
+- `Remote-Email`: User's email address
+
+**Role-Based Access Control:**
+- `super_admin`: Global administrative authority (all regattas)
+- `regatta_admin`: Full access within a regatta scope
+- `head_of_jury`: Approve entries, investigations, penalties
+- `info_desk`: Crew mutations, bib changes, withdrawals
+- `financial_manager`: Payment tracking and invoicing
+- `operator`: Line-scan camera operators
+
+**Protected Endpoints:**
+- `/api/v1/staff/*` - Requires staff authentication (any staff role)
+- `/api/v1/regattas/{id}/operator/*` - Requires operator authentication
+
+**Public Endpoints (No Authentication):**
+- `/api/v1/public/*` - Public read access
+- `/api/health`, `/q/health/*` - Health checks
+- `/`, `/assets/*` - Frontend static files
+
+For detailed information about the identity forwarding contract and trust boundary, see [Identity Forwarding Documentation](../../docs/IDENTITY_FORWARDING.md).
 
 ## Service Details
 
@@ -136,10 +175,16 @@ This creates a container image using Jib, which optimizes the image layers witho
 - **Image**: `authelia/authelia:4.38`
 - **Mode**: DB-only (no Redis required)
 - **Storage**: PostgreSQL
-- **Default User**: 
-  - Username: `admin`
-  - Password: `changeme` (change in production!)
+- **Default Users** (development only):
+  - **Super Admin**: `superadmin` / `changeme`
+  - **Regatta Admin**: `regattaadmin` / `changeme`
+  - **Head of Jury**: `headofjury` / `changeme`
+  - **Info Desk**: `infodesk` / `changeme`
+  - **Financial Manager**: `financialmanager` / `changeme`
+  - **Operator**: `operator` / `changeme`
 - **Configuration**: `./authelia/configuration.yml`
+- **Roles**: `super_admin`, `regatta_admin`, `head_of_jury`, `info_desk`, `financial_manager`, `operator`
+- **Access**: http://localhost.local/auth
 
 ### Traefik
 

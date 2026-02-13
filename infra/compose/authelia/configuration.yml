@@ -50,13 +50,42 @@ access_control:
         - "^/api/v1/public/.*$"
         - "^/api/health$"
         - "^/q/health.*$"
+        - "^/$"
+        - "^/assets/.*$"
     
-    # Staff API endpoints (require authentication) - Using one_factor for development
+    # Operator API endpoints (require authentication, operator role)
+    # Note: Token-based authentication will be implemented separately in BC02
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/regattas/[^/]+/operator/.*$"
+      subject:
+        - ["group:operator"]
+        - ["group:regatta_admin"]
+        - ["group:super_admin"]
+    
+    # Staff API endpoints requiring super_admin (global access)
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/staff/rulesets/.*/promote$"
+      subject:
+        - ["group:super_admin"]
+    
+    # Staff API endpoints (require authentication, any staff role)
     - domain:
         - "localhost.local"
       policy: one_factor
       resources:
         - "^/api/v1/staff/.*$"
+      subject:
+        - ["group:super_admin"]
+        - ["group:regatta_admin"]
+        - ["group:head_of_jury"]
+        - ["group:info_desk"]
+        - ["group:financial_manager"]
 
 # Session Configuration (updated format for 4.38+)
 session:

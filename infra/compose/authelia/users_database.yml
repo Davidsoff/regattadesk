@@ -10,11 +10,59 @@
 # Default password for all users: "changeme"
 # Generated with: docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password 'changeme'
 
+# Role Mapping:
+# - super_admin: Global admin role, access to all regattas
+# - regatta_admin: Full access within a regatta scope
+# - head_of_jury: Approve entries, close investigations, assign penalties
+# - info_desk: Crew mutations, missing/changed bibs, withdrawals
+# - financial_manager: Mark paid per entry or per club
+# - operator: Start/finish line operators with line-scan camera UI
+
 users:
-  admin:
-    displayname: "Admin User"
+  # Super Admin - global access
+  superadmin:
+    displayname: "Super Admin"
     password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
-    email: admin@regattadesk.local
+    email: superadmin@regattadesk.local
     groups:
-      - admins
-      - staff
+      - super_admin
+
+  # Regatta Admin - full access to regatta
+  regattaadmin:
+    displayname: "Regatta Admin"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    email: regattaadmin@regattadesk.local
+    groups:
+      - regatta_admin
+
+  # Head of Jury - approve entries, investigations, penalties
+  headofjury:
+    displayname: "Head of Jury"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    email: headofjury@regattadesk.local
+    groups:
+      - head_of_jury
+
+  # Info Desk - crew mutations, bib changes, withdrawals
+  infodesk:
+    displayname: "Info Desk"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    email: infodesk@regattadesk.local
+    groups:
+      - info_desk
+
+  # Financial Manager - payment tracking
+  financialmanager:
+    displayname: "Financial Manager"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    email: financialmanager@regattadesk.local
+    groups:
+      - financial_manager
+
+  # Operator - line-scan camera UI
+  operator:
+    displayname: "Operator"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$QkllaGFCL0FYd2JwdFBRaw$9fH7Vz1E7sWqWqQZGqPj+GhEEXnJQVqCVEqC9mMYL8Y"
+    email: operator@regattadesk.local
+    groups:
+      - operator
