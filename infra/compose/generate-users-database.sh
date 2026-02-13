@@ -31,13 +31,13 @@ log_error() {
 }
 
 # Check if template exists
-if [ ! -f "$TEMPLATE_FILE" ]; then
+if [[ ! -f "$TEMPLATE_FILE" ]]; then
     log_error "Template file not found: $TEMPLATE_FILE"
     exit 1
 fi
 
 # Check if output file already exists
-if [ -f "$OUTPUT_FILE" ]; then
+if [[ -f "$OUTPUT_FILE" ]]; then
     log_warn "users_database.yml already exists"
     read -p "Do you want to overwrite it? (y/N) " -n 1 -r
     echo
@@ -73,7 +73,7 @@ for user in "${USERS[@]}"; do
     # Generate Argon2id hash using Authelia
     HASH=$(docker run --rm authelia/authelia:latest authelia crypto hash generate argon2 --password "$PASSWORD" 2>/dev/null | grep '^\$argon2id')
     
-    if [ -z "$HASH" ]; then
+    if [[ -z "$HASH" ]]; then
         log_error "Failed to generate hash for user: $user"
         exit 1
     fi

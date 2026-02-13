@@ -101,7 +101,7 @@ wait_for_services() {
     local max_attempts=30
     local attempt=0
     
-    while [ $attempt -lt $max_attempts ]; do
+    while [[ $attempt -lt $max_attempts ]]; do
         if docker compose ps | grep -q "authelia.*healthy" && \
            docker compose ps | grep -q "traefik"; then
             log_info "Services are healthy"
@@ -141,7 +141,7 @@ test_public_access() {
     response=$(curl -s -w "\n${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/public/versions")
     status_code=$(echo "$response" | tail -n1)
     
-    if [ "$status_code" = "200" ] || [ "$status_code" = "404" ]; then
+    if [[ "$status_code" == "200" ]] || [[ "$status_code" == "404" ]]; then
         test_pass
     else
         test_fail "Expected 200 or 404, got ${status_code}"
@@ -156,7 +156,7 @@ test_health_access() {
     local status_code
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/health")
     
-    if [ "$status_code" = "200" ] || [ "$status_code" = "404" ]; then
+    if [[ "$status_code" == "200" ]] || [[ "$status_code" == "404" ]]; then
         test_pass
     else
         test_fail "Expected 200 or 404, got ${status_code}"
@@ -172,7 +172,7 @@ test_staff_blocked_unauthenticated() {
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/staff/regattas")
     
     # Authelia should redirect to login or return 401/302
-    if [ "$status_code" = "302" ] || [ "$status_code" = "401" ]; then
+    if [[ "$status_code" == "302" ]] || [[ "$status_code" == "401" ]]; then
         test_pass
     else
         test_fail "Expected 302 or 401, got ${status_code}"
@@ -188,7 +188,7 @@ test_operator_blocked_unauthenticated() {
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/regattas/test-regatta/operator/stations")
     
     # Authelia should redirect to login or return 401/302
-    if [ "$status_code" = "302" ] || [ "$status_code" = "401" ]; then
+    if [[ "$status_code" == "302" ]] || [[ "$status_code" == "401" ]]; then
         test_pass
     else
         test_fail "Expected 302 or 401, got ${status_code}"
@@ -203,7 +203,7 @@ test_authelia_health() {
     local status_code
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "http://localhost:9091/api/health" 2>/dev/null || echo "000")
     
-    if [ "$status_code" = "200" ]; then
+    if [[ "$status_code" == "200" ]]; then
         test_pass
     else
         # Try via docker exec as fallback
@@ -226,7 +226,7 @@ test_traefik_routing() {
     local status_code
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "http://localhost:8080/api/overview" 2>/dev/null || echo "000")
     
-    if [ "$status_code" = "200" ]; then
+    if [[ "$status_code" == "200" ]]; then
         log_info "Traefik dashboard accessible"
         test_pass
     else
@@ -241,7 +241,7 @@ test_forwarded_headers() {
     test_start "Forwarded headers configuration"
     
     # Verify dynamic configuration is loaded
-    if [ -f "./traefik/dynamic.yml" ]; then
+    if [[ -f "./traefik/dynamic.yml" ]]; then
         if grep -q "Remote-User" ./traefik/dynamic.yml && \
            grep -q "Remote-Groups" ./traefik/dynamic.yml && \
            grep -q "Remote-Name" ./traefik/dynamic.yml && \
@@ -262,7 +262,7 @@ test_role_configuration() {
     test_start "Role configuration in Authelia users database template"
     
     # Check the template file instead of the actual users database
-    if [ -f "./authelia/users_database.yml.example" ]; then
+    if [[ -f "./authelia/users_database.yml.example" ]]; then
         local roles=("super_admin" "regatta_admin" "head_of_jury" "info_desk" "financial_manager" "operator")
         local all_found=true
         
@@ -273,7 +273,7 @@ test_role_configuration() {
             fi
         done
         
-        if [ "$all_found" = true ]; then
+        if [[ "$all_found" == true ]]; then
             log_info "All required roles configured in template"
             test_pass
         else
@@ -289,7 +289,7 @@ test_role_configuration() {
 test_access_control_rules() {
     test_start "Access control rules in Authelia configuration"
     
-    if [ -f "./authelia/configuration.yml" ]; then
+    if [[ -f "./authelia/configuration.yml" ]]; then
         if grep -q "api/v1/public" ./authelia/configuration.yml && \
            grep -q "api/v1/staff" ./authelia/configuration.yml && \
            grep -q "default_policy: deny" ./authelia/configuration.yml; then
@@ -340,7 +340,7 @@ main() {
     echo -e "Tests Failed: ${RED}${TESTS_FAILED}${NC}"
     echo
     
-    if [ $TESTS_FAILED -eq 0 ]; then
+    if [[ $TESTS_FAILED -eq 0 ]]; then
         echo -e "${GREEN}All tests passed!${NC}"
         exit 0
     else
