@@ -166,6 +166,65 @@ export function useLiveAnnouncer() {
  * 
  * <table ref="containerRef" @keydown="handleKeyDown">...</table>
  */
+
+// Helper functions moved to module scope
+function calculateNextIndex(currentIndex, direction, itemsLength, loop) {
+  let nextIndex = currentIndex;
+  
+  if (direction === 'forward') {
+    nextIndex = currentIndex + 1;
+    if (loop && nextIndex >= itemsLength) {
+      nextIndex = 0;
+    }
+  } else if (direction === 'backward') {
+    nextIndex = currentIndex - 1;
+    if (loop && nextIndex < 0) {
+      nextIndex = itemsLength - 1;
+    }
+  }
+  
+  return nextIndex;
+}
+
+function shouldHandleVertical(key, orientation) {
+  return (key === 'ArrowDown' || key === 'ArrowUp') && 
+         (orientation === 'vertical' || orientation === 'both');
+}
+
+function shouldHandleHorizontal(key, orientation) {
+  return (key === 'ArrowRight' || key === 'ArrowLeft') && 
+         (orientation === 'horizontal' || orientation === 'both');
+}
+
+function handleArrowNavigation(event, currentIndex, items, loop, orientation) {
+  let nextIndex = currentIndex;
+  let handled = false;
+
+  const directionMap = {
+    'ArrowDown': { check: shouldHandleVertical, direction: 'forward' },
+    'ArrowUp': { check: shouldHandleVertical, direction: 'backward' },
+    'ArrowRight': { check: shouldHandleHorizontal, direction: 'forward' },
+    'ArrowLeft': { check: shouldHandleHorizontal, direction: 'backward' },
+  };
+
+  const action = directionMap[event.key];
+  if (action && action.check(event.key, orientation)) {
+    event.preventDefault();
+    nextIndex = calculateNextIndex(currentIndex, action.direction, items.length, loop);
+    handled = true;
+  } else if (event.key === 'Home') {
+    event.preventDefault();
+    nextIndex = 0;
+    handled = true;
+  } else if (event.key === 'End') {
+    event.preventDefault();
+    nextIndex = items.length - 1;
+    handled = true;
+  }
+
+  return { nextIndex, handled };
+}
+
 export function useArrowNavigation(options = {}) {
   const {
     orientation = 'vertical', // 'vertical', 'horizontal', or 'both'
@@ -192,67 +251,12 @@ export function useArrowNavigation(options = {}) {
     }
   }
 
-  function calculateNextIndex(currentIndex, direction, itemsLength) {
-    let nextIndex = currentIndex;
-    
-    if (direction === 'forward') {
-      nextIndex = currentIndex + 1;
-      if (loop && nextIndex >= itemsLength) {
-        nextIndex = 0;
-      }
-    } else if (direction === 'backward') {
-      nextIndex = currentIndex - 1;
-      if (loop && nextIndex < 0) {
-        nextIndex = itemsLength - 1;
-      }
-    }
-    
-    return nextIndex;
-  }
-
-  function shouldHandleVertical(key) {
-    return (key === 'ArrowDown' || key === 'ArrowUp') && 
-           (orientation === 'vertical' || orientation === 'both');
-  }
-
-  function shouldHandleHorizontal(key) {
-    return (key === 'ArrowRight' || key === 'ArrowLeft') && 
-           (orientation === 'horizontal' || orientation === 'both');
-  }
-
   function handleKeyDown(event) {
     const currentIndex = getCurrentIndex();
     if (currentIndex === -1) return;
 
     const items = getItems();
-    let nextIndex = currentIndex;
-    let handled = false;
-
-    if (event.key === 'ArrowDown' && shouldHandleVertical('ArrowDown')) {
-      event.preventDefault();
-      nextIndex = calculateNextIndex(currentIndex, 'forward', items.length);
-      handled = true;
-    } else if (event.key === 'ArrowUp' && shouldHandleVertical('ArrowUp')) {
-      event.preventDefault();
-      nextIndex = calculateNextIndex(currentIndex, 'backward', items.length);
-      handled = true;
-    } else if (event.key === 'ArrowRight' && shouldHandleHorizontal('ArrowRight')) {
-      event.preventDefault();
-      nextIndex = calculateNextIndex(currentIndex, 'forward', items.length);
-      handled = true;
-    } else if (event.key === 'ArrowLeft' && shouldHandleHorizontal('ArrowLeft')) {
-      event.preventDefault();
-      nextIndex = calculateNextIndex(currentIndex, 'backward', items.length);
-      handled = true;
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      nextIndex = 0;
-      handled = true;
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      nextIndex = items.length - 1;
-      handled = true;
-    }
+    const { nextIndex, handled } = handleArrowNavigation(event, currentIndex, items, loop, orientation);
 
     if (handled && nextIndex !== currentIndex && nextIndex >= 0 && nextIndex < items.length) {
       focusItem(nextIndex);
@@ -276,25 +280,29 @@ export function useArrowNavigation(options = {}) {
  * 
  * <a href="#" @click.prevent="skipToMain" class="rd-skip-link">Skip to main content</a>
  */
-export function useSkipLink() {
-  function skipToMain(mainId = 'main-content') {
-    const mainElement = document.getElementById(mainId);
-    if (mainElement) {
-      mainElement.tabIndex = -1;
-      mainElement.focus();
-      
-      // Remove tabindex after focus moves away or after a short delay
-      const cleanup = () => {
-        mainElement.removeAttribute('tabindex');
-        mainElement.removeEventListener('blur', cleanup);
-        mainElement.removeEventListener('focusout', cleanup);
-      };
-      
-      mainElement.addEventListener('blur', cleanup, { once: true });
-      mainElement.addEventListener('focusout', cleanup, { once: true });
-    }
-  }
 
+// Helper function moved to module scope
+function skipToMain(mainId = 'main-content') {
+  const mainElement = document.getElementById(mainId);
+  if (mainElement) {
+    mainElement.tabIndex = -1;
+    mainElement.focus();
+    
+    // Remove tabindex after focus moves away
+    const cleanup = () => {
+      delete mainElement.dataset.tempTabindex;
+      mainElement.tabIndex = 0;
+      mainElement.removeEventListener('blur', cleanup);
+      mainElement.removeEventListener('focusout', cleanup);
+    };
+    
+    mainElement.dataset.tempTabindex = 'true';
+    mainElement.addEventListener('blur', cleanup, { once: true });
+    mainElement.addEventListener('focusout', cleanup, { once: true });
+  }
+}
+
+export function useSkipLink() {
   return {
     skipToMain,
   };
@@ -314,51 +322,57 @@ export function useSkipLink() {
  * // After form submission with errors:
  * focusFirstError();
  */
+
+// Helper functions moved to module scope
+async function focusPageHeading(selector = 'h1') {
+  await nextTick();
+  const heading = document.querySelector(selector);
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus();
+    
+    const cleanup = () => {
+      delete heading.dataset.tempTabindex;
+      heading.tabIndex = 0;
+      heading.removeEventListener('blur', cleanup);
+      heading.removeEventListener('focusout', cleanup);
+    };
+    
+    heading.dataset.tempTabindex = 'true';
+    heading.addEventListener('blur', cleanup, { once: true });
+    heading.addEventListener('focusout', cleanup, { once: true });
+  }
+}
+
+async function focusFirstError(containerSelector = '[role="alert"], .error-summary') {
+  await nextTick();
+  const errorContainer = document.querySelector(containerSelector);
+  if (errorContainer) {
+    errorContainer.tabIndex = -1;
+    errorContainer.focus();
+    
+    const cleanup = () => {
+      delete errorContainer.dataset.tempTabindex;
+      errorContainer.tabIndex = 0;
+      errorContainer.removeEventListener('blur', cleanup);
+      errorContainer.removeEventListener('focusout', cleanup);
+    };
+    
+    errorContainer.dataset.tempTabindex = 'true';
+    errorContainer.addEventListener('blur', cleanup, { once: true });
+    errorContainer.addEventListener('focusout', cleanup, { once: true });
+  }
+}
+
+async function focusElement(selector) {
+  await nextTick();
+  const element = document.querySelector(selector);
+  if (element) {
+    element.focus();
+  }
+}
+
 export function useFocusManagement() {
-  async function focusPageHeading(selector = 'h1') {
-    await nextTick();
-    const heading = document.querySelector(selector);
-    if (heading) {
-      heading.tabIndex = -1;
-      heading.focus();
-      
-      const cleanup = () => {
-        heading.removeAttribute('tabindex');
-        heading.removeEventListener('blur', cleanup);
-        heading.removeEventListener('focusout', cleanup);
-      };
-      
-      heading.addEventListener('blur', cleanup, { once: true });
-      heading.addEventListener('focusout', cleanup, { once: true });
-    }
-  }
-
-  async function focusFirstError(containerSelector = '[role="alert"], .error-summary') {
-    await nextTick();
-    const errorContainer = document.querySelector(containerSelector);
-    if (errorContainer) {
-      errorContainer.tabIndex = -1;
-      errorContainer.focus();
-      
-      const cleanup = () => {
-        errorContainer.removeAttribute('tabindex');
-        errorContainer.removeEventListener('blur', cleanup);
-        errorContainer.removeEventListener('focusout', cleanup);
-      };
-      
-      errorContainer.addEventListener('blur', cleanup, { once: true });
-      errorContainer.addEventListener('focusout', cleanup, { once: true });
-    }
-  }
-
-  async function focusElement(selector) {
-    await nextTick();
-    const element = document.querySelector(selector);
-    if (element) {
-      element.focus();
-    }
-  }
-
   return {
     focusPageHeading,
     focusFirstError,
