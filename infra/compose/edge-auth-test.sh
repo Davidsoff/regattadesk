@@ -189,12 +189,13 @@ test_authelia_health() {
     if [ "$status_code" = "200" ]; then
         test_pass
     else
-        test_fail "Expected 200, got ${status_code} (may need port forwarding or direct access)"
+        # Try via docker exec as fallback
         log_info "Checking via docker exec..."
         if docker compose exec -T authelia wget --no-verbose --tries=1 --spider http://localhost:9091/api/health 2>&1 | grep -q "200 OK"; then
             log_info "Authelia is healthy (verified via docker exec)"
-            TESTS_PASSED=$((TESTS_PASSED + 1))
-            TESTS_FAILED=$((TESTS_FAILED - 1))
+            test_pass
+        else
+            test_fail "Expected 200, got ${status_code} (Authelia may not be running)"
         fi
     fi
 }
@@ -221,11 +222,11 @@ test_forwarded_headers() {
     test_start "Forwarded headers configuration"
     
     # Verify dynamic configuration is loaded
-    if [ -f "../traefik/dynamic.yml" ]; then
-        if grep -q "Remote-User" ../traefik/dynamic.yml && \
-           grep -q "Remote-Groups" ../traefik/dynamic.yml && \
-           grep -q "Remote-Name" ../traefik/dynamic.yml && \
-           grep -q "Remote-Email" ../traefik/dynamic.yml; then
+    if [ -f "traefik/dynamic.yml" ]; then
+        if grep -q "Remote-User" traefik/dynamic.yml && \
+           grep -q "Remote-Groups" traefik/dynamic.yml && \
+           grep -q "Remote-Name" traefik/dynamic.yml && \
+           grep -q "Remote-Email" traefik/dynamic.yml; then
             log_info "All required headers configured in dynamic.yml"
             test_pass
         else
@@ -240,12 +241,12 @@ test_forwarded_headers() {
 test_role_configuration() {
     test_start "Role configuration in Authelia users database"
     
-    if [ -f "../authelia/users_database.yml" ]; then
+    if [ -f "authelia/users_database.yml" ]; then
         local roles=("super_admin" "regatta_admin" "head_of_jury" "info_desk" "financial_manager" "operator")
         local all_found=true
         
         for role in "${roles[@]}"; do
-            if ! grep -q "$role" ../authelia/users_database.yml; then
+            if ! grep -q "$role" authelia/users_database.yml; then
                 log_error "Role '$role' not found in users database"
                 all_found=false
             fi
@@ -266,10 +267,10 @@ test_role_configuration() {
 test_access_control_rules() {
     test_start "Access control rules in Authelia configuration"
     
-    if [ -f "../authelia/configuration.yml" ]; then
-        if grep -q "api/v1/public" ../authelia/configuration.yml && \
-           grep -q "api/v1/staff" ../authelia/configuration.yml && \
-           grep -q "default_policy: deny" ../authelia/configuration.yml; then
+    if [ -f "authelia/configuration.yml" ]; then
+        if grep -q "api/v1/public" authelia/configuration.yml && \
+           grep -q "api/v1/staff" authelia/configuration.yml && \
+           grep -q "default_policy: deny" authelia/configuration.yml; then
             log_info "Access control rules properly configured"
             test_pass
         else

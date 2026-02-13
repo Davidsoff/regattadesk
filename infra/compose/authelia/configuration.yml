@@ -63,7 +63,7 @@ access_control:
         - "localhost.local"
       policy: one_factor
       resources:
-        - "^/api/v1/regattas/[^/]+/operator/.*$"
+        - "^/api/v1/regattas/[^/]+/operator(/.*)?$"
       subject:
         - ["group:operator"]
         - ["group:regatta_admin"]

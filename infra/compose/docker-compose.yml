@@ -179,7 +179,8 @@ services:
       - "traefik.http.routers.backend-staff.middlewares=authelia@docker"
       - "traefik.http.services.backend-staff.loadbalancer.server.port=8080"
       # Operator endpoints with ForwardAuth
-      - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator`)"
+<<<<<<< HEAD
+      - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator(/.*)?$$`)"
       - "traefik.http.routers.backend-operator.entrypoints=web,websecure"
       - "traefik.http.routers.backend-operator.tls=true"
       - "traefik.http.routers.backend-operator.middlewares=authelia@docker"
