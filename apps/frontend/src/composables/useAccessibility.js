@@ -282,18 +282,22 @@ export function useArrowNavigation(options = {}) {
 function skipToMain(mainId = 'main-content') {
   const mainElement = document.getElementById(mainId);
   if (mainElement) {
+    // Store original tabIndex to restore later
+    const originalTabIndex = mainElement.getAttribute('tabindex');
     mainElement.tabIndex = -1;
     mainElement.focus();
     
-    // Remove tabindex after focus moves away
+    // Restore original tabIndex after focus moves away
     const cleanup = () => {
-      delete mainElement.dataset.tempTabindex;
-      mainElement.tabIndex = 0;
+      if (originalTabIndex === null) {
+        mainElement.removeAttribute('tabindex');
+      } else {
+        mainElement.setAttribute('tabindex', originalTabIndex);
+      }
       mainElement.removeEventListener('blur', cleanup);
       mainElement.removeEventListener('focusout', cleanup);
     };
     
-    mainElement.dataset.tempTabindex = 'true';
     mainElement.addEventListener('blur', cleanup, { once: true });
     mainElement.addEventListener('focusout', cleanup, { once: true });
   }
@@ -325,17 +329,22 @@ async function focusPageHeading(selector = 'h1') {
   await nextTick();
   const heading = document.querySelector(selector);
   if (heading) {
+    // Store original tabIndex to restore later
+    const originalTabIndex = heading.getAttribute('tabindex');
     heading.tabIndex = -1;
     heading.focus();
     
+    // Restore original tabIndex after focus moves away
     const cleanup = () => {
-      delete heading.dataset.tempTabindex;
-      heading.tabIndex = 0;
+      if (originalTabIndex === null) {
+        heading.removeAttribute('tabindex');
+      } else {
+        heading.setAttribute('tabindex', originalTabIndex);
+      }
       heading.removeEventListener('blur', cleanup);
       heading.removeEventListener('focusout', cleanup);
     };
     
-    heading.dataset.tempTabindex = 'true';
     heading.addEventListener('blur', cleanup, { once: true });
     heading.addEventListener('focusout', cleanup, { once: true });
   }
@@ -345,17 +354,22 @@ async function focusFirstError(containerSelector = '[role="alert"], .error-summa
   await nextTick();
   const errorContainer = document.querySelector(containerSelector);
   if (errorContainer) {
+    // Store original tabIndex to restore later
+    const originalTabIndex = errorContainer.getAttribute('tabindex');
     errorContainer.tabIndex = -1;
     errorContainer.focus();
     
+    // Restore original tabIndex after focus moves away
     const cleanup = () => {
-      delete errorContainer.dataset.tempTabindex;
-      errorContainer.tabIndex = 0;
+      if (originalTabIndex === null) {
+        errorContainer.removeAttribute('tabindex');
+      } else {
+        errorContainer.setAttribute('tabindex', originalTabIndex);
+      }
       errorContainer.removeEventListener('blur', cleanup);
       errorContainer.removeEventListener('focusout', cleanup);
     };
     
-    errorContainer.dataset.tempTabindex = 'true';
     errorContainer.addEventListener('blur', cleanup, { once: true });
     errorContainer.addEventListener('focusout', cleanup, { once: true });
   }
