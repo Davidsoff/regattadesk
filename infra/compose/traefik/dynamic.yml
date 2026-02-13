@@ -19,14 +19,109 @@ http:
           - Remote-Name        # Display name
           - Remote-Email       # Email address
 
-    # Security headers middleware
+    # Enhanced security headers middleware (BC09-002)
+    # Comprehensive security headers for all responses
     security-headers:
       headers:
+        # XSS Protection
         browserXssFilter: true
+        # MIME type sniffing protection
         contentTypeNosniff: true
+        # HTTP Strict Transport Security (HSTS)
         forceSTSHeader: true
-        frameDeny: true
         stsIncludeSubdomains: true
         stsPreload: true
-        stsSeconds: 31536000
+        stsSeconds: 31536000  # 1 year
+        # Frame protection
         customFrameOptionsValue: "SAMEORIGIN"
+        # Content Security Policy
+        contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'"
+        # Referrer policy
+        referrerPolicy: "strict-origin-when-cross-origin"
+        # Permissions policy (formerly Feature-Policy)
+        permissionsPolicy: "geolocation=(), microphone=(), camera=(), payment=()"
+        # Additional security headers
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          X-XSS-Protection: "1; mode=block"
+
+    # Rate limiting for public API endpoints (BC09-002)
+    # Prevents abuse and ensures fair resource allocation
+    # Conservative limits for v0.1; tune based on observed traffic
+    rate-limit-public:
+      rateLimit:
+        average: 100        # 100 requests per second average
+        burst: 200          # Allow bursts up to 200 requests
+        period: 1s
+
+    # Rate limiting for staff API endpoints (BC09-002)
+    # More generous limits for authenticated staff users
+    rate-limit-staff:
+      rateLimit:
+        average: 50         # 50 requests per second average
+        burst: 100          # Allow bursts up to 100 requests
+        period: 1s
+
+    # Rate limiting for operator endpoints (BC09-002)
+    # Balanced limits for operator workflows (line-scan ingest)
+    rate-limit-operator:
+      rateLimit:
+        average: 30         # 30 requests per second average
+        burst: 60           # Allow bursts up to 60 requests
+        period: 1s
+
+    # Request body size limits (BC09-002)
+    # Prevents resource exhaustion from large payloads
+    request-size-limit:
+      buffering:
+        maxRequestBodyBytes: 10485760  # 10 MB limit for all requests
+
+    # Request timeouts (BC09-002)
+    # Prevents hung connections from exhausting resources
+    request-timeout:
+      forwardingTimeouts:
+        dialTimeout: 30s          # Connection establishment timeout
+        responseHeaderTimeout: 60s # Time to receive response headers
+        idleConnTimeout: 90s      # Idle connection timeout
+
+    # Compression middleware (BC09-002)
+    # Reduces bandwidth usage for text-based responses
+    compress-response:
+      compress:
+        excludedContentTypes:
+          - "image/jpeg"
+          - "image/png"
+          - "image/gif"
+          - "video/*"
+          - "application/octet-stream"
+
+    # Security and performance chain for public endpoints (BC09-002)
+    public-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - rate-limit-public
+          - request-size-limit
+          - request-timeout
+          - compress-response
+
+    # Security and performance chain for staff endpoints (BC09-002)
+    staff-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - rate-limit-staff
+          - request-size-limit
+          - request-timeout
+          - compress-response
+
+    # Security and performance chain for operator endpoints (BC09-002)
+    operator-chain:
+      chain:
+        middlewares:
+          - security-headers
+          - rate-limit-operator
+          - request-size-limit
+          - request-timeout
+          - compress-response

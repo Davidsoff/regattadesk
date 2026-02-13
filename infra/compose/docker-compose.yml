@@ -106,6 +106,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.authelia.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/auth`)"
       - "traefik.http.routers.authelia.entrypoints=web"
+      - "traefik.http.routers.authelia.middlewares=public-chain@file"
       - "traefik.http.services.authelia.loadbalancer.server.port=9091"
       - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=http://${DOMAIN:-localhost.local}/auth"
       - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
@@ -173,16 +174,17 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
-      # Public and health endpoints (no auth)
+      # Public and health endpoints (no auth) with edge hardening (BC09-002)
       - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`) || PathPrefix(`/q/metrics`))"
       - "traefik.http.routers.backend-public.entrypoints=web,websecure"
       - "traefik.http.routers.backend-public.tls=true"
+      - "traefik.http.routers.backend-public.middlewares=public-chain@file"
       - "traefik.http.services.backend-public.loadbalancer.server.port=8080"
-      # Staff endpoints with ForwardAuth
+      # Staff endpoints with ForwardAuth and edge hardening (BC09-002)
       - "traefik.http.routers.backend-staff.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/staff`)"
       - "traefik.http.routers.backend-staff.entrypoints=web,websecure"
       - "traefik.http.routers.backend-staff.tls=true"
-      - "traefik.http.routers.backend-staff.middlewares=authelia@docker"
+      - "traefik.http.routers.backend-staff.middlewares=staff-chain@file,authelia@docker"
       - "traefik.http.services.backend-staff.loadbalancer.server.port=8080"
       # Ruleset endpoints with ForwardAuth
       - "traefik.http.routers.backend-rulesets.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/rulesets`)"
@@ -196,12 +198,12 @@ services:
       - "traefik.http.routers.backend-athletes.tls=true"
       - "traefik.http.routers.backend-athletes.middlewares=authelia@docker"
       - "traefik.http.services.backend-athletes.loadbalancer.server.port=8080"
-      # Operator endpoints with ForwardAuth
+      # Operator endpoints with ForwardAuth and edge hardening (BC09-002)
       # Note: $$ escapes to single $ in Docker Compose YAML for regex end-of-string anchor
       - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator(/.*)?$$`)"
       - "traefik.http.routers.backend-operator.entrypoints=web,websecure"
       - "traefik.http.routers.backend-operator.tls=true"
-      - "traefik.http.routers.backend-operator.middlewares=authelia@docker"
+      - "traefik.http.routers.backend-operator.middlewares=operator-chain@file,authelia@docker"
       - "traefik.http.services.backend-operator.loadbalancer.server.port=8080"
 
   # Frontend (Vue.js served via Nginx)
@@ -225,6 +227,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost.local}`)"
       - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.middlewares=public-chain@file"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 networks:
