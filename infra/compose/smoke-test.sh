@@ -7,9 +7,11 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "======================================"
+SEPARATOR="======================================"
+
+echo "$SEPARATOR"
 echo "RegattaDesk Compose Stack Smoke Test"
-echo "======================================"
+echo "$SEPARATOR"
 echo
 
 # Colors for output
@@ -26,7 +28,7 @@ escape_sed_replacement() {
 }
 
 # Check if .env exists
-if [ ! -f .env ]; then
+if [[ ! -f .env ]]; then
     echo -e "${YELLOW}Warning: .env file not found. Creating from .env.example...${NC}"
     cp .env.example .env
     
@@ -58,7 +60,7 @@ echo "Step 1: Validating docker-compose.yml..."
 if docker compose config --quiet; then
     echo -e "${GREEN}✓ Compose configuration is valid${NC}"
 else
-    echo -e "${RED}✗ Compose configuration has errors${NC}"
+    echo -e "${RED}✗ Compose configuration has errors${NC}" >&2
     exit 1
 fi
 echo
@@ -77,14 +79,14 @@ if docker compose config --services | grep -qx "authelia"; then
     AUTHELIA_ENABLED=true
 fi
 
-while [ $ELAPSED -lt $TIMEOUT ]; do
+while [[ $ELAPSED -lt $TIMEOUT ]]; do
     sleep $INTERVAL
     ELAPSED=$((ELAPSED + INTERVAL))
     
     # Get service health status
     POSTGRES_HEALTH=$(docker compose ps postgres --format json | jq -r '.[0].Health // "starting"')
     MINIO_HEALTH=$(docker compose ps minio --format json | jq -r '.[0].Health // "starting"')
-    if [ "$AUTHELIA_ENABLED" = "true" ]; then
+    if [[ "$AUTHELIA_ENABLED" == "true" ]]; then
         AUTHELIA_HEALTH=$(docker compose ps authelia --format json | jq -r '.[0].Health // "starting"')
     else
         AUTHELIA_HEALTH="disabled"
@@ -96,18 +98,18 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
     
     # Check if all core services are healthy
     ALL_HEALTHY=false
-    if [ "$POSTGRES_HEALTH" = "healthy" ] && \
-       [ "$MINIO_HEALTH" = "healthy" ] && \
-       [ "$BACKEND_HEALTH" = "healthy" ] && \
-       [ "$FRONTEND_HEALTH" = "healthy" ]; then
-        if [ "$AUTHELIA_ENABLED" = "true" ]; then
-            [ "$AUTHELIA_HEALTH" = "healthy" ] && ALL_HEALTHY=true
+    if [[ "$POSTGRES_HEALTH" == "healthy" ]] && \
+       [[ "$MINIO_HEALTH" == "healthy" ]] && \
+       [[ "$BACKEND_HEALTH" == "healthy" ]] && \
+       [[ "$FRONTEND_HEALTH" == "healthy" ]]; then
+        if [[ "$AUTHELIA_ENABLED" == "true" ]]; then
+            [[ "$AUTHELIA_HEALTH" == "healthy" ]] && ALL_HEALTHY=true
         else
             ALL_HEALTHY=true
         fi
     fi
 
-    if [ "$ALL_HEALTHY" = "true" ]; then
+    if [[ "$ALL_HEALTHY" == "true" ]]; then
         echo -e "${GREEN}✓ All services are healthy${NC}"
         break
     fi
@@ -127,21 +129,21 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
         ) |
         .Name
     ')
-    if [ -n "$UNHEALTHY" ]; then
-        echo -e "${RED}✗ Unhealthy or exited services detected:${NC}"
-        echo "$UNHEALTHY"
-        echo
-        echo "Logs from unhealthy services:"
+    if [[ -n "$UNHEALTHY" ]]; then
+        echo -e "${RED}✗ Unhealthy or exited services detected:${NC}" >&2
+        echo "$UNHEALTHY" >&2
+        echo >&2
+        echo "Logs from unhealthy services:" >&2
         for service in $UNHEALTHY; do
-            echo "--- $service ---"
+            echo "--- $service ---" >&2
             docker logs "$service" --tail 50
         done
         exit 1
     fi
 done
 
-if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo -e "${RED}✗ Timeout waiting for services to become healthy${NC}"
+if [[ $ELAPSED -ge $TIMEOUT ]]; then
+    echo -e "${RED}✗ Timeout waiting for services to become healthy${NC}" >&2
     docker compose ps
     exit 1
 fi
@@ -154,7 +156,7 @@ echo -n "  Testing frontend (http://localhost/)... "
 if curl -sf http://localhost/ > /dev/null; then
     echo -e "${GREEN}✓${NC}"
 else
-    echo -e "${RED}✗${NC}"
+    echo -e "${RED}✗${NC}" >&2
     exit 1
 fi
 
@@ -163,7 +165,7 @@ echo -n "  Testing backend health (inside backend container)... "
 if docker compose exec -T backend wget --no-verbose --tries=1 --spider http://localhost:8080/q/health/ready > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
-    echo -e "${RED}✗${NC}"
+    echo -e "${RED}✗${NC}" >&2
     exit 1
 fi
 
@@ -172,7 +174,7 @@ echo -n "  Testing Traefik dashboard (http://localhost:8080)... "
 if curl -sf http://localhost:8080 > /dev/null; then
     echo -e "${GREEN}✓${NC}"
 else
-    echo -e "${RED}✗${NC}"
+    echo -e "${RED}✗${NC}" >&2
     exit 1
 fi
 
@@ -181,7 +183,7 @@ echo -n "  Testing MinIO console (http://localhost:9001)... "
 if curl -sf http://localhost:9001 > /dev/null; then
     echo -e "${GREEN}✓${NC}"
 else
-    echo -e "${RED}✗${NC}"
+    echo -e "${RED}✗${NC}" >&2
     exit 1
 fi
 
@@ -194,14 +196,14 @@ BUCKETS=$(docker compose exec -T minio sh -c '
 if echo "$BUCKETS" | grep -q "line-scan-tiles" && echo "$BUCKETS" | grep -q "line-scan-manifests"; then
     echo -e "${GREEN}✓ MinIO buckets created successfully${NC}"
 else
-    echo -e "${RED}✗ MinIO buckets not found${NC}"
+    echo -e "${RED}✗ MinIO buckets not found${NC}" >&2
     exit 1
 fi
 
 echo
-echo "======================================"
+echo "$SEPARATOR"
 echo -e "${GREEN}✓ All smoke tests passed!${NC}"
-echo "======================================"
+echo "$SEPARATOR"
 echo
 echo "Services are running:"
 docker compose ps

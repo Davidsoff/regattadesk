@@ -16,6 +16,7 @@ set -euo pipefail
 DOMAIN="${DOMAIN:-localhost.local}"
 BASE_URL="http://${DOMAIN}"
 AUTHELIA_URL="${BASE_URL}/auth"
+CURL_HTTP_CODE_FORMAT="%{http_code}"
 
 # Test credentials
 SUPER_ADMIN_USER="superadmin"
@@ -39,32 +40,43 @@ TESTS_FAILED=0
 
 # Helper functions
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    local message="$1"
+    echo -e "${GREEN}[INFO]${NC} ${message}"
+    return 0
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    local message="$1"
+    echo -e "${RED}[ERROR]${NC} ${message}" >&2
+    return 0
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    local message="$1"
+    echo -e "${YELLOW}[WARN]${NC} ${message}"
+    return 0
 }
 
 test_start() {
+    local test_name="$1"
     TESTS_RUN=$((TESTS_RUN + 1))
-    log_info "Test ${TESTS_RUN}: $1"
+    log_info "Test ${TESTS_RUN}: ${test_name}"
+    return 0
 }
 
 test_pass() {
     TESTS_PASSED=$((TESTS_PASSED + 1))
     echo -e "${GREEN}✓ PASS${NC}"
     echo
+    return 0
 }
 
 test_fail() {
+    local reason="$1"
     TESTS_FAILED=$((TESTS_FAILED + 1))
-    log_error "✗ FAIL: $1"
+    log_error "✗ FAIL: ${reason}"
     echo
+    return 0
 }
 
 # Check if stack is running
@@ -80,6 +92,7 @@ check_stack() {
     fi
     log_info "Stack is running"
     echo
+    return 0
 }
 
 # Wait for services to be healthy
@@ -105,10 +118,9 @@ wait_for_services() {
 }
 
 # Login helper - creates session cookie file
-# Args: username, output_cookie_file
+# Args: output_cookie_file
 login_user() {
-    local username=$1
-    local cookie_file=$2
+    local cookie_file="$1"
     
     # Get login page to get session cookie
     curl -s -c "$cookie_file" "${AUTHELIA_URL}/" > /dev/null
@@ -116,6 +128,7 @@ login_user() {
     # Perform login (simplified - actual Authelia login flow may vary)
     # This is a placeholder - actual implementation depends on Authelia's API
     log_warn "Login automation not fully implemented - assuming session exists"
+    return 0
 }
 
 # Test: Public endpoint accessible without authentication
@@ -125,7 +138,7 @@ test_public_access() {
     local response
     local status_code
     
-    response=$(curl -s -w "\n%{http_code}" "${BASE_URL}/api/v1/public/versions")
+    response=$(curl -s -w "\n${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/public/versions")
     status_code=$(echo "$response" | tail -n1)
     
     if [ "$status_code" = "200" ] || [ "$status_code" = "404" ]; then
@@ -133,6 +146,7 @@ test_public_access() {
     else
         test_fail "Expected 200 or 404, got ${status_code}"
     fi
+    return 0
 }
 
 # Test: Health endpoint accessible without authentication
@@ -140,13 +154,14 @@ test_health_access() {
     test_start "Health endpoint accessible without authentication"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/health")
+    status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/health")
     
     if [ "$status_code" = "200" ] || [ "$status_code" = "404" ]; then
         test_pass
     else
         test_fail "Expected 200 or 404, got ${status_code}"
     fi
+    return 0
 }
 
 # Test: Staff endpoint blocked without authentication
@@ -154,7 +169,7 @@ test_staff_blocked_unauthenticated() {
     test_start "Staff endpoint blocked without authentication"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/v1/staff/regattas")
+    status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/staff/regattas")
     
     # Authelia should redirect to login or return 401/302
     if [ "$status_code" = "302" ] || [ "$status_code" = "401" ]; then
@@ -162,6 +177,7 @@ test_staff_blocked_unauthenticated() {
     else
         test_fail "Expected 302 or 401, got ${status_code}"
     fi
+    return 0
 }
 
 # Test: Operator endpoint blocked without authentication
@@ -169,7 +185,7 @@ test_operator_blocked_unauthenticated() {
     test_start "Operator endpoint blocked without authentication"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/v1/regattas/test-regatta/operator/stations")
+    status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/regattas/test-regatta/operator/stations")
     
     # Authelia should redirect to login or return 401/302
     if [ "$status_code" = "302" ] || [ "$status_code" = "401" ]; then
@@ -177,6 +193,7 @@ test_operator_blocked_unauthenticated() {
     else
         test_fail "Expected 302 or 401, got ${status_code}"
     fi
+    return 0
 }
 
 # Test: Verify Authelia is responding
@@ -184,7 +201,7 @@ test_authelia_health() {
     test_start "Authelia health endpoint responding"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:9091/api/health" 2>/dev/null || echo "000")
+    status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "http://localhost:9091/api/health" 2>/dev/null || echo "000")
     
     if [ "$status_code" = "200" ]; then
         test_pass
@@ -198,6 +215,7 @@ test_authelia_health() {
             test_fail "Expected 200, got ${status_code} (Authelia may not be running)"
         fi
     fi
+    return 0
 }
 
 # Test: Verify Traefik routing configuration
@@ -206,7 +224,7 @@ test_traefik_routing() {
     
     # Check if Traefik dashboard is accessible (if enabled)
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/overview" 2>/dev/null || echo "000")
+    status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "http://localhost:8080/api/overview" 2>/dev/null || echo "000")
     
     if [ "$status_code" = "200" ]; then
         log_info "Traefik dashboard accessible"
@@ -215,6 +233,7 @@ test_traefik_routing() {
         log_warn "Traefik dashboard not accessible (may be disabled)"
         test_pass
     fi
+    return 0
 }
 
 # Test: Verify forwarded headers contract (mock test)
@@ -235,6 +254,7 @@ test_forwarded_headers() {
     else
         test_fail "Dynamic configuration file not found"
     fi
+    return 0
 }
 
 # Test: Verify role configuration in Authelia
@@ -262,6 +282,7 @@ test_role_configuration() {
     else
         test_fail "Users database template file not found"
     fi
+    return 0
 }
 
 # Test: Verify access control rules in Authelia
@@ -280,6 +301,7 @@ test_access_control_rules() {
     else
         test_fail "Authelia configuration file not found"
     fi
+    return 0
 }
 
 # Main test execution
