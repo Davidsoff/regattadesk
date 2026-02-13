@@ -154,8 +154,8 @@ This creates a container image using Jib, which optimizes the image layers witho
 
 ### Backend
 
-- **Build**: Multi-stage Docker build from `apps/backend`
-- **Java**: 21 LTS
+- **Build**: Quarkus Jib container image from `apps/backend`
+- **Java**: 25
 - **Framework**: Quarkus 3.8.6
 - **Port**: 8080 (internal)
 - **Health**: `/q/health/ready`
@@ -195,8 +195,11 @@ docker compose restart backend
 ### Rebuild and Restart
 
 ```bash
-# Rebuild backend after code changes
-docker compose up -d --build backend
+# Rebuild backend image after code changes
+cd apps/backend
+./mvnw clean package -Dquarkus.container-image.build=true
+cd ../../infra/compose
+docker compose up -d backend
 
 # Rebuild frontend after code changes
 docker compose up -d --build frontend
@@ -243,8 +246,11 @@ Services show as "healthy" when ready.
 1. **Make code changes** in `apps/backend` or `apps/frontend`
 2. **Rebuild the service:**
    ```bash
-   docker compose up -d --build backend
-   # or
+   cd apps/backend
+   ./mvnw clean package -Dquarkus.container-image.build=true
+   cd ../../infra/compose
+   docker compose up -d backend
+   # frontend
    docker compose up -d --build frontend
    ```
 3. **View logs:**

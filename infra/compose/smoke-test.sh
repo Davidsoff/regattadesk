@@ -58,6 +58,11 @@ echo "Step 3: Waiting for services to become healthy (max 3 minutes)..."
 TIMEOUT=180
 ELAPSED=0
 INTERVAL=5
+AUTHELIA_ENABLED=false
+
+if docker compose config --services | grep -qx "authelia"; then
+    AUTHELIA_ENABLED=true
+fi
 
 while [ $ELAPSED -lt $TIMEOUT ]; do
     sleep $INTERVAL
@@ -66,24 +71,49 @@ while [ $ELAPSED -lt $TIMEOUT ]; do
     # Get service health status
     POSTGRES_HEALTH=$(docker compose ps postgres --format json | jq -r '.[0].Health // "starting"')
     MINIO_HEALTH=$(docker compose ps minio --format json | jq -r '.[0].Health // "starting"')
-    AUTHELIA_HEALTH=$(docker compose ps authelia --format json | jq -r '.[0].Health // "starting"')
+    if [ "$AUTHELIA_ENABLED" = "true" ]; then
+        AUTHELIA_HEALTH=$(docker compose ps authelia --format json | jq -r '.[0].Health // "starting"')
+    else
+        AUTHELIA_HEALTH="disabled"
+    fi
     BACKEND_HEALTH=$(docker compose ps backend --format json | jq -r '.[0].Health // "starting"')
     FRONTEND_HEALTH=$(docker compose ps frontend --format json | jq -r '.[0].Health // "starting"')
     
     echo "  [$ELAPSED/$TIMEOUT s] PostgreSQL: $POSTGRES_HEALTH, MinIO: $MINIO_HEALTH, Authelia: $AUTHELIA_HEALTH, Backend: $BACKEND_HEALTH, Frontend: $FRONTEND_HEALTH"
     
     # Check if all core services are healthy
+    ALL_HEALTHY=false
     if [ "$POSTGRES_HEALTH" = "healthy" ] && \
        [ "$MINIO_HEALTH" = "healthy" ] && \
-       [ "$AUTHELIA_HEALTH" = "healthy" ] && \
        [ "$BACKEND_HEALTH" = "healthy" ] && \
        [ "$FRONTEND_HEALTH" = "healthy" ]; then
+        if [ "$AUTHELIA_ENABLED" = "true" ]; then
+            [ "$AUTHELIA_HEALTH" = "healthy" ] && ALL_HEALTHY=true
+        else
+            ALL_HEALTHY=true
+        fi
+    fi
+
+    if [ "$ALL_HEALTHY" = "true" ]; then
         echo -e "${GREEN}✓ All services are healthy${NC}"
         break
     fi
     
     # Check for unhealthy or exited services
-    UNHEALTHY=$(docker compose ps --format json | jq -r '.[] | select(.Health == "unhealthy" or .State == "exited") | .Name')
+    UNHEALTHY=$(docker compose ps --format json | jq -r '
+        .[] |
+        select(
+            .Health == "unhealthy" or
+            (
+                .State == "exited" and
+                (
+                    .Service != "minio-init" or
+                    ((.ExitCode // 1) != 0)
+                )
+            )
+        ) |
+        .Name
+    ')
     if [ -n "$UNHEALTHY" ]; then
         echo -e "${RED}✗ Unhealthy or exited services detected:${NC}"
         echo "$UNHEALTHY"
@@ -116,8 +146,8 @@ else
 fi
 
 # Test backend health
-echo -n "  Testing backend health (http://localhost/q/health/ready)... "
-if curl -sf http://localhost/q/health/ready > /dev/null; then
+echo -n "  Testing backend health (inside backend container)... "
+if docker compose exec -T backend wget --no-verbose --tries=1 --spider http://localhost:8080/q/health/ready > /dev/null 2>&1; then
     echo -e "${GREEN}✓${NC}"
 else
     echo -e "${RED}✗${NC}"
