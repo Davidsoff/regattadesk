@@ -19,7 +19,7 @@ public class UpdateTimestampTrigger implements Trigger {
     @Override
     public void fire(Connection conn, Object[] oldRow, Object[] newRow) throws SQLException {
         if (newRow != null && newRow.length > 4) {
-            // Set updated_at (index 4) to current timestamp
+            // Set updated_at (index 4: id=0, aggregate_type=1, version=2, created_at=3, updated_at=4)
             newRow[4] = new Timestamp(System.currentTimeMillis());
         }
     }

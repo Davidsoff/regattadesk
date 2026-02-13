@@ -18,6 +18,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Append-only constraints prevent updates and deletes
  * - Indexes are created for performance
  * - Event sequence ordering works correctly
+ * 
+ * Note: Helper methods use String.format() for SQL construction for test simplicity.
+ * This is acceptable in test code with controlled inputs (UUIDs, type discriminators).
+ * Production code should always use PreparedStatement with parameterized queries.
  */
 @QuarkusTest
 class EventStoreSchemaTest {

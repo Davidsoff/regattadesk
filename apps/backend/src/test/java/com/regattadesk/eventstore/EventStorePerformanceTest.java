@@ -18,6 +18,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Event ordering by sequence_number works correctly
  * - Correlation ID queries are indexed
  * - Query plans use expected indexes
+ * 
+ * Note: Helper methods use String.format() for SQL construction for test simplicity.
+ * This is acceptable in test code with controlled inputs (UUIDs, type discriminators).
+ * Production code should always use PreparedStatement with parameterized queries.
  */
 @QuarkusTest
 class EventStorePerformanceTest {
