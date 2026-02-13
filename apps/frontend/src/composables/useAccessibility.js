@@ -74,11 +74,8 @@ export function useFocusTrap() {
   function deactivate() {
     document.removeEventListener('keydown', handleKeyDown);
     
-    if (triggerElement && typeof triggerElement.focus === 'function') {
-      triggerElement.focus();
-    } else if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
-      previousFocusedElement.focus();
-    }
+    triggerElement?.focus?.();
+    previousFocusedElement?.focus?.();
 
     triggerElement = null;
     previousFocusedElement = null;
@@ -208,7 +205,7 @@ function handleArrowNavigation(event, currentIndex, items, loop, orientation) {
   };
 
   const action = directionMap[event.key];
-  if (action && action.check(event.key, orientation)) {
+  if (action?.check?.(event.key, orientation)) {
     event.preventDefault();
     nextIndex = calculateNextIndex(currentIndex, action.direction, items.length, loop);
     handled = true;
@@ -367,9 +364,7 @@ async function focusFirstError(containerSelector = '[role="alert"], .error-summa
 async function focusElement(selector) {
   await nextTick();
   const element = document.querySelector(selector);
-  if (element) {
-    element.focus();
-  }
+  element?.focus();
 }
 
 export function useFocusManagement() {
