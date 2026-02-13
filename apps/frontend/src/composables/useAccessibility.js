@@ -345,8 +345,6 @@ export function useFocusManagement() {
       errorContainer.addEventListener('focusout', cleanup, { once: true });
     }
   }
-    }
-  }
 
   async function focusElement(selector) {
     await nextTick();
