@@ -223,7 +223,7 @@
       <section class="demo-section">
         <h2>WCAG 2.2 AA Compliance</h2>
         <ul>
-          <li>✅ Color contrast: All text meets 4.5:1 minimum (7:1 for AA)</li>
+          <li>✅ Color contrast: All text meets 4.5:1 minimum (WCAG 2.2 AA standard)</li>
           <li>✅ Focus indicators: 2px visible focus rings with adequate contrast</li>
           <li>✅ Keyboard navigation: All functionality accessible via keyboard</li>
           <li>✅ Touch targets: Minimum 44×44px on all interactive elements</li>
