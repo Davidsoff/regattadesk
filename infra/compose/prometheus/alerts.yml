@@ -46,17 +46,6 @@ groups:
           summary: "High latency detected"
           description: "95th percentile latency is above 2 seconds for the last 5 minutes"
 
-      # Health check alerts
-      - alert: HealthCheckFailing
-        expr: up{job="regattadesk-backend-health"} == 0
-        for: 2m
-        labels:
-          severity: critical
-          component: backend
-        annotations:
-          summary: "Backend health check is failing"
-          description: "The backend health endpoint has been unreachable for more than 2 minutes"
-
   - name: regattadesk_resource_alerts
     interval: 30s
     rules:

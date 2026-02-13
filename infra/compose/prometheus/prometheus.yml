@@ -23,15 +23,6 @@ scrape_configs:
           service: 'backend'
           component: 'api'
 
-  # RegattaDesk backend health
-  - job_name: 'regattadesk-backend-health'
-    metrics_path: '/q/health'
-    static_configs:
-      - targets: ['backend:8080']
-        labels:
-          service: 'backend'
-          component: 'health'
-
 # Alert rules for critical service health signals
 rule_files:
   - 'alerts.yml'

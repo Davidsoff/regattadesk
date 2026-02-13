@@ -182,10 +182,6 @@ Alert rules are defined in `infra/compose/prometheus/alerts.yml`.
    - Trigger: Service unavailable for >1 minute
    - Severity: Critical
 
-2. **HealthCheckFailing**
-   - Trigger: Health endpoint unreachable for >2 minutes
-   - Severity: Critical
-
 ### Warning Alerts
 
 1. **HighErrorRate**

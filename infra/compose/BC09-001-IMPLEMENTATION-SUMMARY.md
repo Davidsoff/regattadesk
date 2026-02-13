@@ -118,7 +118,6 @@ This ticket implements comprehensive observability infrastructure for RegattaDes
 
 **Critical Alerts:**
 - `BackendDown`: Service unavailable >1 minute
-- `HealthCheckFailing`: Health endpoint unreachable >2 minutes
 
 **Warning Alerts:**
 - `HighErrorRate`: Error rate >5% for 5 minutes
