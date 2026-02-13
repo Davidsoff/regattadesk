@@ -231,8 +231,9 @@ class EventStoreTest {
         
         // Create multiple events of the same type
         for (int i = 0; i < 5; i++) {
-            eventStore.append(UUID.randomUUID(), "TestAggregate", -1,
-                             List.of(new TestEvent("PagedEvent", UUID.randomUUID(), "data" + i)),
+            UUID aggId = UUID.randomUUID();
+            eventStore.append(aggId, "TestAggregate", -1,
+                             List.of(new TestEvent("PagedEvent", aggId, "data" + i)),
                              EventMetadata.builder().build());
         }
         

@@ -21,6 +21,15 @@ import java.util.UUID;
  * 
  * Provides transactional event persistence with optimistic concurrency control
  * and efficient stream reads using database indexes.
+ * 
+ * Note on transaction management:
+ * The @Transactional annotation ensures that all database operations within a method
+ * participate in a JTA transaction. When we call dataSource.getConnection(), we get
+ * a connection that is already enlisted in the current transaction context managed
+ * by Quarkus/Narayana. This means that:
+ * - All SQL operations use the same transaction
+ * - Rollback occurs automatically on exceptions
+ * - Commit happens when the method completes successfully
  */
 @ApplicationScoped
 public class PostgresEventStore implements EventStore {
@@ -68,11 +77,11 @@ public class PostgresEventStore implements EventStore {
             updateAggregateVersion(conn, aggregateId, sequenceNumber - 1);
             
         } catch (SQLException e) {
-            // Check if this is a unique constraint violation (concurrent append)
-            if (e.getMessage() != null && 
-                (e.getMessage().contains("duplicate key") || 
-                 e.getMessage().contains("unique") ||
-                 e.getMessage().contains("Unique index"))) {
+            // Check for unique constraint violations using SQLState
+            // 23505: PostgreSQL unique_violation
+            // 23000: H2 integrity constraint violation
+            String sqlState = e.getSQLState();
+            if ("23505".equals(sqlState) || "23000".equals(sqlState)) {
                 throw new ConcurrencyException(aggregateId, expectedVersion, getCurrentVersion(aggregateId));
             }
             throw new RuntimeException("Failed to append events", e);
@@ -290,8 +299,12 @@ public class PostgresEventStore implements EventStore {
     }
     
     private DomainEvent deserializePayload(String eventType, UUID aggregateId, String payloadJson) {
-        // For now, return a generic event
-        // In a real implementation, you'd use a registry to deserialize to the correct type
+        // TODO: Implement event type registry for proper deserialization
+        // Expected pattern:
+        // 1. Register event types with their corresponding deserializer classes
+        // 2. Use EventTypeRegistry.getDeserializer(eventType) to get the right class
+        // 3. Deserialize to the specific event type: objectMapper.readValue(payloadJson, eventClass)
+        // For now, return a generic event that preserves the raw JSON payload
         return new GenericDomainEvent(eventType, aggregateId, payloadJson);
     }
     
