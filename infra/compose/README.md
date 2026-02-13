@@ -380,6 +380,20 @@ Services show as "healthy" when ready.
 6. **Restrict Traefik dashboard** access
 7. **Review access control rules** in `authelia/configuration.yml`
 
+**Edge Hardening (BC09-002):**
+- ✅ Rate limiting on all endpoints (public: 100 req/s, staff: 50 req/s, operator: 30 req/s)
+- ✅ Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- ✅ Request size limits (10 MB max)
+- ✅ Timeout controls (30s/60s/90s)
+- ✅ Gzip compression for text responses
+
+**Test edge security:**
+```bash
+./edge-hardening-test.sh
+```
+
+**See also:** [Edge Security Documentation](../../docs/EDGE_SECURITY.md)
+
 ### Performance
 
 1. **Allocate sufficient resources**: Min 4GB RAM, 2 CPU cores
@@ -470,6 +484,24 @@ docker compose config --quiet
 - [BC01 Platform Spec](../../pdd/implementation/bc01-platform-and-delivery.md)
 - [Detailed Design](../../pdd/design/detailed-design.md)
 - [Observability Setup](./OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
+- [Edge Security](../../docs/EDGE_SECURITY.md) - TLS, security headers, rate limiting, abuse prevention
+- [Operational Runbooks](../../docs/runbooks/README.md) - Incident response and operational procedures
+
+## Operational Procedures
+
+For incident response and operational procedures, see the [Runbooks](../../docs/runbooks/README.md):
+
+- **[RB-001: Service Unavailability](../../docs/runbooks/incident-service-unavailability.md)** - Backend, database, or complete stack failures
+- **[RB-002: Authentication Failures](../../docs/runbooks/incident-authentication-failures.md)** - Login, session, and ForwardAuth issues
+- **[RB-003: Public Performance Issues](../../docs/runbooks/incident-public-performance.md)** - Slow responses, high load, SSE failures
+- **[RB-005: Deployment and Rollback](../../docs/runbooks/procedure-deployment-rollback.md)** - Standard deployments, emergency rollbacks, config updates
+
+**Quick incident response:**
+1. Identify symptoms from runbook
+2. Run triage commands (copy-paste from runbook)
+3. Follow resolution steps
+4. Validate fix
+5. Document in incident ticket
 
 ## Observability
 
