@@ -1,0 +1,207 @@
+services:
+  # PostgreSQL Database (v16+)
+  postgres:
+    image: postgres:16-alpine
+    container_name: regattadesk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-regattadesk}
+      POSTGRES_USER: ${POSTGRES_USER:-regattadesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # Authelia database (same instance, different DB)
+      POSTGRES_AUTHELIA_DB: ${POSTGRES_AUTHELIA_DB:-authelia}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - regattadesk-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-regattadesk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  # MinIO Object Storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: regattadesk-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-regattadesk}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}
+    volumes:
+      - minio-data:/data
+    networks:
+      - regattadesk-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+
+  # MinIO client for bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: regattadesk-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - regattadesk-internal
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set regattadesk http://minio:9000 ${MINIO_ROOT_USER:-regattadesk} ${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing regattadesk/line-scan-tiles;
+      mc mb --ignore-existing regattadesk/line-scan-manifests;
+      mc anonymous set download regattadesk/line-scan-tiles;
+      mc anonymous set download regattadesk/line-scan-manifests;
+      echo 'MinIO buckets initialized successfully';
+      "
+
+  # Authelia SSO/Authentication (v4.38+, DB-only mode)
+  # NOTE: Commented out for initial testing. Enable after basic stack is validated.
+  # Authelia requires HTTPS in production mode, which needs TLS certificates.
+  # For local development, self-signed certs or Let's Encrypt staging can be used.
+  # authelia:
+  #   image: authelia/authelia:4.38
+  #   container_name: regattadesk-authelia
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     AUTHELIA_JWT_SECRET: ${AUTHELIA_JWT_SECRET:?AUTHELIA_JWT_SECRET is required}
+  #     AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET:?AUTHELIA_SESSION_SECRET is required}
+  #     AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY:?AUTHELIA_STORAGE_ENCRYPTION_KEY is required}
+  #     AUTHELIA_STORAGE_POSTGRES_HOST: postgres
+  #     AUTHELIA_STORAGE_POSTGRES_PORT: 5432
+  #     AUTHELIA_STORAGE_POSTGRES_DATABASE: ${POSTGRES_AUTHELIA_DB:-authelia}
+  #     AUTHELIA_STORAGE_POSTGRES_USERNAME: ${POSTGRES_USER:-regattadesk}
+  #     AUTHELIA_STORAGE_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - ./authelia:/config:ro
+  #   networks:
+  #     - regattadesk-internal
+  #     - regattadesk-edge
+  #   expose:
+  #     - "9091"
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9091/api/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
+
+  # Traefik Reverse Proxy (v3.0+)
+  traefik:
+    image: traefik:v3.0
+    container_name: regattadesk-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=${TRAEFIK_LOG_LEVEL:-INFO}"
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik/dynamic:ro
+    networks:
+      - regattadesk-edge
+      - regattadesk-internal
+
+  # Backend (Quarkus)
+  # Build the image with: cd ../../apps/backend && ./mvnw clean package -Dquarkus.container-image.build=true
+  # Default image name uses: ${user.name}/${quarkus.application.name}:${quarkus.application.version}
+  # Example: ${USER}/regattadesk-backend:0.1.0-SNAPSHOT
+  backend:
+    image: ${BACKEND_IMAGE:-$USER/regattadesk-backend:0.1.0-SNAPSHOT}
+    container_name: regattadesk-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-regattadesk}
+      QUARKUS_DATASOURCE_USERNAME: ${POSTGRES_USER:-regattadesk}
+      QUARKUS_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-regattadesk}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+    networks:
+      - regattadesk-internal
+      - regattadesk-edge
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/q/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+      - "traefik.http.services.backend.loadbalancer.server.port=8080"
+      # ForwardAuth for staff endpoints - TO BE ENABLED when Authelia is configured
+      # - "traefik.http.routers.backend-staff.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/staff`)"
+      # - "traefik.http.routers.backend-staff.middlewares=authelia@docker"
+      # - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify?rd=https://${DOMAIN:-localhost.local}"
+      # - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+      # - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
+
+  # Frontend (Vue.js served via Nginx)
+  frontend:
+    build:
+      context: ../../apps/frontend
+      dockerfile: Dockerfile
+    container_name: regattadesk-frontend
+    restart: unless-stopped
+    networks:
+      - regattadesk-edge
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost.local}`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+networks:
+  regattadesk-edge:
+    name: regattadesk-edge
+    driver: bridge
+  regattadesk-internal:
+    name: regattadesk-internal
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres-data:
+    name: regattadesk-postgres-data
+  minio-data:
+    name: regattadesk-minio-data

@@ -1,0 +1,100 @@
+---
+###############################################################################
+#                           Authelia Configuration                            #
+###############################################################################
+
+# Theme can be light, dark, grey or auto.
+theme: light
+
+# Server Configuration
+server:
+  address: tcp://0.0.0.0:9091/
+  buffers:
+    read: 4096
+    write: 4096
+  endpoints:
+    enable_pprof: false
+    enable_expvars: false
+  disable_healthcheck: false
+
+# Log Configuration
+log:
+  level: info
+  format: text
+
+# TOTP Configuration
+totp:
+  disable: false
+  issuer: regattadesk.com
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+# Authentication Backend Configuration
+authentication_backend:
+  # File-based authentication for local development
+  file:
+    path: /config/users_database.yml
+
+# Access Control Configuration
+access_control:
+  default_policy: deny
+  rules:
+    # Public API endpoints (no authentication)
+    - domain:
+        - "localhost.local"
+      policy: bypass
+      resources:
+        - "^/api/v1/public/.*$"
+        - "^/api/health$"
+        - "^/q/health.*$"
+    
+    # Staff API endpoints (require authentication) - Using one_factor for development
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/staff/.*$"
+
+# Session Configuration (updated format for 4.38+)
+session:
+  secret: ${AUTHELIA_SESSION_SECRET}
+  cookies:
+    - domain: localhost.local
+      authelia_url: http://localhost.local/auth
+      default_redirection_url: http://localhost.local
+      name: authelia_session
+      same_site: lax
+      inactivity: 5m
+      expiration: 1h
+      remember_me: 1M
+
+# Regulation Configuration (brute-force protection)
+regulation:
+  max_retries: 5
+  find_time: 2m
+  ban_time: 5m
+
+# Storage Configuration (PostgreSQL, DB-only mode - no Redis)
+storage:
+  encryption_key: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
+  postgres:
+    address: tcp://postgres:5432
+    database: ${AUTHELIA_STORAGE_POSTGRES_DATABASE}
+    username: ${AUTHELIA_STORAGE_POSTGRES_USERNAME}
+    password: ${AUTHELIA_STORAGE_POSTGRES_PASSWORD}
+    timeout: 5s
+
+# Notifier Configuration (file-based for development)
+notifier:
+  disable_startup_check: false
+  filesystem:
+    filename: /config/notification.txt
+
+# Identity validation configuration
+identity_validation:
+  reset_password:
+    jwt_secret: ${AUTHELIA_JWT_SECRET}
+
