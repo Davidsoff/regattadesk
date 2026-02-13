@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 SEPARATOR="======================================"
+HEALTHY_STATUS="healthy"
 
 echo "$SEPARATOR"
 echo "RegattaDesk Compose Stack Smoke Test"
@@ -98,12 +99,12 @@ while [[ $ELAPSED -lt $TIMEOUT ]]; do
     
     # Check if all core services are healthy
     ALL_HEALTHY=false
-    if [[ "$POSTGRES_HEALTH" == "healthy" ]] && \
-       [[ "$MINIO_HEALTH" == "healthy" ]] && \
-       [[ "$BACKEND_HEALTH" == "healthy" ]] && \
-       [[ "$FRONTEND_HEALTH" == "healthy" ]]; then
+    if [[ "$POSTGRES_HEALTH" == "$HEALTHY_STATUS" ]] && \
+       [[ "$MINIO_HEALTH" == "$HEALTHY_STATUS" ]] && \
+       [[ "$BACKEND_HEALTH" == "$HEALTHY_STATUS" ]] && \
+       [[ "$FRONTEND_HEALTH" == "$HEALTHY_STATUS" ]]; then
         if [[ "$AUTHELIA_ENABLED" == "true" ]]; then
-            [[ "$AUTHELIA_HEALTH" == "healthy" ]] && ALL_HEALTHY=true
+            [[ "$AUTHELIA_HEALTH" == "$HEALTHY_STATUS" ]] && ALL_HEALTHY=true
         else
             ALL_HEALTHY=true
         fi

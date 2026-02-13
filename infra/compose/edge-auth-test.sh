@@ -17,6 +17,7 @@ DOMAIN="${DOMAIN:-localhost.local}"
 BASE_URL="http://${DOMAIN}"
 AUTHELIA_URL="${BASE_URL}/auth"
 CURL_HTTP_CODE_FORMAT="%{http_code}"
+SEPARATOR="======================================"
 
 # Test credentials
 SUPER_ADMIN_USER="superadmin"
@@ -306,9 +307,9 @@ test_access_control_rules() {
 
 # Main test execution
 main() {
-    echo "======================================"
+    echo "$SEPARATOR"
     echo "  Edge Authentication Integration Tests"
-    echo "======================================"
+    echo "$SEPARATOR"
     echo
     
     # Change to compose directory
@@ -332,9 +333,9 @@ main() {
     test_operator_blocked_unauthenticated
     
     # Summary
-    echo "======================================"
+    echo "$SEPARATOR"
     echo "  Test Summary"
-    echo "======================================"
+    echo "$SEPARATOR"
     echo "Tests Run:    ${TESTS_RUN}"
     echo -e "Tests Passed: ${GREEN}${TESTS_PASSED}${NC}"
     echo -e "Tests Failed: ${RED}${TESTS_FAILED}${NC}"
