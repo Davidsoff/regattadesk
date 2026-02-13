@@ -210,14 +210,10 @@ All PRs must pass these checks before merge:
 1. **Backend Lint** - Code formatting and style
 2. **Backend Build** - Compilation without errors
 3. **Backend Unit Tests** - All unit tests pass
-4. **Backend Integration Tests** - PostgreSQL integration tests pass (when applicable)
-5. **Backend Contract Tests** - Pact provider verification (when applicable)
-6. **Frontend Lint** - Code formatting and style
-7. **Frontend Build** - Build succeeds without errors
-8. **Frontend Unit Tests** - Component and utility tests pass (when applicable)
-9. **Frontend Accessibility Tests** - axe-core scans pass (when applicable)
-10. **Dependency Pinning** - All dependencies properly pinned
-11. **Security Scan** - No critical vulnerabilities
+4. **Frontend Lint** - Code formatting and style
+5. **Frontend Build** - Build succeeds without errors
+6. **Frontend Unit Tests** - Component and utility tests pass (when applicable)
+7. **Dependency Pinning** - All dependencies properly pinned
 
 ### Conditional Checks
 
