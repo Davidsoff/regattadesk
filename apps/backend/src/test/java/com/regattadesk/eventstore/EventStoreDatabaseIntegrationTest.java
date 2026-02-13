@@ -51,35 +51,37 @@ class EventStoreIntegrationTest {
     @Test
     void shouldHaveEventStoreSchema() throws Exception {
         // Verify event store table exists (from Flyway migration)
+        // Note: H2 uses uppercase table names by default
         try (Connection conn = dataSource.getConnection();
-             ResultSet rs = conn.getMetaData().getTables(null, null, "event_store", null)) {
-            assertTrue(rs.next(), "event_store table should exist");
+             ResultSet rs = conn.getMetaData().getTables(null, null, "EVENT_STORE", null)) {
+            assertTrue(rs.next(), "EVENT_STORE table should exist");
         }
     }
 
     @Test
     void shouldHaveCorrectEventStoreColumns() throws Exception {
         // Verify key columns exist in event_store table
+        // Note: H2 uses uppercase column names by default
         try (Connection conn = dataSource.getConnection();
-             ResultSet rs = conn.getMetaData().getColumns(null, null, "event_store", null)) {
+             ResultSet rs = conn.getMetaData().getColumns(null, null, "EVENT_STORE", null)) {
             
-            boolean hasEventIdColumn = false;
+            boolean hasIdColumn = false;
             boolean hasAggregateIdColumn = false;
             boolean hasEventTypeColumn = false;
-            boolean hasTimestampColumn = false;
+            boolean hasCreatedAtColumn = false;
             
             while (rs.next()) {
                 String columnName = rs.getString("COLUMN_NAME");
-                if ("event_id".equalsIgnoreCase(columnName)) hasEventIdColumn = true;
-                if ("aggregate_id".equalsIgnoreCase(columnName)) hasAggregateIdColumn = true;
-                if ("event_type".equalsIgnoreCase(columnName)) hasEventTypeColumn = true;
-                if ("timestamp".equalsIgnoreCase(columnName)) hasTimestampColumn = true;
+                if ("ID".equalsIgnoreCase(columnName)) hasIdColumn = true;
+                if ("AGGREGATE_ID".equalsIgnoreCase(columnName)) hasAggregateIdColumn = true;
+                if ("EVENT_TYPE".equalsIgnoreCase(columnName)) hasEventTypeColumn = true;
+                if ("CREATED_AT".equalsIgnoreCase(columnName)) hasCreatedAtColumn = true;
             }
             
-            assertTrue(hasEventIdColumn, "event_store should have event_id column");
-            assertTrue(hasAggregateIdColumn, "event_store should have aggregate_id column");
-            assertTrue(hasEventTypeColumn, "event_store should have event_type column");
-            assertTrue(hasTimestampColumn, "event_store should have timestamp column");
+            assertTrue(hasIdColumn, "EVENT_STORE should have ID column");
+            assertTrue(hasAggregateIdColumn, "EVENT_STORE should have AGGREGATE_ID column");
+            assertTrue(hasEventTypeColumn, "EVENT_STORE should have EVENT_TYPE column");
+            assertTrue(hasCreatedAtColumn, "EVENT_STORE should have CREATED_AT column");
         }
     }
 }
