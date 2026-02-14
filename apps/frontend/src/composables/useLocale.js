@@ -6,7 +6,7 @@ import { setLocale } from '../i18n';
  * Composable for locale management and switching
  */
 export function useLocale() {
-  const { locale, t, availableLocales } = useI18n();
+  const { locale, t } = useI18n();
 
   const currentLocale = computed(() => locale.value);
   
