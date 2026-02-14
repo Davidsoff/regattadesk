@@ -1,5 +1,7 @@
 package com.regattadesk.operator;
 
+import com.regattadesk.operator.events.OperatorTokenEvent;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +54,16 @@ public interface OperatorTokenRepository {
      * @return list of tokens for the regatta
      */
     List<OperatorToken> findByRegattaId(UUID regattaId);
+
+    /**
+     * Finds tokens for a specific regatta with pagination.
+     *
+     * @param regattaId the regatta ID
+     * @param limit max number of rows to return
+     * @param offset row offset
+     * @return paginated tokens for the regatta
+     */
+    List<OperatorToken> findByRegattaId(UUID regattaId, int limit, int offset);
     
     /**
      * Finds all active tokens for a specific regatta and station.
@@ -61,6 +73,16 @@ public interface OperatorTokenRepository {
      * @return list of active tokens for the regatta and station
      */
     List<OperatorToken> findActiveByRegattaIdAndStation(UUID regattaId, String station);
+
+    /**
+     * Finds active tokens for a regatta with pagination.
+     *
+     * @param regattaId the regatta ID
+     * @param limit max number of rows to return
+     * @param offset row offset
+     * @return paginated active tokens for the regatta
+     */
+    List<OperatorToken> findActiveByRegattaId(UUID regattaId, int limit, int offset);
     
     /**
      * Finds all tokens that are currently valid (active and within validity window).
@@ -86,4 +108,11 @@ public interface OperatorTokenRepository {
      * @return true if a token with this string exists
      */
     boolean existsByToken(String token);
+
+    /**
+     * Appends an operator token lifecycle event to the append-only event store.
+     *
+     * @param event operator token event to append
+     */
+    void appendEvent(OperatorTokenEvent event);
 }

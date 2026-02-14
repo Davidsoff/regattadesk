@@ -1,8 +1,12 @@
 package com.regattadesk.operator;
 
+import com.regattadesk.operator.events.OperatorTokenIssuedEvent;
+import com.regattadesk.operator.events.OperatorTokenRevokedEvent;
+import com.regattadesk.operator.events.OperatorTokenValidatedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
@@ -19,6 +23,7 @@ import java.util.UUID;
 @ApplicationScoped
 public class OperatorTokenService {
     
+    private static final int MAX_TOKEN_GENERATION_ATTEMPTS = 10;
     private static final int TOKEN_LENGTH_BYTES = 32;
     private static final int PIN_LENGTH = 6;
     private static final SecureRandom RANDOM = new SecureRandom();
@@ -28,8 +33,12 @@ public class OperatorTokenService {
     
     @Inject
     public OperatorTokenService(OperatorTokenRepository repository) {
+        this(repository, new OperatorTokenValidator());
+    }
+
+    OperatorTokenService(OperatorTokenRepository repository, OperatorTokenValidator validator) {
         this.repository = repository;
-        this.validator = new OperatorTokenValidator();
+        this.validator = validator;
     }
     
     /**
@@ -66,31 +75,47 @@ public class OperatorTokenService {
             throw new IllegalArgumentException("Valid until must be after valid from");
         }
         
-        // Generate unique token string
-        String tokenString = generateTokenString();
-        while (repository.existsByToken(tokenString)) {
-            tokenString = generateTokenString();
-        }
-        
-        // Generate PIN
-        String pin = generatePin();
-        
         Instant now = Instant.now();
-        OperatorToken token = new OperatorToken(
-            UUID.randomUUID(),
-            regattaId,
-            blockId,
-            station,
-            tokenString,
-            pin,
-            validFrom,
-            validUntil,
-            true,
-            now,
-            now
-        );
-        
-        return repository.save(token);
+        for (int attempt = 1; attempt <= MAX_TOKEN_GENERATION_ATTEMPTS; attempt++) {
+            String tokenString = generateTokenString();
+            while (repository.existsByToken(tokenString)) {
+                tokenString = generateTokenString();
+            }
+
+            OperatorToken token = new OperatorToken(
+                UUID.randomUUID(),
+                regattaId,
+                blockId,
+                station,
+                tokenString,
+                generatePin(),
+                validFrom,
+                validUntil,
+                true,
+                now,
+                now
+            );
+
+            try {
+                OperatorToken saved = repository.save(token);
+                repository.appendEvent(new OperatorTokenIssuedEvent(
+                    saved.getId(),
+                    saved.getRegattaId(),
+                    saved.getBlockId(),
+                    saved.getStation(),
+                    saved.getValidFrom(),
+                    saved.getValidUntil(),
+                    now,
+                    "system"
+                ));
+                return saved;
+            } catch (RuntimeException e) {
+                if (!isUniqueConstraintViolation(e) || attempt == MAX_TOKEN_GENERATION_ATTEMPTS) {
+                    throw e;
+                }
+            }
+        }
+        throw new IllegalStateException("Failed to generate a unique token after retries");
     }
     
     /**
@@ -109,34 +134,60 @@ public class OperatorTokenService {
             UUID blockId) {
         
         if (tokenString == null || tokenString.isBlank()) {
-            return new TokenValidationResult(
+            TokenValidationResult result = new TokenValidationResult(
                 null,
                 OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
                 "Token string is required"
             );
+            appendValidationEvent(
+                UUID.nameUUIDFromBytes("invalid:blank-token".getBytes(StandardCharsets.UTF_8)),
+                regattaId,
+                station,
+                result,
+                Instant.now()
+            );
+            return result;
         }
         if (regattaId == null) {
-            return new TokenValidationResult(
+            TokenValidationResult result = new TokenValidationResult(
                 null,
                 OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
                 "Regatta ID is required"
             );
+            appendValidationEvent(null, null, station, result, Instant.now());
+            return result;
         }
         if (station == null || station.isBlank()) {
-            return new TokenValidationResult(
+            TokenValidationResult result = new TokenValidationResult(
                 null,
                 OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
                 "Station is required"
             );
+            appendValidationEvent(
+                UUID.nameUUIDFromBytes(("invalid:station:" + tokenString).getBytes(StandardCharsets.UTF_8)),
+                regattaId,
+                null,
+                result,
+                Instant.now()
+            );
+            return result;
         }
         
         Optional<OperatorToken> tokenOpt = repository.findByToken(tokenString);
         if (tokenOpt.isEmpty()) {
-            return new TokenValidationResult(
+            TokenValidationResult result = new TokenValidationResult(
                 null,
                 OperatorTokenValidator.ValidationResult.NOT_FOUND,
                 "Token not found"
             );
+            appendValidationEvent(
+                UUID.nameUUIDFromBytes(("missing:" + tokenString).getBytes(StandardCharsets.UTF_8)),
+                regattaId,
+                station,
+                result,
+                Instant.now()
+            );
+            return result;
         }
         
         OperatorToken token = tokenOpt.get();
@@ -156,8 +207,9 @@ public class OperatorTokenService {
                 e.getMessage()
             );
         }
-        
-        return new TokenValidationResult(token, result, result.getMessage());
+        TokenValidationResult tokenValidationResult = new TokenValidationResult(token, result, result.getMessage());
+        appendValidationEvent(token.getId(), regattaId, station, tokenValidationResult, Instant.now());
+        return tokenValidationResult;
     }
     
     /**
@@ -171,7 +223,38 @@ public class OperatorTokenService {
             throw new IllegalArgumentException("Token ID cannot be null");
         }
         
-        return repository.revoke(tokenId);
+        return revokeTokenForRegatta(tokenId, null) == RevokeResult.REVOKED;
+    }
+
+    public RevokeResult revokeTokenForRegatta(UUID tokenId, UUID regattaId) {
+        if (tokenId == null) {
+            throw new IllegalArgumentException("Token ID cannot be null");
+        }
+
+        Optional<OperatorToken> tokenOpt = repository.findById(tokenId);
+        if (tokenOpt.isEmpty()) {
+            return RevokeResult.NOT_FOUND;
+        }
+
+        OperatorToken token = tokenOpt.get();
+        if (regattaId != null && !token.getRegattaId().equals(regattaId)) {
+            return RevokeResult.NOT_FOUND;
+        }
+
+        boolean revoked = repository.revoke(tokenId);
+        if (revoked) {
+            repository.appendEvent(new OperatorTokenRevokedEvent(
+                token.getId(),
+                token.getRegattaId(),
+                token.getStation(),
+                "revoked",
+                Instant.now(),
+                "system"
+            ));
+            return RevokeResult.REVOKED;
+        }
+
+        return RevokeResult.NOT_FOUND;
     }
     
     /**
@@ -263,6 +346,43 @@ public class OperatorTokenService {
     private String generatePin() {
         int pin = RANDOM.nextInt((int) Math.pow(10, PIN_LENGTH));
         return String.format("%0" + PIN_LENGTH + "d", pin);
+    }
+
+    private boolean isUniqueConstraintViolation(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && (message.contains("23505") || message.toLowerCase().contains("unique"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private void appendValidationEvent(
+            UUID tokenId,
+            UUID regattaId,
+            String station,
+            TokenValidationResult result,
+            Instant occurredAt) {
+        if (tokenId == null || regattaId == null) {
+            return;
+        }
+        repository.appendEvent(new OperatorTokenValidatedEvent(
+            tokenId,
+            regattaId,
+            station,
+            result.result.isValid(),
+            result.message,
+            occurredAt,
+            "system"
+        ));
+    }
+
+    public enum RevokeResult {
+        REVOKED,
+        NOT_FOUND
     }
     
     /**

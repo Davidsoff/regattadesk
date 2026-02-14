@@ -1,6 +1,8 @@
 package com.regattadesk.operator.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -14,12 +16,15 @@ public class OperatorTokenCreateRequest {
     private UUID blockId;
     
     @JsonProperty("station")
+    @NotBlank(message = "station must not be blank")
     private String station;
     
     @JsonProperty("valid_from")
+    @NotNull(message = "valid_from is required")
     private Instant validFrom;
     
     @JsonProperty("valid_until")
+    @NotNull(message = "valid_until is required")
     private Instant validUntil;
     
     public OperatorTokenCreateRequest() {

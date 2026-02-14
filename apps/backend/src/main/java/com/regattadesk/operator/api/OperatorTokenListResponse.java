@@ -10,20 +10,20 @@ import java.util.List;
 public class OperatorTokenListResponse {
     
     @JsonProperty("data")
-    private List<OperatorTokenResponse> data;
+    private List<OperatorTokenSummaryResponse> data;
     
     public OperatorTokenListResponse() {
     }
     
-    public OperatorTokenListResponse(List<OperatorTokenResponse> data) {
+    public OperatorTokenListResponse(List<OperatorTokenSummaryResponse> data) {
         this.data = data;
     }
     
-    public List<OperatorTokenResponse> getData() {
+    public List<OperatorTokenSummaryResponse> getData() {
         return data == null ? List.of() : List.copyOf(data);
     }
     
-    public void setData(List<OperatorTokenResponse> data) {
+    public void setData(List<OperatorTokenSummaryResponse> data) {
         this.data = data;
     }
 }

@@ -100,8 +100,7 @@ class OperatorTokenResourceIT {
             .when()
             .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
-            .statusCode(400)
-            .body("error", containsString("Station"));
+            .statusCode(400);
     }
     
     @Test

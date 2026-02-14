@@ -5,12 +5,13 @@ import com.regattadesk.operator.OperatorTokenService;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.Role;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
  * Provides endpoints for creating, listing, and revoking operator tokens.
  * All endpoints require REGATTA_ADMIN or SUPER_ADMIN role.
  */
-@Path("/api/v1/regattas/{regattaId}/operator/tokens")
+@Path("/api/v1/regattas/{regatta_id}/operator/tokens")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class OperatorTokenResource {
@@ -37,10 +38,10 @@ public class OperatorTokenResource {
      */
     @GET
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
-    public Response listTokens(@PathParam("regattaId") UUID regattaId) {
+    public Response listTokens(@PathParam("regatta_id") UUID regattaId) {
         List<OperatorToken> tokens = tokenService.listTokens(regattaId);
-        List<OperatorTokenResponse> responses = tokens.stream()
-            .map(OperatorTokenResponse::new)
+        List<OperatorTokenSummaryResponse> responses = tokens.stream()
+            .map(OperatorTokenSummaryResponse::new)
             .collect(Collectors.toList());
         
         return Response.ok(new OperatorTokenListResponse(responses)).build();
@@ -52,35 +53,8 @@ public class OperatorTokenResource {
     @POST
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
     public Response createToken(
-            @PathParam("regattaId") UUID regattaId,
-            OperatorTokenCreateRequest request) {
-        
-        // Validate request
-        if (request == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Request body is required"))
-                .build();
-        }
-        if (request.getStation() == null || request.getStation().isBlank()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Station is required"))
-                .build();
-        }
-        if (request.getValidFrom() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Valid from is required"))
-                .build();
-        }
-        if (request.getValidUntil() == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Valid until is required"))
-                .build();
-        }
-        if (!request.getValidUntil().isAfter(request.getValidFrom())) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Valid until must be after valid from"))
-                .build();
-        }
+            @PathParam("regatta_id") UUID regattaId,
+            @Valid @NotNull(message = "request body is required") OperatorTokenCreateRequest request) {
         
         try {
             OperatorToken token = tokenService.issueToken(
@@ -106,35 +80,18 @@ public class OperatorTokenResource {
      * Revoke an operator token.
      */
     @POST
-    @Path("/{tokenId}/revoke")
+    @Path("/{token_id}/revoke")
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
     public Response revokeToken(
-            @PathParam("regattaId") UUID regattaId,
-            @PathParam("tokenId") UUID tokenId) {
-        
-        // Verify token belongs to regatta
-        Optional<OperatorToken> tokenOpt = tokenService.getTokenById(tokenId);
-        if (tokenOpt.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Token not found"))
-                .build();
-        }
-        
-        OperatorToken token = tokenOpt.get();
-        if (!token.getRegattaId().equals(regattaId)) {
-            return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Token not found in this regatta"))
-                .build();
-        }
-        
-        boolean revoked = tokenService.revokeToken(tokenId);
-        if (revoked) {
+            @PathParam("regatta_id") UUID regattaId,
+            @PathParam("token_id") UUID tokenId) {
+        OperatorTokenService.RevokeResult revokeResult = tokenService.revokeTokenForRegatta(tokenId, regattaId);
+        if (revokeResult == OperatorTokenService.RevokeResult.REVOKED) {
             return Response.ok(new OperationResult("Token revoked successfully")).build();
-        } else {
-            return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Token not found"))
-                .build();
         }
+        return Response.status(Response.Status.NOT_FOUND)
+            .entity(new ErrorResponse("Token not found"))
+            .build();
     }
     
     /**
