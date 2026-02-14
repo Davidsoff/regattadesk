@@ -124,7 +124,12 @@
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.5.15</version>
+            <version>8.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>5.1.0</version>
         </dependency>
     </dependencies>
 
@@ -151,6 +156,8 @@
                 <configuration>
                     <compilerArgs>
                         <arg>-parameters</arg>
+                        <arg>--add-exports</arg>
+                        <arg>ALL-UNNAMED/okhttp3=ALL-UNNAMED</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

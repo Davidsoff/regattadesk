@@ -93,6 +93,15 @@ public class MinioStorageAdapter {
         String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
         
         try {
+            // First get object metadata to determine content type
+            StatObjectResponse stat = minioClient.statObject(
+                StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            );
+            
+            // Then get the object data
             GetObjectResponse response = minioClient.getObject(
                 GetObjectArgs.builder()
                     .bucket(bucketName)
@@ -101,10 +110,13 @@ public class MinioStorageAdapter {
             );
             
             byte[] data = response.readAllBytes();
-            String contentType = response.headers().get("Content-Type");
+            String contentType = stat.contentType();
+            if (contentType == null || contentType.isEmpty()) {
+                contentType = "application/octet-stream";
+            }
             
             LOG.debugf("Retrieved tile: bucket=%s, key=%s, size=%d", bucketName, objectKey, data.length);
-            return new TileData(data, contentType != null ? contentType : "application/octet-stream");
+            return new TileData(data, contentType);
             
         } catch (ErrorResponseException e) {
             if (e.errorResponse().code().equals("NoSuchKey")) {
