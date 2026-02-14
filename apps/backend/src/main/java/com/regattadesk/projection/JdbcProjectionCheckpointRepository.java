@@ -58,14 +58,11 @@ public class JdbcProjectionCheckpointRepository implements ProjectionCheckpointR
             throw new IllegalArgumentException("Checkpoint cannot be null");
         }
         
+        // Use MERGE for H2 compatibility (works in both H2 and PostgreSQL 15+)
         String sql = """
-            INSERT INTO projection_checkpoints (projection_name, last_processed_event_id, last_processed_at, updated_at)
+            MERGE INTO projection_checkpoints (projection_name, last_processed_event_id, last_processed_at, updated_at)
+            KEY (projection_name)
             VALUES (?, ?, ?, now())
-            ON CONFLICT (projection_name)
-            DO UPDATE SET
-                last_processed_event_id = EXCLUDED.last_processed_event_id,
-                last_processed_at = EXCLUDED.last_processed_at,
-                updated_at = now()
             """;
         
         try (Connection conn = dataSource.getConnection();
