@@ -180,6 +180,8 @@ else
 fi
 
 # Test MinIO console (only if running with docker-compose.dev.yml)
+# Check if MinIO has port 9001 published to host (dev mode indicator)
+# jq: Check array not empty, then check if port 9001 is published
 if docker compose ps minio --format json 2>/dev/null | jq -e 'if length > 0 then .[0].Publishers[]? | select(.PublishedPort == 9001) else false end' > /dev/null 2>&1; then
     echo -n "  Testing MinIO console (http://localhost:9001)... "
     if curl -sf http://localhost:9001 > /dev/null; then

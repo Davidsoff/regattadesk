@@ -23,6 +23,8 @@ JAEGER_URL="${JAEGER_URL:-http://localhost:16686}"
 GRAFANA_URL="${GRAFANA_URL:-http://localhost/grafana}"
 
 # Check if we're running in dev mode (with host-exposed ports)
+# Dev mode is detected by checking if Prometheus has port 9090 published to host
+# jq: Check array not empty, then check if port 9090 is published
 DEV_MODE=false
 if docker compose ps prometheus --format json 2>/dev/null | jq -e 'if length > 0 then .[0].Publishers[]? | select(.PublishedPort == 9090) else false end' > /dev/null 2>&1; then
     DEV_MODE=true
