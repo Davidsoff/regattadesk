@@ -26,6 +26,7 @@ Every change must include appropriate tests based on the type of modification. T
 **Framework:** JUnit 5 (backend)
 
 **Example:**
+
 ```java
 @Test
 void shouldValidateCrewComposition() {
@@ -47,6 +48,7 @@ void shouldValidateCrewComposition() {
 **Framework:** Testcontainers + PostgreSQL container
 
 **Example:**
+
 ```java
 @QuarkusTest
 @TestProfile(PostgresTestProfile.class)
@@ -69,6 +71,7 @@ class EventStoreIntegrationTest {
 **Framework:** Pact (Consumer-driven contracts)
 
 **Example:**
+
 ```java
 @Provider("regattadesk-backend")
 @PactFolder("pacts")
@@ -93,7 +96,7 @@ class RegattaDeskPactProviderTest {
 - Staff interface changes
 - Operator PWA interface changes
 
-**Framework:** 
+**Framework:**
 - Vitest (unit/component tests)
 - axe-core (accessibility)
 - Playwright (E2E, future)
@@ -212,8 +215,7 @@ All PRs must pass these checks before merge:
 3. **Backend Unit Tests** - All unit tests pass
 4. **Frontend Lint** - Code formatting and style
 5. **Frontend Build** - Build succeeds without errors
-6. **Frontend Unit Tests** - Component and utility tests pass (when applicable)
-7. **Dependency Pinning** - All dependencies properly pinned
+6. **Dependency Pinning** - All dependencies properly pinned
 
 ### Conditional Checks
 
@@ -221,6 +223,7 @@ These checks run based on changed files:
 
 - **Integration Tests:** Run when database schema or repository code changes
 - **Contract Tests:** Run when API endpoints or contracts change
+- **Frontend Unit Tests:** `frontend-test` is currently optional in CI (`OPTIONAL_CHECKS` in `all-checks`) and becomes required after full test infrastructure is implemented
 - **Accessibility Tests:** Run when UI components or pages change
 - **E2E Tests:** Run for full-stack feature changes (future)
 
@@ -381,6 +384,7 @@ Required status checks for `main`/`master`:
 ### Pre-commit Hooks (Recommended)
 
 Developers should run locally before push:
+
 ```bash
 # Backend formatting
 cd apps/backend && ./mvnw spotless:check

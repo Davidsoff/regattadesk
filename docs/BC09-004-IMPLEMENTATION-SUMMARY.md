@@ -153,6 +153,7 @@ Enhanced README with testing section:
 ## CI Quality Gates
 
 ### Required Checks (Blocking)
+
 ✅ All implemented and enforcing:
 1. backend-lint
 2. backend-build
@@ -162,6 +163,7 @@ Enhanced README with testing section:
 6. dependency-pinning
 
 ### Optional Checks (Informational)
+
 ✅ All implemented with graceful degradation:
 7. backend-integration-test
 8. backend-contract-test
@@ -170,7 +172,8 @@ Enhanced README with testing section:
 
 ## Files Changed
 
-### Created (8 files)
+### Created (5 files)
+
 1. `docs/TESTING_STRATEGY.md` - Comprehensive testing strategy
 2. `docs/CI_QUALITY_GATES.md` - Quality gate validation guide
 3. `apps/backend/src/test/java/com/regattadesk/eventstore/EventStoreDatabaseIntegrationTest.java`
@@ -178,6 +181,7 @@ Enhanced README with testing section:
 5. `apps/frontend/tests/accessibility/README.md` - Accessibility testing guide
 
 ### Modified (4 files)
+
 1. `.github/workflows/ci.yml` - Enhanced with new test jobs and quality gates
 2. `apps/backend/pom.xml` - Added integration and contract test profiles
 3. `apps/frontend/package.json` - Added test script placeholders
@@ -188,21 +192,25 @@ Enhanced README with testing section:
 ## Key Features
 
 ### 1. Gradual Test Adoption
+
 - Required checks enforce existing capabilities
 - Optional checks allow incremental test infrastructure implementation
 - Clear messaging when tests aren't yet implemented
 
 ### 2. Comprehensive Documentation
+
 - Test strategy covers all change types
 - CI validation scenarios provide troubleshooting guidance
 - Example tests demonstrate patterns
 
 ### 3. Extensible Architecture
+
 - Maven profiles for test categories
 - npm scripts ready for future test frameworks
 - CI jobs structured for easy expansion
 
 ### 4. Clear Reporting
+
 - Separate jobs for each test category
 - Artifact upload for test results
 - Informative status messages
@@ -218,6 +226,7 @@ Enhanced README with testing section:
 ### For Developers
 
 1. **Before committing:**
+
    ```bash
    make lint && make test
    ```
@@ -229,6 +238,7 @@ Enhanced README with testing section:
    - UI changes → Add accessibility tests
 
 3. **Run relevant tests:**
+
    ```bash
    # Unit tests (always)
    make test
@@ -268,12 +278,14 @@ All checks run automatically on PR creation/updates. Required checks must pass b
 ## Migration Notes
 
 ### Existing Tests
+
 All existing tests continue to work:
 - Backend unit tests run in `backend-test` job
 - Health endpoint tests verify observability implementation
 - Event store tests demonstrate integration patterns
 
 ### New Tests
+
 When adding new tests:
 1. Follow naming conventions (`*Test.java`, `*IntegrationTest.java`, `*PactTest.java`)
 2. Use appropriate Maven profile or npm script
@@ -307,6 +319,7 @@ When adding new tests:
 ## Validation
 
 ### CI Workflow Validation
+
 ```bash
 # Check workflow syntax
 cd .github/workflows
@@ -314,6 +327,7 @@ yamllint ci.yml
 ```
 
 ### Local Test Validation
+
 ```bash
 # Run all existing tests
 make test

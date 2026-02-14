@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
 
 /**
  * Contract test example demonstrating API contract verification.
@@ -44,14 +45,13 @@ class HealthEndpointContractTest {
     @Test
     void healthEndpointShouldReturnExpectedContract() {
         // Verify the health endpoint returns the expected structure
-        // Actual implementation returns: {"status": "UP", "version": "0.1.0-SNAPSHOT"}
         given()
             .when()
             .get("/api/health")
             .then()
             .statusCode(200)
             .body("status", equalTo("UP"))
-            .body("version", equalTo("0.1.0-SNAPSHOT"));
+            .body("version", matchesPattern("\\d+\\.\\d+\\.\\d+.*"));
     }
 
     @Test

@@ -230,7 +230,7 @@ All pull requests must pass these required checks:
 
 Optional checks (informational until implemented):
 - Backend integration and contract tests
-- Frontend unit and accessibility tests
+- Frontend unit (`frontend-test`) and accessibility tests
 
 See [CI Quality Gates](docs/CI_QUALITY_GATES.md) for validation scenarios and troubleshooting.
 

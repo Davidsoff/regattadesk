@@ -1,7 +1,6 @@
 package com.regattadesk.eventstore;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Flyway migrations
  */
 @QuarkusTest
-class EventStoreIntegrationTest {
+class EventStoreDatabaseIntegrationTest {
 
     @Inject
     DataSource dataSource;
