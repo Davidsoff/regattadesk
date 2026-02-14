@@ -7,14 +7,21 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
     "lint": "echo 'Lint placeholder - to be configured later'"
   },
   "dependencies": {
-    "vue": "3.5.25"
+    "vue": "3.5.25",
+    "vue-i18n": "^11.2.8"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "6.0.2",
-    "vite": "7.3.1"
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.6.1",
+    "vite": "7.3.1",
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=22.0.0"
