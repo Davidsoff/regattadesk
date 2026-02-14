@@ -189,14 +189,58 @@ The project uses the following minimum versions (as defined in `pdd/implementati
 
 ## Testing
 
-### Backend Tests
+RegattaDesk follows a comprehensive testing strategy with multiple test categories and CI quality gates. See [Testing Strategy](docs/TESTING_STRATEGY.md) for complete details.
+
+### Test Categories
+
+1. **Unit Tests** - Fast, isolated tests for business logic
+2. **Integration Tests** - Tests with real PostgreSQL (via Testcontainers)
+3. **Contract Tests** - API contract verification (Pact)
+4. **Accessibility Tests** - WCAG 2.2 AA compliance (axe-core)
+5. **UI Component Tests** - Vue component behavior
+
+### Running Tests
+
 ```bash
-cd apps/backend
-./mvnw test
+# All tests
+make test
+
+# Backend unit tests
+cd apps/backend && ./mvnw test
+
+# Backend integration tests (when implemented)
+cd apps/backend && ./mvnw verify -Pintegration
+
+# Backend contract tests (when implemented)
+cd apps/backend && ./mvnw verify -Pcontract
+
+# Frontend tests (when configured)
+cd apps/frontend && npm test
+
+# Accessibility tests (when configured)
+cd apps/frontend && npm run test:a11y
 ```
 
-### Frontend Tests
-> Frontend testing infrastructure will be configured in a future iteration.
+### CI Quality Gates
+
+All pull requests must pass these required checks:
+- Backend lint, build, and unit tests
+- Frontend lint and build
+- Dependency pinning validation
+
+Optional checks (informational until implemented):
+- Backend integration and contract tests
+- Frontend unit (`frontend-test`) and accessibility tests
+
+See [CI Quality Gates](docs/CI_QUALITY_GATES.md) for validation scenarios and troubleshooting.
+
+### Test Coverage Requirements
+
+- **Unit Tests:** 80% minimum for new code
+- **Critical Paths:** 100% for command handlers and domain rules
+- **API Coverage:** All public/staff/operator endpoints must have tests
+
+For detailed test requirements by change type, see [Testing Strategy](docs/TESTING_STRATEGY.md).
 
 ## Documentation
 
