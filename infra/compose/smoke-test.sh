@@ -170,13 +170,13 @@ else
     exit 1
 fi
 
-# Test Traefik dashboard
-echo -n "  Testing Traefik dashboard (http://localhost:8080)... "
-if curl -sf http://localhost:8080 > /dev/null; then
-    echo -e "${GREEN}✓${NC}"
-else
-    echo -e "${RED}✗${NC}" >&2
+# Security check: Verify Traefik dashboard is NOT publicly accessible
+echo -n "  Security check: Traefik dashboard NOT accessible... "
+if curl -sf http://localhost:8080 > /dev/null 2>&1; then
+    echo -e "${RED}✗ Dashboard is publicly accessible (security risk)${NC}" >&2
     exit 1
+else
+    echo -e "${GREEN}✓${NC}"
 fi
 
 # Test MinIO console (only if running with docker-compose.dev.yml)
