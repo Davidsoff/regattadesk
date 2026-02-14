@@ -44,6 +44,12 @@ public class PostgresEventStore implements EventStore {
     @Transactional
     public void append(UUID aggregateId, String aggregateType, long expectedVersion,
                       List<DomainEvent> events, EventMetadata metadata) {
+        if (aggregateId == null) {
+            throw new IllegalArgumentException("aggregateId cannot be null");
+        }
+        if (aggregateType == null || aggregateType.isBlank()) {
+            throw new IllegalArgumentException("aggregateType cannot be null or blank");
+        }
         if (events == null || events.isEmpty()) {
             throw new IllegalArgumentException("Events list cannot be null or empty");
         }
@@ -95,6 +101,13 @@ public class PostgresEventStore implements EventStore {
     
     @Override
     public List<EventEnvelope> readStream(UUID aggregateId, long fromSequence) {
+        if (aggregateId == null) {
+            throw new IllegalArgumentException("aggregateId cannot be null");
+        }
+        if (fromSequence < 0) {
+            throw new IllegalArgumentException("fromSequence must be >= 0");
+        }
+
         String sql = """
             SELECT e.id, e.aggregate_id, a.aggregate_type, e.event_type, e.sequence_number,
                    e.payload, e.metadata, e.correlation_id, e.causation_id, e.created_at
@@ -119,6 +132,13 @@ public class PostgresEventStore implements EventStore {
     
     @Override
     public List<EventEnvelope> readByEventType(String eventType, int limit, int offset) {
+        if (eventType == null || eventType.isBlank()) {
+            throw new IllegalArgumentException("eventType cannot be null or blank");
+        }
+        if (limit <= 0 || offset < 0) {
+            throw new IllegalArgumentException("limit must be > 0 and offset must be >= 0");
+        }
+
         String sql = """
             SELECT e.id, e.aggregate_id, a.aggregate_type, e.event_type, e.sequence_number,
                    e.payload, e.metadata, e.correlation_id, e.causation_id, e.created_at
@@ -145,6 +165,10 @@ public class PostgresEventStore implements EventStore {
     
     @Override
     public List<EventEnvelope> readGlobal(int limit, int offset) {
+        if (limit <= 0 || offset < 0) {
+            throw new IllegalArgumentException("limit must be > 0 and offset must be >= 0");
+        }
+
         String sql = """
             SELECT e.id, e.aggregate_id, a.aggregate_type, e.event_type, e.sequence_number,
                    e.payload, e.metadata, e.correlation_id, e.causation_id, e.created_at
@@ -169,6 +193,10 @@ public class PostgresEventStore implements EventStore {
     
     @Override
     public long getCurrentVersion(UUID aggregateId) {
+        if (aggregateId == null) {
+            throw new IllegalArgumentException("aggregateId cannot be null");
+        }
+
         try (Connection conn = dataSource.getConnection()) {
             return getCurrentVersion(conn, aggregateId);
         } catch (SQLException e) {
