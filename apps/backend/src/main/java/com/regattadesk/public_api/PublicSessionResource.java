@@ -9,6 +9,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 /**
  * REST resource for public anonymous session management.
@@ -18,6 +19,7 @@ import jakarta.ws.rs.core.Response;
  */
 @Path("/public/session")
 public class PublicSessionResource {
+    private static final Logger LOG = Logger.getLogger(PublicSessionResource.class);
     
     private static final String COOKIE_NAME = "regattadesk_public_session";
     
@@ -46,6 +48,7 @@ public class PublicSessionResource {
         
         if (shouldRefresh) {
             String token = jwtTokenService.issueToken();
+            LOG.debug("Refreshing or issuing public session cookie");
             
             NewCookie cookie = new NewCookie.Builder(COOKIE_NAME)
                 .value(token)
@@ -61,6 +64,7 @@ public class PublicSessionResource {
                 .cookie(cookie)
                 .build();
         } else {
+            LOG.debug("Public session cookie is valid and outside refresh window");
             return Response.noContent()
                 .header("Cache-Control", "no-store")
                 .build();

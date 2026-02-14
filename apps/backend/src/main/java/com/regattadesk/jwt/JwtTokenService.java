@@ -26,6 +26,8 @@ import java.util.UUID;
 @ApplicationScoped
 public class JwtTokenService {
     private static final Logger LOG = Logger.getLogger(JwtTokenService.class);
+    private static final String INSECURE_DEFAULT_SECRET =
+        "change-me-in-production-min-256-bits-hs256-key-required-for-security";
     
     private final JwtConfig config;
     private final MACSigner signer;
@@ -35,6 +37,10 @@ public class JwtTokenService {
     public JwtTokenService(JwtConfig config) {
         this.config = config;
         try {
+            if (INSECURE_DEFAULT_SECRET.equals(config.secret())) {
+                LOG.warn("JWT public session secret is using the default insecure value");
+            }
+
             byte[] secret = config.secret().getBytes(StandardCharsets.UTF_8);
             if (secret.length < 32) {
                 throw new IllegalArgumentException(
