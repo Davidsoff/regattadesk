@@ -1,0 +1,159 @@
+package com.regattadesk.linescan;
+
+import java.time.Instant;
+import java.util.UUID;
+
+/**
+ * Metadata for a stored line-scan tile in MinIO.
+ * 
+ * Tracks storage location and metadata for tile binary data.
+ */
+public class LineScanTileMetadata {
+    
+    private final UUID id;
+    private final UUID manifestId;
+    private final String tileId;
+    private final int tileX;
+    private final int tileY;
+    private final String contentType;
+    private final Integer byteSize;
+    private final String minioBucket;
+    private final String minioObjectKey;
+    private final Instant createdAt;
+    private final Instant updatedAt;
+    
+    private LineScanTileMetadata(Builder builder) {
+        this.id = builder.id;
+        this.manifestId = builder.manifestId;
+        this.tileId = builder.tileId;
+        this.tileX = builder.tileX;
+        this.tileY = builder.tileY;
+        this.contentType = builder.contentType;
+        this.byteSize = builder.byteSize;
+        this.minioBucket = builder.minioBucket;
+        this.minioObjectKey = builder.minioObjectKey;
+        this.createdAt = builder.createdAt;
+        this.updatedAt = builder.updatedAt;
+    }
+    
+    public UUID getId() {
+        return id;
+    }
+    
+    public UUID getManifestId() {
+        return manifestId;
+    }
+    
+    public String getTileId() {
+        return tileId;
+    }
+    
+    public int getTileX() {
+        return tileX;
+    }
+    
+    public int getTileY() {
+        return tileY;
+    }
+    
+    public String getContentType() {
+        return contentType;
+    }
+    
+    public Integer getByteSize() {
+        return byteSize;
+    }
+    
+    public String getMinioBucket() {
+        return minioBucket;
+    }
+    
+    public String getMinioObjectKey() {
+        return minioObjectKey;
+    }
+    
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+    
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+    
+    public static Builder builder() {
+        return new Builder();
+    }
+    
+    public static class Builder {
+        private UUID id;
+        private UUID manifestId;
+        private String tileId;
+        private int tileX;
+        private int tileY;
+        private String contentType;
+        private Integer byteSize;
+        private String minioBucket;
+        private String minioObjectKey;
+        private Instant createdAt;
+        private Instant updatedAt;
+        
+        public Builder id(UUID id) {
+            this.id = id;
+            return this;
+        }
+        
+        public Builder manifestId(UUID manifestId) {
+            this.manifestId = manifestId;
+            return this;
+        }
+        
+        public Builder tileId(String tileId) {
+            this.tileId = tileId;
+            return this;
+        }
+        
+        public Builder tileX(int tileX) {
+            this.tileX = tileX;
+            return this;
+        }
+        
+        public Builder tileY(int tileY) {
+            this.tileY = tileY;
+            return this;
+        }
+        
+        public Builder contentType(String contentType) {
+            this.contentType = contentType;
+            return this;
+        }
+        
+        public Builder byteSize(Integer byteSize) {
+            this.byteSize = byteSize;
+            return this;
+        }
+        
+        public Builder minioBucket(String minioBucket) {
+            this.minioBucket = minioBucket;
+            return this;
+        }
+        
+        public Builder minioObjectKey(String minioObjectKey) {
+            this.minioObjectKey = minioObjectKey;
+            return this;
+        }
+        
+        public Builder createdAt(Instant createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+        
+        public Builder updatedAt(Instant updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+        
+        public LineScanTileMetadata build() {
+            return new LineScanTileMetadata(this);
+        }
+    }
+}
