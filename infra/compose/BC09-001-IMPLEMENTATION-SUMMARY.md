@@ -63,7 +63,7 @@ This ticket implements comprehensive observability infrastructure for RegattaDes
 **Configuration:**
 - Prometheus scraping configured every 15 seconds
 - Metrics exposed in OpenMetrics format
-- No authentication required (public endpoint)
+- **Security**: Restricted to internal network only (not publicly accessible via Traefik)
 
 **Testing:**
 - Unit tests verify metrics endpoint accessibility
@@ -152,8 +152,8 @@ This ticket implements comprehensive observability infrastructure for RegattaDes
 
 **Main compose file updated:**
 - Backend environment variables include `OTEL_EXPORTER_OTLP_ENDPOINT`
-- Metrics endpoint (`/q/metrics`) exposed publicly via Traefik
-- No authentication required for observability endpoints (design decision)
+- Metrics endpoint (`/q/metrics`) restricted to internal network only for security
+- Health endpoints remain publicly accessible for load balancer health checks
 
 ---
 
@@ -273,7 +273,7 @@ docker compose ps
 ### Accessing Services
 
 - **Backend Health**: http://localhost/q/health/ready
-- **Metrics**: http://localhost/q/metrics
+- **Metrics**: Internal network only (not publicly accessible for security)
 - **Prometheus**: http://localhost:9090
 - **Jaeger UI**: http://localhost:16686
 - **Grafana**: http://localhost/grafana (admin/admin)
@@ -318,8 +318,9 @@ docker compose ps
 ## Security Review
 
 - ✅ No secrets committed to repository
-- ✅ Metrics endpoint intentionally public (Prometheus scraping)
+- ✅ Metrics endpoint restricted to internal network only (not publicly accessible)
 - ✅ Observability services on internal network
+- ✅ Prometheus can scrape metrics from internal network
 - ⚠️ Default Grafana credentials documented (change in production)
 - ⚠️ Jaeger UI exposed on localhost (restrict in production)
 
