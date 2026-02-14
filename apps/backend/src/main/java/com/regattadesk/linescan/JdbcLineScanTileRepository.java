@@ -128,6 +128,34 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
         }
     }
     
+    @Override
+    public Optional<LineScanTileMetadata> findByRegattaAndTileId(UUID regattaId, String tileId) {
+        String sql = """
+            SELECT t.id, t.manifest_id, t.tile_id, t.tile_x, t.tile_y, t.content_type,
+                t.byte_size, t.minio_bucket, t.minio_object_key, t.created_at, t.updated_at
+            FROM line_scan_tiles t
+            JOIN line_scan_manifests m ON t.manifest_id = m.id
+            WHERE m.regatta_id = ? AND t.tile_id = ?
+            LIMIT 1
+            """;
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, tileId);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                return Optional.of(mapResultSetToMetadata(rs));
+            }
+            return Optional.empty();
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error finding tile by regatta and tile_id", e);
+        }
+    }
+    
     private LineScanTileMetadata mapResultSetToMetadata(ResultSet rs) throws SQLException {
         return LineScanTileMetadata.builder()
             .id(rs.getObject("id", UUID.class))

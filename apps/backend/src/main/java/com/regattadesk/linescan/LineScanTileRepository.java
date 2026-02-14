@@ -23,4 +23,10 @@ public interface LineScanTileRepository {
      * Find all tiles for a manifest.
      */
     List<LineScanTileMetadata> findByManifestId(UUID manifestId);
+    
+    /**
+     * Find tile metadata by regatta ID and tile ID.
+     * This joins with manifests to filter by regatta.
+     */
+    Optional<LineScanTileMetadata> findByRegattaAndTileId(UUID regattaId, String tileId);
 }
