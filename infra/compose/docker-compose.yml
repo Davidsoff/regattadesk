@@ -170,7 +170,7 @@ services:
     labels:
       - "traefik.enable=true"
       # Public and health endpoints (no auth)
-      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`) || PathPrefix(`/q/metrics`))"
+      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`))"
       - "traefik.http.routers.backend-public.entrypoints=web,websecure"
       - "traefik.http.routers.backend-public.tls=true"
       - "traefik.http.services.backend-public.loadbalancer.server.port=8080"

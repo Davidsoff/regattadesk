@@ -64,9 +64,25 @@ test_endpoint "Startup Probe" "$BACKEND_URL/q/health/started" || ((failures++))
 echo ""
 
 echo "=== Metrics Endpoints ==="
-test_endpoint "Prometheus Metrics" "$BACKEND_URL/q/metrics" || ((failures++))
-test_content "JVM Metrics" "$BACKEND_URL/q/metrics" "jvm_memory" || ((failures++))
-test_content "HTTP Metrics" "$BACKEND_URL/q/metrics" "http_server_requests" || ((failures++))
+echo -e "${YELLOW}Note: Metrics endpoint should NOT be publicly accessible${NC}"
+# Test that metrics are NOT accessible via public routing (should return 404)
+echo -n "Testing Metrics Public Access Denial... "
+status=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/q/metrics" || echo "000")
+if [[ "$status" = "404" ]]; then
+    echo -e "${GREEN}✓ OK${NC} (HTTP $status - correctly denied)"
+else
+    echo -e "${RED}✗ FAILED${NC} (HTTP $status - should be 404 to deny public access)"
+    ((failures++))
+fi
+
+# Test that metrics ARE accessible via internal network
+echo -n "Testing Metrics Internal Access... "
+if docker exec regattadesk-backend curl -s http://localhost:8080/q/metrics | grep -q "jvm_memory"; then
+    echo -e "${GREEN}✓ OK${NC} (accessible from internal network)"
+else
+    echo -e "${RED}✗ FAILED${NC} (not accessible from internal network)"
+    ((failures++))
+fi
 echo ""
 
 echo "=== Observability Services ==="

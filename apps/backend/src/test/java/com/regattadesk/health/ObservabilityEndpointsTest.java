@@ -6,6 +6,17 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.*;
 
+/**
+ * Tests for observability endpoints (metrics).
+ * 
+ * Note: In production, /q/metrics is NOT exposed publicly through Traefik.
+ * These tests verify that the endpoint itself works correctly when accessed
+ * directly (e.g., from Prometheus on the internal network).
+ * 
+ * Public access restriction is enforced at the Traefik routing level,
+ * not at the application level, so the endpoint remains accessible for
+ * internal monitoring tools.
+ */
 @QuarkusTest
 public class ObservabilityEndpointsTest {
 
