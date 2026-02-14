@@ -153,27 +153,37 @@ class EventStoreTest {
         eventStore.append(aggregateId, aggregateType, -1, 
                          List.of(new TestEvent("Event1", aggregateId, "data1")),
                          EventMetadata.builder().build());
+
+        // Capture a stale version, then simulate a concurrent writer advancing the stream.
+        long staleVersion = eventStore.getCurrentVersion(aggregateId);
+        eventStore.append(aggregateId, aggregateType, staleVersion,
+                         List.of(new TestEvent("ConcurrentEvent", aggregateId, "data-concurrent")),
+                         EventMetadata.builder().build());
         
         // Simulate retry pattern
         boolean success = false;
         int maxRetries = 3;
         int attempt = 0;
+        boolean useStaleVersionFirst = true;
         
         while (!success && attempt < maxRetries) {
             try {
                 long currentVersion = eventStore.getCurrentVersion(aggregateId);
-                eventStore.append(aggregateId, aggregateType, currentVersion,
+                long expectedVersion = useStaleVersionFirst ? staleVersion : currentVersion;
+                eventStore.append(aggregateId, aggregateType, expectedVersion,
                                  List.of(new TestEvent("Event2", aggregateId, "data2")),
                                  EventMetadata.builder().build());
                 success = true;
             } catch (ConcurrencyException e) {
                 attempt++;
+                useStaleVersionFirst = false;
                 // In real code, you might add backoff here
             }
         }
         
         assertTrue(success, "Retry pattern should succeed");
-        assertEquals(2, eventStore.getCurrentVersion(aggregateId));
+        assertEquals(1, attempt, "Retry loop should observe one concurrency failure");
+        assertEquals(3, eventStore.getCurrentVersion(aggregateId));
     }
     
     @Test
@@ -227,8 +237,6 @@ class EventStoreTest {
     
     @Test
     void testReadByEventTypeWithPagination() {
-        UUID aggregateId = UUID.randomUUID();
-        
         // Create multiple events of the same type
         for (int i = 0; i < 5; i++) {
             UUID aggId = UUID.randomUUID();

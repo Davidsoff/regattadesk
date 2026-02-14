@@ -55,7 +55,11 @@ public class EventMetadata {
         }
         
         public Builder additionalData(Map<String, Object> data) {
-            this.additionalData = new HashMap<>(data);
+            if (data == null) {
+                this.additionalData = new HashMap<>();
+            } else {
+                this.additionalData = new HashMap<>(data);
+            }
             return this;
         }
         

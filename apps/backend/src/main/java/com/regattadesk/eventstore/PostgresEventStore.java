@@ -54,7 +54,7 @@ public class PostgresEventStore implements EventStore {
         
         try (Connection conn = dataSource.getConnection()) {
             // Check if aggregate exists and verify version
-            long currentVersion = getCurrentVersion(aggregateId);
+            long currentVersion = getCurrentVersion(conn, aggregateId);
             
             if (expectedVersion != currentVersion) {
                 throw new ConcurrencyException(aggregateId, expectedVersion, currentVersion);
@@ -125,7 +125,7 @@ public class PostgresEventStore implements EventStore {
             FROM event_store e
             JOIN aggregates a ON e.aggregate_id = a.id
             WHERE e.event_type = ?
-            ORDER BY e.created_at ASC
+            ORDER BY e.created_at ASC, e.id ASC
             LIMIT ? OFFSET ?
             """;
         
@@ -150,7 +150,7 @@ public class PostgresEventStore implements EventStore {
                    e.payload, e.metadata, e.correlation_id, e.causation_id, e.created_at
             FROM event_store e
             JOIN aggregates a ON e.aggregate_id = a.id
-            ORDER BY e.created_at ASC
+            ORDER BY e.created_at ASC, e.id ASC
             LIMIT ? OFFSET ?
             """;
         
@@ -169,13 +169,17 @@ public class PostgresEventStore implements EventStore {
     
     @Override
     public long getCurrentVersion(UUID aggregateId) {
+        try (Connection conn = dataSource.getConnection()) {
+            return getCurrentVersion(conn, aggregateId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to get current version for aggregate " + aggregateId, e);
+        }
+    }
+
+    private long getCurrentVersion(Connection conn, UUID aggregateId) throws SQLException {
         String sql = "SELECT version FROM aggregates WHERE id = ?";
-        
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, aggregateId);
-            
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getLong("version");
@@ -183,9 +187,6 @@ public class PostgresEventStore implements EventStore {
                     return -1; // Aggregate doesn't exist
                 }
             }
-            
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to get current version for aggregate " + aggregateId, e);
         }
     }
     
