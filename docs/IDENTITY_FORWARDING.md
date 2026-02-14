@@ -127,6 +127,20 @@ Backend services MUST:
 - Reject or strip client-supplied headers matching the identity header names
 - Use a middleware/filter to enforce this at the application entry point
 
+**Trust Boundary Implementation:**
+- `IdentityHeaderSanitizer` enforces trust boundary before authentication
+- Trusted paths (ForwardAuth-protected):
+  - `/api/v1/staff/*` - All staff endpoints
+  - `/api/v1/regattas/{id}/operator/*` - Operator-specific endpoints only
+  - `/test/auth/*` - Test endpoints (test environment only)
+- Untrusted paths (headers stripped):
+  - `/api/v1/public/*` - Public content
+  - `/api/health`, `/q/health`, `/q/metrics` - Health and metrics endpoints
+  - `/api/v1/regattas/{id}/events`, `/api/v1/regattas/{id}/entries` - Non-operator regatta endpoints
+  - Any future endpoints not explicitly protected by Traefik ForwardAuth
+
+**Security Note:** The trust boundary exactly matches the Traefik ForwardAuth route pattern. Only paths protected by ForwardAuth middleware trust identity headers. This prevents future non-operator endpoints under `/api/v1/regattas` from accidentally trusting forged headers.
+
 ### Role-Based Access Control (RBAC)
 
 Backend services MUST:
@@ -151,6 +165,10 @@ Backend services MUST:
 
 4. **Forged Headers**: Direct request with forged identity headers
    - Verify headers are stripped/rejected (network isolation prevents this scenario)
+   - **Negative Tests for Trust Boundary:**
+     - Verify forged headers on `/api/v1/regattas/{id}/events` are stripped (non-operator path)
+     - Verify forged headers on `/api/v1/regattas/{id}/entries` are stripped (non-operator path)
+     - Verify only `/api/v1/regattas/{id}/operator/*` paths trust identity headers
 
 ### Backend Unit Tests
 
