@@ -132,11 +132,17 @@ Standard attributes included in traces:
 
 ### Grafana Setup
 
-Grafana is accessible at `http://localhost/grafana` (or your configured domain).
+Grafana is accessible at `http://localhost/grafana` (or your configured domain) and is protected by Authelia SSO authentication.
 
-**Default Credentials:**
-- Username: `admin`
-- Password: `admin` (change on first login)
+**Authentication:**
+- Grafana is protected by Authelia ForwardAuth middleware
+- You must authenticate with valid Authelia credentials before accessing Grafana
+- After Authelia authentication, you'll be prompted for Grafana-specific admin credentials
+
+**Admin Credentials:**
+- Set `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` in your `.env` file
+- These credentials are required; Grafana will not start without them (no default fallback)
+- Use strong, unique passwords for production deployments
 
 ### Available Dashboards
 
@@ -242,9 +248,9 @@ JAEGER_UI_PORT=16686
 JAEGER_OTLP_GRPC_PORT=4317
 JAEGER_OTLP_HTTP_PORT=4318
 
-# Grafana
+# Grafana (Required - no default fallback)
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=changeme
+GRAFANA_ADMIN_PASSWORD=changeme_secure_password
 
 # OpenTelemetry (backend)
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
@@ -307,9 +313,12 @@ quarkus.otel.traces.sampler.arg=0.1  # 10% sampling
    - Production: Use network segmentation or authentication
    - Alternative: Push metrics to secure gateway
 
-2. **Grafana:** Change default admin password
-   - Use OAuth/SSO for authentication
-   - Configure role-based access control
+2. **Grafana:** 
+   - ✅ Protected by Authelia SSO (ForwardAuth middleware)
+   - ✅ No default password fallback - must be explicitly configured
+   - ✅ Requires strong admin credentials via environment variables
+   - Additional hardening: Configure Grafana role-based access control
+   - Production: Use OAuth/SSO integration within Grafana itself for additional layers
 
 3. **Jaeger:** Not exposed publicly
    - Access via VPN or internal network only
