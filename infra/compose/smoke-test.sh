@@ -180,7 +180,7 @@ else
 fi
 
 # Test MinIO console (only if running with docker-compose.dev.yml)
-if docker compose ps minio --format json | jq -e '.[0].Publishers[]? | select(.PublishedPort == 9001)' > /dev/null 2>&1; then
+if docker compose ps minio --format json 2>/dev/null | jq -e 'if length > 0 then .[0].Publishers[]? | select(.PublishedPort == 9001) else false end' > /dev/null 2>&1; then
     echo -n "  Testing MinIO console (http://localhost:9001)... "
     if curl -sf http://localhost:9001 > /dev/null; then
         echo -e "${GREEN}✓${NC}"
