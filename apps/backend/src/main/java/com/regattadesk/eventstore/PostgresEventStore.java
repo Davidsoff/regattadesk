@@ -320,6 +320,8 @@ public class PostgresEventStore implements EventStore {
         }
         
         try {
+            // correlationId/causationId are stored in dedicated columns for filtering/indexing;
+            // JSON metadata intentionally contains only additionalData.
             Map<String, Object> metadataMap = new HashMap<>(metadata.getAdditionalData());
             return objectMapper.writeValueAsString(metadataMap);
         } catch (JsonProcessingException e) {
