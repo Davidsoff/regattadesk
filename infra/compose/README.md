@@ -379,6 +379,7 @@ Services show as "healthy" when ready.
 5. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
 6. **Restrict Traefik dashboard** access
 7. **Review access control rules** in `authelia/configuration.yml`
+8. **Set Grafana credentials** - Required: `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` in `.env` (see [SECURITY-GRAFANA.md](./SECURITY-GRAFANA.md))
 
 **Edge Hardening (BC09-002):**
 - ✅ Rate limiting on all endpoints (public: 100 req/s, staff: 50 req/s, operator: 30 req/s)
@@ -486,6 +487,7 @@ docker compose config --quiet
 - [Observability Setup](./OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
 - [Edge Security](../../docs/EDGE_SECURITY.md) - TLS, security headers, rate limiting, abuse prevention
 - [Operational Runbooks](../../docs/runbooks/README.md) - Incident response and operational procedures
+- [Grafana Security](./SECURITY-GRAFANA.md) - Security configuration and best practices for Grafana
 
 ## Operational Procedures
 
@@ -521,9 +523,11 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml -f dock
 
 ### Observability Services
 
-- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana) - Always accessible via Traefik
+- **Grafana**: Metrics visualization and dashboards (http://localhost.local/grafana) - **Protected by Authelia SSO**
 - **Prometheus**: Metrics collection and alerting - Internal only (use Grafana or observability.dev.yml)
 - **Jaeger**: Distributed tracing backend - Internal only (use observability.dev.yml for UI access)
+
+**Security Note:** Grafana requires authentication via Authelia and explicit configuration of admin credentials. See [SECURITY-GRAFANA.md](./SECURITY-GRAFANA.md) for details.
 
 **Development mode only** (requires docker-compose.observability.dev.yml):
 - Prometheus: http://localhost:9090
