@@ -336,6 +336,7 @@ Services show as "healthy" when ready.
 5. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
 6. **Restrict Traefik dashboard** access
 7. **Review access control rules** in `authelia/configuration.yml`
+8. **Set Grafana credentials** - Required: `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` in `.env` (see [SECURITY-GRAFANA.md](./SECURITY-GRAFANA.md))
 
 ### Performance
 
@@ -426,6 +427,7 @@ docker compose config --quiet
 - [BC01 Platform Spec](../../pdd/implementation/bc01-platform-and-delivery.md)
 - [Detailed Design](../../pdd/design/detailed-design.md)
 - [Observability Setup](./OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
+- [Grafana Security](./SECURITY-GRAFANA.md) - Security configuration and best practices for Grafana
 
 ## Observability
 
@@ -443,7 +445,9 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 - **Prometheus**: Metrics collection and alerting (http://localhost:9090)
 - **Jaeger**: Distributed tracing backend (http://localhost:16686)
-- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana)
+- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana) - **Protected by Authelia SSO**
+
+**Security Note:** Grafana requires authentication via Authelia and explicit configuration of admin credentials. See [SECURITY-GRAFANA.md](./SECURITY-GRAFANA.md) for details.
 
 ### Available Endpoints
 
