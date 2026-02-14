@@ -3,7 +3,7 @@
 -- Line-scan manifests table
 -- Stores metadata about capture sessions and tile grids
 CREATE TABLE line_scan_manifests (
-    id UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     regatta_id UUID NOT NULL,
     capture_session_id UUID NOT NULL,
     tile_size_px INTEGER NOT NULL CHECK (tile_size_px IN (512, 1024)),
@@ -30,7 +30,7 @@ CREATE UNIQUE INDEX idx_line_scan_manifests_session_unique ON line_scan_manifest
 -- Line-scan tile metadata table
 -- Tracks individual tiles within a manifest (actual image data stored in MinIO)
 CREATE TABLE line_scan_tiles (
-    id UUID PRIMARY KEY DEFAULT RANDOM_UUID(),
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     manifest_id UUID NOT NULL REFERENCES line_scan_manifests(id) ON DELETE CASCADE,
     tile_id VARCHAR(255) NOT NULL,
     tile_x INTEGER NOT NULL,
@@ -51,9 +51,9 @@ CREATE UNIQUE INDEX idx_line_scan_tiles_manifest_tile_unique ON line_scan_tiles(
 -- Add updated_at trigger for line_scan_manifests
 CREATE TRIGGER set_updated_at_line_scan_manifests
     BEFORE UPDATE ON line_scan_manifests
-    FOR EACH ROW CALL "com.regattadesk.eventstore.UpdatedAtTrigger";
+    FOR EACH ROW CALL 'com.regattadesk.eventstore.UpdateTimestampTrigger';
 
 -- Add updated_at trigger for line_scan_tiles
 CREATE TRIGGER set_updated_at_line_scan_tiles
     BEFORE UPDATE ON line_scan_tiles
-    FOR EACH ROW CALL "com.regattadesk.eventstore.UpdatedAtTrigger";
+    FOR EACH ROW CALL 'com.regattadesk.eventstore.UpdateTimestampTrigger';
