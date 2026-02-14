@@ -12,10 +12,10 @@ import { computed } from 'vue';
 export function useFormatting(locale = 'en') {
   // Accept locale as parameter or computed ref
   const currentLocale = computed(() => {
-    if (typeof locale === 'object' && 'value' in locale) {
-      return locale.value;
+    if (locale !== null && typeof locale === 'object' && 'value' in locale) {
+      return locale.value || 'en';
     }
-    return locale;
+    return locale || 'en';
   });
 
   /**
@@ -24,7 +24,7 @@ export function useFormatting(locale = 'en') {
   const formatDateISO = (date) => {
     if (!date) return '';
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
+    if (Number.isNaN(d.getTime())) return '';
     
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -40,14 +40,15 @@ export function useFormatting(locale = 'en') {
   const formatDateDisplay = (date, regattaTimezone = null) => {
     if (!date) return '';
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
+    if (Number.isNaN(d.getTime())) return '';
 
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
 
     // Locale-dependent format
-    if (currentLocale.value === 'nl') {
+    const localeValue = currentLocale.value;
+    if (localeValue === 'nl') {
       return `${day}-${month}-${year}`;
     }
     // Default to ISO format for 'en' and other locales
@@ -60,7 +61,7 @@ export function useFormatting(locale = 'en') {
   const formatScheduledTime = (time, regattaTimezone = null) => {
     if (!time) return '';
     const d = new Date(time);
-    if (isNaN(d.getTime())) return '';
+    if (Number.isNaN(d.getTime())) return '';
 
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
@@ -72,7 +73,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Elapsed time in milliseconds
    */
   const formatElapsedTime = (milliseconds) => {
-    if (milliseconds == null || isNaN(milliseconds)) return '';
+    if (milliseconds == null || Number.isNaN(milliseconds)) return '';
     
     const totalSeconds = Math.floor(milliseconds / 1000);
     const ms = milliseconds % 1000;
@@ -96,7 +97,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Delta time in milliseconds
    */
   const formatDeltaTime = (milliseconds) => {
-    if (milliseconds == null || isNaN(milliseconds)) return '';
+    if (milliseconds == null || Number.isNaN(milliseconds)) return '';
     
     // Leader shows +0:00.000
     if (milliseconds === 0) {
@@ -114,7 +115,7 @@ export function useFormatting(locale = 'en') {
   const formatTimestampISO = (date, regattaTimezone = null) => {
     if (!date) return '';
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
+    if (Number.isNaN(d.getTime())) return '';
     
     return d.toISOString();
   };
@@ -126,7 +127,7 @@ export function useFormatting(locale = 'en') {
   const formatTimestampDisplay = (date, regattaTimezone = null) => {
     if (!date) return '';
     const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
+    if (Number.isNaN(d.getTime())) return '';
 
     const datePart = formatDateDisplay(d, regattaTimezone);
     const timePart = formatScheduledTime(d, regattaTimezone);
@@ -139,7 +140,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} precision - Number of decimal places (default 3 for milliseconds)
    */
   const roundTime = (milliseconds, precision = 3) => {
-    if (milliseconds == null || isNaN(milliseconds)) return 0;
+    if (milliseconds == null || Number.isNaN(milliseconds)) return 0;
     
     const factor = Math.pow(10, precision);
     return Math.round(milliseconds * factor) / factor;

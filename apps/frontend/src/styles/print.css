@@ -8,6 +8,8 @@
   /* Reset and page setup */
   * {
     box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   @page {
@@ -221,12 +223,6 @@
     font-weight: 600;
     color: #666;
     margin-top: 4pt;
-  }
-
-  /* Contrast and readability */
-  * {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 
   /* Ensure minimum 300 DPI equivalent spacing */
