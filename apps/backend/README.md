@@ -4,6 +4,34 @@ This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
+## Configuration
+
+### Database Password (Required for Production)
+
+**SECURITY**: The backend requires an explicit database password via the `DB_PASSWORD` environment variable.
+
+For **production** deployments:
+```shell script
+export DB_PASSWORD=your_secure_password
+```
+
+For **development** convenience, use the `dev` profile which provides a default password:
+```shell script
+./mvnw compile quarkus:dev  # Automatically activates dev profile
+# or explicitly:
+export QUARKUS_PROFILE=dev
+java -jar target/quarkus-app/quarkus-run.jar
+```
+
+**Tests** use an in-memory H2 database with no password required.
+
+### Other Configuration
+
+The application supports these environment variables:
+- `DB_USER` - Database username (default: `regattadesk`)
+- `DB_PASSWORD` - Database password (**required** for production, has default in dev profile)
+- `DB_URL` - JDBC connection URL (default: `jdbc:postgresql://localhost:5432/regattadesk`)
+
 ## Running the application in dev mode
 
 You can run your application in dev mode that enables live coding using:
