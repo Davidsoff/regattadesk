@@ -62,7 +62,7 @@ jobs:
         run: ./mvnw clean package -DskipTests
 
   backend-test:
-    name: Backend Tests
+    name: Backend Unit Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -80,8 +80,101 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: 'maven'
 
-      - name: Run tests
+      - name: Run unit tests
         run: ./mvnw test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-unit-test-results
+          path: apps/backend/target/surefire-reports/
+
+  backend-integration-test:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.integration-tests.outcome }}
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Run integration tests
+        run: ./mvnw verify -Pintegration
+        continue-on-error: true
+        id: integration-tests
+
+      - name: Report integration tests result
+        run: |
+          if [[ "${{ steps.integration-tests.outcome }}" == "failure" ]]; then
+            echo "⚠️ Integration tests failed or not yet implemented"
+            echo "This is expected if integration tests haven't been added yet"
+          else
+            echo "✅ Integration tests passed"
+          fi
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-test-results
+          path: apps/backend/target/failsafe-reports/
+        continue-on-error: true
+
+  backend-contract-test:
+    name: Backend Contract Tests (Pact)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.contract-tests.outcome }}
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Run contract tests
+        run: ./mvnw verify -Pcontract
+        continue-on-error: true
+        id: contract-tests
+
+      - name: Report contract tests result
+        run: |
+          if [[ "${{ steps.contract-tests.outcome }}" == "failure" ]]; then
+            echo "⚠️ Contract tests failed or not yet implemented"
+            echo "This is expected if Pact tests haven't been added yet"
+          else
+            echo "✅ Contract tests passed"
+          fi
+
+      - name: Upload contract test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-contract-test-results
+          path: apps/backend/target/pact-reports/
+        continue-on-error: true
 
   frontend-lint:
     name: Frontend Lint
@@ -132,6 +225,98 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+  frontend-test:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.unit-tests.outcome }}
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test
+        continue-on-error: true
+        id: unit-tests
+
+      - name: Report unit tests result
+        run: |
+          if [[ "${{ steps.unit-tests.outcome }}" == "failure" ]]; then
+            echo "⚠️ Frontend unit tests failed or not yet configured"
+            echo "This is expected if tests haven't been set up yet"
+          else
+            echo "✅ Frontend unit tests passed"
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-unit-test-results
+          path: apps/frontend/coverage/
+        continue-on-error: true
+
+  frontend-accessibility-test:
+    name: Frontend Accessibility Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      test-outcome: ${{ steps.a11y-tests.outcome }}
+    defaults:
+      run:
+        working-directory: apps/frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run accessibility tests
+        run: npm run test:a11y
+        continue-on-error: true
+        id: a11y-tests
+
+      - name: Report accessibility tests result
+        run: |
+          if [[ "${{ steps.a11y-tests.outcome }}" == "failure" ]]; then
+            echo "⚠️ Accessibility tests failed or not yet configured"
+            echo "This is expected if axe-core tests haven't been set up yet"
+          else
+            echo "✅ Accessibility tests passed"
+          fi
+
+      - name: Upload accessibility test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-accessibility-test-results
+          path: apps/frontend/a11y-reports/
+        continue-on-error: true
 
   dependency-pinning:
     name: Validate Dependency Pinning
@@ -269,18 +454,87 @@ jobs:
     name: All Checks Passed
     runs-on: ubuntu-latest
     permissions: {}
-    needs: [backend-lint, backend-build, backend-test, frontend-lint, frontend-build, dependency-pinning]
+    needs: [
+      backend-lint, 
+      backend-build, 
+      backend-test, 
+      backend-integration-test,
+      backend-contract-test,
+      frontend-lint, 
+      frontend-build,
+      frontend-test,
+      frontend-accessibility-test,
+      dependency-pinning
+    ]
     if: always()
     steps:
       - name: Check all jobs
         run: |
-          if [[ "${{ needs.backend-lint.result }}" != "success" ]] || \
-             [[ "${{ needs.backend-build.result }}" != "success" ]] || \
-             [[ "${{ needs.backend-test.result }}" != "success" ]] || \
-             [[ "${{ needs.frontend-lint.result }}" != "success" ]] || \
-             [[ "${{ needs.frontend-build.result }}" != "success" ]] || \
-             [[ "${{ needs.dependency-pinning.result }}" != "success" ]]; then
-            echo "❌ One or more required checks failed"
+          # Core required checks (must pass)
+          declare -A REQUIRED_CHECKS=(
+            ["backend-lint"]="${{ needs.backend-lint.result }}"
+            ["backend-build"]="${{ needs.backend-build.result }}"
+            ["backend-test"]="${{ needs.backend-test.result }}"
+            ["frontend-lint"]="${{ needs.frontend-lint.result }}"
+            ["frontend-build"]="${{ needs.frontend-build.result }}"
+            ["dependency-pinning"]="${{ needs.dependency-pinning.result }}"
+          )
+          
+          # Optional checks (graceful degradation if not yet implemented)
+          # Use job outputs to detect actual test failures
+          declare -A OPTIONAL_CHECKS=(
+            ["backend-integration-test"]="${{ needs.backend-integration-test.outputs.test-outcome || needs.backend-integration-test.result }}"
+            ["backend-contract-test"]="${{ needs.backend-contract-test.outputs.test-outcome || needs.backend-contract-test.result }}"
+            ["frontend-test"]="${{ needs.frontend-test.outputs.test-outcome || needs.frontend-test.result }}"
+            ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.outputs.test-outcome || needs.frontend-accessibility-test.result }}"
+          )
+          
+          FAILED_REQUIRED=()
+          FAILED_OPTIONAL=()
+          
+          # Check required tests
+          for check in "${!REQUIRED_CHECKS[@]}"; do
+            result="${REQUIRED_CHECKS[$check]}"
+            if [[ "$result" != "success" ]]; then
+              FAILED_REQUIRED+=("$check ($result)")
+            fi
+          done
+          
+          # Check optional tests (report actual test outcomes)
+          for check in "${!OPTIONAL_CHECKS[@]}"; do
+            result="${OPTIONAL_CHECKS[$check]}"
+            if [[ "$result" == "failure" ]]; then
+              FAILED_OPTIONAL+=("$check (tests failed or not yet implemented)")
+            elif [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              FAILED_OPTIONAL+=("$check ($result)")
+            fi
+          done
+          
+          # Report results
+          echo "=== CI Quality Gate Results ==="
+          echo ""
+          
+          if [[ ${#FAILED_REQUIRED[@]} -eq 0 ]]; then
+            echo "✅ All required checks passed"
+          else
+            echo "❌ Required checks failed:"
+            printf '  - %s\n' "${FAILED_REQUIRED[@]}"
+          fi
+          
+          if [[ ${#FAILED_OPTIONAL[@]} -gt 0 ]]; then
+            echo ""
+            echo "⚠️  Optional checks not yet passing (non-blocking):"
+            printf '  - %s\n' "${FAILED_OPTIONAL[@]}"
+            echo ""
+            echo "These checks are expected to fail until their test infrastructure is implemented."
+          fi
+          
+          # Block merge only on required check failures
+          if [[ ${#FAILED_REQUIRED[@]} -gt 0 ]]; then
+            echo ""
+            echo "❌ CI quality gate FAILED - merge blocked"
             exit 1
           fi
-          echo "✅ All required checks passed"
+          
+          echo ""
+          echo "✅ CI quality gate PASSED - ready to merge"
