@@ -95,6 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      test-outcome: ${{ steps.integration-tests.outcome }}
     defaults:
       run:
         working-directory: apps/backend
@@ -114,12 +116,11 @@ jobs:
         continue-on-error: true
         id: integration-tests
 
-      - name: Check integration tests result
+      - name: Report integration tests result
         run: |
           if [[ "${{ steps.integration-tests.outcome }}" == "failure" ]]; then
             echo "⚠️ Integration tests failed or not yet implemented"
             echo "This is expected if integration tests haven't been added yet"
-            exit 0
           else
             echo "✅ Integration tests passed"
           fi
@@ -137,6 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      test-outcome: ${{ steps.contract-tests.outcome }}
     defaults:
       run:
         working-directory: apps/backend
@@ -156,12 +159,11 @@ jobs:
         continue-on-error: true
         id: contract-tests
 
-      - name: Check contract tests result
+      - name: Report contract tests result
         run: |
           if [[ "${{ steps.contract-tests.outcome }}" == "failure" ]]; then
             echo "⚠️ Contract tests failed or not yet implemented"
             echo "This is expected if Pact tests haven't been added yet"
-            exit 0
           else
             echo "✅ Contract tests passed"
           fi
@@ -229,6 +231,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      test-outcome: ${{ steps.unit-tests.outcome }}
     defaults:
       run:
         working-directory: apps/frontend
@@ -251,12 +255,11 @@ jobs:
         continue-on-error: true
         id: unit-tests
 
-      - name: Check unit tests result
+      - name: Report unit tests result
         run: |
           if [[ "${{ steps.unit-tests.outcome }}" == "failure" ]]; then
             echo "⚠️ Frontend unit tests failed or not yet configured"
             echo "This is expected if tests haven't been set up yet"
-            exit 0
           else
             echo "✅ Frontend unit tests passed"
           fi
@@ -274,6 +277,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      test-outcome: ${{ steps.a11y-tests.outcome }}
     defaults:
       run:
         working-directory: apps/frontend
@@ -296,12 +301,11 @@ jobs:
         continue-on-error: true
         id: a11y-tests
 
-      - name: Check accessibility tests result
+      - name: Report accessibility tests result
         run: |
           if [[ "${{ steps.a11y-tests.outcome }}" == "failure" ]]; then
             echo "⚠️ Accessibility tests failed or not yet configured"
             echo "This is expected if axe-core tests haven't been set up yet"
-            exit 0
           else
             echo "✅ Accessibility tests passed"
           fi
@@ -477,11 +481,12 @@ jobs:
           )
           
           # Optional checks (graceful degradation if not yet implemented)
+          # Use job outputs to detect actual test failures
           declare -A OPTIONAL_CHECKS=(
-            ["backend-integration-test"]="${{ needs.backend-integration-test.result }}"
-            ["backend-contract-test"]="${{ needs.backend-contract-test.result }}"
-            ["frontend-test"]="${{ needs.frontend-test.result }}"
-            ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.result }}"
+            ["backend-integration-test"]="${{ needs.backend-integration-test.outputs.test-outcome || needs.backend-integration-test.result }}"
+            ["backend-contract-test"]="${{ needs.backend-contract-test.outputs.test-outcome || needs.backend-contract-test.result }}"
+            ["frontend-test"]="${{ needs.frontend-test.outputs.test-outcome || needs.frontend-test.result }}"
+            ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.outputs.test-outcome || needs.frontend-accessibility-test.result }}"
           )
           
           FAILED_REQUIRED=()
@@ -495,10 +500,12 @@ jobs:
             fi
           done
           
-          # Check optional tests (informational)
+          # Check optional tests (report actual test outcomes)
           for check in "${!OPTIONAL_CHECKS[@]}"; do
             result="${OPTIONAL_CHECKS[$check]}"
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+            if [[ "$result" == "failure" ]]; then
+              FAILED_OPTIONAL+=("$check (tests failed or not yet implemented)")
+            elif [[ "$result" != "success" && "$result" != "skipped" ]]; then
               FAILED_OPTIONAL+=("$check ($result)")
             fi
           done

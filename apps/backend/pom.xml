@@ -118,6 +118,11 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
                     </systemPropertyVariables>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*ContractTest.java</exclude>
+                        <exclude>**/*PactTest.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
             <plugin>

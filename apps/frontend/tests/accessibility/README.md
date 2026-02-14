@@ -32,11 +32,11 @@ describe('HomePage Accessibility', () => {
   it('should have no accessibility violations', async () => {
     const wrapper = mount(HomePage);
     
-    // Get the DOM element
-    const html = wrapper.html();
+    // Get the root DOM element rendered by Vue Test Utils
+    const rootNode = wrapper.element;
     
     // Run axe accessibility scan
-    const results = await axe.run(html);
+    const results = await axe.run(rootNode);
     
     // Assert no violations
     expect(results.violations).toHaveLength(0);
@@ -213,7 +213,7 @@ export default defineConfig({
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - [axe-core Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
 - [Vue Accessibility Guide](https://vuejs.org/guide/best-practices/accessibility.html)
-- [Testing Strategy](../../docs/TESTING_STRATEGY.md)
+- [Testing Strategy](../../../../docs/TESTING_STRATEGY.md)
 
 ## Reporting Issues
 
