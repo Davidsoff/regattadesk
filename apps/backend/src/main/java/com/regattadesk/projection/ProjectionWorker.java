@@ -138,11 +138,17 @@ public class ProjectionWorker {
      * 
      * This is a simple implementation that reads globally and filters.
      * In production, you'd want to optimize this with proper indexing.
+     * 
+     * IMPORTANT: This implementation has scalability limitations:
+     * - Maximum effective batch size is batchSize * 10
+     * - May miss events if more than batchSize * 10 events exist beyond the checkpoint
+     * - High memory usage for large event stores
+     * 
+     * TODO: Replace with cursor-based or sequence-number-based approach before production use
      */
     private List<EventEnvelope> readEventsAfter(UUID eventId, int batchSize) {
-        // Read a large batch and filter
-        // This is inefficient but works for v0.1
-        List<EventEnvelope> allEvents = eventStore.readGlobal(batchSize * 10, 0);
+        int readLimit = batchSize * 10;
+        List<EventEnvelope> allEvents = eventStore.readGlobal(readLimit, 0);
         
         // Find the position of the last processed event
         int position = -1;
@@ -156,7 +162,15 @@ public class ProjectionWorker {
         // Return events after the last processed event
         if (position >= 0 && position < allEvents.size() - 1) {
             int endIndex = Math.min(position + 1 + batchSize, allEvents.size());
-            return allEvents.subList(position + 1, endIndex);
+            List<EventEnvelope> result = allEvents.subList(position + 1, endIndex);
+            
+            // Warn if we're approaching the read limit
+            if (allEvents.size() >= readLimit) {
+                LOG.warn("Projection worker read limit reached ({}). Some events may not be processed. " +
+                        "Consider implementing cursor-based event reading.", readLimit);
+            }
+            
+            return result;
         }
         
         return List.of();

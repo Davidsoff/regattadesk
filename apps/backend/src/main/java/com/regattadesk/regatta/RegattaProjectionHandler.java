@@ -65,17 +65,12 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     }
     
     private void insertRegatta(RegattaCreatedEvent event) {
+        // Use MERGE for H2 compatibility (works in both H2 and PostgreSQL 15+)
         String sql = """
-            INSERT INTO regattas (id, name, description, time_zone, status, entry_fee, currency, 
-                                 draw_revision, results_revision, created_at, updated_at)
+            MERGE INTO regattas (id, name, description, time_zone, status, entry_fee, currency, 
+                                draw_revision, results_revision, created_at, updated_at)
+            KEY (id)
             VALUES (?, ?, ?, ?, 'draft', ?, ?, 0, 0, now(), now())
-            ON CONFLICT (id) DO UPDATE SET
-                name = EXCLUDED.name,
-                description = EXCLUDED.description,
-                time_zone = EXCLUDED.time_zone,
-                entry_fee = EXCLUDED.entry_fee,
-                currency = EXCLUDED.currency,
-                updated_at = now()
             """;
         
         try (Connection conn = dataSource.getConnection();
