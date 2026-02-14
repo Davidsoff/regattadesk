@@ -49,22 +49,26 @@ The full Docker Compose stack includes:
 To enable direct host access to internal services for development:
 
 ```bash
-# Standard stack with dev tools
+# Standard stack with dev tools (PostgreSQL, MinIO)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
-# With observability and dev tools
-docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+# With observability but no direct access to Prometheus/Jaeger
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up
+
+# With observability AND dev tools (all services accessible)
+docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+
+# Or include both dev overlays for convenience:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
 ```
 
 This exposes:
-- PostgreSQL: `localhost:5432`
-- MinIO API: `localhost:9000`
-- MinIO Console: `localhost:9001`
-- Jaeger UI: `localhost:16686` (if observability enabled)
-- Prometheus: `localhost:9090` (if observability enabled)
+- **docker-compose.dev.yml**: PostgreSQL (5432), MinIO API (9000), MinIO Console (9001)
+- **docker-compose.observability.dev.yml**: Jaeger UI (16686), Prometheus (9090)
+- **Always exposed**: Traefik (80, 443, 8080), Grafana (via Traefik at /grafana)
 
 ### Production Deployment
-**Never use `docker-compose.dev.yml` in production.** It is explicitly designed for development convenience and bypasses network isolation.
+**Never use `docker-compose.dev.yml` or `docker-compose.observability.dev.yml` in production.** They are explicitly designed for development convenience and bypass network isolation.
 
 ## Prerequisites
 
@@ -480,16 +484,16 @@ To start RegattaDesk with full observability stack (Prometheus, Jaeger, Grafana)
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 # Development mode (with direct host access to all observability UIs)
-docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up -d
 ```
 
 ### Observability Services
 
 - **Grafana**: Metrics visualization and dashboards (http://localhost/grafana) - Always accessible via Traefik
-- **Prometheus**: Metrics collection and alerting - Internal only (use Grafana or `docker-compose.dev.yml`)
-- **Jaeger**: Distributed tracing backend - Internal only (use `docker-compose.dev.yml` for UI access)
+- **Prometheus**: Metrics collection and alerting - Internal only (use Grafana or observability.dev.yml)
+- **Jaeger**: Distributed tracing backend - Internal only (use observability.dev.yml for UI access)
 
-**Development mode only** (requires docker-compose.dev.yml):
+**Development mode only** (requires docker-compose.observability.dev.yml):
 - Prometheus: http://localhost:9090
 - Jaeger UI: http://localhost:16686
 

@@ -2,8 +2,11 @@
 # This file exposes internal service ports to the host for direct database/storage access
 # Only use in development environments - not for production!
 #
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
-# Or with observability: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+# Usage:
+#   Standard stack: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   With observability: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+#
+# Note: Jaeger and Prometheus port mappings only work when docker-compose.observability.yml is also included
 
 services:
   # PostgreSQL - expose port for direct database access
@@ -17,16 +20,3 @@ services:
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
 
-  # Jaeger - expose ports for UI and OTLP receivers
-  # Only active when docker-compose.observability.yml is also used
-  jaeger:
-    ports:
-      - "${JAEGER_UI_PORT:-16686}:16686"    # Jaeger UI
-      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"  # OTLP gRPC receiver
-      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"  # OTLP HTTP receiver
-
-  # Prometheus - expose port for direct metrics access
-  # Only active when docker-compose.observability.yml is also used
-  prometheus:
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"

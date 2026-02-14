@@ -1,0 +1,20 @@
+# Development tools overlay for RegattaDesk Observability services
+# This file exposes observability service ports to the host for direct access
+# Only use in development environments - not for production!
+#
+# IMPORTANT: This file requires docker-compose.observability.yml to be loaded first
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+
+services:
+  # Jaeger - expose ports for UI and OTLP receivers
+  jaeger:
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"    # Jaeger UI
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"  # OTLP gRPC receiver
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"  # OTLP HTTP receiver
+
+  # Prometheus - expose port for direct metrics access
+  prometheus:
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
