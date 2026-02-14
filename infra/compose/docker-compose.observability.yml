@@ -13,7 +13,7 @@ services:
     networks:
       - regattadesk-internal
     # Internal ports - not exposed to host by default for security
-    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
     expose:
       - "16686"  # Jaeger UI
       - "4317"   # OTLP gRPC receiver
@@ -41,7 +41,7 @@ services:
     networks:
       - regattadesk-internal
     # Internal port - not exposed to host by default for security
-    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
     expose:
       - "9090"
     healthcheck:
