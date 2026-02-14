@@ -307,7 +307,7 @@ public class StationHandoffService {
      * Generates a random numeric PIN.
      */
     private String generatePin() {
-        int pin = RANDOM.nextInt((int) Math.pow(10, PIN_LENGTH));
+        int pin = RANDOM.nextInt(1000000);
         return String.format("%0" + PIN_LENGTH + "d", pin);
     }
     

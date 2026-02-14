@@ -179,7 +179,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
     public void appendEvent(DomainEvent event) {
         String aggregateSql = """
             INSERT INTO aggregates (id, aggregate_type, version, created_at, updated_at)
-            VALUES (?, ?, 0, now(), now())
+            VALUES (?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """;
         String sequenceSql = "SELECT COALESCE(MAX(sequence_number), 0) + 1 FROM event_store WHERE aggregate_id = ?";
 
@@ -211,7 +211,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
                     INSERT INTO event_store (
                         aggregate_id, aggregate_type, sequence_number, event_type, 
                         event_data, occurred_at, stream_position
-                    ) VALUES (?, ?, ?, ?, ?::jsonb, now(), 
+                    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 
                         (SELECT COALESCE(MAX(stream_position), 0) + 1 FROM event_store))
                     """;
 
