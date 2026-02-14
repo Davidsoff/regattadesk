@@ -61,7 +61,7 @@ public class JdbcOperatorTokenRepository implements OperatorTokenRepository {
         String sql = """
             UPDATE operator_tokens
             SET regatta_id = ?, block_id = ?, station = ?, token = ?, pin = ?,
-                valid_from = ?, valid_until = ?, is_active = ?, updated_at = ?
+                valid_from = ?, valid_until = ?, is_active = ?
             WHERE id = ?
             """;
         
@@ -76,8 +76,7 @@ public class JdbcOperatorTokenRepository implements OperatorTokenRepository {
             stmt.setTimestamp(6, Timestamp.from(token.getValidFrom()));
             stmt.setTimestamp(7, Timestamp.from(token.getValidUntil()));
             stmt.setBoolean(8, token.isActive());
-            stmt.setTimestamp(9, Timestamp.from(Instant.now()));
-            stmt.setObject(10, token.getId());
+            stmt.setObject(9, token.getId());
             
             int rowsUpdated = stmt.executeUpdate();
             if (rowsUpdated == 0) {
@@ -215,13 +214,12 @@ public class JdbcOperatorTokenRepository implements OperatorTokenRepository {
     
     @Override
     public boolean revoke(UUID tokenId) {
-        String sql = "UPDATE operator_tokens SET is_active = false, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE operator_tokens SET is_active = false WHERE id = ?";
         
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setTimestamp(1, Timestamp.from(Instant.now()));
-            stmt.setObject(2, tokenId);
+            stmt.setObject(1, tokenId);
             
             int rowsUpdated = stmt.executeUpdate();
             return rowsUpdated > 0;

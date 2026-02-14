@@ -10,8 +10,8 @@ CREATE TABLE operator_tokens (
     regatta_id UUID NOT NULL,
     block_id UUID,
     station VARCHAR(100) NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    pin VARCHAR(10),
+    token VARCHAR(64) NOT NULL UNIQUE,
+    pin CHAR(6),
     valid_from TIMESTAMP NOT NULL,
     valid_until TIMESTAMP NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -22,7 +22,6 @@ CREATE TABLE operator_tokens (
 
 CREATE INDEX idx_operator_tokens_regatta ON operator_tokens(regatta_id);
 CREATE INDEX idx_operator_tokens_block ON operator_tokens(block_id);
-CREATE INDEX idx_operator_tokens_token ON operator_tokens(token);
 CREATE INDEX idx_operator_tokens_validity ON operator_tokens(valid_from, valid_until);
 CREATE INDEX idx_operator_tokens_active ON operator_tokens(is_active);
 CREATE INDEX idx_operator_tokens_station ON operator_tokens(regatta_id, station);

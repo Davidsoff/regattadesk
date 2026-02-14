@@ -77,6 +77,33 @@ class OperatorTokenValidatorTest {
         assertEquals(OperatorTokenValidator.ValidationResult.NOT_YET_VALID, result);
         assertFalse(result.isValid());
     }
+
+    @Test
+    void testValidateToken_AtExactValidFrom() {
+        Instant validFrom = Instant.now();
+        OperatorToken token = createToken(
+            validFrom,
+            validFrom.plus(1, ChronoUnit.HOURS),
+            true
+        );
+
+        OperatorTokenValidator.ValidationResult result = validator.validateToken(token, validFrom);
+
+        assertEquals(OperatorTokenValidator.ValidationResult.VALID, result);
+        assertTrue(result.isValid());
+    }
+
+    @Test
+    void testValidateToken_AtExactValidUntil() {
+        Instant now = Instant.now();
+        Instant validUntil = now.plus(1, ChronoUnit.HOURS);
+        OperatorToken token = createToken(now, validUntil, true);
+
+        OperatorTokenValidator.ValidationResult result = validator.validateToken(token, validUntil);
+
+        assertEquals(OperatorTokenValidator.ValidationResult.EXPIRED, result);
+        assertFalse(result.isValid());
+    }
     
     @Test
     void testValidateRegattaScope_ValidScope() {

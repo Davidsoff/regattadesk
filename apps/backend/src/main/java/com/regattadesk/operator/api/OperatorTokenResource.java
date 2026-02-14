@@ -56,6 +56,11 @@ public class OperatorTokenResource {
             OperatorTokenCreateRequest request) {
         
         // Validate request
+        if (request == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ErrorResponse("Request body is required"))
+                .build();
+        }
         if (request.getStation() == null || request.getStation().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new ErrorResponse("Station is required"))

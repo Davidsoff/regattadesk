@@ -22,10 +22,9 @@ import static org.hamcrest.Matchers.*;
 @QuarkusTest
 class OperatorTokenResourceIT {
     
-    private static final UUID TEST_REGATTA_ID = UUID.randomUUID();
-    
     @Test
     void testCreateToken_Success() {
+        UUID regattaId = UUID.randomUUID();
         Instant now = Instant.now();
         Instant validFrom = now;
         Instant validUntil = now.plus(8, ChronoUnit.HOURS);
@@ -42,11 +41,11 @@ class OperatorTokenResourceIT {
                 }
                 """, validFrom, validUntil))
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(201)
             .body("id", notNullValue())
-            .body("regatta_id", equalTo(TEST_REGATTA_ID.toString()))
+            .body("regatta_id", equalTo(regattaId.toString()))
             .body("station", equalTo("start-line"))
             .body("token", notNullValue())
             .body("pin", notNullValue())
@@ -57,6 +56,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testCreateToken_WithBlockId() {
+        UUID regattaId = UUID.randomUUID();
         UUID blockId = UUID.randomUUID();
         Instant now = Instant.now();
         Instant validFrom = now;
@@ -75,7 +75,7 @@ class OperatorTokenResourceIT {
                 }
                 """, blockId, validFrom, validUntil))
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(201)
             .body("block_id", equalTo(blockId.toString()))
@@ -84,6 +84,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testCreateToken_MissingStation() {
+        UUID regattaId = UUID.randomUUID();
         Instant now = Instant.now();
         
         given()
@@ -97,7 +98,7 @@ class OperatorTokenResourceIT {
                 }
                 """, now, now.plus(1, ChronoUnit.HOURS)))
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(400)
             .body("error", containsString("Station"));
@@ -105,6 +106,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testCreateToken_InvalidValidityWindow() {
+        UUID regattaId = UUID.randomUUID();
         Instant now = Instant.now();
         
         given()
@@ -119,7 +121,7 @@ class OperatorTokenResourceIT {
                 }
                 """, now, now.minus(1, ChronoUnit.HOURS)))
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(400)
             .body("error", containsString("after"));
@@ -127,6 +129,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testCreateToken_Unauthorized() {
+        UUID regattaId = UUID.randomUUID();
         Instant now = Instant.now();
         
         given()
@@ -141,13 +144,14 @@ class OperatorTokenResourceIT {
                 }
                 """, now, now.plus(1, ChronoUnit.HOURS)))
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(403);
     }
     
     @Test
     void testListTokens_Success() {
+        UUID regattaId = UUID.randomUUID();
         // First create a token
         Instant now = Instant.now();
         given()
@@ -161,14 +165,14 @@ class OperatorTokenResourceIT {
                     "valid_until": "%s"
                 }
                 """, now, now.plus(1, ChronoUnit.HOURS)))
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens");
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens");
         
         // List tokens
         given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "super_admin")
             .when()
-            .get("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .get("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(200)
             .body("data", notNullValue())
@@ -177,17 +181,19 @@ class OperatorTokenResourceIT {
     
     @Test
     void testListTokens_Unauthorized() {
+        UUID regattaId = UUID.randomUUID();
         given()
             .header("Remote-User", "user")
             .header("Remote-Groups", "info_desk")
             .when()
-            .get("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .get("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(403);
     }
     
     @Test
     void testRevokeToken_Success() {
+        UUID regattaId = UUID.randomUUID();
         // First create a token
         Instant now = Instant.now();
         String tokenId = given()
@@ -201,7 +207,7 @@ class OperatorTokenResourceIT {
                     "valid_until": "%s"
                 }
                 """, now, now.plus(1, ChronoUnit.HOURS)))
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(201)
             .extract()
@@ -213,7 +219,7 @@ class OperatorTokenResourceIT {
             .header("Remote-Groups", "super_admin")
             .contentType("application/json")
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens/" + tokenId + "/revoke")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + tokenId + "/revoke")
             .then()
             .statusCode(200)
             .body("message", containsString("revoked"));
@@ -221,6 +227,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testRevokeToken_NotFound() {
+        UUID regattaId = UUID.randomUUID();
         UUID nonExistentTokenId = UUID.randomUUID();
         
         given()
@@ -228,7 +235,7 @@ class OperatorTokenResourceIT {
             .header("Remote-Groups", "super_admin")
             .contentType("application/json")
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens/" + nonExistentTokenId + "/revoke")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + nonExistentTokenId + "/revoke")
             .then()
             .statusCode(404)
             .body("error", containsString("not found"));
@@ -271,6 +278,7 @@ class OperatorTokenResourceIT {
     
     @Test
     void testRevokeToken_Unauthorized() {
+        UUID regattaId = UUID.randomUUID();
         UUID tokenId = UUID.randomUUID();
         
         given()
@@ -278,8 +286,46 @@ class OperatorTokenResourceIT {
             .header("Remote-Groups", "operator")
             .contentType("application/json")
             .when()
-            .post("/api/v1/regattas/" + TEST_REGATTA_ID + "/operator/tokens/" + tokenId + "/revoke")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + tokenId + "/revoke")
             .then()
             .statusCode(403);
+    }
+
+    @Test
+    void testRevokeToken_Idempotent() {
+        UUID regattaId = UUID.randomUUID();
+        Instant now = Instant.now();
+        String tokenId = given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                    "station": "idempotent-test",
+                    "valid_from": "%s",
+                    "valid_until": "%s"
+                }
+                """, now, now.plus(1, ChronoUnit.HOURS)))
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("id");
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + tokenId + "/revoke")
+            .then()
+            .statusCode(200);
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + tokenId + "/revoke")
+            .then()
+            .statusCode(200);
     }
 }

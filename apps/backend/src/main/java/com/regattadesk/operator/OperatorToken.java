@@ -163,6 +163,9 @@ public final class OperatorToken {
     /**
      * Checks if this token is currently valid.
      * 
+     * This delegates to {@link #isValidAt(Instant)} with {@link Instant#now()},
+     * so it enforces both active status and validity window.
+     *
      * @return true if the token is valid at the current time
      */
     public boolean isCurrentlyValid() {
@@ -172,6 +175,10 @@ public final class OperatorToken {
     /**
      * Checks if this token is expired (past its validity window).
      * 
+     * Note: this only checks the time window against {@code validUntil}; it does
+     * not consider the {@code active} flag or {@code validFrom}. For full
+     * validity checks use {@link #isValidAt(Instant)} or {@link #isCurrentlyValid()}.
+     *
      * @return true if the current time is past the validUntil time
      */
     public boolean isExpired() {

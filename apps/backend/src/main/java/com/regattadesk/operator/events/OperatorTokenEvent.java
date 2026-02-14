@@ -1,6 +1,7 @@
 package com.regattadesk.operator.events;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -20,10 +21,10 @@ public abstract class OperatorTokenEvent {
             String station,
             Instant occurredAt,
             String performedBy) {
-        this.tokenId = tokenId;
-        this.regattaId = regattaId;
+        this.tokenId = Objects.requireNonNull(tokenId, "tokenId must not be null");
+        this.regattaId = Objects.requireNonNull(regattaId, "regattaId must not be null");
         this.station = station;
-        this.occurredAt = occurredAt;
+        this.occurredAt = Objects.requireNonNull(occurredAt, "occurredAt must not be null");
         this.performedBy = performedBy;
     }
     

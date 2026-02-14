@@ -20,7 +20,7 @@ public class OperatorTokenListResponse {
     }
     
     public List<OperatorTokenResponse> getData() {
-        return data;
+        return data == null ? List.of() : List.copyOf(data);
     }
     
     public void setData(List<OperatorTokenResponse> data) {

@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 
 /**
- * H2 trigger to automatically update the updated_at column on aggregates table.
+ * H2 trigger to automatically update the updated_at column.
  */
 public class UpdateTimestampTrigger implements Trigger {
     
@@ -18,9 +18,9 @@ public class UpdateTimestampTrigger implements Trigger {
 
     @Override
     public void fire(Connection conn, Object[] oldRow, Object[] newRow) throws SQLException {
-        if (newRow != null && newRow.length > 4) {
-            // Set updated_at (index 4: id=0, aggregate_type=1, version=2, created_at=3, updated_at=4)
-            newRow[4] = new Timestamp(System.currentTimeMillis());
+        if (newRow != null && newRow.length > 0) {
+            // updated_at is the last column for both aggregates and operator_tokens tables.
+            newRow[newRow.length - 1] = new Timestamp(System.currentTimeMillis());
         }
     }
 

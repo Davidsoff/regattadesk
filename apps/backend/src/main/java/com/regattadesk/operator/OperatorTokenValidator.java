@@ -21,6 +21,8 @@ public final class OperatorTokenValidator {
      */
     public enum ValidationResult {
         VALID("Token is valid"),
+        INVALID_TOKEN("Token is invalid"),
+        NOT_FOUND("Token not found"),
         REVOKED("Token has been revoked"),
         EXPIRED("Token has expired"),
         NOT_YET_VALID("Token is not yet valid"),

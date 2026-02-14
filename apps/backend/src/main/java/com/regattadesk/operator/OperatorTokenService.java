@@ -111,8 +111,22 @@ public class OperatorTokenService {
         if (tokenString == null || tokenString.isBlank()) {
             return new TokenValidationResult(
                 null,
-                OperatorTokenValidator.ValidationResult.EXPIRED,
+                OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
                 "Token string is required"
+            );
+        }
+        if (regattaId == null) {
+            return new TokenValidationResult(
+                null,
+                OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
+                "Regatta ID is required"
+            );
+        }
+        if (station == null || station.isBlank()) {
+            return new TokenValidationResult(
+                null,
+                OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
+                "Station is required"
             );
         }
         
@@ -120,19 +134,28 @@ public class OperatorTokenService {
         if (tokenOpt.isEmpty()) {
             return new TokenValidationResult(
                 null,
-                OperatorTokenValidator.ValidationResult.EXPIRED,
+                OperatorTokenValidator.ValidationResult.NOT_FOUND,
                 "Token not found"
             );
         }
         
         OperatorToken token = tokenOpt.get();
-        OperatorTokenValidator.ValidationResult result = validator.validateFull(
-            token,
-            Instant.now(),
-            regattaId,
-            station,
-            blockId
-        );
+        OperatorTokenValidator.ValidationResult result;
+        try {
+            result = validator.validateFull(
+                token,
+                Instant.now(),
+                regattaId,
+                station,
+                blockId
+            );
+        } catch (IllegalArgumentException e) {
+            return new TokenValidationResult(
+                token,
+                OperatorTokenValidator.ValidationResult.INVALID_TOKEN,
+                e.getMessage()
+            );
+        }
         
         return new TokenValidationResult(token, result, result.getMessage());
     }

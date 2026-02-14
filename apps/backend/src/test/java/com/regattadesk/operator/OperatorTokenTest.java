@@ -71,6 +71,17 @@ class OperatorTokenTest {
             );
         });
     }
+
+    @Test
+    void testCreateToken_NullStation_ThrowsException() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new OperatorToken(
+                UUID.randomUUID(), UUID.randomUUID(), null, null, "token", null,
+                Instant.now(), Instant.now().plus(1, ChronoUnit.HOURS),
+                true, Instant.now(), Instant.now()
+            );
+        });
+    }
     
     @Test
     void testCreateToken_BlankToken_ThrowsException() {
