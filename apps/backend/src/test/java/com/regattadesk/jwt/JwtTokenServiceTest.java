@@ -81,42 +81,26 @@ class JwtTokenServiceTest {
     
     @Test
     void testIsInRefreshWindow_TokenNearExpiration() throws InvalidTokenException {
-        // Create a token that expires soon
-        TestJwtConfig shortConfig = new TestJwtConfig();
-        shortConfig.ttlSecondsOverride = 100; // 100 seconds TTL
-        shortConfig.refreshWindowPercentOverride = 20; // 20% = 20 seconds
-        JwtTokenService shortService = new JwtTokenService(shortConfig);
-        
-        String token = shortService.issueToken();
-        
-        // Wait a moment to ensure token age
-        try {
-            Thread.sleep(50); // Wait 50ms to age the token slightly
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        // Manually create a token that's near expiration
-        // For testing purposes, we'll create a fresh token but check the logic
-        ValidatedToken validated = shortService.validateToken(token);
-        
-        // Token with 100s TTL and 20% refresh window should not be in refresh window yet
-        // (it would need to be within last 20 seconds)
-        assertFalse(shortService.isInRefreshWindow(validated));
-        
-        // Create a token that's already in the refresh window
-        // by using a token that expires within refresh window duration
-        TestJwtConfig veryShortConfig = new TestJwtConfig();
-        veryShortConfig.ttlSecondsOverride = 10; // 10 seconds TTL
-        veryShortConfig.refreshWindowPercentOverride = 30; // 30% = 3 seconds
-        JwtTokenService veryShortService = new JwtTokenService(veryShortConfig);
-        
-        String veryShortToken = veryShortService.issueToken();
-        ValidatedToken veryShortValidated = veryShortService.validateToken(veryShortToken);
-        
-        // This token expires in 10 seconds, refresh window is 3 seconds
-        // Since it just got issued, it should NOT be in refresh window
-        assertFalse(veryShortService.isInRefreshWindow(veryShortValidated));
+        Instant now = Instant.now();
+        ValidatedToken nearExpiry = new ValidatedToken(
+            "test-sid",
+            now.minusSeconds(431990),
+            now.plusSeconds(10)
+        );
+
+        assertTrue(service.isInRefreshWindow(nearExpiry));
+    }
+
+    @Test
+    void testIsInRefreshWindow_TokenOutsideRefreshWindow() {
+        Instant now = Instant.now();
+        ValidatedToken fresh = new ValidatedToken(
+            "test-sid",
+            now,
+            now.plusSeconds(200000)
+        );
+
+        assertFalse(service.isInRefreshWindow(fresh));
     }
     
     @Test

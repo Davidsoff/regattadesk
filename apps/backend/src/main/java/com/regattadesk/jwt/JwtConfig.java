@@ -1,6 +1,7 @@
 package com.regattadesk.jwt;
 
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
 /**
  * Configuration for JWT public anonymous session tokens.
@@ -23,11 +24,13 @@ public interface JwtConfig {
      * The TTL (time-to-live) in seconds for the JWT token.
      * Default is 5 days (432000 seconds).
      */
+    @WithDefault("432000")
     int ttlSeconds();
     
     /**
      * The refresh window as a percentage of the TTL.
      * Default is 20% (refresh when token has less than 20% of TTL remaining).
      */
+    @WithDefault("20")
     int refreshWindowPercent();
 }

@@ -7,7 +7,9 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
@@ -23,6 +25,7 @@ import java.util.UUID;
  */
 @ApplicationScoped
 public class JwtTokenService {
+    private static final Logger LOG = Logger.getLogger(JwtTokenService.class);
     
     private final JwtConfig config;
     private final MACSigner signer;
@@ -32,7 +35,7 @@ public class JwtTokenService {
     public JwtTokenService(JwtConfig config) {
         this.config = config;
         try {
-            byte[] secret = config.secret().getBytes();
+            byte[] secret = config.secret().getBytes(StandardCharsets.UTF_8);
             if (secret.length < 32) {
                 throw new IllegalArgumentException(
                     "JWT secret must be at least 256 bits (32 bytes) for HS256"
@@ -68,6 +71,7 @@ public class JwtTokenService {
         
         try {
             signedJWT.sign(signer);
+            LOG.debug("Issued anonymous session JWT token");
             return signedJWT.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException("Failed to sign JWT token", e);
@@ -95,15 +99,29 @@ public class JwtTokenService {
             // Check expiration
             Date expiration = claims.getExpirationTime();
             if (expiration == null || expiration.before(new Date())) {
+                LOG.warn("Rejected JWT token due to missing or expired exp claim");
                 throw new InvalidTokenException("Token has expired");
+            }
+
+            String sessionId = claims.getStringClaim("sid");
+            if (sessionId == null || sessionId.isBlank()) {
+                LOG.warn("Rejected JWT token missing sid claim");
+                throw new InvalidTokenException("Token missing required sid claim");
+            }
+
+            Date issueTime = claims.getIssueTime();
+            if (issueTime == null) {
+                LOG.warn("Rejected JWT token missing iat claim");
+                throw new InvalidTokenException("Token missing required iat claim");
             }
             
             return new ValidatedToken(
-                claims.getStringClaim("sid"),
-                claims.getIssueTime().toInstant(),
+                sessionId,
+                issueTime.toInstant(),
                 expiration.toInstant()
             );
         } catch (ParseException | JOSEException e) {
+            LOG.warn("Failed to parse or verify JWT token", e);
             throw new InvalidTokenException("Failed to parse or verify JWT token", e);
         }
     }
@@ -122,7 +140,7 @@ public class JwtTokenService {
         
         // Token is in refresh window if it expires within the refresh window duration
         Instant refreshThreshold = now.plusSeconds(refreshWindowSeconds);
-        return token.expiresAt().isBefore(refreshThreshold) || token.expiresAt().equals(refreshThreshold);
+        return !token.expiresAt().isAfter(refreshThreshold);
     }
     
     /**

@@ -1,5 +1,6 @@
 package com.regattadesk.public_api;
 
+import com.regattadesk.jwt.JwtConfig;
 import com.regattadesk.jwt.JwtTokenService;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
 import com.regattadesk.jwt.JwtTokenService.ValidatedToken;
@@ -16,14 +17,15 @@ import jakarta.ws.rs.core.Response;
  * The cookie is used for SSE connection tracking and public API authentication.
  */
 @Path("/public/session")
-@Produces("application/json")
 public class PublicSessionResource {
     
     private static final String COOKIE_NAME = "regattadesk_public_session";
-    private static final int MAX_AGE_SECONDS = 432000; // 5 days
     
     @Inject
     JwtTokenService jwtTokenService;
+
+    @Inject
+    JwtConfig jwtConfig;
     
     /**
      * Mints or refreshes an anonymous public session cookie.
@@ -48,7 +50,7 @@ public class PublicSessionResource {
             NewCookie cookie = new NewCookie.Builder(COOKIE_NAME)
                 .value(token)
                 .path("/")
-                .maxAge(MAX_AGE_SECONDS)
+                .maxAge(jwtConfig.ttlSeconds())
                 .secure(true)
                 .httpOnly(true)
                 .sameSite(NewCookie.SameSite.LAX)
