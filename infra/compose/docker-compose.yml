@@ -176,8 +176,8 @@ services:
       start_period: 60s
     labels:
       - "traefik.enable=true"
-      # Public and health endpoints (no auth) with edge hardening (BC09-002)
-      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`) || PathPrefix(`/q/metrics`))"
+      # Public and health endpoints (no auth)
+      - "traefik.http.routers.backend-public.rule=Host(`${DOMAIN:-localhost.local}`) && (PathPrefix(`/api/v1/public`) || PathPrefix(`/api/health`) || PathPrefix(`/q/health`))"
       - "traefik.http.routers.backend-public.entrypoints=web,websecure"
       - "traefik.http.routers.backend-public.tls=true"
       - "traefik.http.routers.backend-public.middlewares=public-chain@file"
