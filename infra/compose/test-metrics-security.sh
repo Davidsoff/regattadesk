@@ -28,7 +28,7 @@ if [[ "$status" = "404" ]]; then
     echo -e "${GREEN}✓ PASS${NC} (HTTP $status - correctly denied)"
 else
     echo -e "${RED}✗ FAIL${NC} (HTTP $status - should be 404)"
-    echo "ERROR: Metrics endpoint is publicly accessible!"
+    echo "ERROR: Metrics endpoint is publicly accessible!" >&2
     exit 1
 fi
 
