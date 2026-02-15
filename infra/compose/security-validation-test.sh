@@ -12,10 +12,11 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+SEPARATOR='=========================================='
 
-echo "=========================================="
+echo "$SEPARATOR"
 echo "Security: Port Exposure Validation"
-echo "=========================================="
+echo "$SEPARATOR"
 echo
 
 # Check if .env exists
@@ -163,9 +164,9 @@ else
 fi
 
 echo
-echo "=========================================="
+echo "$SEPARATOR"
 echo -e "${GREEN}✓ All security validation tests passed!${NC}"
-echo "=========================================="
+echo "$SEPARATOR"
 echo
 echo "Summary:"
 echo "  • Internal services (PostgreSQL, MinIO) are NOT exposed by default"
