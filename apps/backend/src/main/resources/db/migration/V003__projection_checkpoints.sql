@@ -1,7 +1,7 @@
 -- Projection checkpoints table
 -- Tracks the last processed event for each projection to enable idempotent replay
 CREATE TABLE projection_checkpoints (
-    projection_name VARCHAR(255) PRIMARY KEY,
+    projection_name CHARACTER VARYING(255) PRIMARY KEY,
     last_processed_event_id UUID NOT NULL,
     last_processed_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
