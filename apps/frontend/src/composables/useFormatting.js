@@ -12,10 +12,19 @@ import { computed } from 'vue';
 export function useFormatting(locale = 'en') {
   // Accept locale as parameter or computed ref
   const currentLocale = computed(() => {
-    if (locale !== null && typeof locale === 'object' && 'value' in locale) {
-      return locale.value || 'en';
+    if (locale !== null && typeof locale === 'object') {
+      const value = locale.value;
+      if (typeof value === 'string' && value.length > 0) {
+        return value;
+      }
+      return 'en';
     }
-    return locale || 'en';
+
+    if (typeof locale === 'string' && locale.length > 0) {
+      return locale;
+    }
+
+    return 'en';
   });
 
   /**
