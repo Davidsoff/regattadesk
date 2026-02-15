@@ -7,13 +7,13 @@ CREATE TABLE line_scan_manifests (
     regatta_id UUID NOT NULL,
     capture_session_id UUID NOT NULL,
     tile_size_px INTEGER NOT NULL CHECK (tile_size_px IN (512, 1024)),
-    primary_format VARCHAR(50) NOT NULL CHECK (primary_format IN ('webp_lossless', 'png')),
-    fallback_format VARCHAR(50) CHECK (fallback_format IN ('png')),
+    primary_format CHARACTER VARYING(50) NOT NULL CHECK (primary_format IN ('webp_lossless', 'png')),
+    fallback_format CHARACTER VARYING(50) CHECK (fallback_format IN ('png')),
     x_origin_timestamp_ms BIGINT NOT NULL,
     ms_per_pixel DOUBLE PRECISION NOT NULL,
     retention_days INTEGER NOT NULL DEFAULT 14 CHECK (retention_days >= 1),
     prune_window_seconds INTEGER NOT NULL DEFAULT 2 CHECK (prune_window_seconds >= 1),
-    retention_state VARCHAR(50) NOT NULL DEFAULT 'full_retained' 
+    retention_state CHARACTER VARYING(50) NOT NULL DEFAULT 'full_retained' 
         CHECK (retention_state IN ('full_retained', 'pending_delay', 'eligible_waiting_archive_or_approvals', 'pruned')),
     prune_eligible_at TIMESTAMP WITH TIME ZONE,
     pruned_at TIMESTAMP WITH TIME ZONE,
@@ -32,13 +32,13 @@ CREATE UNIQUE INDEX idx_line_scan_manifests_session_unique ON line_scan_manifest
 CREATE TABLE line_scan_tiles (
     id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     manifest_id UUID NOT NULL REFERENCES line_scan_manifests(id) ON DELETE CASCADE,
-    tile_id VARCHAR(255) NOT NULL,
+    tile_id CHARACTER VARYING(255) NOT NULL,
     tile_x INTEGER NOT NULL,
     tile_y INTEGER NOT NULL,
-    content_type VARCHAR(50) NOT NULL CHECK (content_type IN ('image/webp', 'image/png')),
+    content_type CHARACTER VARYING(50) NOT NULL CHECK (content_type IN ('image/webp', 'image/png')),
     byte_size INTEGER CHECK (byte_size >= 0),
-    minio_bucket VARCHAR(255) NOT NULL,
-    minio_object_key VARCHAR(512) NOT NULL,
+    minio_bucket CHARACTER VARYING(255) NOT NULL,
+    minio_object_key CHARACTER VARYING(512) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
