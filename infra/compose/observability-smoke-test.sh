@@ -1,6 +1,10 @@
 #!/bin/bash
 # Observability Stack Smoke Test
 # Tests that health, metrics, and tracing endpoints are functional
+#
+# Note: By default, Prometheus and Jaeger are only accessible internally.
+# To test direct host access, run with docker-compose.observability.dev.yml:
+# docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up -d
 
 set -e
 
@@ -17,6 +21,14 @@ BACKEND_URL="${BACKEND_URL:-http://localhost}"
 PROMETHEUS_URL="${PROMETHEUS_URL:-http://localhost:9090}"
 JAEGER_URL="${JAEGER_URL:-http://localhost:16686}"
 GRAFANA_URL="${GRAFANA_URL:-http://localhost/grafana}"
+
+# Check if we're running in dev mode (with host-exposed ports)
+# Dev mode is detected by checking if Prometheus has port 9090 published to host
+# jq: Check array not empty, then check if port 9090 is published
+DEV_MODE=false
+if docker compose ps prometheus --format json 2>/dev/null | jq -e 'if length > 0 then .[0].Publishers[]? | select(.PublishedPort == 9090) else false end' > /dev/null 2>&1; then
+    DEV_MODE=true
+fi
 
 test_endpoint() {
     local name="$1"
@@ -70,14 +82,22 @@ test_content "HTTP Metrics" "$BACKEND_URL/q/metrics" "http_server_requests" || (
 echo ""
 
 echo "=== Observability Services ==="
-test_endpoint "Prometheus" "$PROMETHEUS_URL/-/ready" || ((failures++))
-test_endpoint "Jaeger UI" "$JAEGER_URL/" || ((failures++))
+if [[ "$DEV_MODE" == "true" ]]; then
+    echo "  (Running in dev mode - testing direct host access)"
+    test_endpoint "Prometheus" "$PROMETHEUS_URL/-/ready" || ((failures++))
+    test_endpoint "Jaeger UI" "$JAEGER_URL/" || ((failures++))
+else
+    echo -e "  ${YELLOW}Prometheus and Jaeger not exposed to host (secure default)${NC}"
+    echo -e "  ${YELLOW}Use docker-compose.observability.dev.yml for direct access${NC}"
+fi
 test_endpoint "Grafana" "$GRAFANA_URL/api/health" || ((failures++))
 echo ""
 
-echo "=== Prometheus Targets ==="
-test_content "Backend Target" "$PROMETHEUS_URL/api/v1/targets" "regattadesk-backend" || ((failures++))
-echo ""
+if [[ "$DEV_MODE" == "true" ]]; then
+    echo "=== Prometheus Targets ==="
+    test_content "Backend Target" "$PROMETHEUS_URL/api/v1/targets" "regattadesk-backend" || ((failures++))
+    echo ""
+fi
 
 echo "==================================="
 if [[ $failures -eq 0 ]]; then
