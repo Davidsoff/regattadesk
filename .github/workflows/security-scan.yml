@@ -90,19 +90,25 @@ jobs:
     strategy:
       matrix:
         # NOTE: Scanning actual images from docker-compose.yml
-        # Action items: Pin minio/minio and authelia/authelia to specific tags
-        # See docs/dependencies.md for tracking
+        # Images pinned to specific versions/releases for reproducibility
+        # Update procedure:
+        #   1. Check for new releases: MinIO (https://github.com/minio/minio/releases),
+        #      Authelia (https://github.com/authelia/authelia/releases)
+        #   2. Test new versions in docker-compose.yml first
+        #   3. Update tags here to match tested versions
+        #   4. Run security scan workflow to validate
         image:
           - postgres:16-alpine
-          - minio/minio:latest
+          - minio/minio:RELEASE.2025-10-15T17-29-55Z
           - traefik:v3.0
-          - authelia/authelia:latest
+          - authelia/authelia:4.38
     steps:
       - name: Pull image
         run: docker pull ${{ matrix.image }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        # Pinned to v0.34.0 commit for immutable behavior
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           image-ref: ${{ matrix.image }}
           format: 'sarif'
