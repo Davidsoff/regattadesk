@@ -79,7 +79,7 @@ Future enhancements will add database connectivity and external dependency check
 
 ### Prometheus Metrics
 
-Metrics are exposed at `/q/metrics` in Prometheus format.
+Metrics are exposed at `/q/metrics` in Prometheus format. For security, this endpoint is **not** publicly accessible through Traefik and can only be accessed from the internal Docker network.
 
 #### Available Metrics Categories
 
@@ -102,7 +102,23 @@ Metrics are exposed at `/q/metrics` in Prometheus format.
 
 ### Scraping Configuration
 
-Prometheus scrapes metrics every 15 seconds from the backend service. Configuration is in `infra/compose/prometheus/prometheus.yml`.
+Prometheus scrapes metrics every 15 seconds from the backend service via the internal Docker network. The metrics endpoint is not publicly accessible for security reasons. Configuration is in `infra/compose/prometheus/prometheus.yml`.
+
+#### Secure Access to Metrics
+
+**From Internal Network (Recommended):**
+```bash
+# Access from another container on the internal network
+docker exec regattadesk-prometheus curl http://backend:8080/q/metrics
+```
+
+**For Development/Debugging:**
+```bash
+# Direct access to backend container (bypasses Traefik)
+docker exec regattadesk-backend curl http://localhost:8080/q/metrics
+```
+
+**Note:** The `/q/metrics` endpoint is intentionally excluded from Traefik routing to prevent public exposure of internal operational metrics. Prometheus scraping works because both services are on the `regattadesk-internal` network.
 
 ## Distributed Tracing
 
@@ -264,16 +280,23 @@ cd apps/backend
 
 ### Manual Verification
 
-1. **Health Endpoints:**
+1. **Health Endpoints (Public Access):**
    ```bash
    curl http://localhost/q/health/live
    curl http://localhost/q/health/ready
    curl http://localhost/q/health/started
    ```
 
-2. **Metrics:**
+2. **Metrics (Internal Network Only):**
    ```bash
-   curl http://localhost/q/metrics
+   # Metrics are NOT accessible via public routing (returns 404)
+   curl http://localhost/q/metrics  # Expected: 404 Not Found
+   
+   # Access via internal network from another container
+   docker exec regattadesk-prometheus curl http://backend:8080/q/metrics
+   
+   # Or directly from backend container
+   docker exec regattadesk-backend curl http://localhost:8080/q/metrics
    ```
 
 3. **Traces:** Make API requests and view in Jaeger UI
@@ -303,9 +326,10 @@ quarkus.otel.traces.sampler.arg=0.1  # 10% sampling
 
 ### Security
 
-1. **Metrics Endpoint:** Currently public for Prometheus scraping
-   - Production: Use network segmentation or authentication
-   - Alternative: Push metrics to secure gateway
+1. **Metrics Endpoint:** Restricted to internal network only (not publicly accessible)
+   - Prometheus scrapes from internal `regattadesk-internal` network
+   - Public access via Traefik returns 404 Not Found
+   - For troubleshooting: Access metrics via `docker exec` into backend or Prometheus containers
 
 2. **Grafana:** Change default admin password
    - Use OAuth/SSO for authentication
