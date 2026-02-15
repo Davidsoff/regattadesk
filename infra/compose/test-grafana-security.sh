@@ -4,9 +4,11 @@
 
 set -e
 
-echo "=========================================="
+SEPARATOR='=========================================='
+
+echo "$SEPARATOR"
 echo "Grafana Security Validation Test"
-echo "=========================================="
+echo "$SEPARATOR"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -132,9 +134,9 @@ fi
 rm -f "$TEST_ENV_FILE"
 
 echo ""
-echo "=========================================="
+echo "$SEPARATOR"
 echo "✅ All security validation tests passed!"
-echo "=========================================="
+echo "$SEPARATOR"
 echo ""
 echo "Summary:"
 echo "  • Grafana requires explicit credential configuration"
