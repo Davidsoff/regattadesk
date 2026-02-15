@@ -221,18 +221,17 @@ test_authelia_health() {
 
 # Test: Verify Traefik routing configuration
 test_traefik_routing() {
-    test_start "Traefik routing configuration"
+    test_start "Traefik dashboard security (should NOT be accessible)"
     
-    # Check if Traefik dashboard is accessible (if enabled)
+    # Verify dashboard is not accessible (security requirement)
     local status_code
     status_code=$(curl -s -o /dev/null -w "${CURL_HTTP_CODE_FORMAT}" "http://localhost:8080/api/overview" 2>/dev/null || echo "000")
     
-    if [[ "$status_code" == "200" ]]; then
-        log_info "Traefik dashboard accessible"
+    if [[ "$status_code" == "000" ]] || [[ "$status_code" == "404" ]]; then
+        log_info "Traefik dashboard correctly not accessible (secure)"
         test_pass
     else
-        log_warn "Traefik dashboard not accessible (may be disabled)"
-        test_pass
+        test_fail "Traefik dashboard is accessible at http://localhost:8080 (security risk)"
     fi
     return 0
 }
