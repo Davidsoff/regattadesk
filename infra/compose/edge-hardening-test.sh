@@ -11,6 +11,8 @@ BASE_URL="${1:-http://localhost}"
 PASSED=0
 FAILED=0
 WARNINGS=0
+HTTP_CODE_FORMAT='%{http_code}'
+SEPARATOR='=================================================='
 
 # Colors for output
 RED='\033[0;31m'
@@ -21,29 +23,39 @@ NC='\033[0m' # No Color
 
 # Helper functions
 print_test() {
-    echo -e "${BLUE}[TEST]${NC} $1"
+    local message="$1"
+    echo -e "${BLUE}[TEST]${NC} $message"
+    return 0
 }
 
 print_pass() {
-    echo -e "${GREEN}[PASS]${NC} $1"
+    local message="$1"
+    echo -e "${GREEN}[PASS]${NC} $message"
     ((PASSED++))
+    return 0
 }
 
 print_fail() {
-    echo -e "${RED}[FAIL]${NC} $1"
+    local message="$1"
+    echo -e "${RED}[FAIL]${NC} $message"
     ((FAILED++))
+    return 0
 }
 
 print_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    local message="$1"
+    echo -e "${YELLOW}[WARN]${NC} $message"
     ((WARNINGS++))
+    return 0
 }
 
 print_header() {
+    local header="$1"
     echo ""
-    echo "=================================================="
-    echo "$1"
-    echo "=================================================="
+    echo "$SEPARATOR"
+    echo "$header"
+    echo "$SEPARATOR"
+    return 0
 }
 
 # Check if services are accessible
@@ -58,6 +70,7 @@ check_service_availability() {
         echo "Please ensure the stack is running: docker compose up -d"
         exit 1
     fi
+    return 0
 }
 
 # Test security headers
@@ -108,6 +121,7 @@ test_security_headers() {
     else
         print_warn "Permissions-Policy header missing (may be intentional)"
     fi
+    return 0
 }
 
 # Test rate limiting
@@ -121,7 +135,7 @@ test_rate_limiting() {
     RATE_LIMITED_COUNT=0
     
     for i in {1..150}; do
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/health")
+        HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" "${BASE_URL}/api/health")
         if [[ "$HTTP_CODE" == "200" ]]; then
             ((SUCCESS_COUNT++))
         elif [[ "$HTTP_CODE" == "429" ]]; then
@@ -142,12 +156,13 @@ test_rate_limiting() {
     sleep 2
     
     # Verify service is accessible again
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/health")
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" "${BASE_URL}/api/health")
     if [[ "$HTTP_CODE" == "200" ]]; then
         print_pass "Service accessible after rate limit window reset"
     else
         print_fail "Service still rate-limited after window reset (got HTTP $HTTP_CODE)"
     fi
+    return 0
 }
 
 # Test request size limits
@@ -160,7 +175,7 @@ test_request_size_limits() {
     LARGE_PAYLOAD=$(head -c 15728640 /dev/zero | base64)
     
     # Attempt to POST large payload
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" \
         -X POST \
         -H "Content-Type: application/json" \
         -d "{\"data\": \"$LARGE_PAYLOAD\"}" \
@@ -174,7 +189,7 @@ test_request_size_limits() {
     
     # Test with a small payload (should succeed)
     print_test "Testing with small payload (should succeed)..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" \
         -X POST \
         -H "Content-Type: application/json" \
         -d '{"test": "data"}' \
@@ -185,6 +200,7 @@ test_request_size_limits() {
     else
         print_fail "Small request rejected unexpectedly (HTTP $HTTP_CODE)"
     fi
+    return 0
 }
 
 # Test compression
@@ -200,6 +216,7 @@ test_compression() {
     else
         print_warn "Compression header not present (may be intentional for small responses)"
     fi
+    return 0
 }
 
 # Test TLS configuration (if HTTPS is available)
@@ -230,6 +247,7 @@ test_tls_configuration() {
         print_warn "Skipping TLS tests (not using HTTPS)"
         print_warn "For production, use HTTPS with proper TLS configuration"
     fi
+    return 0
 }
 
 # Test timeout handling
@@ -240,7 +258,7 @@ test_timeout_handling() {
     
     # Test with a very short timeout
     START_TIME=$(date +%s)
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 1 "${BASE_URL}/api/health" || echo "timeout")
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" --max-time 1 "${BASE_URL}/api/health" || echo "timeout")
     END_TIME=$(date +%s)
     DURATION=$((END_TIME - START_TIME))
     
@@ -251,6 +269,7 @@ test_timeout_handling() {
     else
         print_warn "Unexpected timeout behavior"
     fi
+    return 0
 }
 
 # Test different endpoint types
@@ -259,7 +278,7 @@ test_endpoint_protection() {
     
     # Test public endpoint
     print_test "Testing public endpoint (/api/health)..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/health")
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" "${BASE_URL}/api/health")
     if [[ "$HTTP_CODE" == "200" ]]; then
         print_pass "Public endpoint accessible without auth"
     else
@@ -268,19 +287,20 @@ test_endpoint_protection() {
     
     # Test protected endpoint (should require auth)
     print_test "Testing protected endpoint (/api/v1/staff)..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/v1/staff/regattas")
+    HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" "${BASE_URL}/api/v1/staff/regattas")
     if [[ "$HTTP_CODE" == "401" ]] || [[ "$HTTP_CODE" == "302" ]]; then
         print_pass "Protected endpoint requires authentication (HTTP $HTTP_CODE)"
     else
         print_warn "Protected endpoint returned unexpected HTTP $HTTP_CODE"
     fi
+    return 0
 }
 
 # Main test execution
 main() {
-    echo "=================================================="
+    echo "$SEPARATOR"
     echo "BC09-002: Edge Hardening Integration Tests"
-    echo "=================================================="
+    echo "$SEPARATOR"
     echo "Base URL: $BASE_URL"
     echo "Started: $(date)"
     echo ""
@@ -304,15 +324,18 @@ main() {
     
     if [[ $FAILED -gt 0 ]]; then
         echo -e "${RED}Some tests failed. Please review the output above.${NC}"
-        exit 1
-    elif [[ $WARNINGS -gt 0 ]]; then
-        echo -e "${YELLOW}Tests passed with warnings. Review recommended.${NC}"
-        exit 0
-    else
-        echo -e "${GREEN}All tests passed successfully!${NC}"
-        exit 0
+        return 1
     fi
+
+    if [[ $WARNINGS -gt 0 ]]; then
+        echo -e "${YELLOW}Tests passed with warnings. Review recommended.${NC}"
+        return 0
+    fi
+
+    echo -e "${GREEN}All tests passed successfully!${NC}"
+    return 0
 }
 
 # Run tests
 main
+exit $?
