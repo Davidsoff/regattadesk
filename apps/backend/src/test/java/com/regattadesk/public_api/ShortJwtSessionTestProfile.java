@@ -10,7 +10,7 @@ public class ShortJwtSessionTestProfile implements QuarkusTestProfile {
     public Map<String, String> getConfigOverrides() {
         return Map.of(
             "jwt.public.ttl-seconds", "2",
-            "jwt.public.refresh-window-percent", "80"
+            "jwt.public.refresh-window-percent", "100"
         );
     }
 }

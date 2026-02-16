@@ -97,12 +97,20 @@ export function useFormatting(locale = 'en') {
    */
   const formatDateISO = (date) => {
     if (!date) return '';
+
+    if (typeof date === 'string') {
+      const dateOnlyMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnlyMatch) {
+        return dateOnlyMatch[0];
+      }
+    }
+
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return '';
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 

@@ -21,6 +21,14 @@ describe('useFormatting', () => {
     it('handles invalid date', () => {
       expect(formatting.formatDateISO('invalid')).toBe('');
     });
+
+    it('keeps date-only ISO input stable', () => {
+      expect(formatting.formatDateISO('2026-02-06')).toBe('2026-02-06');
+    });
+
+    it('uses UTC calendar date for timestamp inputs', () => {
+      expect(formatting.formatDateISO('2026-02-06T00:30:00Z')).toBe('2026-02-06');
+    });
   });
 
   describe('formatScheduledTime', () => {
@@ -101,6 +109,20 @@ describe('useFormatting', () => {
 
     it('handles null input', () => {
       expect(formatting.formatTimestampISO(null)).toBe('');
+    });
+  });
+
+  describe('locale and timezone behavior', () => {
+    it('formats display date in Dutch locale', () => {
+      const nlFormatting = useFormatting('nl');
+      const date = new Date('2026-02-06T12:00:00Z');
+      expect(nlFormatting.formatDateDisplay(date, 'Europe/Amsterdam')).toBe('06-02-2026');
+    });
+
+    it('formats timestamp display in regatta timezone around DST', () => {
+      const nlFormatting = useFormatting('nl');
+      const date = new Date('2026-03-29T01:30:00Z');
+      expect(nlFormatting.formatTimestampDisplay(date, 'Europe/Amsterdam')).toBe('29-03-2026 03:30');
     });
   });
 });

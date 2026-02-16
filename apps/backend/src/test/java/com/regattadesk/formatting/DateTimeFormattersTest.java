@@ -96,7 +96,7 @@ class DateTimeFormattersTest {
             ZoneId.of("Europe/Amsterdam")
         );
         String formatted = DateTimeFormatters.formatTimestampISO(dateTime);
-        assertTrue(formatted.startsWith("2026-02-06T14:30:00"));
+        assertEquals("2026-02-06T14:30:00+01:00", formatted);
     }
     
     @Test

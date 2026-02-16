@@ -26,9 +26,14 @@ function getDefaultLocale() {
   }
 }
 
+const defaultLocale = getDefaultLocale();
+if (typeof document !== 'undefined') {
+  document.documentElement.setAttribute('lang', defaultLocale);
+}
+
 const i18n = createI18n({
   legacy: false, // Use Composition API mode
-  locale: getDefaultLocale(),
+  locale: defaultLocale,
   fallbackLocale: 'en',
   messages: {
     en,

@@ -21,6 +21,7 @@ import java.util.Locale;
  * - Minimum 300 DPI
  */
 public class PdfGenerator {
+    private static final String PDF_FONT_FAMILY = "Liberation Sans";
     
     // A4 page size in points (1 point = 1/72 inch)
     private static final Rectangle PAGE_SIZE = PageSize.A4;
@@ -38,6 +39,39 @@ public class PdfGenerator {
     private static final float FONT_SIZE_TITLE = 14f;
     private static final float FONT_SIZE_BODY = 10f;
     private static final float FONT_SIZE_META = 8f;
+
+    static {
+        // Register system font directories so Liberation Sans can be resolved when available.
+        FontFactory.registerDirectories();
+    }
+
+    private static Font regattaFont(float size, int style) {
+        Font font = FontFactory.getFont(PDF_FONT_FAMILY, BaseFont.IDENTITY_H, true, size, style);
+        if (font.getBaseFont() == null && font.getFamily() == Font.UNDEFINED) {
+            return new Font(Font.HELVETICA, size, style);
+        }
+        return font;
+    }
+
+    private static String generatedLabel(Locale locale) {
+        return isDutch(locale) ? "Gegenereerd" : "Generated";
+    }
+
+    private static String drawVersionLabel(Locale locale) {
+        return isDutch(locale) ? "Lotingversie" : "Draw Version";
+    }
+
+    private static String resultsVersionLabel(Locale locale) {
+        return isDutch(locale) ? "Resultatenversie" : "Results Version";
+    }
+
+    private static String pageLabel(Locale locale) {
+        return isDutch(locale) ? "Pagina" : "Page";
+    }
+
+    private static boolean isDutch(Locale locale) {
+        return locale != null && "nl".equals(locale.getLanguage());
+    }
     
     /**
      * Create a new PDF document with RegattaDesk standard formatting
@@ -72,8 +106,8 @@ public class PdfGenerator {
                 PdfContentByte cb = writer.getDirectContent();
                 
                 // Header
-                Font headerTitleFont = new Font(Font.HELVETICA, FONT_SIZE_TITLE, Font.BOLD);
-                Font headerMetaFont = new Font(Font.HELVETICA, FONT_SIZE_META, Font.NORMAL);
+                Font headerTitleFont = regattaFont(FONT_SIZE_TITLE, Font.BOLD);
+                Font headerMetaFont = regattaFont(FONT_SIZE_META, Font.NORMAL);
                 
                 // Title on the left
                 ColumnText.showTextAligned(cb, Element.ALIGN_LEFT,
@@ -86,24 +120,24 @@ public class PdfGenerator {
                 
                 String timestampStr = DateTimeFormatters.formatTimestampDisplay(timestamp, locale);
                 ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                    new Phrase("Generated: " + timestampStr, headerMetaFont),
+                    new Phrase(generatedLabel(locale) + ": " + timestampStr, headerMetaFont),
                     rightX, topY, 0);
                 
                 if (drawRevision != null) {
                     ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                        new Phrase("Draw Version: v" + drawRevision, headerMetaFont),
+                        new Phrase(drawVersionLabel(locale) + ": v" + drawRevision, headerMetaFont),
                         rightX, topY - 10, 0);
                 }
                 
                 if (resultsRevision != null) {
                     ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                        new Phrase("Results Version: v" + resultsRevision, headerMetaFont),
+                        new Phrase(resultsVersionLabel(locale) + ": v" + resultsRevision, headerMetaFont),
                         rightX, topY - 20, 0);
                 }
                 
                 // Page number
                 ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT,
-                    new Phrase("Page " + writer.getPageNumber(), headerMetaFont),
+                    new Phrase(pageLabel(locale) + " " + writer.getPageNumber(), headerMetaFont),
                     rightX, topY - 30, 0);
                 
                 // Header border line
@@ -113,7 +147,7 @@ public class PdfGenerator {
                 cb.stroke();
                 
                 // Footer with RegattaDesk wordmark
-                Font footerFont = new Font(Font.HELVETICA, FONT_SIZE_META, Font.BOLD);
+                Font footerFont = regattaFont(FONT_SIZE_META, Font.BOLD);
                 ColumnText.showTextAligned(cb, Element.ALIGN_CENTER,
                     new Phrase("RegattaDesk", footerFont),
                     (document.left() + document.right()) / 2, 
@@ -152,8 +186,8 @@ public class PdfGenerator {
             document.open();
             
             // Add sample content
-            Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
-            Font bodyFont = new Font(Font.HELVETICA, FONT_SIZE_BODY, Font.NORMAL);
+            Font titleFont = regattaFont(16, Font.BOLD);
+            Font bodyFont = regattaFont(FONT_SIZE_BODY, Font.NORMAL);
             
             Paragraph title = new Paragraph("Sample Results", titleFont);
             title.setSpacingAfter(20);
@@ -165,7 +199,7 @@ public class PdfGenerator {
             table.setSpacingBefore(10);
             
             // Header row
-            Font tableHeaderFont = new Font(Font.HELVETICA, FONT_SIZE_BODY, Font.BOLD);
+            Font tableHeaderFont = regattaFont(FONT_SIZE_BODY, Font.BOLD);
             String[] headers = {"Rank", "Bib", "Crew", "Club", "Time"};
             for (String header : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(header, tableHeaderFont));
@@ -175,7 +209,7 @@ public class PdfGenerator {
             }
             
             // Sample data rows
-            Font tableDataFont = new Font(Font.HELVETICA, FONT_SIZE_BODY, Font.NORMAL);
+            Font tableDataFont = regattaFont(FONT_SIZE_BODY, Font.NORMAL);
             String[][] data = {
                 {"1", "42", "Sample Crew A", "Rowing Club A", "5:23.456"},
                 {"2", "17", "Sample Crew B", "Rowing Club B", "5:24.789"},

@@ -1,5 +1,7 @@
 package com.regattadesk.pdf;
 
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.ZoneId;
@@ -16,6 +18,15 @@ class PdfGeneratorTest {
         assertTrue(pdf[2] == 'D');
         assertTrue(pdf[3] == 'F');
         assertTrue(pdf[4] == '-');
+    }
+
+    private static String extractFirstPageText(byte[] pdf) throws IOException {
+        PdfReader reader = new PdfReader(pdf);
+        try {
+            return new PdfTextExtractor(reader).getTextFromPage(1);
+        } finally {
+            reader.close();
+        }
     }
     
     @Test
@@ -36,6 +47,13 @@ class PdfGeneratorTest {
         assertNotNull(pdf);
         assertTrue(pdf.length > 0);
         assertPdfMagicBytes(pdf);
+
+        String text = extractFirstPageText(pdf);
+        assertTrue(text.contains(regattaName));
+        assertTrue(text.contains("Gegenereerd:"));
+        assertTrue(text.contains("Lotingversie: v1"));
+        assertTrue(text.contains("Resultatenversie: v3"));
+        assertTrue(text.contains("Pagina 1"));
     }
     
     @Test
@@ -56,6 +74,13 @@ class PdfGeneratorTest {
         assertNotNull(pdf);
         assertTrue(pdf.length > 0);
         assertPdfMagicBytes(pdf);
+
+        String text = extractFirstPageText(pdf);
+        assertTrue(text.contains(regattaName));
+        assertTrue(text.contains("Generated:"));
+        assertTrue(text.contains("Draw Version: v2"));
+        assertTrue(text.contains("Results Version: v5"));
+        assertTrue(text.contains("Page 1"));
     }
     
     @Test
@@ -73,6 +98,12 @@ class PdfGeneratorTest {
         assertNotNull(pdf);
         assertTrue(pdf.length > 0);
         assertPdfMagicBytes(pdf);
+
+        String text = extractFirstPageText(pdf);
+        assertTrue(text.contains(regattaName));
+        assertTrue(text.contains("Generated:"));
+        assertFalse(text.contains("Draw Version:"));
+        assertFalse(text.contains("Results Version:"));
     }
 
     @Test

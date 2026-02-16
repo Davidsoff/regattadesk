@@ -7,14 +7,14 @@
       <div class="print-header__meta-item">
         <strong>{{ t('print.generated') }}:</strong> {{ formattedTimestamp }}
       </div>
-      <div class="print-header__meta-item" v-if="drawRevision">
+      <div class="print-header__meta-item" v-if="drawRevision !== null && drawRevision !== undefined">
         <strong>{{ t('print.draw_version') }}:</strong> v{{ drawRevision }}
       </div>
-      <div class="print-header__meta-item" v-if="resultsRevision">
+      <div class="print-header__meta-item" v-if="resultsRevision !== null && resultsRevision !== undefined">
         <strong>{{ t('print.results_version') }}:</strong> v{{ resultsRevision }}
       </div>
-      <div class="print-header__meta-item" v-if="pageNumber">
-        <strong>{{ t('print.page') }}:</strong> {{ pageNumber }}<span v-if="totalPages"> {{ t('print.of') }} {{ totalPages }}</span>
+      <div class="print-header__meta-item" v-if="pageNumber !== null && pageNumber !== undefined">
+        <strong>{{ t('print.page') }}:</strong> {{ pageNumber }}<span v-if="totalPages !== null && totalPages !== undefined"> {{ t('print.of') }} {{ totalPages }}</span>
       </div>
     </div>
   </div>

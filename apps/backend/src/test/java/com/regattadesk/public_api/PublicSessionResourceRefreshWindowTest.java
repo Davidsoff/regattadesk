@@ -18,7 +18,7 @@ class PublicSessionResourceRefreshWindowTest {
     private static final String ENDPOINT = "/public/session";
 
     @Test
-    void testCookieRefreshWithinRefreshWindow() throws InterruptedException {
+    void testCookieRefreshWithinRefreshWindow() {
         Response createResponse = given()
             .when().post(ENDPOINT)
             .then()
@@ -27,8 +27,6 @@ class PublicSessionResourceRefreshWindowTest {
 
         Cookie initialCookie = createResponse.getDetailedCookie(COOKIE_NAME);
         assertNotNull(initialCookie);
-
-        Thread.sleep(1200);
 
         Response refreshResponse = given()
             .cookie(COOKIE_NAME, initialCookie.getValue())

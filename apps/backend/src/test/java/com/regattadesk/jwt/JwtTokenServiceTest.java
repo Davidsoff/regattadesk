@@ -1,10 +1,13 @@
 package com.regattadesk.jwt;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jwt.SignedJWT;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
 import com.regattadesk.jwt.JwtTokenService.ValidatedToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -30,7 +33,7 @@ class JwtTokenServiceTest {
         
         assertNotNull(token);
         assertFalse(token.isEmpty());
-        assertTrue(token.contains("."), "JWT should have three parts separated by dots");
+        assertEquals(3, token.split("\\.").length, "JWT should have exactly 3 segments");
     }
     
     @Test
@@ -115,16 +118,12 @@ class JwtTokenServiceTest {
     }
     
     @Test
-    void testTokenContainsKid() throws InvalidTokenException {
+    void testTokenContainsKid() throws ParseException {
         String token = service.issueToken();
-        
-        // Parse the JWT header to verify kid is present
-        String[] parts = token.split("\\.");
-        assertEquals(3, parts.length, "JWT should have 3 parts");
-        
-        // The kid should be in the header
-        ValidatedToken validated = service.validateToken(token);
-        assertNotNull(validated); // If this passes, the token was signed with the correct kid
+
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        assertEquals(config.kid(), signedJWT.getHeader().getKeyID(), "JWT kid header mismatch");
+        assertEquals(JWSAlgorithm.HS256, signedJWT.getHeader().getAlgorithm(), "JWT algorithm mismatch");
     }
     
     @Test
