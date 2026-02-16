@@ -119,4 +119,11 @@ class PdfGeneratorTest {
         assertTrue(pdf.length > 0);
         assertPdfMagicBytes(pdf);
     }
+
+    @Test
+    void testGenerateSamplePdfWithoutTimezoneThrows() {
+        assertThrows(IllegalArgumentException.class, () ->
+            PdfGenerator.generateSamplePdf("Test Regatta", 1, 2, Locale.ENGLISH)
+        );
+    }
 }

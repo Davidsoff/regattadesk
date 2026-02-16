@@ -136,4 +136,32 @@ class DateTimeFormattersTest {
     void testToRegattaTimezoneNull() {
         assertNull(DateTimeFormatters.toRegattaTimezone(null, ZoneId.of("UTC")));
     }
+
+    @Test
+    void testRoundTimeMillisecondsPrecision() {
+        // precision=3 should preserve millisecond precision.
+        assertEquals(1234, DateTimeFormatters.roundTime(1234, 3));
+        assertEquals(1235, DateTimeFormatters.roundTime(1235, 3));
+    }
+
+    @Test
+    void testRoundTimeTensOfMillisecondsPrecision() {
+        // precision=2 should round to nearest 10ms.
+        assertEquals(1230, DateTimeFormatters.roundTime(1234, 2));
+        assertEquals(1240, DateTimeFormatters.roundTime(1235, 2));
+    }
+
+    @Test
+    void testRoundTimeHundredsOfMillisecondsPrecision() {
+        // precision=1 should round to nearest 100ms.
+        assertEquals(1200, DateTimeFormatters.roundTime(1234, 1));
+        assertEquals(1300, DateTimeFormatters.roundTime(1250, 1));
+    }
+
+    @Test
+    void testRoundTimeNoPrecisionReduction() {
+        // precision<=0 should preserve original value.
+        assertEquals(1234, DateTimeFormatters.roundTime(1234, 0));
+        assertEquals(1234, DateTimeFormatters.roundTime(1234, -1));
+    }
 }
