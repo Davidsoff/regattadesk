@@ -1,17 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useFormatting } from '../composables/useFormatting';
-import { createI18n } from 'vue-i18n';
-
-// Setup i18n for tests
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  fallbackLocale: 'en',
-  messages: {
-    en: {},
-    nl: {}
-  }
-});
 
 describe('useFormatting', () => {
   let formatting;

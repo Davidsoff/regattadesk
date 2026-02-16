@@ -188,7 +188,8 @@ public class DateTimeFormatters {
             return milliseconds;
         }
 
-        long scale = (long) Math.pow(10, precision);
+        int clampedPrecision = Math.min(3, precision);
+        long scale = (long) Math.pow(10, 3 - clampedPrecision);
         return Math.round((double) milliseconds / scale) * scale;
     }
 }

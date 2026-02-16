@@ -132,6 +132,10 @@ public class PdfGenerator {
     public static byte[] generateSamplePdf(String regattaName, Integer drawRevision,
                                           Integer resultsRevision, Locale locale,
                                           ZoneId regattaTimezone) throws IOException {
+        if (regattaTimezone == null) {
+            throw new IllegalArgumentException("regattaTimezone is required");
+        }
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = createDocument();
         
@@ -139,8 +143,7 @@ public class PdfGenerator {
             PdfWriter writer = PdfWriter.getInstance(document, baos);
             
             // Add header/footer event handler
-            ZoneId effectiveTimezone = regattaTimezone != null ? regattaTimezone : ZoneId.systemDefault();
-            ZonedDateTime now = ZonedDateTime.now(effectiveTimezone);
+            ZonedDateTime now = ZonedDateTime.now(regattaTimezone);
             RegattaDeskHeaderFooter headerFooter = new RegattaDeskHeaderFooter(
                 regattaName, now, drawRevision, resultsRevision, locale
             );
@@ -198,8 +201,9 @@ public class PdfGenerator {
         return baos.toByteArray();
     }
 
+    @Deprecated(forRemoval = true)
     public static byte[] generateSamplePdf(String regattaName, Integer drawRevision,
                                           Integer resultsRevision, Locale locale) throws IOException {
-        return generateSamplePdf(regattaName, drawRevision, resultsRevision, locale, null);
+        throw new IllegalArgumentException("regattaTimezone is required");
     }
 }
