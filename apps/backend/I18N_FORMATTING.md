@@ -85,8 +85,8 @@ The `PdfGenerator` class provides utilities for generating PDF documents with Re
 
 ### Features
 
-- **A4 Page Size**: 210mm × 297mm
-- **Margins**: 20mm top/bottom, 15mm left/right
+- **A4 Page Size**: 210 mm × 297 mm
+- **Margins**: 20 mm top/bottom, 15 mm left/right
 - **Monochrome**: Grayscale-only for print-friendliness
 - **Header on Every Page**: Includes regatta name, timestamp, revisions, page number
 - **Footer**: RegattaDesk wordmark
@@ -95,6 +95,7 @@ The `PdfGenerator` class provides utilities for generating PDF documents with Re
 
 ```java
 import com.regattadesk.pdf.PdfGenerator;
+import java.time.ZoneId;
 import java.util.Locale;
 
 String regattaName = "Amsterdam Head Race 2026";
@@ -106,7 +107,8 @@ byte[] pdfBytes = PdfGenerator.generateSamplePdf(
     regattaName,
     drawRevision,
     resultsRevision,
-    locale
+    locale,
+    ZoneId.of("Europe/Amsterdam")
 );
 
 // Save or stream the PDF bytes
@@ -152,16 +154,15 @@ byte[] pdfBytes = baos.toByteArray();
 
 ### OpenPDF
 
-RegattaDesk uses [OpenPDF](https://github.com/LibrePDF/OpenPDF) (version 2.0.4) for PDF generation.
-
 - **License**: LGPL (Lesser General Public License)
 - **Purpose**: Generate A4 PDFs with custom headers and monochrome-friendly styling
 - **Maven Dependency**:
+
   ```xml
   <dependency>
-      <groupId>com.github.librepdf</groupId>
-      <artifactId>openpdf</artifactId>
-      <version>2.0.4</version>
+      <groupId>io.quarkiverse.openpdf</groupId>
+      <artifactId>quarkus-openpdf</artifactId>
+      <version>3.3.1</version>
   </dependency>
   ```
 
@@ -183,7 +184,7 @@ All formatters and PDF generation functionality have comprehensive unit tests.
 ### Test Coverage
 
 - **DateTimeFormattersTest**: 20 tests covering all formatting methods
-- **PdfGeneratorTest**: 3 tests verifying PDF generation and structure
+- **PdfGeneratorTest**: 6 tests verifying PDF generation and structure
 
 ## Design Requirements
 

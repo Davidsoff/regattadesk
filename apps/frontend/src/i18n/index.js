@@ -7,14 +7,23 @@ import nl from './locales/nl.json';
  * Defaults to 'nl' (Dutch) as per RegattaDesk requirements.
  */
 function getDefaultLocale() {
-  const stored = localStorage.getItem('regattadesk-locale');
+  let stored = null;
+  try {
+    stored = localStorage.getItem('regattadesk-locale');
+  } catch {
+    stored = null;
+  }
+
   if (stored && ['nl', 'en'].includes(stored)) {
     return stored;
   }
-  
-  // Check browser language, but default to 'nl' if not supported
-  const browserLang = navigator.language.split('-')[0];
-  return ['nl', 'en'].includes(browserLang) ? browserLang : 'nl';
+
+  try {
+    const browserLang = navigator.language.split('-')[0];
+    return ['nl', 'en'].includes(browserLang) ? browserLang : 'nl';
+  } catch {
+    return 'nl';
+  }
 }
 
 const i18n = createI18n({
@@ -39,6 +48,13 @@ export function setLocale(locale) {
   }
   
   i18n.global.locale.value = locale;
-  localStorage.setItem('regattadesk-locale', locale);
-  document.documentElement.setAttribute('lang', locale);
+  try {
+    localStorage.setItem('regattadesk-locale', locale);
+  } catch {
+    // Storage may be unavailable in some environments.
+  }
+
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', locale);
+  }
 }

@@ -187,8 +187,8 @@ public class DateTimeFormatters {
         if (precision <= 0) {
             return milliseconds;
         }
-        
-        double factor = Math.pow(10, precision);
-        return Math.round(milliseconds * factor) / (long) factor;
+
+        long scale = (long) Math.pow(10, precision);
+        return Math.round((double) milliseconds / scale) * scale;
     }
 }

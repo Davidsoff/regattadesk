@@ -22,7 +22,7 @@ describe('useFormatting', () => {
 
   describe('formatDateISO', () => {
     it('formats date in ISO 8601 format', () => {
-      const date = new Date('2026-02-06T14:30:00Z');
+      const date = new Date(2026, 1, 6, 12, 0, 0);
       expect(formatting.formatDateISO(date)).toBe('2026-02-06');
     });
 
@@ -37,10 +37,9 @@ describe('useFormatting', () => {
 
   describe('formatScheduledTime', () => {
     it('formats time in 24-hour format', () => {
-      const time = new Date('2026-02-06T14:30:00Z');
+      const time = new Date(2026, 1, 6, 14, 30, 0);
       const formatted = formatting.formatScheduledTime(time);
-      // The result depends on the local timezone
-      expect(formatted).toMatch(/^\d{2}:\d{2}$/);
+      expect(formatted).toBe('14:30');
     });
 
     it('handles null input', () => {
@@ -108,8 +107,8 @@ describe('useFormatting', () => {
   describe('formatTimestampISO', () => {
     it('formats timestamp in ISO 8601 format', () => {
       const date = new Date('2026-02-06T14:30:00Z');
-      const formatted = formatting.formatTimestampISO(date);
-      expect(formatted).toBe('2026-02-06T14:30:00.000Z');
+      const formatted = formatting.formatTimestampISO(date, 'UTC');
+      expect(formatted).toBe('2026-02-06T14:30:00+00:00');
     });
 
     it('handles null input', () => {

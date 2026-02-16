@@ -4,6 +4,18 @@
  * Margins: 20mm top/bottom, 15mm left/right
  */
 
+:root {
+  --rd-print-font-sans: var(--rd-font-family-sans, Inter, Arial, sans-serif);
+  --rd-print-font-mono: var(--rd-font-family-mono, "JetBrains Mono", "Courier New", monospace);
+  --rd-print-text: var(--rd-text, #0b1220);
+  --rd-print-muted: var(--rd-text-muted, #475569);
+  --rd-print-bg: var(--rd-bg, #ffffff);
+  --rd-print-surface: var(--rd-surface, #f8fafc);
+  --rd-print-border: var(--rd-border, #d0d7e2);
+  --rd-print-spacing-xs: var(--rd-space-1, 4px);
+  --rd-print-spacing-sm: var(--rd-space-2, 8px);
+}
+
 @media print {
   /* Reset and page setup */
   * {
@@ -20,11 +32,11 @@
   body {
     margin: 0;
     padding: 0;
-    font-family: 'Liberation Sans', 'Arial', sans-serif;
+    font-family: var(--rd-print-font-sans);
     font-size: 10pt;
     line-height: 1.4;
-    color: #000;
-    background: #fff;
+    color: var(--rd-print-text);
+    background: var(--rd-print-bg);
   }
 
   /* Hide non-printable elements */
@@ -45,7 +57,7 @@
     align-items: flex-start;
     padding-bottom: 8pt;
     margin-bottom: 12pt;
-    border-bottom: 2pt solid #000;
+    border-bottom: 2pt solid var(--rd-print-text);
     font-size: 9pt;
   }
 
@@ -74,14 +86,14 @@
     right: 0;
     text-align: center;
     font-size: 8pt;
-    color: #666;
+    color: var(--rd-print-muted);
     padding-top: 8pt;
-    border-top: 1pt solid #ccc;
+    border-top: 1pt solid var(--rd-print-border);
   }
 
   /* Typography - monochrome friendly */
   h1, h2, h3, h4, h5, h6 {
-    page-break-after: avoid;
+    break-after: avoid;
     font-weight: 600;
     margin-top: 0;
     margin-bottom: 8pt;
@@ -109,7 +121,7 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    page-break-inside: auto;
+    break-inside: auto;
     margin-bottom: 12pt;
   }
 
@@ -122,26 +134,26 @@
   }
 
   tr {
-    page-break-inside: avoid;
-    page-break-after: auto;
+    break-inside: avoid;
+    break-after: auto;
   }
 
   th,
   td {
     padding: 4pt 6pt;
     text-align: left;
-    border: 1pt solid #333;
+    border: 1pt solid var(--rd-print-text);
   }
 
   th {
     font-weight: 600;
-    background: #f0f0f0;
-    border-bottom: 2pt solid #000;
+    background: var(--rd-print-surface);
+    border-bottom: 2pt solid var(--rd-print-text);
   }
 
   /* Zebra striping for readability (grayscale) */
   tbody tr:nth-child(even) {
-    background: #f8f8f8;
+    background: var(--rd-print-surface);
   }
 
   /* Numeric/time columns - tabular numerals */
@@ -149,7 +161,7 @@
   .time,
   .bib,
   .rank {
-    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-family: var(--rd-print-font-mono);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
@@ -159,7 +171,7 @@
   .status-chip {
     display: inline-block;
     padding: 1pt 4pt;
-    border: 1pt solid #333;
+    border: 1pt solid var(--rd-print-text);
     border-radius: 2pt;
     font-size: 8pt;
     font-weight: 500;
@@ -197,7 +209,7 @@
   a[href]:after {
     content: " (" attr(href) ")";
     font-size: 8pt;
-    color: #666;
+    color: var(--rd-print-muted);
   }
 
   a[href^="#"]:after,
@@ -209,19 +221,19 @@
   .avoid-break,
   .event-section,
   .results-group {
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   /* Section breaks */
   .page-break {
-    page-break-after: always;
+    break-after: page;
   }
 
   /* Logo/wordmark in footer */
   .print-footer__logo {
     font-size: 8pt;
     font-weight: 600;
-    color: #666;
+    color: var(--rd-print-muted);
     margin-top: 4pt;
   }
 
@@ -233,15 +245,15 @@
 
 /* Print preview styles (applied when .print-preview class is on body) */
 body.print-preview {
-  background: #e0e0e0;
-  padding: 20px;
+  background: var(--rd-surface-2, #eef2f7);
+  padding: var(--rd-space-5, 24px);
 }
 
 body.print-preview .print-page {
   width: 210mm;
   min-height: 297mm;
-  background: white;
+  background: var(--rd-print-bg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  margin: 0 auto 20px;
+  margin: 0 auto var(--rd-space-5, 24px);
   padding: 20mm 15mm;
 }

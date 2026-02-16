@@ -56,8 +56,8 @@ const props = defineProps({
   }
 });
 
-const { t } = useI18n();
-const { formatTimestampDisplay } = useFormatting();
+const { t, locale } = useI18n();
+const { formatTimestampDisplay } = useFormatting(locale);
 
 const formattedTimestamp = computed(() => {
   return formatTimestampDisplay(props.timestamp, props.regattaTimezone);

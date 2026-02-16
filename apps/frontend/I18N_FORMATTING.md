@@ -14,22 +14,25 @@ RegattaDesk supports Dutch (nl) and English (en) localization with proper date/t
 ### Date and Time Formatting
 
 #### Technical Formats (for APIs)
+
 - Date: ISO 8601 `YYYY-MM-DD` (e.g., `2026-02-06`)
 - Timestamp: ISO 8601 with timezone (e.g., `2026-02-06T14:30:00+01:00`)
 
 #### Display Formats (locale-dependent)
+
 - **Dutch (nl)**: `DD-MM-YYYY` (e.g., `06-02-2026`)
 - **English (en)**: `YYYY-MM-DD` (e.g., `2026-02-06`)
 
 #### Time Formats
+
 - Scheduled times: 24-hour format `HH:mm` (e.g., `14:30`)
 - Elapsed times: `M:SS.mmm` or `H:MM:SS.mmm` (e.g., `5:23.456` or `1:15:42.789`)
 - Delta times: `+M:SS.mmm` or `+H:MM:SS.mmm` (e.g., `+1:15.234` or `+1:05:30.500`)
 
 ### Print and PDF Output
 
-- **Page Size**: A4 (210mm × 297mm)
-- **Margins**: 20mm top/bottom, 15mm left/right
+- **Page Size**: A4 (210 mm × 297 mm)
+- **Margins**: 20 mm top/bottom, 15 mm left/right
 - **Design**: Monochrome-friendly (grayscale only)
 - **Header includes**:
   - Regatta name
@@ -191,6 +194,7 @@ String delta = DateTimeFormatters.formatDeltaTime(elapsedMs); // "+5:23.456"
 
 ```java
 import com.regattadesk.pdf.PdfGenerator;
+import java.time.ZoneId;
 import java.util.Locale;
 
 // Generate a sample PDF
@@ -203,7 +207,8 @@ byte[] pdfBytes = PdfGenerator.generateSamplePdf(
     regattaName, 
     drawRevision, 
     resultsRevision, 
-    locale
+    locale,
+    ZoneId.of("Europe/Amsterdam")
 );
 
 // Save or return the PDF bytes
@@ -259,7 +264,7 @@ See `src/i18n/locales/en.json` and `src/i18n/locales/nl.json` for complete trans
 }
 ```
 
-2. Use in components:
+1. Use in components:
 
 ```vue
 <template>
@@ -273,6 +278,7 @@ See `src/i18n/locales/en.json` and `src/i18n/locales/nl.json` for complete trans
 ### Frontend Tests
 
 Run frontend tests:
+
 ```bash
 cd apps/frontend
 npm run test
@@ -281,6 +287,7 @@ npm run test
 ### Backend Tests
 
 Run backend tests:
+
 ```bash
 cd apps/backend
 ./mvnw test

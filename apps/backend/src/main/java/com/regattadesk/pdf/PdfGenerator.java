@@ -6,6 +6,7 @@ import com.regattadesk.formatting.DateTimeFormatters;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Locale;
 
@@ -128,8 +129,9 @@ public class PdfGenerator {
      * Generate a PDF with sample regatta data
      * This is a basic implementation to demonstrate the structure
      */
-    public static byte[] generateSamplePdf(String regattaName, Integer drawRevision, 
-                                          Integer resultsRevision, Locale locale) throws IOException {
+    public static byte[] generateSamplePdf(String regattaName, Integer drawRevision,
+                                          Integer resultsRevision, Locale locale,
+                                          ZoneId regattaTimezone) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = createDocument();
         
@@ -137,7 +139,8 @@ public class PdfGenerator {
             PdfWriter writer = PdfWriter.getInstance(document, baos);
             
             // Add header/footer event handler
-            ZonedDateTime now = ZonedDateTime.now();
+            ZoneId effectiveTimezone = regattaTimezone != null ? regattaTimezone : ZoneId.systemDefault();
+            ZonedDateTime now = ZonedDateTime.now(effectiveTimezone);
             RegattaDeskHeaderFooter headerFooter = new RegattaDeskHeaderFooter(
                 regattaName, now, drawRevision, resultsRevision, locale
             );
@@ -193,5 +196,10 @@ public class PdfGenerator {
         }
         
         return baos.toByteArray();
+    }
+
+    public static byte[] generateSamplePdf(String regattaName, Integer drawRevision,
+                                          Integer resultsRevision, Locale locale) throws IOException {
+        return generateSamplePdf(regattaName, drawRevision, resultsRevision, locale, null);
     }
 }
