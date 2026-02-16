@@ -146,6 +146,7 @@
                         <exclude>**/*IntegrationTest.java</exclude>
                         <exclude>**/*ContractTest.java</exclude>
                         <exclude>**/*PactTest.java</exclude>
+                        <exclude>**/*PerformanceTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

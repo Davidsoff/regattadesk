@@ -232,9 +232,11 @@ export function useFormatting(locale = 'en') {
    */
   const roundTime = (milliseconds, precision = 3) => {
     if (milliseconds == null || Number.isNaN(milliseconds)) return 0;
+    if (precision <= 0) return milliseconds;
 
-    const factor = Math.pow(10, precision);
-    return Math.round(milliseconds * factor) / factor;
+    const clampedPrecision = Math.min(3, precision);
+    const scale = Math.pow(10, 3 - clampedPrecision);
+    return Math.round(milliseconds / scale) * scale;
   };
 
   return {

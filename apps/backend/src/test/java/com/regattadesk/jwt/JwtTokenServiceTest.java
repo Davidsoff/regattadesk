@@ -1,15 +1,21 @@
 package com.regattadesk.jwt;
 
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
 import com.regattadesk.jwt.JwtTokenService.ValidatedToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -134,6 +140,51 @@ class JwtTokenServiceTest {
         assertThrows(IllegalArgumentException.class, () -> {
             new JwtTokenService(shortSecretConfig);
         });
+    }
+
+    @Test
+    void testValidateTokenMissingSid() throws Exception {
+        String token = signToken(
+            new JWTClaimsSet.Builder()
+                .issueTime(Date.from(Instant.now()))
+                .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+                .build()
+        );
+
+        assertThrows(InvalidTokenException.class, () -> service.validateToken(token));
+    }
+
+    @Test
+    void testValidateTokenMissingIat() throws Exception {
+        String token = signToken(
+            new JWTClaimsSet.Builder()
+                .claim("sid", UUID.randomUUID().toString())
+                .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+                .build()
+        );
+
+        assertThrows(InvalidTokenException.class, () -> service.validateToken(token));
+    }
+
+    @Test
+    void testValidateTokenMissingExp() throws Exception {
+        String token = signToken(
+            new JWTClaimsSet.Builder()
+                .claim("sid", UUID.randomUUID().toString())
+                .issueTime(Date.from(Instant.now()))
+                .build()
+        );
+
+        assertThrows(InvalidTokenException.class, () -> service.validateToken(token));
+    }
+
+    private String signToken(JWTClaimsSet claims) throws Exception {
+        SignedJWT token = new SignedJWT(
+            new JWSHeader.Builder(JWSAlgorithm.HS256).keyID(config.kid()).build(),
+            claims
+        );
+        token.sign(new MACSigner(config.secret().getBytes(StandardCharsets.UTF_8)));
+        return token.serialize();
     }
     
     /**

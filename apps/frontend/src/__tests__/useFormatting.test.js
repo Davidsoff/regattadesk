@@ -85,14 +85,16 @@ describe('useFormatting', () => {
   });
 
   describe('roundTime', () => {
-    it('rounds using half-up rule', () => {
-      expect(formatting.roundTime(1234.567, 0)).toBe(1235);
-      expect(formatting.roundTime(1234.445, 0)).toBe(1234);
+    it('keeps original value when precision is zero or negative', () => {
+      expect(formatting.roundTime(1234, 0)).toBe(1234);
+      expect(formatting.roundTime(1234, -1)).toBe(1234);
     });
 
-    it('handles precision parameter', () => {
-      expect(formatting.roundTime(1234.567, 2)).toBe(1234.57);
-      expect(formatting.roundTime(1234.567, 1)).toBe(1234.6);
+    it('rounds to tens and hundreds of milliseconds', () => {
+      expect(formatting.roundTime(1234, 2)).toBe(1230);
+      expect(formatting.roundTime(1235, 2)).toBe(1240);
+      expect(formatting.roundTime(1234, 1)).toBe(1200);
+      expect(formatting.roundTime(1250, 1)).toBe(1300);
     });
 
     it('handles null input', () => {

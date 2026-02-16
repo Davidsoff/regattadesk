@@ -4,7 +4,10 @@ import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,7 +26,8 @@ class PdfGeneratorTest {
     private static String extractFirstPageText(byte[] pdf) throws IOException {
         PdfReader reader = new PdfReader(pdf);
         try {
-            return new PdfTextExtractor(reader).getTextFromPage(1);
+            String pageText = new PdfTextExtractor(reader).getTextFromPage(1);
+            return pageText.replaceAll("\\s+", " ").trim();
         } finally {
             reader.close();
         }
@@ -41,7 +45,8 @@ class PdfGeneratorTest {
             drawRevision,
             resultsRevision,
             locale,
-            ZoneId.of("Europe/Amsterdam")
+            ZoneId.of("Europe/Amsterdam"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
         
         assertNotNull(pdf);
@@ -51,6 +56,7 @@ class PdfGeneratorTest {
         String text = extractFirstPageText(pdf);
         assertTrue(text.contains(regattaName));
         assertTrue(text.contains("Gegenereerd:"));
+        assertTrue(text.contains("06-02-2026 14:30"));
         assertTrue(text.contains("Lotingversie: v1"));
         assertTrue(text.contains("Resultatenversie: v3"));
         assertTrue(text.contains("Pagina 1"));
@@ -68,7 +74,8 @@ class PdfGeneratorTest {
             drawRevision,
             resultsRevision,
             locale,
-            ZoneId.of("Europe/London")
+            ZoneId.of("Europe/London"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
         
         assertNotNull(pdf);
@@ -78,6 +85,7 @@ class PdfGeneratorTest {
         String text = extractFirstPageText(pdf);
         assertTrue(text.contains(regattaName));
         assertTrue(text.contains("Generated:"));
+        assertTrue(text.contains("2026-02-06 13:30"));
         assertTrue(text.contains("Draw Version: v2"));
         assertTrue(text.contains("Results Version: v5"));
         assertTrue(text.contains("Page 1"));
@@ -92,7 +100,8 @@ class PdfGeneratorTest {
             null,
             null,
             Locale.ENGLISH,
-            ZoneId.of("UTC")
+            ZoneId.of("UTC"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
         
         assertNotNull(pdf);
@@ -102,6 +111,7 @@ class PdfGeneratorTest {
         String text = extractFirstPageText(pdf);
         assertTrue(text.contains(regattaName));
         assertTrue(text.contains("Generated:"));
+        assertTrue(text.contains("2026-02-06 13:30"));
         assertFalse(text.contains("Draw Version:"));
         assertFalse(text.contains("Results Version:"));
     }
@@ -113,7 +123,8 @@ class PdfGeneratorTest {
             1,
             2,
             null,
-            ZoneId.of("Europe/Amsterdam")
+            ZoneId.of("Europe/Amsterdam"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
 
         assertNotNull(pdf);
@@ -128,7 +139,8 @@ class PdfGeneratorTest {
             1,
             2,
             Locale.ENGLISH,
-            ZoneId.of("Europe/Amsterdam")
+            ZoneId.of("Europe/Amsterdam"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
 
         assertNotNull(pdf);
@@ -143,7 +155,8 @@ class PdfGeneratorTest {
             -1,
             -5,
             Locale.ENGLISH,
-            ZoneId.of("Europe/Amsterdam")
+            ZoneId.of("Europe/Amsterdam"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneOffset.UTC)
         );
 
         assertNotNull(pdf);
@@ -156,5 +169,20 @@ class PdfGeneratorTest {
         assertThrows(IllegalArgumentException.class, () ->
             PdfGenerator.generateSamplePdf("Test Regatta", 1, 2, Locale.ENGLISH, null)
         );
+    }
+
+    @Test
+    void testGenerateSamplePdfUsesRegattaTimezoneNotClockZone() throws IOException {
+        byte[] pdf = PdfGenerator.generateSamplePdf(
+            "Timezone Test",
+            1,
+            1,
+            Locale.ENGLISH,
+            ZoneId.of("Europe/Amsterdam"),
+            Clock.fixed(Instant.parse("2026-02-06T13:30:00Z"), ZoneId.of("America/New_York"))
+        );
+
+        String text = extractFirstPageText(pdf);
+        assertTrue(text.contains("Generated: 2026-02-06 14:30"));
     }
 }
