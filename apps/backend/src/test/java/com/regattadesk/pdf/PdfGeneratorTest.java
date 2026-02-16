@@ -121,9 +121,9 @@ class PdfGeneratorTest {
     }
 
     @Test
-    void testGenerateSamplePdfWithoutTimezoneThrows() {
+    void testGenerateSamplePdfWithNullTimezoneThrows() {
         assertThrows(IllegalArgumentException.class, () ->
-            PdfGenerator.generateSamplePdf("Test Regatta", 1, 2, Locale.ENGLISH)
+            PdfGenerator.generateSamplePdf("Test Regatta", 1, 2, Locale.ENGLISH, null)
         );
     }
 }

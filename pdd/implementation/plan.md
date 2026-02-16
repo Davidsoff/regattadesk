@@ -104,6 +104,11 @@ This implementation plan is decomposed into bounded contexts, each with function
 - [ ] Step 24: Hardening: edge protections, load tests, runbooks
 - [ ] Step 25: Testing consolidation: expand and harden suite coverage (unit tests for command validation/rules, Postgres integration tests via Testcontainers, Pact contract tests for public/staff APIs), close coverage gaps from earlier steps, and enforce CI quality gates
 
+## v0.1 Change Policy
+- RegattaDesk v0.1 is pre-production. Breaking changes are allowed when they simplify implementation and remove unused compatibility layers.
+- Do not add deprecation-only API shims or migration paths unless a concrete active consumer requires them.
+- Any breaking change must include synchronized updates to affected `pdd/` artifacts in the same PR.
+
 ## Third-party dependency inventory (v0.1 baseline)
 | Component | Dependency / Service | Minimum version | Update policy |
 | --- | --- | --- | --- |

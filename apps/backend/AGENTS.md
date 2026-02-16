@@ -80,6 +80,8 @@ Application configuration is in `src/main/resources/application.properties`:
 3. **Build Tool**: Use Maven wrapper (`./mvnw`) not global Maven
 4. **Dev Mode**: Always test changes in Quarkus dev mode before building
 5. **Testing**: Add tests for new endpoints and business logic
+6. **Pre-production API policy**: In v0.1, prefer direct breaking changes over temporary deprecated overloads or migration shims
+7. **Contract/doc sync**: If backend behavior changes, update the relevant `pdd/` contract/design docs in the same change
 
 ## Common Commands
 - `./mvnw quarkus:dev` - Start in dev mode

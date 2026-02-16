@@ -202,13 +202,14 @@ String regattaName = "Amsterdam Head Race 2026";
 Integer drawRevision = 1;
 Integer resultsRevision = 3;
 Locale locale = Locale.forLanguageTag("nl");
+ZoneId regattaTimezone = ZoneId.of("Europe/Amsterdam"); // required
 
 byte[] pdfBytes = PdfGenerator.generateSamplePdf(
     regattaName, 
     drawRevision, 
     resultsRevision, 
     locale,
-    ZoneId.of("Europe/Amsterdam")
+    regattaTimezone
 );
 
 // Save or return the PDF bytes

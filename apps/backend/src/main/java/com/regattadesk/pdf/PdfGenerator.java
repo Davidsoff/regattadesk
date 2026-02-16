@@ -201,9 +201,4 @@ public class PdfGenerator {
         return baos.toByteArray();
     }
 
-    @Deprecated(forRemoval = true)
-    public static byte[] generateSamplePdf(String regattaName, Integer drawRevision,
-                                          Integer resultsRevision, Locale locale) throws IOException {
-        throw new IllegalArgumentException("regattaTimezone is required");
-    }
 }
