@@ -89,4 +89,33 @@ describe('setLocale', () => {
     expect(storage.setItem).toHaveBeenCalledWith('regattadesk-locale', 'nl');
     expect(document.documentElement.getAttribute('lang')).toBe('nl');
   });
+
+  it('falls back to nl for unsupported locale values', async () => {
+    const storage = globalThis.localStorage;
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { default: i18n, setLocale } = await importFreshI18n();
+
+    setLocale('fr');
+
+    expect(i18n.global.locale.value).toBe('nl');
+    expect(storage.setItem).toHaveBeenCalledWith('regattadesk-locale', 'nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('still updates runtime locale when storage write fails', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'en',
+      setItem: () => {
+        throw new Error('storage write failure');
+      }
+    });
+
+    const { default: i18n, setLocale } = await importFreshI18n();
+    setLocale('nl');
+
+    expect(i18n.global.locale.value).toBe('nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
+  });
 });

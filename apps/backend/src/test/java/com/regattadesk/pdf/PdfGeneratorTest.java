@@ -50,6 +50,13 @@ class PdfGeneratorTest {
             reader.close();
         }
     }
+
+    private static void assertContainsOnce(String text, String expected) {
+        assertTrue(text.contains(expected), "Missing expected text: " + expected);
+        int firstIndex = text.indexOf(expected);
+        int lastIndex = text.lastIndexOf(expected);
+        assertEquals(firstIndex, lastIndex, "Expected text should appear exactly once: " + expected);
+    }
     
     @Test
     void testGenerateSamplePdf() throws IOException {
@@ -58,12 +65,11 @@ class PdfGeneratorTest {
         assertValidPdf(pdf);
 
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains(regattaName));
-        assertTrue(text.contains("Gegenereerd:"));
-        assertTrue(text.contains("06-02-2026 14:30"));
-        assertTrue(text.contains("Lotingversie: v1"));
-        assertTrue(text.contains("Resultatenversie: v3"));
-        assertTrue(text.contains("Pagina 1"));
+        assertContainsOnce(text, regattaName);
+        assertContainsOnce(text, "Gegenereerd: 06-02-2026 14:30");
+        assertContainsOnce(text, "Lotingversie: v1");
+        assertContainsOnce(text, "Resultatenversie: v3");
+        assertContainsOnce(text, "Pagina 1");
     }
     
     @Test
@@ -73,12 +79,11 @@ class PdfGeneratorTest {
         assertValidPdf(pdf);
 
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains(regattaName));
-        assertTrue(text.contains("Generated:"));
-        assertTrue(text.contains("2026-02-06 13:30"));
-        assertTrue(text.contains("Draw Version: v2"));
-        assertTrue(text.contains("Results Version: v5"));
-        assertTrue(text.contains("Page 1"));
+        assertContainsOnce(text, regattaName);
+        assertContainsOnce(text, "Generated: 2026-02-06 13:30");
+        assertContainsOnce(text, "Draw Version: v2");
+        assertContainsOnce(text, "Results Version: v5");
+        assertContainsOnce(text, "Page 1");
     }
     
     @Test
@@ -88,9 +93,8 @@ class PdfGeneratorTest {
         assertValidPdf(pdf);
 
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains(regattaName));
-        assertTrue(text.contains("Generated:"));
-        assertTrue(text.contains("2026-02-06 13:30"));
+        assertContainsOnce(text, regattaName);
+        assertContainsOnce(text, "Generated: 2026-02-06 13:30");
         assertFalse(text.contains("Draw Version:"));
         assertFalse(text.contains("Results Version:"));
     }
@@ -100,9 +104,9 @@ class PdfGeneratorTest {
         byte[] pdf = generatePdf("Test Regatta", 1, 2, null, ZoneId.of("Europe/Amsterdam"));
         assertValidPdf(pdf);
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains("Generated:"));
-        assertTrue(text.contains("Draw Version: v1"));
-        assertTrue(text.contains("Results Version: v2"));
+        assertContainsOnce(text, "Generated: 2026-02-06 14:30");
+        assertContainsOnce(text, "Draw Version: v1");
+        assertContainsOnce(text, "Results Version: v2");
     }
 
     @Test
@@ -110,7 +114,7 @@ class PdfGeneratorTest {
         byte[] pdf = generatePdf("", 1, 2, Locale.ENGLISH, ZoneId.of("Europe/Amsterdam"));
         assertValidPdf(pdf);
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains("Generated:"));
+        assertContainsOnce(text, "Generated: 2026-02-06 14:30");
     }
 
     @Test
@@ -118,8 +122,8 @@ class PdfGeneratorTest {
         byte[] pdf = generatePdf("Test Regatta", -1, -5, Locale.ENGLISH, ZoneId.of("Europe/Amsterdam"));
         assertValidPdf(pdf);
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains("Draw Version: v-1"));
-        assertTrue(text.contains("Results Version: v-5"));
+        assertContainsOnce(text, "Draw Version: v-1");
+        assertContainsOnce(text, "Results Version: v-5");
     }
 
     @Test
@@ -141,6 +145,6 @@ class PdfGeneratorTest {
         );
 
         String text = extractFirstPageText(pdf);
-        assertTrue(text.contains("Generated: 2026-02-06 14:30"));
+        assertContainsOnce(text, "Generated: 2026-02-06 14:30");
     }
 }

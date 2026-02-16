@@ -132,5 +132,19 @@ describe('useFormatting', () => {
       const date = new Date('2026-03-29T01:30:00Z');
       expect(nlFormatting.formatTimestampDisplay(date, 'Europe/Amsterdam')).toBe('29-03-2026 03:30');
     });
+
+    it('falls back to local-time extraction when timezone is invalid', () => {
+      const enFormatting = useFormatting('en');
+      const date = new Date('2026-02-06T12:34:56Z');
+
+      const year = String(date.getFullYear());
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      const expected = `${year}-${month}-${day} ${hour}:${minute}`;
+
+      expect(enFormatting.formatTimestampDisplay(date, 'Invalid/Timezone')).toBe(expected);
+    });
   });
 });
