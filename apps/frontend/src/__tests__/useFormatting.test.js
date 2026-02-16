@@ -121,6 +121,12 @@ describe('useFormatting', () => {
       expect(nlFormatting.formatDateDisplay(date, 'Europe/Amsterdam')).toBe('06-02-2026');
     });
 
+    it('formats display date in English locale', () => {
+      const enFormatting = useFormatting('en');
+      const date = new Date('2026-02-06T12:00:00Z');
+      expect(enFormatting.formatDateDisplay(date, 'Europe/Amsterdam')).toBe('2026-02-06');
+    });
+
     it('formats timestamp display in regatta timezone around DST', () => {
       const nlFormatting = useFormatting('nl');
       const date = new Date('2026-03-29T01:30:00Z');
