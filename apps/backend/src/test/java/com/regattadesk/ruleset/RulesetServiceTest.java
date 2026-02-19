@@ -255,4 +255,75 @@ class RulesetServiceTest {
         assertTrue(ex.getMessage().contains("Source ruleset not found"));
         verify(eventStore, never()).append(any(UUID.class), anyString(), anyLong(), any(), any());
     }
+
+    @Test
+    void createRuleset_withoutCorrelation_shouldGenerateCorrelationAndNullCausation() {
+        UUID rulesetId = UUID.randomUUID();
+        when(eventStore.readStream(rulesetId)).thenReturn(List.of());
+
+        service.createRuleset(
+            rulesetId,
+            "Ruleset",
+            "v1.0",
+            "desc",
+            "actual_at_start"
+        );
+
+        ArgumentCaptor<EventMetadata> metadataCaptor = ArgumentCaptor.forClass(EventMetadata.class);
+        verify(eventStore).append(
+            eq(rulesetId),
+            eq("Ruleset"),
+            eq(-1L),
+            any(),
+            metadataCaptor.capture()
+        );
+
+        EventMetadata metadata = metadataCaptor.getValue();
+        assertNotNull(metadata.getCorrelationId());
+        assertEquals(null, metadata.getCausationId());
+        assertEquals("system", metadata.getAdditionalData().get("actor"));
+    }
+
+    @Test
+    void getRuleset_unknownEventType_shouldFallbackToEnvelopePayload() {
+        UUID rulesetId = UUID.randomUUID();
+        UnknownEvent payload = new UnknownEvent("UnknownEventType", rulesetId);
+        EventEnvelope envelope = EventEnvelope.builder()
+            .eventId(UUID.randomUUID())
+            .aggregateId(rulesetId)
+            .aggregateType("Ruleset")
+            .eventType("UnknownEventType")
+            .sequenceNumber(1)
+            .payload(payload)
+            .rawPayload(null)
+            .metadata(EventMetadata.builder().build())
+            .createdAt(java.time.Instant.now())
+            .build();
+
+        when(eventStore.readStream(rulesetId)).thenReturn(List.of(envelope));
+
+        // Unknown events should not break aggregate loading.
+        RulesetAggregate aggregate = service.getRuleset(rulesetId).orElseThrow();
+        assertEquals(rulesetId, aggregate.getId());
+    }
+
+    private static final class UnknownEvent implements DomainEvent {
+        private final String eventType;
+        private final UUID aggregateId;
+
+        private UnknownEvent(String eventType, UUID aggregateId) {
+            this.eventType = eventType;
+            this.aggregateId = aggregateId;
+        }
+
+        @Override
+        public String getEventType() {
+            return eventType;
+        }
+
+        @Override
+        public UUID getAggregateId() {
+            return aggregateId;
+        }
+    }
 }
