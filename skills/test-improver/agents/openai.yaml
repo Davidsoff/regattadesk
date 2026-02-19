@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test Improver"
+  short_description: "Run adversarial loops to harden tests"
+  default_prompt: "Use $test-improver to review this repository test suite and execute 3 adversarial fix loops."
