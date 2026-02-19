@@ -12,10 +12,12 @@ services:
       COLLECTOR_OTLP_ENABLED: "true"
     networks:
       - regattadesk-internal
-    ports:
-      - "${JAEGER_UI_PORT:-16686}:16686"    # Jaeger UI
-      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"  # OTLP gRPC receiver
-      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"  # OTLP HTTP receiver
+    # Internal ports - not exposed to host by default for security
+    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+    expose:
+      - "16686"  # Jaeger UI
+      - "4317"   # OTLP gRPC receiver
+      - "4318"   # OTLP HTTP receiver
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:16686/"]
       interval: 30s
@@ -38,8 +40,10 @@ services:
       - prometheus-data:/prometheus
     networks:
       - regattadesk-internal
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+    # Internal port - not exposed to host by default for security
+    # To expose for development, use: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+    expose:
+      - "9090"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
