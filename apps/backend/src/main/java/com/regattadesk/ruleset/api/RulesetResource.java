@@ -1,5 +1,6 @@
 package com.regattadesk.ruleset.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.ruleset.RulesetAggregate;
 import com.regattadesk.ruleset.RulesetService;
 import com.regattadesk.security.RequireRole;
@@ -58,7 +59,7 @@ public class RulesetResource {
             @Valid @NotNull(message = "request body is required") RulesetCreateRequest request) {
         
         try {
-            UUID id = UUID.randomUUID();
+            UUID id = request.getId() != null ? request.getId() : UUID.randomUUID();
             RulesetAggregate ruleset = rulesetService.createRuleset(
                 id,
                 request.getName(),
@@ -126,7 +127,7 @@ public class RulesetResource {
                 : current.getAgeCalculationType();
             
             RulesetAggregate ruleset = rulesetService.updateRuleset(
-                rulesetId,
+                current,
                 name,
                 version,
                 description,
@@ -141,19 +142,34 @@ public class RulesetResource {
                 .build();
         }
     }
-    
+
     /**
-     * Simple error response DTO.
+     * Duplicate an existing ruleset with a new name and version.
      */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
+    @POST
+    @Path("/{ruleset_id}/duplicate")
+    @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
+    public Response duplicateRuleset(
+            @PathParam("ruleset_id") UUID rulesetId,
+            @Valid @NotNull(message = "request body is required") RulesetDuplicateRequest request) {
+        try {
+            RulesetAggregate ruleset = rulesetService.duplicateRuleset(
+                rulesetId,
+                request.getNewName(),
+                request.getNewVersion()
+            );
+            return Response.status(Response.Status.CREATED)
+                .entity(new RulesetResponse(ruleset))
+                .build();
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Source ruleset not found:")) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorResponse("Ruleset not found"))
+                    .build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ErrorResponse(e.getMessage()))
+                .build();
         }
     }
 }

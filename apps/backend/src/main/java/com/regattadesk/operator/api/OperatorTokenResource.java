@@ -1,5 +1,6 @@
 package com.regattadesk.operator.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.operator.OperatorToken;
 import com.regattadesk.operator.OperatorTokenPdfService;
 import com.regattadesk.operator.OperatorTokenService;
@@ -144,21 +145,6 @@ public class OperatorTokenResource {
                 .type(MediaType.APPLICATION_JSON)
                 .entity(new ErrorResponse("Failed to generate PDF: " + e.getMessage()))
                 .build();
-        }
-    }
-    
-    /**
-     * Simple error response DTO.
-     */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
         }
     }
     

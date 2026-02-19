@@ -45,12 +45,29 @@ public class RulesetService {
             String version,
             String description,
             String ageCalculationType) {
+
+        return createRuleset(id, name, version, description, ageCalculationType, null, null);
+    }
+
+    public RulesetAggregate createRuleset(
+            UUID id,
+            String name,
+            String version,
+            String description,
+            String ageCalculationType,
+            UUID correlationId,
+            UUID causationId) {
+
+        Optional<RulesetAggregate> existing = loadAggregate(id);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
         
         RulesetAggregate ruleset = RulesetAggregate.create(
             id, name, version, description, ageCalculationType
         );
         
-        saveAggregate(ruleset);
+        saveAggregate(ruleset, correlationId, causationId);
         return ruleset;
     }
     
@@ -79,8 +96,15 @@ public class RulesetService {
             newId, source.get(), newName, newVersion
         );
         
-        saveAggregate(duplicated);
+        saveAggregate(duplicated, null, null);
         return duplicated;
+    }
+
+    public RulesetAggregate duplicateRuleset(
+            UUID sourceId,
+            String newName,
+            String newVersion) {
+        return duplicateRuleset(sourceId, UUID.randomUUID(), newName, newVersion);
     }
     
     /**
@@ -107,9 +131,23 @@ public class RulesetService {
         }
         
         RulesetAggregate ruleset = existing.get();
+        return updateRuleset(ruleset, name, version, description, ageCalculationType);
+    }
+
+    public RulesetAggregate updateRuleset(
+            RulesetAggregate ruleset,
+            String name,
+            String version,
+            String description,
+            String ageCalculationType) {
+
+        if (ruleset == null) {
+            throw new IllegalArgumentException("Ruleset cannot be null");
+        }
+
         ruleset.update(name, version, description, ageCalculationType);
         
-        saveAggregate(ruleset);
+        saveAggregate(ruleset, null, null);
         return ruleset;
     }
     
@@ -152,9 +190,10 @@ public class RulesetService {
         return Optional.of(ruleset);
     }
     
-    private void saveAggregate(RulesetAggregate ruleset) {
+    private void saveAggregate(RulesetAggregate ruleset, UUID correlationId, UUID causationId) {
         EventMetadata metadata = EventMetadata.builder()
-            .correlationId(UUID.randomUUID())
+            .correlationId(correlationId != null ? correlationId : UUID.randomUUID())
+            .causationId(causationId)
             .addData("actor", "system")  // TODO: Get from security context when available
             .build();
         

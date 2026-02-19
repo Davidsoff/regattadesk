@@ -21,6 +21,7 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
     private String description;
     private String ageCalculationType;
     private boolean isGlobal;
+    private boolean drawPublished;
     
     /**
      * Creates a new ruleset aggregate.
@@ -28,6 +29,7 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
     public RulesetAggregate(UUID id) {
         super(id);
         this.isGlobal = false;
+        this.drawPublished = false;
     }
     
     /**
@@ -35,23 +37,9 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
      */
     public static RulesetAggregate create(UUID id, String name, String rulesetVersion, 
                                          String description, String ageCalculationType) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Ruleset name cannot be null or blank");
-        }
-        if (rulesetVersion == null || rulesetVersion.isBlank()) {
-            throw new IllegalArgumentException("Version cannot be null or blank");
-        }
-        if (ageCalculationType == null || ageCalculationType.isBlank()) {
-            throw new IllegalArgumentException("Age calculation type cannot be null or blank");
-        }
-        
-        String normalizedAgeCalcType = ageCalculationType.toLowerCase();
-        if (!normalizedAgeCalcType.equals(AGE_CALCULATION_ACTUAL_AT_START) && 
-            !normalizedAgeCalcType.equals(AGE_CALCULATION_AGE_AS_OF_JAN_1)) {
-            throw new IllegalArgumentException(
-                "Age calculation type must be 'actual_at_start' or 'age_as_of_jan_1'"
-            );
-        }
+        validateName(name);
+        validateVersion(rulesetVersion);
+        String normalizedAgeCalcType = validateAndNormalizeAgeCalculationType(ageCalculationType);
         
         RulesetAggregate ruleset = new RulesetAggregate(id);
         ruleset.raiseEvent(new RulesetCreatedEvent(
@@ -65,11 +53,13 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
      */
     public static RulesetAggregate duplicate(UUID newId, RulesetAggregate source, 
                                             String newName, String newRulesetVersion) {
-        if (newName == null || newName.isBlank()) {
-            throw new IllegalArgumentException("Ruleset name cannot be null or blank");
+        if (source == null) {
+            throw new IllegalArgumentException("source cannot be null");
         }
-        if (newRulesetVersion == null || newRulesetVersion.isBlank()) {
-            throw new IllegalArgumentException("Version cannot be null or blank");
+        validateName(newName);
+        validateVersion(newRulesetVersion);
+        if (source.drawPublished) {
+            throw new IllegalStateException("Cannot duplicate ruleset after draw publication");
         }
         
         RulesetAggregate ruleset = new RulesetAggregate(newId);
@@ -89,23 +79,12 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
      * Updates the ruleset properties.
      */
     public void update(String name, String rulesetVersion, String description, String ageCalculationType) {
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Ruleset name cannot be null or blank");
+        if (drawPublished) {
+            throw new IllegalStateException("Cannot update ruleset after draw publication");
         }
-        if (rulesetVersion == null || rulesetVersion.isBlank()) {
-            throw new IllegalArgumentException("Version cannot be null or blank");
-        }
-        if (ageCalculationType == null || ageCalculationType.isBlank()) {
-            throw new IllegalArgumentException("Age calculation type cannot be null or blank");
-        }
-        
-        String normalizedAgeCalcType = ageCalculationType.toLowerCase();
-        if (!normalizedAgeCalcType.equals(AGE_CALCULATION_ACTUAL_AT_START) && 
-            !normalizedAgeCalcType.equals(AGE_CALCULATION_AGE_AS_OF_JAN_1)) {
-            throw new IllegalArgumentException(
-                "Age calculation type must be 'actual_at_start' or 'age_as_of_jan_1'"
-            );
-        }
+        validateName(name);
+        validateVersion(rulesetVersion);
+        String normalizedAgeCalcType = validateAndNormalizeAgeCalculationType(ageCalculationType);
         
         raiseEvent(new RulesetUpdatedEvent(
             getId(), name, rulesetVersion, description, normalizedAgeCalcType
@@ -131,6 +110,14 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
             this.rulesetVersion = updated.getVersion();
             this.description = updated.getDescription();
             this.ageCalculationType = updated.getAgeCalculationType();
+        } else if (event instanceof RulesetDrawPublishedEvent) {
+            this.drawPublished = true;
+        }
+    }
+
+    public void markDrawPublished() {
+        if (!drawPublished) {
+            raiseEvent(new RulesetDrawPublishedEvent(getId()));
         }
     }
     
@@ -159,5 +146,35 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
     
     public boolean isGlobal() {
         return isGlobal;
+    }
+
+    public boolean isDrawPublished() {
+        return drawPublished;
+    }
+
+    private static void validateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Ruleset name cannot be null or blank");
+        }
+    }
+
+    private static void validateVersion(String rulesetVersion) {
+        if (rulesetVersion == null || rulesetVersion.isBlank()) {
+            throw new IllegalArgumentException("Version cannot be null or blank");
+        }
+    }
+
+    private static String validateAndNormalizeAgeCalculationType(String ageCalculationType) {
+        if (ageCalculationType == null || ageCalculationType.isBlank()) {
+            throw new IllegalArgumentException("Age calculation type cannot be null or blank");
+        }
+        String normalized = ageCalculationType.toLowerCase();
+        if (!normalized.equals(AGE_CALCULATION_ACTUAL_AT_START)
+            && !normalized.equals(AGE_CALCULATION_AGE_AS_OF_JAN_1)) {
+            throw new IllegalArgumentException(
+                "Age calculation type must be 'actual_at_start' or 'age_as_of_jan_1'"
+            );
+        }
+        return normalized;
     }
 }

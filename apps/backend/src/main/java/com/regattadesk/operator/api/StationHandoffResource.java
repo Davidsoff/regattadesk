@@ -1,5 +1,6 @@
 package com.regattadesk.operator.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.operator.StationHandoff;
 import com.regattadesk.operator.StationHandoffService;
 import com.regattadesk.security.RequireRole;
@@ -256,21 +257,6 @@ public class StationHandoffResource {
         return Response.status(Response.Status.CONFLICT)
             .entity(new ErrorResponse("Handoff cannot be cancelled"))
             .build();
-    }
-    
-    /**
-     * Simple error response DTO.
-     */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
-        }
     }
     
     /**

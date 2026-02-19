@@ -202,6 +202,14 @@ class RulesetAggregateTest {
             RulesetAggregate.duplicate(newId, source, "Modified Rules", null);
         });
     }
+
+    @Test
+    void testDuplicateRulesetWithNullSourceThrowsException() {
+        UUID newId = UUID.randomUUID();
+        assertThrows(IllegalArgumentException.class, () -> {
+            RulesetAggregate.duplicate(newId, null, "Modified Rules", "v2.0");
+        });
+    }
     
     @Test
     void testUpdateRuleset() {
@@ -261,6 +269,38 @@ class RulesetAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             ruleset.update("Updated Name", "v1.1", "Description", "invalid_type");
+        });
+    }
+
+    @Test
+    void testUpdateRejectedAfterDrawPublished() {
+        UUID id = UUID.randomUUID();
+        RulesetAggregate ruleset = RulesetAggregate.create(
+            id, "Original Name", "v1.0", "Description", "actual_at_start"
+        );
+        ruleset.markEventsAsCommitted();
+        ruleset.markDrawPublished();
+        ruleset.markEventsAsCommitted();
+
+        assertThrows(IllegalStateException.class, () -> {
+            ruleset.update("Updated Name", "v1.1", "Description", "actual_at_start");
+        });
+    }
+
+    @Test
+    void testDuplicateRejectedWhenSourceIsPublished() {
+        UUID sourceId = UUID.randomUUID();
+        UUID newId = UUID.randomUUID();
+
+        RulesetAggregate source = RulesetAggregate.create(
+            sourceId, "Original Rules", "v1.0", "Description", "actual_at_start"
+        );
+        source.markEventsAsCommitted();
+        source.markDrawPublished();
+        source.markEventsAsCommitted();
+
+        assertThrows(IllegalStateException.class, () -> {
+            RulesetAggregate.duplicate(newId, source, "Modified Rules", "v2.0");
         });
     }
     
