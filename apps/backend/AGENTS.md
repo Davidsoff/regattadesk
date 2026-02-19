@@ -80,6 +80,10 @@ Application configuration is in `src/main/resources/application.properties`:
 3. **Build Tool**: Use Maven wrapper (`./mvnw`) not global Maven
 4. **Dev Mode**: Always test changes in Quarkus dev mode before building
 5. **Testing**: Add tests for new endpoints and business logic
+6. **Pre-production API policy**: In v0.1, prefer direct breaking changes over temporary deprecated overloads or migration shims
+7. **Contract/doc sync**: If backend behavior changes, update the relevant `pdd/` contract/design docs in the same change
+8. **Deterministic CI gates**: PR-gating backend tests must be deterministic (no wall-clock sleeps, timing thresholds, or host-performance assumptions)
+9. **Performance tests**: Keep performance and query-latency tests non-gating and separate from the default `./mvnw test` PR gate path
 
 ## Common Commands
 - `./mvnw quarkus:dev` - Start in dev mode

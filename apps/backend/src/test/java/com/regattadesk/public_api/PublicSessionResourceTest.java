@@ -1,8 +1,13 @@
 package com.regattadesk.public_api;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.regattadesk.jwt.JwtConfig;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.Cookie;
 import io.restassured.response.Response;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -17,6 +22,32 @@ class PublicSessionResourceTest {
     
     private static final String COOKIE_NAME = "regattadesk_public_session";
     private static final String ENDPOINT = "/public/session";
+
+    @Inject
+    JwtConfig jwtConfig;
+
+    private void assertJwtCookieStructure(Cookie cookie) {
+        assertNotNull(cookie, "Cookie should be set");
+        assertNotNull(cookie.getValue(), "Cookie value should not be null");
+        assertFalse(cookie.getValue().isEmpty(), "Cookie value should not be empty");
+        assertEquals(3, cookie.getValue().split("\\.").length, "JWT must have 3 segments");
+
+        try {
+            SignedJWT jwt = SignedJWT.parse(cookie.getValue());
+            assertEquals(JWSAlgorithm.HS256, jwt.getHeader().getAlgorithm(), "Unexpected JWT algorithm");
+            assertEquals(jwtConfig.kid(), jwt.getHeader().getKeyID(), "Unexpected JWT kid header");
+
+            JWTClaimsSet claims = jwt.getJWTClaimsSet();
+            String sid = claims.getStringClaim("sid");
+            assertNotNull(sid, "sid claim must be present");
+            assertFalse(sid.isBlank(), "sid claim must not be blank");
+            assertNotNull(claims.getIssueTime(), "iat claim must be present");
+            assertNotNull(claims.getExpirationTime(), "exp claim must be present");
+            assertTrue(claims.getExpirationTime().after(claims.getIssueTime()), "exp must be after iat");
+        } catch (Exception e) {
+            fail("Cookie value must be a parseable JWT with required claims: " + e.getMessage());
+        }
+    }
     
     @Test
     void testCreateSession_NoExistingCookie() {
@@ -29,9 +60,7 @@ class PublicSessionResourceTest {
         
         // Verify cookie is set
         Cookie cookie = response.getDetailedCookie(COOKIE_NAME);
-        assertNotNull(cookie, "Cookie should be set");
-        assertNotNull(cookie.getValue(), "Cookie value should not be null");
-        assertFalse(cookie.getValue().isEmpty(), "Cookie value should not be empty");
+        assertJwtCookieStructure(cookie);
         assertEquals("/", cookie.getPath());
         assertEquals(432000, cookie.getMaxAge()); // 5 days
         assertTrue(cookie.isHttpOnly());
@@ -78,9 +107,7 @@ class PublicSessionResourceTest {
         
         // Should issue a new cookie
         Cookie cookie = response.getDetailedCookie(COOKIE_NAME);
-        assertNotNull(cookie, "New cookie should be issued for invalid token");
-        assertNotNull(cookie.getValue());
-        assertFalse(cookie.getValue().isEmpty());
+        assertJwtCookieStructure(cookie);
     }
     
     @Test
@@ -96,9 +123,7 @@ class PublicSessionResourceTest {
         
         // Should issue a new cookie
         Cookie cookie = response.getDetailedCookie(COOKIE_NAME);
-        assertNotNull(cookie, "New cookie should be issued for empty cookie");
-        assertNotNull(cookie.getValue());
-        assertFalse(cookie.getValue().isEmpty());
+        assertJwtCookieStructure(cookie);
     }
     
     @Test
@@ -137,8 +162,8 @@ class PublicSessionResourceTest {
         Cookie cookie1 = response1.getDetailedCookie(COOKIE_NAME);
         Cookie cookie2 = response2.getDetailedCookie(COOKIE_NAME);
         
-        assertNotNull(cookie1);
-        assertNotNull(cookie2);
+        assertJwtCookieStructure(cookie1);
+        assertJwtCookieStructure(cookie2);
         assertNotEquals(cookie1.getValue(), cookie2.getValue(), 
             "Different requests should generate different session tokens");
     }

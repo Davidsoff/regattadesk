@@ -1,0 +1,89 @@
+{
+  "common": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "add": "Toevoegen",
+    "close": "Sluiten",
+    "confirm": "Bevestigen",
+    "search": "Zoeken",
+    "filter": "Filteren",
+    "clear": "Wissen",
+    "yes": "Ja",
+    "no": "Nee",
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "warning": "Waarschuwing",
+    "info": "Informatie",
+    "back": "Terug",
+    "next": "Volgende",
+    "previous": "Vorige",
+    "submit": "Verzenden",
+    "export": "Exporteren",
+    "import": "Importeren",
+    "print": "Afdrukken",
+    "download": "Downloaden"
+  },
+  "status": {
+    "entered": "Ingeschreven",
+    "withdrawn_before_draw": "Afgemeld voor loting",
+    "withdrawn_after_draw": "Afgemeld na loting",
+    "dns": "DNS (Niet gestart)",
+    "dnf": "DNF (Niet gefinisht)",
+    "excluded": "Uitgesloten",
+    "dsq": "DSQ (Gediskwalificeerd)",
+    "under_investigation": "In onderzoek",
+    "approved": "Goedgekeurd",
+    "immutable": "Onveranderbaar",
+    "offline_queued": "In wachtrij (offline)",
+    "provisional": "Voorlopig",
+    "edited": "Bewerkt",
+    "official": "Officieel"
+  },
+  "regatta": {
+    "name": "Regatta",
+    "date": "Datum",
+    "location": "Locatie",
+    "organizer": "Organisator",
+    "schedule": "Schema",
+    "results": "Resultaten",
+    "entries": "Inschrijvingen",
+    "events": "Nummers",
+    "draw": "Loting",
+    "draw_revision": "Loting versie",
+    "results_revision": "Resultaten versie"
+  },
+  "entry": {
+    "bib": "Startnummer",
+    "crew": "Ploeg",
+    "club": "Vereniging",
+    "time": "Tijd",
+    "rank": "Plaats",
+    "delta": "Delta",
+    "status": "Status",
+    "category": "Categorie",
+    "boat_type": "Boottype"
+  },
+  "time": {
+    "start_time": "Starttijd",
+    "finish_time": "Finishtijd",
+    "elapsed_time": "Eindtijd",
+    "scheduled_time": "Geplande tijd"
+  },
+  "print": {
+    "generated": "Gegenereerd",
+    "page": "Pagina",
+    "of": "van",
+    "regatta_name": "Regatta naam",
+    "draw_version": "Loting versie",
+    "results_version": "Resultaten versie"
+  },
+  "live": {
+    "live": "Live",
+    "offline": "Offline",
+    "update_available": "Nieuwe resultaten beschikbaar",
+    "view_latest": "Bekijk laatste versie"
+  }
+}

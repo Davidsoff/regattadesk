@@ -265,13 +265,6 @@ class EventStoreSchemaTest {
                 aggregateId, ts1, ts1
             ));
             
-            // Wait a moment
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            
             // Update the aggregate version - H2 doesn't have auto-update trigger like PostgreSQL
             Timestamp ts2 = now();
             stmt.executeUpdate(String.format(

@@ -2,6 +2,7 @@ package com.regattadesk.eventstore;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and should be reviewed during development but are not enforced in v0.1.
  */
 @QuarkusTest
+@Tag("perf")
 class EventStorePerformanceTest {
 
     @Inject

@@ -1,0 +1,89 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "yes": "Yes",
+    "no": "No",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "download": "Download"
+  },
+  "status": {
+    "entered": "Entered",
+    "withdrawn_before_draw": "Withdrawn Before Draw",
+    "withdrawn_after_draw": "Withdrawn After Draw",
+    "dns": "DNS (Did Not Start)",
+    "dnf": "DNF (Did Not Finish)",
+    "excluded": "Excluded",
+    "dsq": "DSQ (Disqualified)",
+    "under_investigation": "Under Investigation",
+    "approved": "Approved",
+    "immutable": "Immutable",
+    "offline_queued": "Queued (Offline)",
+    "provisional": "Provisional",
+    "edited": "Edited",
+    "official": "Official"
+  },
+  "regatta": {
+    "name": "Regatta",
+    "date": "Date",
+    "location": "Location",
+    "organizer": "Organizer",
+    "schedule": "Schedule",
+    "results": "Results",
+    "entries": "Entries",
+    "events": "Events",
+    "draw": "Draw",
+    "draw_revision": "Draw Revision",
+    "results_revision": "Results Revision"
+  },
+  "entry": {
+    "bib": "Bib",
+    "crew": "Crew",
+    "club": "Club",
+    "time": "Time",
+    "rank": "Rank",
+    "delta": "Delta",
+    "status": "Status",
+    "category": "Category",
+    "boat_type": "Boat Type"
+  },
+  "time": {
+    "start_time": "Start Time",
+    "finish_time": "Finish Time",
+    "elapsed_time": "Elapsed Time",
+    "scheduled_time": "Scheduled Time"
+  },
+  "print": {
+    "generated": "Generated",
+    "page": "Page",
+    "of": "of",
+    "regatta_name": "Regatta Name",
+    "draw_version": "Draw Version",
+    "results_version": "Results Version"
+  },
+  "live": {
+    "live": "Live",
+    "offline": "Offline",
+    "update_available": "New results available",
+    "view_latest": "View latest"
+  }
+}
