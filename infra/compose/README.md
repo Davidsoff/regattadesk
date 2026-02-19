@@ -36,12 +36,47 @@ The full Docker Compose stack includes:
 - **regattadesk-edge**: External network for services exposed via Traefik
 - **regattadesk-internal**: Internal network (isolated) for backend services
 
+## Security: Port Exposure
+
+**By default, internal services are NOT exposed to the host** to reduce attack surface.
+
+### Default Behavior (Secure)
+- PostgreSQL, MinIO, Jaeger, and Prometheus are only accessible within Docker networks
+- All public endpoints are routed through Traefik (ports 80, 443)
+- No direct host access to internal databases or storage
+
+### Development Mode (Opt-in)
+To enable direct host access to internal services for development:
+
+```bash
+# Standard stack with dev tools (PostgreSQL, MinIO)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# With observability but no direct access to Prometheus/Jaeger
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up
+
+# With observability AND dev tools (all services accessible)
+docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+
+# Or include both dev overlays for convenience:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up
+```
+
+This exposes:
+- **docker-compose.dev.yml**: PostgreSQL (5432), MinIO API (9000), MinIO Console (9001)
+- **docker-compose.observability.dev.yml**: Jaeger UI (16686), Prometheus (9090)
+- **Always exposed**: Traefik (80, 443), Grafana (via Traefik at /grafana)
+
+### Production Deployment
+**Never use `docker-compose.dev.yml` or `docker-compose.observability.dev.yml` in production.** They are explicitly designed for development convenience and bypass network isolation.
+
 ## Prerequisites
 
 - Docker Engine 24.0+ or Docker Desktop
 - Docker Compose 2.24+
 - At least 4GB RAM available for Docker
-- Ports 80, 443, 5432, 9000, 9001 available on host
+- Ports 80, 443 available on host
+- Optional (dev mode): Ports 5432, 9000, 9001, 16686, 9090 available
 
 ## Building the Backend Image
 
@@ -113,7 +148,11 @@ This creates a container image using Jib, which optimizes the image layers witho
 
 5. **Start the stack:**
    ```bash
+   # Production mode (default, secure - no direct DB/storage access)
    docker compose up -d
+   
+   # OR Development mode (with direct access to PostgreSQL, MinIO, etc.)
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
    ```
 
 6. **Check service health:**
@@ -126,7 +165,9 @@ This creates a container image using Jib, which optimizes the image layers witho
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - Authelia SSO: http://localhost.local/auth
+   **Development mode only** (requires docker-compose.dev.yml):
    - MinIO Console: http://localhost:9001
+   - PostgreSQL: localhost:5432 (use psql or database client)
 
 ## Authentication and Authorization
 
@@ -171,7 +212,8 @@ For detailed information about the identity forwarding contract and trust bounda
 ### PostgreSQL
 
 - **Image**: `postgres:16-alpine`
-- **Port**: 5432 (configurable via `POSTGRES_PORT`)
+- **Internal Port**: 5432
+- **Host Access**: Not exposed by default (use `docker-compose.dev.yml` for development)
 - **Databases**: 
   - `regattadesk` - Main application database
   - `authelia` - Authelia authentication database
@@ -180,8 +222,8 @@ For detailed information about the identity forwarding contract and trust bounda
 ### MinIO
 
 - **Image**: `minio/minio:latest`
-- **API Port**: 9000
-- **Console Port**: 9001
+- **Internal Ports**: 9000 (API), 9001 (Console)
+- **Host Access**: Not exposed by default (use `docker-compose.dev.yml` for development)
 - **Buckets**: 
   - `line-scan-tiles` - Line-scan camera tile storage
   - `line-scan-manifests` - Line-scan manifest storage
@@ -356,8 +398,9 @@ docker compose exec minio mc mirror regattadesk/line-scan-tiles /backup/tiles
 ### Monitoring
 
 - **Backend Health**: http://localhost/q/health
-- **PostgreSQL**: Connect with standard tools on port 5432
-- **MinIO Console**: http://localhost:9001
+- **Grafana**: http://localhost/grafana (when observability stack is enabled)
+- **PostgreSQL**: Use `docker compose exec postgres psql -U regattadesk` or enable docker-compose.dev.yml
+- **MinIO Console**: Enable docker-compose.dev.yml for http://localhost:9001
 - **Traefik**: Monitoring available via logs (`docker compose logs traefik`)
 
 ## Troubleshooting
@@ -365,7 +408,7 @@ docker compose exec minio mc mirror regattadesk/line-scan-tiles /backup/tiles
 ### Services Won't Start
 
 1. **Check logs**: `docker compose logs`
-2. **Check ports**: Ensure 80, 443, 5432, 9000, 9001 are available
+2. **Check ports**: Ensure 80 and 443 are available (plus 5432, 9000, 9001, 16686, 9090 if using dev overlays)
 3. **Check .env**: Ensure all required secrets are set
 4. **Check resources**: Ensure Docker has enough memory
 
@@ -435,14 +478,22 @@ RegattaDesk includes comprehensive observability infrastructure for monitoring, 
 To start RegattaDesk with full observability stack (Prometheus, Jaeger, Grafana):
 
 ```bash
+# Production mode (secure, no direct host access to Prometheus/Jaeger)
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+
+# Development mode (with direct host access to all observability UIs)
+docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.observability.dev.yml up -d
 ```
 
 ### Observability Services
 
-- **Prometheus**: Metrics collection and alerting (http://localhost:9090)
-- **Jaeger**: Distributed tracing backend (http://localhost:16686)
-- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana)
+- **Grafana**: Metrics visualization and dashboards (http://localhost/grafana) - Always accessible via Traefik
+- **Prometheus**: Metrics collection and alerting - Internal only (use Grafana or observability.dev.yml)
+- **Jaeger**: Distributed tracing backend - Internal only (use observability.dev.yml for UI access)
+
+**Development mode only** (requires docker-compose.observability.dev.yml):
+- Prometheus: http://localhost:9090
+- Jaeger UI: http://localhost:16686
 
 ### Available Endpoints
 
