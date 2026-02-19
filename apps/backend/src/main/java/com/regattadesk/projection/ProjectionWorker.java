@@ -76,8 +76,9 @@ public class ProjectionWorker {
         // Process events
         int processed = 0;
         for (EventEnvelope event : events) {
-            if (handler.canHandle(event)) {
-                processEvent(handler, event);
+            boolean handled = handler.canHandle(event);
+            processEvent(handler, event, handled);
+            if (handled) {
                 processed++;
             }
         }
@@ -93,10 +94,12 @@ public class ProjectionWorker {
      * are saved atomically. If either fails, both are rolled back.
      */
     @Transactional
-    protected void processEvent(ProjectionHandler handler, EventEnvelope event) {
+    protected void processEvent(ProjectionHandler handler, EventEnvelope event, boolean handled) {
         try {
-            // Apply the event to the projection
-            handler.handle(event);
+            if (handled) {
+                // Apply the event to the projection
+                handler.handle(event);
+            }
             
             // Save the checkpoint
             ProjectionCheckpoint checkpoint = new ProjectionCheckpoint(
@@ -106,7 +109,8 @@ public class ProjectionWorker {
             );
             checkpointRepository.saveCheckpoint(checkpoint);
             
-            LOG.trace("Processed event {} for projection {}", event.getEventId(), handler.getProjectionName());
+            LOG.trace("Processed event {} for projection {} (handled={})",
+                    event.getEventId(), handler.getProjectionName(), handled);
             
         } catch (Exception e) {
             LOG.error("Failed to process event {} for projection {}", 

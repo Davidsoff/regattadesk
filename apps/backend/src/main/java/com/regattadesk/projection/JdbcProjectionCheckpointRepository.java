@@ -57,16 +57,9 @@ public class JdbcProjectionCheckpointRepository implements ProjectionCheckpointR
         if (checkpoint == null) {
             throw new IllegalArgumentException("Checkpoint cannot be null");
         }
-        
-        // Use MERGE for H2 compatibility (works in both H2 and PostgreSQL 15+)
-        String sql = """
-            MERGE INTO projection_checkpoints (projection_name, last_processed_event_id, last_processed_at, updated_at)
-            KEY (projection_name)
-            VALUES (?, ?, ?, now())
-            """;
-        
+
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(saveCheckpointSql(conn))) {
             
             stmt.setString(1, checkpoint.getProjectionName());
             stmt.setObject(2, checkpoint.getLastProcessedEventId());
@@ -77,5 +70,25 @@ public class JdbcProjectionCheckpointRepository implements ProjectionCheckpointR
         } catch (SQLException e) {
             throw new RuntimeException("Failed to save checkpoint for projection " + checkpoint.getProjectionName(), e);
         }
+    }
+
+    private String saveCheckpointSql(Connection conn) throws SQLException {
+        String databaseName = conn.getMetaData().getDatabaseProductName();
+        if ("PostgreSQL".equalsIgnoreCase(databaseName)) {
+            return """
+                INSERT INTO projection_checkpoints (projection_name, last_processed_event_id, last_processed_at, updated_at)
+                VALUES (?, ?, ?, now())
+                ON CONFLICT (projection_name) DO UPDATE
+                SET last_processed_event_id = EXCLUDED.last_processed_event_id,
+                    last_processed_at = EXCLUDED.last_processed_at,
+                    updated_at = now()
+                """;
+        }
+
+        return """
+            MERGE INTO projection_checkpoints (projection_name, last_processed_event_id, last_processed_at, updated_at)
+            KEY (projection_name)
+            VALUES (?, ?, ?, now())
+            """;
     }
 }

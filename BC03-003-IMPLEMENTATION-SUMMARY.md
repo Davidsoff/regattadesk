@@ -46,7 +46,7 @@ Successfully implemented the foundational scaffolding for core aggregates and pr
 - Idempotent replay support via checkpoints
 - Transactional event processing
 - Batch processing capability
-- H2 and PostgreSQL compatibility using MERGE statement
+- PostgreSQL-native upsert (`ON CONFLICT`) with H2 fallback using `MERGE`
 
 **Tests:**
 - 6 integration tests verifying checkpointing and idempotency
@@ -91,13 +91,13 @@ Successfully implemented the foundational scaffolding for core aggregates and pr
 
 ## Technical Decisions
 
-### 1. MERGE over ON CONFLICT
-**Decision:** Use MERGE statement for upserts in both checkpoint repository and projection handlers
+### 1. Database-specific Upsert SQL
+**Decision:** Use PostgreSQL `INSERT ... ON CONFLICT` in production, with H2 `MERGE` fallback for tests/local compatibility
 
 **Rationale:**
-- Works in both H2 (tests) and PostgreSQL 15+ (production)
-- Simpler syntax than ON CONFLICT DO UPDATE
-- Maintains consistency across codebase
+- PostgreSQL `MERGE` syntax differs from H2 and is not compatible with H2-style `KEY (...) VALUES`
+- `ON CONFLICT` is stable and explicit for PostgreSQL production workloads
+- H2 fallback retains fast in-memory test support
 
 ### 2. Timestamp Precision Handling
 **Decision:** Truncate timestamps to milliseconds in tests
@@ -116,13 +116,13 @@ Successfully implemented the foundational scaffolding for core aggregates and pr
 - Warning added for large event stores
 - Cursor-based approach deferred to production optimization
 
-### 4. Event Deserialization Placeholder
-**Decision:** Use GenericDomainEvent for now
+### 4. Event Payload Access for Projections
+**Decision:** Carry raw event payload JSON in `EventEnvelope` so projection handlers can deserialize typed events reliably
 
 **Rationale:**
-- Full event type registry requires more events
-- Deferred to BC03-004 when more domain events exist
-- Current implementation sufficient for scaffolding
+- Event store currently returns generic payload wrappers for unregistered types
+- Projections still need access to canonical persisted JSON to parse concrete read-model events
+- Keeps scaffolding simple while avoiding runtime `toString()` deserialization failures
 
 ## Test Results
 
@@ -150,10 +150,7 @@ The current `readEventsAfter` method has scalability limitations:
 **Mitigation:** Documented as TODO for production cursor-based approach
 
 ### Event Type Registry
-Event deserialization currently uses GenericDomainEvent:
-- Sufficient for scaffolding phase
-- Full registry will be implemented in BC03-004
-- No functional impact on current implementation
+Event deserialization still uses GenericDomainEvent internally in the event store when no typed registry exists, but projection code now deserializes from raw persisted payload JSON exposed via `EventEnvelope.getRawPayload()`.
 
 ## Dependencies
 - ✅ BC03-002 (Event store primitives) - Complete

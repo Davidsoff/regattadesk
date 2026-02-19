@@ -170,6 +170,31 @@ class ProjectionIntegrationTest {
         assertEquals(0, processed2);
         assertEquals(handledCount1, handledCount2);
     }
+
+    @Test
+    @Transactional
+    void testCheckpointAdvancesForUnhandledEvents() {
+        UUID aggregateId = UUID.randomUUID();
+        TestEvent unhandledEvent = new TestEvent("UnhandledEventType", aggregateId, "ignored");
+
+        eventStore.append(aggregateId, "TestAggregate", -1,
+                List.of(unhandledEvent), EventMetadata.builder().build());
+
+        EventEnvelope appendedEnvelope = eventStore.readStream(aggregateId).getFirst();
+
+        TestProjectionHandler handler = new TestProjectionHandler(testProjectionName);
+        int processed = projectionWorker.processProjection(handler);
+
+        assertEquals(0, processed);
+        assertEquals(0, handler.getHandledEventCount());
+
+        Optional<UUID> lastEventId = checkpointRepository.getLastProcessedEventId(testProjectionName);
+        assertTrue(lastEventId.isPresent());
+        assertEquals(appendedEnvelope.getEventId(), lastEventId.get());
+
+        // Second run must not reread the same unhandled event forever.
+        assertEquals(0, projectionWorker.processProjection(handler));
+    }
     
     // Test event implementation
     private static class TestEvent implements DomainEvent {

@@ -65,16 +65,8 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     }
     
     private void insertRegatta(RegattaCreatedEvent event) {
-        // Use MERGE for H2 compatibility (works in both H2 and PostgreSQL 15+)
-        String sql = """
-            MERGE INTO regattas (id, name, description, time_zone, status, entry_fee, currency, 
-                                draw_revision, results_revision, created_at, updated_at)
-            KEY (id)
-            VALUES (?, ?, ?, ?, 'draft', ?, ?, 0, 0, now(), now())
-            """;
-        
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(insertRegattaSql(conn))) {
             
             stmt.setObject(1, event.getRegattaId());
             stmt.setString(2, event.getName());
@@ -92,12 +84,42 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     
     private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
         try {
-            // For now, we use the raw payload from the event envelope
-            // In production, you'd want proper event deserialization
-            String payload = envelope.getPayload().toString();
-            return objectMapper.readValue(payload, eventClass);
+            String payload = envelope.getRawPayload();
+            if (payload != null && !payload.isBlank()) {
+                return objectMapper.readValue(payload, eventClass);
+            }
+
+            return objectMapper.convertValue(envelope.getPayload(), eventClass);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse event payload", e);
         }
+    }
+
+    private String insertRegattaSql(Connection conn) throws SQLException {
+        String databaseName = conn.getMetaData().getDatabaseProductName();
+        if ("PostgreSQL".equalsIgnoreCase(databaseName)) {
+            return """
+                INSERT INTO regattas (id, name, description, time_zone, status, entry_fee, currency,
+                                      draw_revision, results_revision, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'draft', ?, ?, 0, 0, now(), now())
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    description = EXCLUDED.description,
+                    time_zone = EXCLUDED.time_zone,
+                    status = EXCLUDED.status,
+                    entry_fee = EXCLUDED.entry_fee,
+                    currency = EXCLUDED.currency,
+                    draw_revision = EXCLUDED.draw_revision,
+                    results_revision = EXCLUDED.results_revision,
+                    updated_at = now()
+                """;
+        }
+
+        return """
+            MERGE INTO regattas (id, name, description, time_zone, status, entry_fee, currency,
+                                draw_revision, results_revision, created_at, updated_at)
+            KEY (id)
+            VALUES (?, ?, ?, ?, 'draft', ?, ?, 0, 0, now(), now())
+            """;
     }
 }

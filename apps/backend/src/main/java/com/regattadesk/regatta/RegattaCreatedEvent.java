@@ -1,5 +1,7 @@
 package com.regattadesk.regatta;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.eventstore.DomainEvent;
 
 import java.math.BigDecimal;
@@ -17,8 +19,13 @@ public class RegattaCreatedEvent implements DomainEvent {
     private final BigDecimal entryFee;
     private final String currency;
     
-    public RegattaCreatedEvent(UUID regattaId, String name, String description, 
-                              String timeZone, BigDecimal entryFee, String currency) {
+    @JsonCreator
+    public RegattaCreatedEvent(@JsonProperty("regattaId") UUID regattaId,
+                              @JsonProperty("name") String name,
+                              @JsonProperty("description") String description,
+                              @JsonProperty("timeZone") String timeZone,
+                              @JsonProperty("entryFee") BigDecimal entryFee,
+                              @JsonProperty("currency") String currency) {
         this.regattaId = regattaId;
         this.name = name;
         this.description = description;

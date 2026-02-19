@@ -115,6 +115,26 @@ class RegattaAggregateTest {
                     new BigDecimal("25.00"), null);
         });
     }
+
+    @Test
+    void testCreateRegattaWithInvalidCurrencyThrowsException() {
+        UUID id = UUID.randomUUID();
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            RegattaAggregate.create(id, "Test Regatta", "Description", "Europe/Amsterdam",
+                    new BigDecimal("25.00"), "NOT_A_CURRENCY");
+        });
+    }
+
+    @Test
+    void testCreateRegattaWithInvalidTimeZoneThrowsException() {
+        UUID id = UUID.randomUUID();
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            RegattaAggregate.create(id, "Test Regatta", "Description", "Invalid/Timezone",
+                    new BigDecimal("25.00"), "EUR");
+        });
+    }
     
     @Test
     void testLoadRegattaFromHistory() {

@@ -4,6 +4,9 @@ import com.regattadesk.aggregate.AggregateRoot;
 import com.regattadesk.eventstore.DomainEvent;
 
 import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.util.Currency;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -44,15 +47,26 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         if (timeZone == null || timeZone.isBlank()) {
             throw new IllegalArgumentException("Time zone cannot be null or blank");
         }
+        try {
+            ZoneId.of(timeZone);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Time zone must be a valid IANA zone ID", e);
+        }
         if (entryFee == null || entryFee.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Entry fee cannot be null or negative");
         }
         if (currency == null || currency.isBlank()) {
             throw new IllegalArgumentException("Currency cannot be null or blank");
         }
+        String normalizedCurrency = currency.toUpperCase(Locale.ROOT);
+        try {
+            Currency.getInstance(normalizedCurrency);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Currency must be a valid ISO 4217 currency code", e);
+        }
         
         RegattaAggregate regatta = new RegattaAggregate(id);
-        regatta.raiseEvent(new RegattaCreatedEvent(id, name, description, timeZone, entryFee, currency));
+        regatta.raiseEvent(new RegattaCreatedEvent(id, name, description, timeZone, entryFee, normalizedCurrency));
         return regatta;
     }
     
