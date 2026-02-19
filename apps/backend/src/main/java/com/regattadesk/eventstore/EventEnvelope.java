@@ -21,6 +21,7 @@ public class EventEnvelope {
     private final String eventType;
     private final long sequenceNumber;
     private final DomainEvent payload;
+    private final String rawPayload;
     private final EventMetadata metadata;
     private final Instant createdAt;
     
@@ -31,6 +32,7 @@ public class EventEnvelope {
         this.eventType = builder.eventType;
         this.sequenceNumber = builder.sequenceNumber;
         this.payload = builder.payload;
+        this.rawPayload = builder.rawPayload;
         this.metadata = builder.metadata;
         this.createdAt = builder.createdAt;
     }
@@ -58,6 +60,10 @@ public class EventEnvelope {
     public DomainEvent getPayload() {
         return payload;
     }
+
+    public String getRawPayload() {
+        return rawPayload;
+    }
     
     public EventMetadata getMetadata() {
         return metadata;
@@ -78,6 +84,7 @@ public class EventEnvelope {
         private String eventType;
         private long sequenceNumber;
         private DomainEvent payload;
+        private String rawPayload;
         private EventMetadata metadata;
         private Instant createdAt;
         
@@ -108,6 +115,11 @@ public class EventEnvelope {
         
         public Builder payload(DomainEvent payload) {
             this.payload = payload;
+            return this;
+        }
+
+        public Builder rawPayload(String rawPayload) {
+            this.rawPayload = rawPayload;
             return this;
         }
         

@@ -21,7 +21,8 @@ If implementation and docs diverge, update docs in the same change.
 - Prefer incremental, demoable outcomes over large batch changes.
 - Use explicit assumptions; do not hide uncertainty.
 - Do not introduce speculative abstractions without immediate use.
-- Preserve backward compatibility unless the ticket explicitly allows a break.
+- RegattaDesk v0.1 is pre-production: breaking changes are allowed when they simplify code and remove unused migration/deprecation paths.
+- When introducing a breaking change, update affected PDD docs in the same change.
 
 ## Planning and execution
 - Start from a single ticket (or one tightly related ticket set).
@@ -85,7 +86,9 @@ Apply the test matrix from `pdd/implementation/plan.md`:
 
 Also:
 - Add regression tests for bug fixes.
-- Prefer deterministic tests over timing-sensitive tests.
+- PR-gating tests must be deterministic and environment-stable.
+- Do not gate PRs on timing thresholds, `sleep`-based checks, wall-clock assumptions, or machine-local timezone/locale behavior.
+- Keep performance benchmarks/sanity checks non-gating and isolated from default PR test jobs.
 - Keep test fixtures readable and minimal.
 
 ## Observability and operations
@@ -97,7 +100,7 @@ Also:
 ## Documentation and handoff
 For each meaningful change:
 - Update relevant PDD docs and ticket status/context.
-- Document migration steps and rollback notes when needed.
+- Document migration steps and rollback notes when relevant to an actively used environment.
 - Include concise "what changed" and "how to verify" notes.
 
 ## Git and commit hygiene

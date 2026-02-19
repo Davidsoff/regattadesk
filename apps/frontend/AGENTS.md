@@ -85,6 +85,10 @@ const count = ref(0)
 3. **Build Tool**: Vite provides fast HMR and optimized builds
 4. **Package Manager**: Use npm (not yarn or pnpm for consistency)
 5. **Code Style**: Will be enforced by ESLint/Prettier in future iterations
+6. **Pre-production policy**: In v0.1, breaking changes are acceptable; avoid unused deprecation or migration layers
+7. **PDD sync**: Keep affected `pdd/` design/implementation docs updated in the same PR when frontend behavior changes
+8. **Deterministic PR tests**: Gating frontend tests must not depend on wall-clock timing, arbitrary sleeps, or machine-local timezone/locale defaults
+9. **Performance tests**: Frontend performance benchmarks/profiling checks are non-gating and should run outside default PR validation
 
 ## Common Commands
 - `npm run dev` - Start dev server with HMR

@@ -301,6 +301,7 @@ public class PostgresEventStore implements EventStore {
                 .eventType(eventType)
                 .sequenceNumber(sequenceNumber)
                 .payload(payload)
+                .rawPayload(payloadJson)
                 .metadata(metadata)
                 .createdAt(createdAt.toInstant())
                 .build();

@@ -78,6 +78,10 @@ cd apps/backend && ./mvnw package -Dquarkus.container-image.build=true
 3. **Toolchain Requirements**: Java 25 for backend, Node 22+ for frontend
 4. **Build Isolation**: Each app has its own build system (Maven vs npm)
 5. **Future Integration**: Docker Compose will orchestrate both apps together
+6. **Pre-production policy**: For v0.1, prefer clean breaking changes over deprecation/migration shims that are not used yet
+7. **Docs sync is mandatory**: When behavior or contracts change, update relevant `pdd/` docs in the same PR
+8. **PR gate determinism**: Default PR checks must use deterministic tests only (no timing-threshold or sleep-based gating tests)
+9. **Performance testing policy**: Performance tests are non-gating and must run outside default PR gate jobs
 
 ## Future Enhancements
 - Shared TypeScript types between backend and frontend
