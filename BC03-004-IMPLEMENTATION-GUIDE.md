@@ -9,8 +9,8 @@ This document provides implementation guidance for completing BC03-004 (Regatta 
 ### 1. Database Migrations (✅ Complete)
 
 **Files Created:**
-- `V005__athletes_read_model.sql` - Athletes, Clubs, Crews tables
-- `V006__regatta_entities_read_model.sql` - Categories, BoatTypes, EventGroups, Events, Blocks, Entries tables
+- `V006__athletes_read_model.sql` - Athletes, federation identifiers, Clubs, Crews tables
+- `V007__regatta_entities_read_model.sql` - Categories, BoatTypes, EventGroups, Events, Blocks, Entries tables
 - H2-compatible versions for both migrations
 
 All read model tables are now in place for regatta setup entities.
@@ -382,8 +382,8 @@ Example: `AthleteResourceTest` (to be created)
 
 **Database Schema:**
 - `/pdd/design/database-schema.md` - Full schema specification
-- `/apps/backend/src/main/resources/db/migration/V005__*.sql` - Athletes migration
-- `/apps/backend/src/main/resources/db/migration/V006__*.sql` - Other entities migration
+- `/apps/backend/src/main/resources/db/migration/V006__*.sql` - Athletes migration
+- `/apps/backend/src/main/resources/db/migration/V007__*.sql` - Other entities migration
 
 **API Specification:**
 - `/pdd/design/openapi-v0.1.yaml` - Complete API contract

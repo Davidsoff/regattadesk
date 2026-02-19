@@ -21,10 +21,10 @@ Successfully implemented the foundational infrastructure and complete reference 
 
 ### 1. Database Migrations ✅
 **Files Created:**
-- `V005__athletes_read_model.sql` (PostgreSQL)
-- `V005__athletes_read_model.sql` (H2)
-- `V006__regatta_entities_read_model.sql` (PostgreSQL)
-- `V006__regatta_entities_read_model.sql` (H2)
+- `V006__athletes_read_model.sql` (PostgreSQL)
+- `V006__athletes_read_model.sql` (H2)
+- `V007__regatta_entities_read_model.sql` (PostgreSQL)
+- `V007__regatta_entities_read_model.sql` (H2)
 
 **Tables Added:**
 - `clubs` - Club master data
@@ -340,10 +340,10 @@ The Athletes implementation provides a **complete, tested pattern** that can be 
 - `api/AthleteListResponse.java`
 
 **Migrations:**
-- `V005__athletes_read_model.sql` (PostgreSQL)
-- `h2/V005__athletes_read_model.sql` (H2)
-- `V006__regatta_entities_read_model.sql` (PostgreSQL)
-- `h2/V006__regatta_entities_read_model.sql` (H2)
+- `V006__athletes_read_model.sql` (PostgreSQL)
+- `h2/V006__athletes_read_model.sql` (H2)
+- `V007__regatta_entities_read_model.sql` (PostgreSQL)
+- `h2/V007__regatta_entities_read_model.sql` (H2)
 
 **Documentation:**
 - `BC03-004-IMPLEMENTATION-GUIDE.md`

@@ -190,6 +190,12 @@ services:
       - "traefik.http.routers.backend-rulesets.tls=true"
       - "traefik.http.routers.backend-rulesets.middlewares=authelia@docker"
       - "traefik.http.services.backend-rulesets.loadbalancer.server.port=8080"
+      # Athlete endpoints with ForwardAuth
+      - "traefik.http.routers.backend-athletes.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/athletes`)"
+      - "traefik.http.routers.backend-athletes.entrypoints=web,websecure"
+      - "traefik.http.routers.backend-athletes.tls=true"
+      - "traefik.http.routers.backend-athletes.middlewares=authelia@docker"
+      - "traefik.http.services.backend-athletes.loadbalancer.server.port=8080"
       # Operator endpoints with ForwardAuth
       # Note: $$ escapes to single $ in Docker Compose YAML for regex end-of-string anchor
       - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator(/.*)?$$`)"

@@ -81,7 +81,7 @@ public class AthleteProjectionHandler implements ProjectionHandler {
         try (Connection conn = dataSource.getConnection()) {
             String sql = """
                 UPDATE athletes
-                SET first_name = ?, middle_name = ?, last_name = ?, gender = ?, club_id = ?, updated_at = ?
+                SET first_name = ?, middle_name = ?, last_name = ?, date_of_birth = ?, gender = ?, club_id = ?, updated_at = ?
                 WHERE id = ?
                 """;
 
@@ -90,10 +90,11 @@ public class AthleteProjectionHandler implements ProjectionHandler {
                 stmt.setString(1, event.getFirstName());
                 stmt.setString(2, event.getMiddleName());
                 stmt.setString(3, event.getLastName());
-                stmt.setString(4, event.getGender());
-                stmt.setObject(5, event.getClubId());
-                stmt.setTimestamp(6, now);
-                stmt.setObject(7, event.getAthleteId());
+                stmt.setDate(4, java.sql.Date.valueOf(event.getDateOfBirth()));
+                stmt.setString(5, event.getGender());
+                stmt.setObject(6, event.getClubId());
+                stmt.setTimestamp(7, now);
+                stmt.setObject(8, event.getAthleteId());
                 stmt.executeUpdate();
             }
         }

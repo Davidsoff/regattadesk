@@ -29,6 +29,18 @@ CREATE INDEX idx_athletes_first_name ON athletes(first_name);
 CREATE INDEX idx_athletes_last_name ON athletes(last_name);
 CREATE INDEX idx_athletes_name_search ON athletes(first_name, last_name);
 
+CREATE TABLE athlete_federation_identifiers (
+    athlete_id UUID NOT NULL REFERENCES athletes(id) ON DELETE CASCADE,
+    federation_code CHARACTER VARYING(64) NOT NULL,
+    external_id CHARACTER VARYING(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    PRIMARY KEY (athlete_id, federation_code),
+    UNIQUE(federation_code, external_id)
+);
+
+CREATE INDEX idx_athlete_federation_lookup
+    ON athlete_federation_identifiers(federation_code, external_id);
+
 CREATE TABLE crews (
     id UUID PRIMARY KEY,
     display_name CHARACTER VARYING(255) NOT NULL,

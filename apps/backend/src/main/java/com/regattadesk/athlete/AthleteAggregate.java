@@ -52,19 +52,21 @@ public class AthleteAggregate extends AggregateRoot<AthleteAggregate> {
             String firstName,
             String middleName,
             String lastName,
+            LocalDate dateOfBirth,
             String gender,
             UUID clubId
     ) {
         if (deleted) {
             throw new IllegalStateException("Cannot update deleted athlete");
         }
-        validateUpdate(firstName, lastName, gender);
+        validateUpdate(firstName, lastName, dateOfBirth, gender);
 
         raiseEvent(new AthleteUpdatedEvent(
                 getId(),
                 firstName,
                 middleName,
                 lastName,
+                dateOfBirth,
                 gender,
                 clubId
         ));
@@ -95,12 +97,18 @@ public class AthleteAggregate extends AggregateRoot<AthleteAggregate> {
         }
     }
 
-    private static void validateUpdate(String firstName, String lastName, String gender) {
+    private static void validateUpdate(String firstName, String lastName, LocalDate dateOfBirth, String gender) {
         if (firstName == null || firstName.isBlank()) {
             throw new IllegalArgumentException("First name is required");
         }
         if (lastName == null || lastName.isBlank()) {
             throw new IllegalArgumentException("Last name is required");
+        }
+        if (dateOfBirth == null) {
+            throw new IllegalArgumentException("Date of birth is required");
+        }
+        if (dateOfBirth.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Date of birth cannot be in the future");
         }
         if (gender == null || !VALID_GENDERS.contains(gender)) {
             throw new IllegalArgumentException("Gender must be one of: M, F, X");
@@ -121,6 +129,7 @@ public class AthleteAggregate extends AggregateRoot<AthleteAggregate> {
             this.firstName = e.getFirstName();
             this.middleName = e.getMiddleName();
             this.lastName = e.getLastName();
+            this.dateOfBirth = e.getDateOfBirth();
             this.gender = e.getGender();
             this.clubId = e.getClubId();
         } else if (event instanceof AthleteDeletedEvent e) {

@@ -98,6 +98,19 @@ access_control:
       resources:
         - "^/api/v1/rulesets(/.*)?$"
 
+    # Athlete API endpoints (require authentication, any staff role)
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/athletes(/.*)?$"
+      subject:
+        - ["group:super_admin"]
+        - ["group:regatta_admin"]
+        - ["group:head_of_jury"]
+        - ["group:info_desk"]
+        - ["group:financial_manager"]
+
 # Session Configuration (updated format for 4.38+)
 # NOTE: For development, using HTTP. In production, use HTTPS with proper TLS certificates
 session:

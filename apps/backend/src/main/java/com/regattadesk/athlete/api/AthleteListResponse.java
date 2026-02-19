@@ -12,14 +12,11 @@ public record AthleteListResponse(
     PaginationInfo pagination
 ) {
     public record PaginationInfo(
-        @JsonProperty("total")
-        Integer total,
+        @JsonProperty("has_more")
+        boolean hasMore,
 
-        @JsonProperty("limit")
-        int limit,
-
-        @JsonProperty("cursor")
-        String cursor
+        @JsonProperty("next_cursor")
+        String nextCursor
     ) {
     }
 }
