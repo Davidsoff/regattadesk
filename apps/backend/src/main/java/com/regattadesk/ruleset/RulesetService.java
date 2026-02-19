@@ -193,6 +193,11 @@ public class RulesetService {
     }
     
     private void saveAggregate(RulesetAggregate ruleset, UUID correlationId, UUID causationId) {
+        int newEventCount = ruleset.getUncommittedEvents().size();
+        long expectedVersion = newEventCount > ruleset.getVersion()
+            ? -1
+            : ruleset.getVersion() - newEventCount + 1;
+
         EventMetadata metadata = EventMetadata.builder()
             .correlationId(correlationId != null ? correlationId : UUID.randomUUID())
             .causationId(causationId)
@@ -202,7 +207,7 @@ public class RulesetService {
         eventStore.append(
             ruleset.getId(),
             ruleset.getAggregateType(),
-            ruleset.getVersion(),
+            expectedVersion,
             ruleset.getUncommittedEvents(),
             metadata
         );

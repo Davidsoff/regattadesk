@@ -39,6 +39,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
      */
     private static final List<String> TRUSTED_PATH_PREFIXES = List.of(
         "/api/v1/staff",
+        "/api/v1/rulesets",
         "/api/v1/regattas",  // Operator paths are under /api/v1/regattas/{id}/operator
         "/test/auth"  // Test endpoints (only present in test environment)
     );

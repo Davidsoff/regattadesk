@@ -74,7 +74,7 @@ public class RulesetResource {
                 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         }
     }
@@ -90,7 +90,7 @@ public class RulesetResource {
         
         if (ruleset.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Ruleset not found"))
+                .entity(ErrorResponse.notFound("Ruleset not found"))
                 .build();
         }
         
@@ -112,7 +112,7 @@ public class RulesetResource {
             Optional<RulesetAggregate> existing = rulesetService.getRuleset(rulesetId);
             if (existing.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Ruleset not found"))
+                    .entity(ErrorResponse.notFound("Ruleset not found"))
                     .build();
             }
             
@@ -138,7 +138,7 @@ public class RulesetResource {
                 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         }
     }
@@ -164,11 +164,11 @@ public class RulesetResource {
         } catch (IllegalArgumentException e) {
             if (e.getMessage() != null && e.getMessage().startsWith("Source ruleset not found:")) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Ruleset not found"))
+                    .entity(ErrorResponse.notFound("Ruleset not found"))
                     .build();
             }
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         }
     }
