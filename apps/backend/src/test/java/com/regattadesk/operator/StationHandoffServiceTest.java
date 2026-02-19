@@ -43,6 +43,7 @@ class StationHandoffServiceTest {
 
         OperatorToken token = createValidToken(tokenId, regattaId, station);
         when(tokenService.getTokenById(tokenId)).thenReturn(Optional.of(token));
+        when(repository.findPendingByToken(tokenId)).thenReturn(List.of());
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         StationHandoff handoff = service.requestHandoff(regattaId, tokenId, station, deviceId);
@@ -56,6 +57,7 @@ class StationHandoffServiceTest {
         assertNotNull(handoff.getPin());
         assertEquals(6, handoff.getPin().length());
         assertTrue(handoff.getExpiresAt().isAfter(handoff.getCreatedAt()));
+        assertTrue(handoff.getPin().matches("[1-9]\\d{5}"));
 
         verify(repository).save(any(StationHandoff.class));
         verify(repository).appendEvent(any(StationHandoffRequestedEvent.class));
@@ -73,6 +75,26 @@ class StationHandoffServiceTest {
         assertThrows(IllegalStateException.class, 
             () -> service.requestHandoff(regattaId, tokenId, station, deviceId));
         
+        verify(repository, never()).save(any());
+        verify(repository, never()).appendEvent(any());
+    }
+
+    @Test
+    void requestHandoff_shouldRejectDuplicatePendingHandoff() {
+        UUID regattaId = UUID.randomUUID();
+        UUID tokenId = UUID.randomUUID();
+        String station = "finish-line";
+        String deviceId = "device-123";
+
+        OperatorToken token = createValidToken(tokenId, regattaId, station);
+        StationHandoff existing = createPendingHandoff(UUID.randomUUID(), tokenId, regattaId, station);
+
+        when(tokenService.getTokenById(tokenId)).thenReturn(Optional.of(token));
+        when(repository.findPendingByToken(tokenId)).thenReturn(List.of(existing));
+
+        assertThrows(IllegalStateException.class,
+            () -> service.requestHandoff(regattaId, tokenId, station, deviceId));
+
         verify(repository, never()).save(any());
         verify(repository, never()).appendEvent(any());
     }
@@ -147,6 +169,22 @@ class StationHandoffServiceTest {
     }
 
     @Test
+    void completeHandoff_shouldFailForExpiredHandoff() {
+        UUID handoffId = UUID.randomUUID();
+        StationHandoff expired = createExpiredHandoff(handoffId);
+
+        when(repository.findById(handoffId)).thenReturn(Optional.of(expired));
+
+        StationHandoffService.HandoffCompletionResult result =
+            service.completeHandoff(handoffId, expired.getPin());
+
+        assertFalse(result.success());
+        assertEquals("Handoff has expired", result.message());
+        verify(repository, never()).update(any());
+        verify(repository, never()).appendEvent(any());
+    }
+
+    @Test
     void cancelHandoff_shouldCancelPendingHandoff() {
         UUID handoffId = UUID.randomUUID();
         StationHandoff pendingHandoff = createPendingHandoff(handoffId);
@@ -200,12 +238,16 @@ class StationHandoffServiceTest {
     }
 
     private StationHandoff createPendingHandoff(UUID handoffId) {
+        return createPendingHandoff(handoffId, UUID.randomUUID(), UUID.randomUUID(), "finish-line");
+    }
+
+    private StationHandoff createPendingHandoff(UUID handoffId, UUID tokenId, UUID regattaId, String station) {
         Instant now = Instant.now();
         return new StationHandoff(
             handoffId,
-            UUID.randomUUID(),
-            UUID.randomUUID(),
-            "finish-line",
+            regattaId,
+            tokenId,
+            station,
             "device-123",
             "123456",
             StationHandoff.HandoffStatus.PENDING,

@@ -110,23 +110,29 @@ public class StationHandoffResource {
      */
     @POST
     @Path("/{handoff_id}/reveal_pin")
+    @Consumes(MediaType.WILDCARD)
     public Response revealPin(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {
+
+        Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
+        if (scoped.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse("Handoff not found"))
+                .build();
+        }
         
         try {
             StationHandoffService.HandoffPinRevealResult result = 
                 handoffService.revealPin(handoffId, "operator", false);
-            
-            if (!result.handoff().getRegattaId().equals(regattaId)) {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Handoff not found"))
-                    .build();
-            }
-            
             return Response.ok(new StationHandoffResponse(result.handoff(), result.pin())).build();
             
         } catch (IllegalStateException e) {
+            if ("Handoff has expired".equals(e.getMessage())) {
+                return Response.status(Response.Status.GONE)
+                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
+                    .build();
+            }
             return Response.status(Response.Status.CONFLICT)
                 .entity(new ErrorResponse(e.getMessage()))
                 .build();
@@ -138,24 +144,30 @@ public class StationHandoffResource {
      */
     @POST
     @Path("/{handoff_id}/admin_reveal_pin")
+    @Consumes(MediaType.WILDCARD)
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
     public Response adminRevealPin(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {
+
+        Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
+        if (scoped.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse("Handoff not found"))
+                .build();
+        }
         
         try {
             StationHandoffService.HandoffPinRevealResult result = 
                 handoffService.revealPin(handoffId, "admin", true);
-            
-            if (!result.handoff().getRegattaId().equals(regattaId)) {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Handoff not found"))
-                    .build();
-            }
-            
             return Response.ok(new StationHandoffResponse(result.handoff(), result.pin())).build();
             
         } catch (IllegalStateException e) {
+            if ("Handoff has expired".equals(e.getMessage())) {
+                return Response.status(Response.Status.GONE)
+                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
+                    .build();
+            }
             return Response.status(Response.Status.CONFLICT)
                 .entity(new ErrorResponse(e.getMessage()))
                 .build();
@@ -171,20 +183,26 @@ public class StationHandoffResource {
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId,
             @Valid @NotNull(message = "request body is required") StationHandoffCompleteRequest request) {
-        
-        StationHandoffService.HandoffCompletionResult result = 
-            handoffService.completeHandoff(handoffId, request.getPin());
-        
-        if (result.handoff() != null && !result.handoff().getRegattaId().equals(regattaId)) {
+
+        Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
+        if (scoped.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                 .entity(new ErrorResponse("Handoff not found"))
                 .build();
         }
         
+        StationHandoffService.HandoffCompletionResult result = 
+            handoffService.completeHandoff(handoffId, request.getPin());
+
         if (!result.success()) {
             if ("Invalid PIN".equals(result.message())) {
                 return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new ErrorResponse("INVALID_PIN"))
+                    .build();
+            }
+            if ("Handoff has expired".equals(result.message())) {
+                return Response.status(Response.Status.GONE)
+                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
                     .build();
             }
             return Response.status(Response.Status.CONFLICT)
@@ -194,12 +212,24 @@ public class StationHandoffResource {
         
         return Response.ok(new StationHandoffResponse(result.handoff())).build();
     }
+
+    private Optional<StationHandoff> getScopedHandoff(UUID regattaId, UUID handoffId) {
+        Optional<StationHandoff> handoffOpt = handoffService.getHandoff(handoffId);
+        if (handoffOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!handoffOpt.get().getRegattaId().equals(regattaId)) {
+            return Optional.empty();
+        }
+        return handoffOpt;
+    }
     
     /**
      * Cancel pending handoff.
      */
     @POST
     @Path("/{handoff_id}/cancel")
+    @Consumes(MediaType.WILDCARD)
     public Response cancelHandoff(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {

@@ -240,6 +240,72 @@ class StationHandoffIntegrationTest {
     }
 
     @Test
+    void revealPin_shouldFailForExpiredHandoff() {
+        String createRequest = """
+            {
+                "requestingDeviceId": "device-expired-reveal"
+            }
+            """;
+
+        String handoffId = given()
+            .contentType(ContentType.JSON)
+            .body(createRequest)
+            .queryParam("token_id", tokenId.toString())
+            .queryParam("station", station)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(201)
+            .extract().path("id");
+
+        forceExpireHandoffForTest(handoffId);
+
+        given()
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/reveal_pin")
+        .then()
+            .statusCode(410)
+            .body("error", equalTo("HANDOFF_EXPIRED"));
+    }
+
+    @Test
+    void completeHandoff_shouldFailWhenExpired() {
+        String createRequest = """
+            {
+                "requestingDeviceId": "device-expired-complete"
+            }
+            """;
+
+        String handoffId = given()
+            .contentType(ContentType.JSON)
+            .body(createRequest)
+            .queryParam("token_id", tokenId.toString())
+            .queryParam("station", station)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(201)
+            .extract().path("id");
+
+        forceExpireHandoffForTest(handoffId);
+
+        String completeRequest = """
+            {
+                "pin": "123456"
+            }
+            """;
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(completeRequest)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/complete")
+        .then()
+            .statusCode(410)
+            .body("error", equalTo("HANDOFF_EXPIRED"));
+    }
+
+    @Test
     void cancelHandoff_shouldCancelPendingHandoff() {
         // Create a handoff
         String requestBody = """
@@ -274,5 +340,21 @@ class StationHandoffIntegrationTest {
         .then()
             .statusCode(200)
             .body("status", equalTo("CANCELLED"));
+    }
+
+    private void forceExpireHandoffForTest(String handoffId) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                 "UPDATE station_handoffs SET created_at = ?, expires_at = ? WHERE id = ?"
+             )) {
+            Instant expiredInstant = Instant.now().minus(10, ChronoUnit.MINUTES);
+            Instant createdInstant = expiredInstant.minus(10, ChronoUnit.MINUTES);
+            statement.setObject(1, createdInstant);
+            statement.setObject(2, expiredInstant);
+            statement.setObject(3, UUID.fromString(handoffId));
+            statement.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to force handoff expiration for test", e);
+        }
     }
 }

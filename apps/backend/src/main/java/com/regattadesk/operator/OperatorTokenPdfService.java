@@ -18,6 +18,8 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
@@ -30,7 +32,8 @@ import java.time.format.DateTimeFormatter;
 public class OperatorTokenPdfService {
     
     private static final int QR_CODE_SIZE = 200;
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
+    private static final ZoneId PDF_TIME_ZONE = ZoneId.of("UTC");
     
     /**
      * Generates a PDF document for an operator token.
@@ -79,8 +82,8 @@ public class OperatorTokenPdfService {
                 yPosition -= 30;
                 
                 // Validity information
-                String validFrom = token.getValidFrom().atZone(ZoneId.systemDefault()).format(DATE_FORMAT);
-                String validUntil = token.getValidUntil().atZone(ZoneId.systemDefault()).format(DATE_FORMAT);
+                String validFrom = token.getValidFrom().atZone(PDF_TIME_ZONE).format(DATE_FORMAT);
+                String validUntil = token.getValidUntil().atZone(PDF_TIME_ZONE).format(DATE_FORMAT);
                 
                 contentStream.beginText();
                 contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
@@ -98,7 +101,8 @@ public class OperatorTokenPdfService {
                 
                 // QR Code
                 try {
-                    String tokenUrl = operatorUrl + "?token=" + token.getToken();
+                    String tokenUrl = operatorUrl + "?token=" +
+                        URLEncoder.encode(token.getToken(), StandardCharsets.UTF_8);
                     BufferedImage qrImage = generateQRCode(tokenUrl);
                     PDImageXObject pdImage = LosslessFactory.createFromImage(document, qrImage);
                     

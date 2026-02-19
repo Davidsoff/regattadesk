@@ -117,6 +117,7 @@ public class OperatorTokenResource {
         Optional<OperatorToken> tokenOpt = tokenService.getTokenById(tokenId);
         if (tokenOpt.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
+                .type(MediaType.APPLICATION_JSON)
                 .entity(new ErrorResponse("Token not found"))
                 .build();
         }
@@ -124,6 +125,7 @@ public class OperatorTokenResource {
         OperatorToken token = tokenOpt.get();
         if (!token.getRegattaId().equals(regattaId)) {
             return Response.status(Response.Status.NOT_FOUND)
+                .type(MediaType.APPLICATION_JSON)
                 .entity(new ErrorResponse("Token not found"))
                 .build();
         }
@@ -139,6 +141,7 @@ public class OperatorTokenResource {
                 .build();
         } catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .type(MediaType.APPLICATION_JSON)
                 .entity(new ErrorResponse("Failed to generate PDF: " + e.getMessage()))
                 .build();
         }

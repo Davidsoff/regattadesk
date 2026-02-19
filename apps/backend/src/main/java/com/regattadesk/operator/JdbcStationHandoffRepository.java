@@ -11,8 +11,10 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -179,17 +181,21 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
     public void appendEvent(DomainEvent event) {
         String aggregateSql = """
             INSERT INTO aggregates (id, aggregate_type, version, created_at, updated_at)
-            VALUES (?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (?, ?, 0, ?, ?)
             """;
         String sequenceSql = "SELECT COALESCE(MAX(sequence_number), 0) + 1 FROM event_store WHERE aggregate_id = ?";
 
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
             try {
+                Instant occurredAt = extractOccurredAt(event);
+
                 // Ensure aggregate row exists for this handoff stream.
                 try (PreparedStatement stmt = conn.prepareStatement(aggregateSql)) {
                     stmt.setObject(1, event.getAggregateId());
                     stmt.setString(2, "StationHandoff");
+                    stmt.setTimestamp(3, Timestamp.from(occurredAt));
+                    stmt.setTimestamp(4, Timestamp.from(occurredAt));
                     stmt.executeUpdate();
                 } catch (SQLException e) {
                     // Ignore duplicate aggregate insert attempts.
@@ -207,36 +213,34 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
                     }
                 }
 
-                String eventSql = """
-                    INSERT INTO event_store (
-                        aggregate_id, aggregate_type, sequence_number, event_type, 
-                        event_data, occurred_at, stream_position
-                    ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, 
-                        (SELECT COALESCE(MAX(stream_position), 0) + 1 FROM event_store))
-                    """;
+                String payloadJson = OBJECT_MAPPER.writeValueAsString(toPayload(event));
+                String metadataJson = OBJECT_MAPPER.writeValueAsString(toMetadata(event));
+
+                String eventSql = isPostgreSql(conn)
+                    ? "INSERT INTO event_store (id, aggregate_id, event_type, sequence_number, payload, metadata, correlation_id, causation_id, created_at) VALUES (?, ?, ?, ?, ?::jsonb, ?::jsonb, ?, ?, ?)"
+                    : "INSERT INTO event_store (id, aggregate_id, event_type, sequence_number, payload, metadata, correlation_id, causation_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 try (PreparedStatement stmt = conn.prepareStatement(eventSql)) {
-                    stmt.setObject(1, event.getAggregateId());
-                    stmt.setString(2, "StationHandoff");
-                    stmt.setLong(3, nextSequence);
-                    stmt.setString(4, event.getEventType());
-
-                    // Serialize event to JSON
-                    var eventData = new LinkedHashMap<String, Object>();
-                    eventData.put("type", event.getEventType());
-                    eventData.put("data", event);
-                    String json = OBJECT_MAPPER.writeValueAsString(eventData);
-                    stmt.setString(5, json);
-
+                    stmt.setObject(1, UUID.randomUUID());
+                    stmt.setObject(2, event.getAggregateId());
+                    stmt.setString(3, event.getEventType());
+                    stmt.setLong(4, nextSequence);
+                    stmt.setString(5, payloadJson);
+                    stmt.setString(6, metadataJson);
+                    stmt.setObject(7, null);
+                    stmt.setObject(8, null);
+                    stmt.setTimestamp(9, Timestamp.from(occurredAt));
                     stmt.executeUpdate();
                 }
 
                 conn.commit();
-            } catch (Exception e) {
+            } catch (SQLException | JsonProcessingException e) {
                 conn.rollback();
-                throw e;
+                throw new RuntimeException("Failed to append handoff event", e);
+            } finally {
+                conn.setAutoCommit(true);
             }
-        } catch (SQLException | JsonProcessingException e) {
+        } catch (SQLException e) {
             throw new RuntimeException("Failed to append handoff event", e);
         }
     }
@@ -244,6 +248,9 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
     private boolean isUniqueConstraintViolation(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
+            if (current instanceof SQLException sqlException && "23505".equals(sqlException.getSQLState())) {
+                return true;
+            }
             String message = current.getMessage();
             if (message != null && (message.contains("23505") || message.toLowerCase().contains("unique"))) {
                 return true;
@@ -251,6 +258,48 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
             current = current.getCause();
         }
         return false;
+    }
+
+    private boolean isPostgreSql(Connection conn) throws SQLException {
+        return conn.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres");
+    }
+
+    private Instant extractOccurredAt(DomainEvent event) {
+        return switch (event) {
+            case com.regattadesk.operator.events.StationHandoffRequestedEvent e -> e.occurredAt();
+            case com.regattadesk.operator.events.StationHandoffPinRevealedEvent e -> e.occurredAt();
+            case com.regattadesk.operator.events.StationHandoffCompletedEvent e -> e.occurredAt();
+            case com.regattadesk.operator.events.StationHandoffCancelledEvent e -> e.occurredAt();
+            default -> Instant.now();
+        };
+    }
+
+    private LinkedHashMap<String, Object> toPayload(DomainEvent event) {
+        LinkedHashMap<String, Object> payload = new LinkedHashMap<>();
+        payload.put("eventType", event.getEventType());
+        payload.put("aggregateId", event.getAggregateId());
+        payload.put("event", event);
+        return payload;
+    }
+
+    private Map<String, Object> toMetadata(DomainEvent event) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("source", "station-handoff-service");
+        String actor = extractActor(event);
+        if (actor != null) {
+            metadata.put("actor", actor);
+        }
+        return metadata;
+    }
+
+    private String extractActor(DomainEvent event) {
+        return switch (event) {
+            case com.regattadesk.operator.events.StationHandoffRequestedEvent e -> e.actor();
+            case com.regattadesk.operator.events.StationHandoffPinRevealedEvent e -> e.actor();
+            case com.regattadesk.operator.events.StationHandoffCompletedEvent e -> e.actor();
+            case com.regattadesk.operator.events.StationHandoffCancelledEvent e -> e.actor();
+            default -> null;
+        };
     }
     
     private StationHandoff mapResultSet(ResultSet rs) throws SQLException {

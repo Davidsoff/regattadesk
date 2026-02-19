@@ -4,6 +4,8 @@ import com.regattadesk.operator.events.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -79,6 +81,16 @@ public class StationHandoffService {
         if (!token.isCurrentlyValid()) {
             throw new IllegalStateException("Token is not currently valid");
         }
+
+        boolean hasExistingPending = repository.findPendingByToken(tokenId).stream()
+            .anyMatch(existing ->
+                existing.getStation().equals(station)
+                    && existing.isPending()
+                    && !existing.isExpired()
+            );
+        if (hasExistingPending) {
+            throw new IllegalStateException("A pending handoff already exists for this token and station");
+        }
         
         Instant now = Instant.now();
         Instant expiresAt = now.plus(DEFAULT_HANDOFF_TTL_MINUTES, ChronoUnit.MINUTES);
@@ -106,7 +118,7 @@ public class StationHandoffService {
             saved.getRequestingDeviceId(),
             saved.getExpiresAt(),
             now,
-            "system"
+            saved.getRequestingDeviceId()
         ));
         
         return saved;
@@ -201,7 +213,8 @@ public class StationHandoffService {
             return new HandoffCompletionResult(false, "Handoff has expired", handoff);
         }
         
-        if (!handoff.getPin().equals(providedPin)) {
+        if (!constantTimeEquals(handoff.getPin(), providedPin)) {
+            pauseOnInvalidPinAttempt();
             return new HandoffCompletionResult(false, "Invalid PIN", handoff);
         }
         
@@ -228,7 +241,7 @@ public class StationHandoffService {
             updated.getStation(),
             updated.getRequestingDeviceId(),
             now,
-            "system"
+            updated.getRequestingDeviceId()
         ));
         
         return new HandoffCompletionResult(true, "Handoff completed successfully", updated);
@@ -307,8 +320,26 @@ public class StationHandoffService {
      * Generates a random numeric PIN.
      */
     private String generatePin() {
-        int pin = RANDOM.nextInt(1000000);
+        int pin = RANDOM.nextInt(900000) + 100000;
         return String.format("%0" + PIN_LENGTH + "d", pin);
+    }
+
+    private boolean constantTimeEquals(String expected, String provided) {
+        if (expected == null || provided == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+            expected.getBytes(StandardCharsets.UTF_8),
+            provided.getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    private void pauseOnInvalidPinAttempt() {
+        try {
+            Thread.sleep(200);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
     
     /**

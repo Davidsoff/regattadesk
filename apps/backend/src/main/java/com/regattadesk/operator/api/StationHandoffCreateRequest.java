@@ -1,7 +1,6 @@
 package com.regattadesk.operator.api;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 /**
  * Request DTO for creating a station handoff.

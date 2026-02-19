@@ -10,7 +10,9 @@ import java.util.UUID;
  * Allows secure transfer of station control from an active device to a new device
  * using PIN verification without interrupting ongoing capture operations.
  * 
- * This class is immutable and thread-safe.
+ * Each {@code StationHandoff} instance is an immutable, thread-safe snapshot
+ * of handoff state at a specific point in time. State transitions produce a
+ * new instance instead of mutating existing instances.
  */
 public final class StationHandoff {
     

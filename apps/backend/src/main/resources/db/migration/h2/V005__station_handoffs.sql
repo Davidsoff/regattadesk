@@ -11,13 +11,13 @@
 -- ========================================
 -- Tracks station handoff requests between devices
 CREATE TABLE station_handoffs (
-    id UUID NOT NULL PRIMARY KEY,
+    id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     regatta_id UUID NOT NULL,
     token_id UUID NOT NULL,
-    station CHARACTER VARYING(100) NOT NULL,
-    requesting_device_id CHARACTER VARYING(255) NOT NULL,
-    pin CHARACTER VARYING(6) NOT NULL,
-    status CHARACTER VARYING(20) NOT NULL DEFAULT 'PENDING',
+    station VARCHAR(100) NOT NULL,
+    requesting_device_id VARCHAR(255) NOT NULL,
+    pin CHAR(6) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
     completed_at TIMESTAMP,
