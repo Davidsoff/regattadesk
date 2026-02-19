@@ -1,0 +1,21 @@
+# Development tools overlay for RegattaDesk Docker Compose
+# This file exposes internal service ports to the host for direct database/storage access
+# Only use in development environments - not for production!
+#
+# Usage:
+#   Standard stack: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   With observability: docker compose -f docker-compose.yml -f docker-compose.observability.yml -f docker-compose.dev.yml up
+#
+# Note: Jaeger and Prometheus port mappings only work when docker-compose.observability.yml is also included
+
+services:
+  # PostgreSQL - expose port for direct database access
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  # MinIO - expose ports for direct S3 API and console access
+  minio:
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
