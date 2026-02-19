@@ -1,5 +1,6 @@
 package com.regattadesk.ruleset;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.DomainEvent;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.eventstore.EventMetadata;
@@ -7,7 +8,6 @@ import com.regattadesk.eventstore.EventStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,10 +23,12 @@ import java.util.stream.Collectors;
 public class RulesetService {
     
     private final EventStore eventStore;
+    private final ObjectMapper objectMapper;
     
     @Inject
-    public RulesetService(EventStore eventStore) {
+    public RulesetService(EventStore eventStore, ObjectMapper objectMapper) {
         this.eventStore = eventStore;
+        this.objectMapper = objectMapper;
     }
     
     /**
@@ -182,7 +184,7 @@ public class RulesetService {
         }
         
         List<DomainEvent> events = envelopes.stream()
-            .map(EventEnvelope::getPayload)
+            .map(this::toDomainEvent)
             .collect(Collectors.toList());
         
         RulesetAggregate ruleset = new RulesetAggregate(id);
@@ -206,5 +208,33 @@ public class RulesetService {
         );
         
         ruleset.markEventsAsCommitted();
+    }
+
+    private DomainEvent toDomainEvent(EventEnvelope envelope) {
+        String rawPayload = envelope.getRawPayload();
+        if (rawPayload == null || rawPayload.isBlank()) {
+            return envelope.getPayload();
+        }
+
+        Class<? extends DomainEvent> eventClass = switch (envelope.getEventType()) {
+            case "RulesetCreated" -> RulesetCreatedEvent.class;
+            case "RulesetDuplicated" -> RulesetDuplicatedEvent.class;
+            case "RulesetUpdated" -> RulesetUpdatedEvent.class;
+            case "RulesetDrawPublished" -> RulesetDrawPublishedEvent.class;
+            default -> null;
+        };
+
+        if (eventClass == null) {
+            return envelope.getPayload();
+        }
+
+        try {
+            return objectMapper.readValue(rawPayload, eventClass);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                "Failed to deserialize ruleset event type " + envelope.getEventType(),
+                e
+            );
+        }
     }
 }

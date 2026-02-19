@@ -3,6 +3,7 @@ package com.regattadesk.ruleset;
 import com.regattadesk.aggregate.AggregateRoot;
 import com.regattadesk.eventstore.DomainEvent;
 
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -168,7 +169,7 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
         if (ageCalculationType == null || ageCalculationType.isBlank()) {
             throw new IllegalArgumentException("Age calculation type cannot be null or blank");
         }
-        String normalized = ageCalculationType.toLowerCase();
+        String normalized = ageCalculationType.toLowerCase(Locale.ROOT);
         if (!normalized.equals(AGE_CALCULATION_ACTUAL_AT_START)
             && !normalized.equals(AGE_CALCULATION_AGE_AS_OF_JAN_1)) {
             throw new IllegalArgumentException(
