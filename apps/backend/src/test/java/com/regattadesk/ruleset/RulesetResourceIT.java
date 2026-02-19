@@ -73,6 +73,17 @@ class RulesetResourceIT {
         given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/rulesets/" + rulesetId)
+            .then()
+            .statusCode(200)
+            .body("id", equalTo(rulesetId.toString()))
+            .body("description", equalTo("Updated description"))
+            .body("age_calculation_type", equalTo("age_as_of_jan_1"));
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
             .contentType("application/json")
             .body("""
                 {

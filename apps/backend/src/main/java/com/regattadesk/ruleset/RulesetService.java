@@ -216,11 +216,6 @@ public class RulesetService {
     }
 
     private DomainEvent toDomainEvent(EventEnvelope envelope) {
-        String rawPayload = envelope.getRawPayload();
-        if (rawPayload == null || rawPayload.isBlank()) {
-            return envelope.getPayload();
-        }
-
         Class<? extends DomainEvent> eventClass = switch (envelope.getEventType()) {
             case "RulesetCreated" -> RulesetCreatedEvent.class;
             case "RulesetDuplicated" -> RulesetDuplicatedEvent.class;
@@ -231,6 +226,13 @@ public class RulesetService {
 
         if (eventClass == null) {
             return envelope.getPayload();
+        }
+
+        String rawPayload = envelope.getRawPayload();
+        if (rawPayload == null || rawPayload.isBlank()) {
+            throw new IllegalStateException(
+                "Missing raw payload for ruleset event type " + envelope.getEventType()
+            );
         }
 
         try {
