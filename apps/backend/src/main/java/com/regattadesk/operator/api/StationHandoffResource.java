@@ -1,5 +1,6 @@
 package com.regattadesk.operator.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.operator.StationHandoff;
 import com.regattadesk.operator.StationHandoffService;
 import com.regattadesk.security.RequireRole;
@@ -47,12 +48,12 @@ public class StationHandoffResource {
         
         if (tokenId == null) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("token_id query parameter is required"))
+                .entity(ErrorResponse.badRequest("token_id query parameter is required"))
                 .build();
         }
         if (station == null || station.isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("station query parameter is required"))
+                .entity(ErrorResponse.badRequest("station query parameter is required"))
                 .build();
         }
         
@@ -70,11 +71,11 @@ public class StationHandoffResource {
                 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         } catch (IllegalStateException e) {
             return Response.status(Response.Status.CONFLICT)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.conflict(e.getMessage()))
                 .build();
         }
     }
@@ -91,14 +92,14 @@ public class StationHandoffResource {
         Optional<StationHandoff> handoffOpt = handoffService.getHandoff(handoffId);
         if (handoffOpt.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
         StationHandoff handoff = handoffOpt.get();
         if (!handoff.getRegattaId().equals(regattaId)) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
@@ -118,7 +119,7 @@ public class StationHandoffResource {
         Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
         if (scoped.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
@@ -130,11 +131,11 @@ public class StationHandoffResource {
         } catch (IllegalStateException e) {
             if ("Handoff has expired".equals(e.getMessage())) {
                 return Response.status(Response.Status.GONE)
-                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
+                    .entity(ErrorResponse.gone("HANDOFF_EXPIRED", "HANDOFF_EXPIRED"))
                     .build();
             }
             return Response.status(Response.Status.CONFLICT)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.conflict(e.getMessage()))
                 .build();
         }
     }
@@ -153,7 +154,7 @@ public class StationHandoffResource {
         Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
         if (scoped.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
@@ -165,11 +166,11 @@ public class StationHandoffResource {
         } catch (IllegalStateException e) {
             if ("Handoff has expired".equals(e.getMessage())) {
                 return Response.status(Response.Status.GONE)
-                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
+                    .entity(ErrorResponse.gone("HANDOFF_EXPIRED", "HANDOFF_EXPIRED"))
                     .build();
             }
             return Response.status(Response.Status.CONFLICT)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.conflict(e.getMessage()))
                 .build();
         }
     }
@@ -187,7 +188,7 @@ public class StationHandoffResource {
         Optional<StationHandoff> scoped = getScopedHandoff(regattaId, handoffId);
         if (scoped.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
@@ -197,16 +198,16 @@ public class StationHandoffResource {
         if (!result.success()) {
             if ("Invalid PIN".equals(result.message())) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(new ErrorResponse("INVALID_PIN"))
+                    .entity(new ErrorResponse("INVALID_PIN", "Invalid PIN"))
                     .build();
             }
             if ("Handoff has expired".equals(result.message())) {
                 return Response.status(Response.Status.GONE)
-                    .entity(new ErrorResponse("HANDOFF_EXPIRED"))
+                    .entity(ErrorResponse.gone("HANDOFF_EXPIRED", "HANDOFF_EXPIRED"))
                     .build();
             }
             return Response.status(Response.Status.CONFLICT)
-                .entity(new ErrorResponse(result.message()))
+                .entity(ErrorResponse.conflict(result.message()))
                 .build();
         }
         
@@ -238,13 +239,13 @@ public class StationHandoffResource {
         Optional<StationHandoff> handoffOpt = handoffService.getHandoff(handoffId);
         if (handoffOpt.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
         if (!handoffOpt.get().getRegattaId().equals(regattaId)) {
             return Response.status(Response.Status.NOT_FOUND)
-                .entity(new ErrorResponse("Handoff not found"))
+                .entity(ErrorResponse.notFound("Handoff not found"))
                 .build();
         }
         
@@ -254,23 +255,8 @@ public class StationHandoffResource {
         }
         
         return Response.status(Response.Status.CONFLICT)
-            .entity(new ErrorResponse("Handoff cannot be cancelled"))
+            .entity(ErrorResponse.conflict("Handoff cannot be cancelled"))
             .build();
-    }
-    
-    /**
-     * Simple error response DTO.
-     */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
-        }
     }
     
     /**

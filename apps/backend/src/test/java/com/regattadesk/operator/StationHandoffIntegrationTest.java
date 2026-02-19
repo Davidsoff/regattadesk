@@ -236,7 +236,8 @@ class StationHandoffIntegrationTest {
             .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/complete")
         .then()
             .statusCode(400)
-            .body("error", equalTo("INVALID_PIN"));
+            .body("error.code", equalTo("INVALID_PIN"))
+            .body("error.message", equalTo("Invalid PIN"));
     }
 
     @Test
@@ -265,7 +266,7 @@ class StationHandoffIntegrationTest {
             .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/reveal_pin")
         .then()
             .statusCode(410)
-            .body("error", equalTo("HANDOFF_EXPIRED"));
+            .body("error.message", equalTo("HANDOFF_EXPIRED"));
     }
 
     @Test
@@ -302,7 +303,7 @@ class StationHandoffIntegrationTest {
             .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/complete")
         .then()
             .statusCode(410)
-            .body("error", equalTo("HANDOFF_EXPIRED"));
+            .body("error.message", equalTo("HANDOFF_EXPIRED"));
     }
 
     @Test

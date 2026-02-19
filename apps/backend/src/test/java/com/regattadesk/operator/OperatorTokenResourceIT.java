@@ -123,7 +123,7 @@ class OperatorTokenResourceIT {
             .post("/api/v1/regattas/" + regattaId + "/operator/tokens")
             .then()
             .statusCode(400)
-            .body("error", containsString("after"));
+            .body("error.message", containsString("after"));
     }
     
     @Test
@@ -237,7 +237,7 @@ class OperatorTokenResourceIT {
             .post("/api/v1/regattas/" + regattaId + "/operator/tokens/" + nonExistentTokenId + "/revoke")
             .then()
             .statusCode(404)
-            .body("error", containsString("not found"));
+            .body("error.message", containsString("not found"));
     }
     
     @Test
@@ -272,7 +272,7 @@ class OperatorTokenResourceIT {
             .post("/api/v1/regattas/" + regatta2 + "/operator/tokens/" + tokenId + "/revoke")
             .then()
             .statusCode(404)
-            .body("error", containsString("not found"));
+            .body("error.message", containsString("not found"));
     }
     
     @Test

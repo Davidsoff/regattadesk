@@ -76,7 +76,6 @@ public abstract class AggregateRoot<T extends AggregateRoot<T>> {
     public T loadFromHistory(List<DomainEvent> events) {
         for (DomainEvent event : events) {
             applyEvent(event, false);
-            this.version++;
         }
         return (T) this;
     }
@@ -96,6 +95,10 @@ public abstract class AggregateRoot<T extends AggregateRoot<T>> {
         
         // Apply the event to update state
         applyEventToState(event);
+
+        // Version tracks the last applied event sequence using event-store semantics:
+        // new aggregate starts at -1, first event moves to 0, etc.
+        this.version++;
         
         // If this is a new event, add it to uncommitted events
         if (isNew) {

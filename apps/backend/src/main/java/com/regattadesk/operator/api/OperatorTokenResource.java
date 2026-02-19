@@ -1,5 +1,6 @@
 package com.regattadesk.operator.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.operator.OperatorToken;
 import com.regattadesk.operator.OperatorTokenPdfService;
 import com.regattadesk.operator.OperatorTokenService;
@@ -80,7 +81,7 @@ public class OperatorTokenResource {
                 
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse(e.getMessage()))
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         }
     }
@@ -99,7 +100,7 @@ public class OperatorTokenResource {
             return Response.ok(new OperationResult("Token revoked successfully")).build();
         }
         return Response.status(Response.Status.NOT_FOUND)
-            .entity(new ErrorResponse("Token not found"))
+            .entity(ErrorResponse.notFound("Token not found"))
             .build();
     }
     
@@ -118,7 +119,7 @@ public class OperatorTokenResource {
         if (tokenOpt.isEmpty()) {
             return Response.status(Response.Status.NOT_FOUND)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ErrorResponse("Token not found"))
+                .entity(ErrorResponse.notFound("Token not found"))
                 .build();
         }
         
@@ -126,7 +127,7 @@ public class OperatorTokenResource {
         if (!token.getRegattaId().equals(regattaId)) {
             return Response.status(Response.Status.NOT_FOUND)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ErrorResponse("Token not found"))
+                .entity(ErrorResponse.notFound("Token not found"))
                 .build();
         }
         
@@ -142,23 +143,8 @@ public class OperatorTokenResource {
         } catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(new ErrorResponse("Failed to generate PDF: " + e.getMessage()))
+                .entity(ErrorResponse.internalError("Failed to generate PDF: " + e.getMessage()))
                 .build();
-        }
-    }
-    
-    /**
-     * Simple error response DTO.
-     */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
         }
     }
     

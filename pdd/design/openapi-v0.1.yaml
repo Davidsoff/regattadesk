@@ -615,6 +615,36 @@ paths:
         "403":
           $ref: "#/components/responses/forbidden"
 
+  /api/v1/rulesets/{ruleset_id}/duplicate:
+    post:
+      tags: [Staff Rules]
+      summary: Duplicate ruleset
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ruleset_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ruleset_duplicate_request"
+      responses:
+        "201":
+          description: Ruleset duplicated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ruleset"
+        "400":
+          description: Invalid duplicate request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error_response"
+        "404":
+          $ref: "#/components/responses/not_found"
+
   /api/v1/regattas:
     get:
       tags: [Staff Regatta]
@@ -2891,6 +2921,7 @@ components:
       type: object
       required: [name, version, age_calculation_type]
       properties:
+        id: { type: string, format: uuid, nullable: true }
         name: { type: string }
         version: { type: string }
         description: { type: string }
@@ -2905,6 +2936,13 @@ components:
         description: { type: string }
         age_calculation_type:
           { type: string, enum: [actual_at_start, age_as_of_jan_1] }
+
+    ruleset_duplicate_request:
+      type: object
+      required: [new_name, new_version]
+      properties:
+        new_name: { type: string }
+        new_version: { type: string }
 
     ruleset_list_response:
       type: object
