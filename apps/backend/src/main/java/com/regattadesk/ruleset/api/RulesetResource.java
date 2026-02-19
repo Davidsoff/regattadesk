@@ -76,6 +76,10 @@ public class RulesetResource {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(ErrorResponse.conflict(e.getMessage()))
+                .build();
         }
     }
     
@@ -140,6 +144,10 @@ public class RulesetResource {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(ErrorResponse.conflict(e.getMessage()))
+                .build();
         }
     }
 
@@ -169,6 +177,10 @@ public class RulesetResource {
             }
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse.badRequest(e.getMessage()))
+                .build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(ErrorResponse.conflict(e.getMessage()))
                 .build();
         }
     }

@@ -1,6 +1,7 @@
 package com.regattadesk.ruleset;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.eventstore.DomainEvent;
 
@@ -9,6 +10,7 @@ import java.util.UUID;
 /**
  * Event emitted when a new ruleset is created.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RulesetCreatedEvent implements DomainEvent {
     
     private final UUID rulesetId;
