@@ -236,7 +236,8 @@ class StationHandoffIntegrationTest {
             .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs/" + handoffId + "/complete")
         .then()
             .statusCode(400)
-            .body("error.message", equalTo("INVALID_PIN"));
+            .body("error.code", equalTo("INVALID_PIN"))
+            .body("error.message", equalTo("Invalid PIN"));
     }
 
     @Test

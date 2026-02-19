@@ -2,6 +2,7 @@ package com.regattadesk.ruleset;
 
 import com.regattadesk.aggregate.AggregateRoot;
 import com.regattadesk.eventstore.DomainEvent;
+import org.jboss.logging.Logger;
 
 import java.util.Locale;
 import java.util.UUID;
@@ -13,6 +14,8 @@ import java.util.UUID;
  * Rulesets can be versioned, duplicated, and updated before draw publication.
  */
 public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
+
+    private static final Logger LOG = Logger.getLogger(RulesetAggregate.class);
     
     private static final String AGE_CALCULATION_ACTUAL_AT_START = "actual_at_start";
     private static final String AGE_CALCULATION_AGE_AS_OF_JAN_1 = "age_as_of_jan_1";
@@ -113,6 +116,12 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
             this.ageCalculationType = updated.getAgeCalculationType();
         } else if (event instanceof RulesetDrawPublishedEvent) {
             this.drawPublished = true;
+        } else {
+            LOG.warnf(
+                "Ignoring unknown event type during ruleset replay: eventType=%s aggregateId=%s",
+                event.getClass().getName(),
+                getId()
+            );
         }
     }
 

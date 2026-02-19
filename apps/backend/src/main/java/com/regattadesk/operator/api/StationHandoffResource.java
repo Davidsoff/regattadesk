@@ -198,7 +198,7 @@ public class StationHandoffResource {
         if (!result.success()) {
             if ("Invalid PIN".equals(result.message())) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ErrorResponse.badRequest("INVALID_PIN"))
+                    .entity(new ErrorResponse("INVALID_PIN", "Invalid PIN"))
                     .build();
             }
             if ("Handoff has expired".equals(result.message())) {

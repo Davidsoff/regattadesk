@@ -91,6 +91,13 @@ access_control:
         - ["group:info_desk"]
         - ["group:financial_manager"]
 
+    # Ruleset API endpoints (require authentication; backend enforces roles)
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/rulesets(/.*)?$"
+
 # Session Configuration (updated format for 4.38+)
 # NOTE: For development, using HTTP. In production, use HTTPS with proper TLS certificates
 session:
@@ -131,4 +138,3 @@ notifier:
 identity_validation:
   reset_password:
     jwt_secret: ${AUTHELIA_JWT_SECRET}
-
