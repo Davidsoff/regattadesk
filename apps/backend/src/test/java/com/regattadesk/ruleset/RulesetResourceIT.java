@@ -10,7 +10,8 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
@@ -280,6 +281,26 @@ class RulesetResourceIT {
 
     @Test
     void listRulesets_shouldReturnDataArrayContract() {
+        UUID rulesetId = UUID.randomUUID();
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                  "id": "%s",
+                  "name": "List Contract Ruleset",
+                  "version": "v1.0",
+                  "description": "desc",
+                  "age_calculation_type": "actual_at_start"
+                }
+                """, rulesetId))
+            .when()
+            .post("/api/v1/rulesets")
+            .then()
+            .statusCode(201);
+
         given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "super_admin")
@@ -288,7 +309,11 @@ class RulesetResourceIT {
             .then()
             .statusCode(200)
             .body("data", notNullValue())
-            .body("data", hasSize(0));
+            .body("data.size()", greaterThanOrEqualTo(1))
+            .body("data.id", hasItem(rulesetId.toString()))
+            .body("data.find { it.id == '" + rulesetId + "' }.name", equalTo("List Contract Ruleset"))
+            .body("data.find { it.id == '" + rulesetId + "' }.version", equalTo("v1.0"))
+            .body("data.find { it.id == '" + rulesetId + "' }.age_calculation_type", equalTo("actual_at_start"));
     }
 
     @Test

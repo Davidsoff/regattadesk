@@ -9,6 +9,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -169,10 +170,16 @@ public class RulesetService {
      * @return list of all rulesets
      */
     public List<RulesetAggregate> listRulesets() {
-        // In a real implementation, this would use a read model/projection
-        // For now, we'll return an empty list as a placeholder
-        // TODO: Implement proper projection-based listing in follow-up
-        return List.of();
+        List<EventEnvelope> events = eventStore.readGlobal(10_000, 0);
+        LinkedHashSet<UUID> rulesetIds = events.stream()
+            .filter(event -> "Ruleset".equals(event.getAggregateType()))
+            .map(EventEnvelope::getAggregateId)
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return rulesetIds.stream()
+            .map(this::loadAggregate)
+            .flatMap(Optional::stream)
+            .collect(Collectors.toList());
     }
     
     // Private helper methods
