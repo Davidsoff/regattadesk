@@ -118,6 +118,15 @@ class PdfGeneratorTest {
     }
 
     @Test
+    void testGenerateSamplePdfWithNullRegattaName() throws IOException {
+        byte[] pdf = generatePdf(null, 1, 2, Locale.ENGLISH, ZoneId.of("Europe/Amsterdam"));
+        assertValidPdf(pdf);
+        String text = extractFirstPageText(pdf);
+        assertContainsOnce(text, "Generated: 2026-02-06 14:30");
+        assertFalse(text.contains("null"), "Rendered PDF should not contain literal null value");
+    }
+
+    @Test
     void testGenerateSamplePdfWithNegativeRevisions() throws IOException {
         byte[] pdf = generatePdf("Test Regatta", -1, -5, Locale.ENGLISH, ZoneId.of("Europe/Amsterdam"));
         assertValidPdf(pdf);

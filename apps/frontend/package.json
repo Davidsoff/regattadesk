@@ -10,7 +10,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:a11y": "echo 'Accessibility tests not yet configured' && exit 0",
+    "test:a11y": "echo 'Accessibility tests not yet configured' && exit 1",
     "lint": "echo 'Lint placeholder - to be configured later'"
   },
   "dependencies": {

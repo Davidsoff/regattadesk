@@ -29,6 +29,10 @@ describe('useFormatting', () => {
     it('uses UTC calendar date for timestamp inputs', () => {
       expect(formatting.formatDateISO('2026-02-06T00:30:00Z')).toBe('2026-02-06');
     });
+
+    it('treats epoch timestamp as a valid input', () => {
+      expect(formatting.formatDateISO(0)).toBe('1970-01-01');
+    });
   });
 
   describe('formatScheduledTime', () => {
@@ -40,6 +44,10 @@ describe('useFormatting', () => {
 
     it('handles null input', () => {
       expect(formatting.formatScheduledTime(null)).toBe('');
+    });
+
+    it('treats epoch timestamp as a valid input', () => {
+      expect(formatting.formatScheduledTime(0, 'UTC')).toBe('00:00');
     });
   });
 
@@ -112,6 +120,10 @@ describe('useFormatting', () => {
     it('handles null input', () => {
       expect(formatting.formatTimestampISO(null)).toBe('');
     });
+
+    it('treats epoch timestamp as a valid input', () => {
+      expect(formatting.formatTimestampISO(0, 'UTC')).toBe('1970-01-01T00:00:00+00:00');
+    });
   });
 
   describe('locale and timezone behavior', () => {
@@ -125,6 +137,12 @@ describe('useFormatting', () => {
       const enFormatting = useFormatting('en');
       const date = new Date('2026-02-06T12:00:00Z');
       expect(enFormatting.formatDateDisplay(date, 'Europe/Amsterdam')).toBe('2026-02-06');
+    });
+
+    it('normalizes locale tags to supported base language', () => {
+      const nlFormatting = useFormatting('nl-NL');
+      const date = new Date('2026-02-06T12:00:00Z');
+      expect(nlFormatting.formatDateDisplay(date, 'Europe/Amsterdam')).toBe('06-02-2026');
     });
 
     it('formats timestamp display in regatta timezone around DST', () => {

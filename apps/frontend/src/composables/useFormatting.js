@@ -10,17 +10,26 @@ import { computed } from 'vue';
  * - Timezone: regatta-local
  */
 export function useFormatting(locale = 'en') {
+  const normalizeLocale = (value) => {
+    if (typeof value !== 'string' || value.length === 0) {
+      return 'en';
+    }
+
+    const baseLanguage = value.toLowerCase().split(/[-_]/)[0];
+    return baseLanguage === 'nl' ? 'nl' : 'en';
+  };
+
   const currentLocale = computed(() => {
     if (locale !== null && typeof locale === 'object') {
       const value = locale.value;
       if (typeof value === 'string' && value.length > 0) {
-        return value;
+        return normalizeLocale(value);
       }
       return 'en';
     }
 
     if (typeof locale === 'string' && locale.length > 0) {
-      return locale;
+      return normalizeLocale(locale);
     }
 
     return 'en';
@@ -96,7 +105,7 @@ export function useFormatting(locale = 'en') {
    * Format a date in ISO 8601 format (YYYY-MM-DD) for technical/API use
    */
   const formatDateISO = (date) => {
-    if (!date) return '';
+    if (date == null || date === '') return '';
 
     if (typeof date === 'string') {
       const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
@@ -120,7 +129,7 @@ export function useFormatting(locale = 'en') {
    * en: YYYY-MM-DD
    */
   const formatDateDisplay = (date, regattaTimezone = null) => {
-    if (!date) return '';
+    if (date == null || date === '') return '';
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return '';
 
@@ -140,7 +149,7 @@ export function useFormatting(locale = 'en') {
    * Format a time in 24-hour format (HH:mm) for scheduled times
    */
   const formatScheduledTime = (time, regattaTimezone = null) => {
-    if (!time) return '';
+    if (time == null || time === '') return '';
     const d = new Date(time);
     if (Number.isNaN(d.getTime())) return '';
 
@@ -194,7 +203,7 @@ export function useFormatting(locale = 'en') {
    * Example: 2026-02-06T14:30:00+01:00
    */
   const formatTimestampISO = (date, regattaTimezone = null) => {
-    if (!date) return '';
+    if (date == null || date === '') return '';
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return '';
 
@@ -216,7 +225,7 @@ export function useFormatting(locale = 'en') {
    * Includes date and time in regatta timezone
    */
   const formatTimestampDisplay = (date, regattaTimezone = null) => {
-    if (!date) return '';
+    if (date == null || date === '') return '';
     const d = new Date(date);
     if (Number.isNaN(d.getTime())) return '';
 

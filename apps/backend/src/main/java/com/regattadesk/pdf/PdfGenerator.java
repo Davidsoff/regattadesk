@@ -94,7 +94,7 @@ public class PdfGenerator {
         
         public RegattaDeskHeaderFooter(String regattaName, ZonedDateTime timestamp, 
                                       Integer drawRevision, Integer resultsRevision, Locale locale) {
-            this.regattaName = regattaName;
+            this.regattaName = regattaName != null ? regattaName : "";
             this.timestamp = timestamp;
             this.drawRevision = drawRevision;
             this.resultsRevision = resultsRevision;

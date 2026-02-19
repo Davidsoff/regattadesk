@@ -47,19 +47,20 @@ export default i18n;
  * Update the locale and persist it to localStorage
  */
 export function setLocale(locale) {
+  let normalizedLocale = locale;
   if (!['nl', 'en'].includes(locale)) {
     console.warn(`Unsupported locale: ${locale}. Using 'nl' instead.`);
-    locale = 'nl';
+    normalizedLocale = 'nl';
   }
   
-  i18n.global.locale.value = locale;
+  i18n.global.locale.value = normalizedLocale;
   try {
-    localStorage.setItem('regattadesk-locale', locale);
+    localStorage.setItem('regattadesk-locale', normalizedLocale);
   } catch {
     // Storage may be unavailable in some environments.
   }
 
   if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('lang', locale);
+    document.documentElement.setAttribute('lang', normalizedLocale);
   }
 }
