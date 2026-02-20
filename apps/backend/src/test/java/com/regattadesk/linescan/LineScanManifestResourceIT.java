@@ -76,7 +76,14 @@ public class LineScanManifestResourceIT {
             "primary_format", "webp_lossless",
             "x_origin_timestamp_ms", 1000000L,
             "ms_per_pixel", 0.5,
-            "tiles", List.of()
+            "tiles", List.of(
+                Map.of(
+                    "tile_id", "tile_0_0",
+                    "tile_x", 0,
+                    "tile_y", 0,
+                    "content_type", "image/webp"
+                )
+            )
         );
         
         given()
@@ -148,7 +155,14 @@ public class LineScanManifestResourceIT {
             "primary_format", "webp_lossless",
             "x_origin_timestamp_ms", 3000000L,
             "ms_per_pixel", 0.25,
-            "tiles", List.of()
+            "tiles", List.of(
+                Map.of(
+                    "tile_id", "tile_0_0",
+                    "tile_x", 0,
+                    "tile_y", 0,
+                    "content_type", "image/webp"
+                )
+            )
         );
         
         String manifestId = given()

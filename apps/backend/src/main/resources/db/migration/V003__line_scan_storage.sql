@@ -23,7 +23,6 @@ CREATE TABLE line_scan_manifests (
 
 -- Indexes for line_scan_manifests
 CREATE INDEX idx_line_scan_manifests_regatta ON line_scan_manifests(regatta_id);
-CREATE INDEX idx_line_scan_manifests_session ON line_scan_manifests(capture_session_id);
 CREATE INDEX idx_line_scan_manifests_retention_state ON line_scan_manifests(retention_state);
 CREATE UNIQUE INDEX idx_line_scan_manifests_session_unique ON line_scan_manifests(capture_session_id);
 

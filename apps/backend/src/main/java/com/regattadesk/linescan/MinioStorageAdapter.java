@@ -8,9 +8,9 @@ import org.jboss.logging.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -45,14 +45,25 @@ public class MinioStorageAdapter {
             );
             
             if (!exists) {
-                minioClient.makeBucket(
-                    MakeBucketArgs.builder()
-                        .bucket(bucketName)
-                        .build()
-                );
-                LOG.infof("Created MinIO bucket: %s", bucketName);
+                try {
+                    minioClient.makeBucket(
+                        MakeBucketArgs.builder()
+                            .bucket(bucketName)
+                            .build()
+                    );
+                    LOG.infof("Created MinIO bucket: %s", bucketName);
+                } catch (ErrorResponseException e) {
+                    String code = e.errorResponse().code();
+                    if ("BucketAlreadyOwnedByYou".equals(code) || "BucketAlreadyExists".equals(code)) {
+                        LOG.debugf("MinIO bucket already exists: %s", bucketName);
+                        return;
+                    }
+                    throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
+                }
             }
-        } catch (ErrorResponseException | InsufficientDataException | InternalException |
+        } catch (ErrorResponseException e) {
+            throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
+        } catch (InsufficientDataException | InternalException |
                  InvalidKeyException | InvalidResponseException | IOException |
                  NoSuchAlgorithmException | ServerException | XmlParserException e) {
             throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
@@ -133,7 +144,8 @@ public class MinioStorageAdapter {
     /**
      * Check if a tile exists in MinIO.
      */
-    public boolean tileExists(UUID regattaId, UUID captureSessionId, String tileId) {
+    public boolean tileExists(UUID regattaId, UUID captureSessionId, String tileId)
+            throws MinioStorageException {
         String bucketName = config.getBucketName(regattaId.toString());
         String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
         
@@ -145,7 +157,17 @@ public class MinioStorageAdapter {
                     .build()
             );
             return true;
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                return false;
+            }
+            throw new MinioStorageException("Failed to check tile existence: " + objectKey, e);
+        } catch (InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException |
+                 ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to check tile existence: " + objectKey, e);
         } catch (Exception e) {
+            LOG.errorf(e, "Unexpected error checking tile existence: bucket=%s key=%s", bucketName, objectKey);
             return false;
         }
     }
@@ -183,12 +205,12 @@ public class MinioStorageAdapter {
         private final String contentType;
         
         public TileData(byte[] data, String contentType) {
-            this.data = data;
+            this.data = Arrays.copyOf(data, data.length);
             this.contentType = contentType;
         }
         
         public byte[] getData() {
-            return data;
+            return Arrays.copyOf(data, data.length);
         }
         
         public String getContentType() {
