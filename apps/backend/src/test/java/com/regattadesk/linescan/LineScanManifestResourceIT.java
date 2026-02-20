@@ -196,4 +196,127 @@ public class LineScanManifestResourceIT {
         .then()
             .statusCode(404);
     }
+
+    @Test
+    public void testUpsertManifest_replacesExistingTiles() {
+        UUID regattaId = UUID.randomUUID();
+        UUID captureSessionId = UUID.randomUUID();
+
+        Map<String, Object> initialRequest = Map.of(
+            "capture_session_id", captureSessionId.toString(),
+            "tile_size_px", 512,
+            "primary_format", "webp_lossless",
+            "x_origin_timestamp_ms", 1000L,
+            "ms_per_pixel", 0.5,
+            "tiles", List.of(
+                Map.of(
+                    "tile_id", "tile_0_0",
+                    "tile_x", 0,
+                    "tile_y", 0,
+                    "content_type", "image/webp"
+                ),
+                Map.of(
+                    "tile_id", "tile_1_0",
+                    "tile_x", 1,
+                    "tile_y", 0,
+                    "content_type", "image/webp"
+                )
+            )
+        );
+
+        String manifestId = given()
+            .header("x_operator_token", "test-operator-token")
+            .contentType(ContentType.JSON)
+            .body(initialRequest)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/line_scan/manifests")
+        .then()
+            .statusCode(201)
+            .body("tiles", hasSize(2))
+            .extract()
+            .path("id");
+
+        Map<String, Object> replacementRequest = Map.of(
+            "capture_session_id", captureSessionId.toString(),
+            "tile_size_px", 512,
+            "primary_format", "webp_lossless",
+            "x_origin_timestamp_ms", 1000L,
+            "ms_per_pixel", 0.5,
+            "tiles", List.of(
+                Map.of(
+                    "tile_id", "tile_0_0",
+                    "tile_x", 0,
+                    "tile_y", 0,
+                    "content_type", "image/webp"
+                )
+            )
+        );
+
+        given()
+            .header("x_operator_token", "test-operator-token")
+            .contentType(ContentType.JSON)
+            .body(replacementRequest)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/line_scan/manifests")
+        .then()
+            .statusCode(201)
+            .body("tiles", hasSize(1))
+            .body("tiles[0].tile_id", equalTo("tile_0_0"));
+
+        given()
+            .header("x_operator_token", "test-operator-token")
+        .when()
+            .get("/api/v1/regattas/" + regattaId + "/line_scan/manifests/" + manifestId)
+        .then()
+            .statusCode(200)
+            .body("tiles", hasSize(1))
+            .body("tiles[0].tile_id", equalTo("tile_0_0"));
+    }
+
+    @Test
+    public void testUpsertManifest_withInvalidTileSize_returnsBadRequest() {
+        UUID regattaId = UUID.randomUUID();
+
+        Map<String, Object> request = Map.of(
+            "capture_session_id", UUID.randomUUID().toString(),
+            "tile_size_px", 513,
+            "primary_format", "webp_lossless",
+            "x_origin_timestamp_ms", 1000000L,
+            "ms_per_pixel", 0.5,
+            "tiles", List.of()
+        );
+
+        given()
+            .header("x_operator_token", "test-operator-token")
+            .contentType(ContentType.JSON)
+            .body(request)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/line_scan/manifests")
+        .then()
+            .statusCode(400);
+    }
+
+    @Test
+    public void testUpsertManifest_withInvalidFormats_returnsBadRequest() {
+        UUID regattaId = UUID.randomUUID();
+
+        Map<String, Object> request = Map.of(
+            "capture_session_id", UUID.randomUUID().toString(),
+            "tile_size_px", 512,
+            "primary_format", "jpeg",
+            "fallback_format", "webp",
+            "x_origin_timestamp_ms", 1000000L,
+            "ms_per_pixel", 0.5,
+            "tiles", List.of()
+        );
+
+        given()
+            .header("x_operator_token", "test-operator-token")
+            .contentType(ContentType.JSON)
+            .body(request)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/line_scan/manifests")
+        .then()
+            .statusCode(400);
+    }
 }

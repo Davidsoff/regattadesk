@@ -61,22 +61,32 @@ public class LineScanTileService {
             tileData,
             contentType
         );
-        
-        // Update metadata with size information
-        LineScanTileMetadata updated = LineScanTileMetadata.builder()
-            .id(existingMetadata.getId())
-            .manifestId(existingMetadata.getManifestId())
-            .tileId(existingMetadata.getTileId())
-            .tileX(existingMetadata.getTileX())
-            .tileY(existingMetadata.getTileY())
-            .contentType(contentType)
-            .byteSize(tileData.length)
-            .minioBucket(existingMetadata.getMinioBucket())
-            .minioObjectKey(existingMetadata.getMinioObjectKey())
-            .createdAt(existingMetadata.getCreatedAt())
-            .build();
-        
-        tileRepository.save(updated);
+
+        // Update metadata with size information. If this fails, compensate by deleting the uploaded blob.
+        try {
+            LineScanTileMetadata updated = LineScanTileMetadata.builder()
+                .id(existingMetadata.getId())
+                .manifestId(existingMetadata.getManifestId())
+                .tileId(existingMetadata.getTileId())
+                .tileX(existingMetadata.getTileX())
+                .tileY(existingMetadata.getTileY())
+                .contentType(contentType)
+                .byteSize(tileData.length)
+                .minioBucket(existingMetadata.getMinioBucket())
+                .minioObjectKey(existingMetadata.getMinioObjectKey())
+                .createdAt(existingMetadata.getCreatedAt())
+                .build();
+
+            tileRepository.save(updated);
+        } catch (RuntimeException e) {
+            try {
+                storageAdapter.deleteTile(regattaId, manifest.getCaptureSessionId(), tileId);
+            } catch (MinioStorageAdapter.MinioStorageException cleanupError) {
+                LOG.errorf(cleanupError, "Failed to clean up tile after metadata save failure: %s", tileId);
+            }
+            throw new MinioStorageAdapter.MinioStorageException(
+                "Failed to persist tile metadata after storing tile binary data", e);
+        }
         
         LOG.infof("Stored tile: regatta=%s, tile=%s, size=%d", regattaId, tileId, tileData.length);
     }

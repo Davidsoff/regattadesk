@@ -49,7 +49,10 @@ public class LineScanManifestService {
         
         // Save manifest metadata
         LineScanManifest saved = manifestRepository.save(manifest);
-        
+
+        // Replace tile metadata entries to keep manifest replacement semantics deterministic.
+        tileRepository.deleteByManifestId(saved.getId());
+
         // Save tile metadata entries
         String bucket = minioConfig.getBucketName(manifest.getRegattaId().toString());
         for (LineScanManifestTile tile : manifest.getTiles()) {
@@ -76,7 +79,8 @@ public class LineScanManifestService {
             saved.getId(), saved.getRegattaId(), saved.getCaptureSessionId(), 
             manifest.getTiles().size());
         
-        return saved;
+        // Reload to include the latest persisted tile set in the response payload.
+        return manifestRepository.findById(saved.getId()).orElse(saved);
     }
     
     /**

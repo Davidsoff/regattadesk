@@ -102,21 +102,21 @@ public class MinioStorageAdapter {
             );
             
             // Then get the object data
-            GetObjectResponse response = minioClient.getObject(
+            try (GetObjectResponse response = minioClient.getObject(
                 GetObjectArgs.builder()
                     .bucket(bucketName)
                     .object(objectKey)
                     .build()
-            );
-            
-            byte[] data = response.readAllBytes();
-            String contentType = stat.contentType();
-            if (contentType == null || contentType.isEmpty()) {
-                contentType = "application/octet-stream";
+            )) {
+                byte[] data = response.readAllBytes();
+                String contentType = stat.contentType();
+                if (contentType == null || contentType.isEmpty()) {
+                    contentType = "application/octet-stream";
+                }
+
+                LOG.debugf("Retrieved tile: bucket=%s, key=%s, size=%d", bucketName, objectKey, data.length);
+                return new TileData(data, contentType);
             }
-            
-            LOG.debugf("Retrieved tile: bucket=%s, key=%s, size=%d", bucketName, objectKey, data.length);
-            return new TileData(data, contentType);
             
         } catch (ErrorResponseException e) {
             if (e.errorResponse().code().equals("NoSuchKey")) {
@@ -147,6 +147,31 @@ public class MinioStorageAdapter {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Delete a tile object. Missing objects are treated as already deleted.
+     */
+    public void deleteTile(UUID regattaId, UUID captureSessionId, String tileId) throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
+        try {
+            minioClient.removeObject(
+                RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            );
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                return;
+            }
+            throw new MinioStorageException("Failed to delete tile: " + objectKey, e);
+        } catch (InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException |
+                 ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to delete tile: " + objectKey, e);
         }
     }
     

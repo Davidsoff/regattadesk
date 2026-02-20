@@ -6,8 +6,10 @@ import jakarta.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * JDBC-based implementation of LineScanManifestRepository.
@@ -16,12 +18,10 @@ import java.util.stream.Collectors;
 public class JdbcLineScanManifestRepository implements LineScanManifestRepository {
     
     private final DataSource dataSource;
-    private final LineScanTileRepository tileRepository;
     
     @Inject
-    public JdbcLineScanManifestRepository(DataSource dataSource, LineScanTileRepository tileRepository) {
+    public JdbcLineScanManifestRepository(DataSource dataSource) {
         this.dataSource = dataSource;
-        this.tileRepository = tileRepository;
     }
     
     @Override
@@ -79,7 +79,7 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return mapResultSetToManifest(rs);
+                return mapResultSetToManifest(rs, List.of());
             }
             throw new RuntimeException("Failed to save manifest");
             
@@ -91,12 +91,14 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
     @Override
     public Optional<LineScanManifest> findById(UUID manifestId) {
         String sql = """
-            SELECT id, regatta_id, capture_session_id, tile_size_px, primary_format,
-                fallback_format, x_origin_timestamp_ms, ms_per_pixel, retention_days,
-                prune_window_seconds, retention_state, prune_eligible_at, pruned_at,
-                created_at, updated_at
-            FROM line_scan_manifests
-            WHERE id = ?
+            SELECT m.id, m.regatta_id, m.capture_session_id, m.tile_size_px, m.primary_format,
+                m.fallback_format, m.x_origin_timestamp_ms, m.ms_per_pixel, m.retention_days,
+                m.prune_window_seconds, m.retention_state, m.prune_eligible_at, m.pruned_at,
+                m.created_at, m.updated_at, t.tile_id, t.tile_x, t.tile_y, t.content_type, t.byte_size
+            FROM line_scan_manifests m
+            LEFT JOIN line_scan_tiles t ON m.id = t.manifest_id
+            WHERE m.id = ?
+            ORDER BY t.tile_y, t.tile_x
             """;
         
         try (Connection conn = dataSource.getConnection();
@@ -105,10 +107,7 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             stmt.setObject(1, manifestId);
             ResultSet rs = stmt.executeQuery();
             
-            if (rs.next()) {
-                return Optional.of(mapResultSetToManifest(rs));
-            }
-            return Optional.empty();
+            return mapManifestWithTiles(rs);
             
         } catch (SQLException e) {
             throw new RuntimeException("Database error finding manifest by ID", e);
@@ -118,12 +117,14 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
     @Override
     public Optional<LineScanManifest> findByCaptureSessionId(UUID captureSessionId) {
         String sql = """
-            SELECT id, regatta_id, capture_session_id, tile_size_px, primary_format,
-                fallback_format, x_origin_timestamp_ms, ms_per_pixel, retention_days,
-                prune_window_seconds, retention_state, prune_eligible_at, pruned_at,
-                created_at, updated_at
-            FROM line_scan_manifests
-            WHERE capture_session_id = ?
+            SELECT m.id, m.regatta_id, m.capture_session_id, m.tile_size_px, m.primary_format,
+                m.fallback_format, m.x_origin_timestamp_ms, m.ms_per_pixel, m.retention_days,
+                m.prune_window_seconds, m.retention_state, m.prune_eligible_at, m.pruned_at,
+                m.created_at, m.updated_at, t.tile_id, t.tile_x, t.tile_y, t.content_type, t.byte_size
+            FROM line_scan_manifests m
+            LEFT JOIN line_scan_tiles t ON m.id = t.manifest_id
+            WHERE m.capture_session_id = ?
+            ORDER BY t.tile_y, t.tile_x
             """;
         
         try (Connection conn = dataSource.getConnection();
@@ -132,33 +133,48 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             stmt.setObject(1, captureSessionId);
             ResultSet rs = stmt.executeQuery();
             
-            if (rs.next()) {
-                return Optional.of(mapResultSetToManifest(rs));
-            }
-            return Optional.empty();
+            return mapManifestWithTiles(rs);
             
         } catch (SQLException e) {
             throw new RuntimeException("Database error finding manifest by capture session", e);
         }
     }
     
-    private LineScanManifest mapResultSetToManifest(ResultSet rs) throws SQLException {
-        UUID id = rs.getObject("id", UUID.class);
-        
-        // Get tiles for this manifest
-        List<LineScanTileMetadata> tileMetadata = tileRepository.findByManifestId(id);
-        List<LineScanManifestTile> tiles = tileMetadata.stream()
-            .map(tm -> new LineScanManifestTile(
-                tm.getTileId(),
-                tm.getTileX(),
-                tm.getTileY(),
-                tm.getContentType(),
-                tm.getByteSize()
-            ))
-            .collect(Collectors.toList());
-        
+    private Optional<LineScanManifest> mapManifestWithTiles(ResultSet rs) throws SQLException {
+        if (!rs.next()) {
+            return Optional.empty();
+        }
+        List<LineScanManifestTile> tiles = new ArrayList<>();
+        LineScanManifest manifest = mapResultSetToManifest(rs, tiles);
+        String tileId = rs.getString("tile_id");
+        if (tileId != null) {
+            tiles.add(new LineScanManifestTile(
+                tileId,
+                rs.getInt("tile_x"),
+                rs.getInt("tile_y"),
+                rs.getString("content_type"),
+                rs.getObject("byte_size", Integer.class)
+            ));
+        }
+        while (rs.next()) {
+            String nextTileId = rs.getString("tile_id");
+            if (nextTileId == null) {
+                continue;
+            }
+            tiles.add(new LineScanManifestTile(
+                nextTileId,
+                rs.getInt("tile_x"),
+                rs.getInt("tile_y"),
+                rs.getString("content_type"),
+                rs.getObject("byte_size", Integer.class)
+            ));
+        }
+        return Optional.of(manifest);
+    }
+
+    private LineScanManifest mapResultSetToManifest(ResultSet rs, List<LineScanManifestTile> tiles) throws SQLException {
         return LineScanManifest.builder()
-            .id(id)
+            .id(rs.getObject("id", UUID.class))
             .regattaId(rs.getObject("regatta_id", UUID.class))
             .captureSessionId(rs.getObject("capture_session_id", UUID.class))
             .tileSizePx(rs.getInt("tile_size_px"))

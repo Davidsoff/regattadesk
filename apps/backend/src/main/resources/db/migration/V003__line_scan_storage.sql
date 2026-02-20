@@ -52,10 +52,10 @@ CREATE UNIQUE INDEX idx_line_scan_tiles_manifest_tile_unique ON line_scan_tiles(
 CREATE TRIGGER set_updated_at_line_scan_manifests
     BEFORE UPDATE ON line_scan_manifests
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();
 
 -- Add updated_at trigger for line_scan_tiles
 CREATE TRIGGER set_updated_at_line_scan_tiles
     BEFORE UPDATE ON line_scan_tiles
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at();
+    EXECUTE FUNCTION update_updated_at_column();

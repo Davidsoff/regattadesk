@@ -29,4 +29,9 @@ public interface LineScanTileRepository {
      * This joins with manifests to filter by regatta.
      */
     Optional<LineScanTileMetadata> findByRegattaAndTileId(UUID regattaId, String tileId);
+
+    /**
+     * Delete all tiles for a manifest.
+     */
+    void deleteByManifestId(UUID manifestId);
 }

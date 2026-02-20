@@ -21,6 +21,7 @@ import java.util.UUID;
 public class LineScanTileResource {
     
     private static final Logger LOG = Logger.getLogger(LineScanTileResource.class);
+    private static final int MAX_TILE_SIZE_BYTES = 10 * 1024 * 1024;
     
     private final LineScanTileService tileService;
     
@@ -62,6 +63,11 @@ public class LineScanTileResource {
         if (tileData == null || tileData.length == 0) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new OperationResult("error", "Tile data is required"))
+                .build();
+        }
+        if (tileData.length > MAX_TILE_SIZE_BYTES) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new OperationResult("error", "Tile data exceeds maximum size of 10MB"))
                 .build();
         }
         

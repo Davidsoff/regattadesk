@@ -1,10 +1,11 @@
 package com.regattadesk.linescan.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 import java.util.List;
 import java.util.UUID;
@@ -23,9 +24,11 @@ public class LineScanManifestUpsertRequest {
     private Integer tileSizePx;
     
     @NotNull(message = "primary_format is required")
+    @Pattern(regexp = "webp_lossless|png", message = "primary_format must be webp_lossless or png")
     @JsonProperty("primary_format")
     private String primaryFormat;
     
+    @Pattern(regexp = "png", message = "fallback_format must be png")
     @JsonProperty("fallback_format")
     private String fallbackFormat;
     
@@ -37,9 +40,13 @@ public class LineScanManifestUpsertRequest {
     @JsonProperty("ms_per_pixel")
     private Double msPerPixel;
     
-    @NotEmpty(message = "tiles array cannot be empty")
-    @Valid
-    private List<TileDto> tiles;
+    @NotNull(message = "tiles array is required")
+    private List<@Valid TileDto> tiles;
+
+    @AssertTrue(message = "tile_size_px must be 512 or 1024")
+    public boolean isTileSizePxAllowed() {
+        return tileSizePx == null || tileSizePx == 512 || tileSizePx == 1024;
+    }
     
     public UUID getCaptureSessionId() {
         return captureSessionId;

@@ -136,6 +136,7 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
             FROM line_scan_tiles t
             JOIN line_scan_manifests m ON t.manifest_id = m.id
             WHERE m.regatta_id = ? AND t.tile_id = ?
+            ORDER BY m.updated_at DESC, m.created_at DESC, m.id DESC
             LIMIT 1
             """;
         
@@ -153,6 +154,19 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
             
         } catch (SQLException e) {
             throw new RuntimeException("Database error finding tile by regatta and tile_id", e);
+        }
+    }
+
+    @Override
+    public void deleteByManifestId(UUID manifestId) {
+        String sql = "DELETE FROM line_scan_tiles WHERE manifest_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, manifestId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error deleting tiles for manifest", e);
         }
     }
     
