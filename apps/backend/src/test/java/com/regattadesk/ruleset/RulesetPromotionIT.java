@@ -51,7 +51,6 @@ class RulesetPromotionIT {
             .header("Remote-Groups", "super_admin")
             .contentType("application/json")
             .when()
-            .contentType("application/json")
             .post("/api/v1/rulesets/" + rulesetId + "/promote")
             .then()
             .statusCode(200)

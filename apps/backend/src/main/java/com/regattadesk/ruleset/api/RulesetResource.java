@@ -199,10 +199,15 @@ public class RulesetResource {
     public Response promoteToGlobal(@PathParam("ruleset_id") UUID rulesetId) {
         try {
             // Get the authenticated user from security context
-            String promotedBy = securityContext.getPrincipal() != null
-                ? securityContext.getPrincipal().getUsername()
-                : "unknown";
+            // Since this endpoint requires SUPER_ADMIN role, the principal should always exist
+            if (securityContext.getPrincipal() == null) {
+                // This should never happen due to @RequireRole, but guard against it
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Authentication principal not available"))
+                    .build();
+            }
             
+            String promotedBy = securityContext.getPrincipal().getUsername();
             RulesetAggregate ruleset = rulesetService.promoteToGlobal(rulesetId, promotedBy);
             return Response.ok(new RulesetResponse(ruleset)).build();
             
