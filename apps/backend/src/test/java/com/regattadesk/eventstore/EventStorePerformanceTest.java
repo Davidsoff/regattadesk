@@ -65,10 +65,15 @@ class EventStorePerformanceTest {
             // Create test aggregate
             UUID aggregateId = UUID.randomUUID();
             insertAggregate(stmt, aggregateId, "PerformanceTest", TEST_EVENT_COUNT);
+            UUID otherAggregateId = UUID.randomUUID();
+            insertAggregate(stmt, otherAggregateId, "PerformanceNoise", 3);
             
             // Insert many events for this aggregate
             for (int i = 1; i <= TEST_EVENT_COUNT; i++) {
                 insertEvent(stmt, UUID.randomUUID(), aggregateId, "TestEvent" + i, i, "{\"sequence\":" + i + "}");
+            }
+            for (int i = 1; i <= 3; i++) {
+                insertEvent(stmt, UUID.randomUUID(), otherAggregateId, "NoiseEvent" + i, i, "{\"sequence\":" + i + "}");
             }
             
             // Measure time to read all events for aggregate in order
@@ -85,10 +90,17 @@ class EventStorePerformanceTest {
                 try (ResultSet rs = ps.executeQuery()) {
                     int count = 0;
                     long expectedSequence = 1;
+                    String firstEventType = null;
+                    String lastEventType = null;
                     
                     while (rs.next()) {
                         count++;
                         long actualSequence = rs.getLong("sequence_number");
+                        String eventType = rs.getString("event_type");
+                        if (count == 1) {
+                            firstEventType = eventType;
+                        }
+                        lastEventType = eventType;
                         assertEquals(expectedSequence, actualSequence, 
                             "Events should be ordered by sequence number");
                         expectedSequence++;
@@ -96,6 +108,8 @@ class EventStorePerformanceTest {
                     
                     assertEquals(TEST_EVENT_COUNT, count, 
                         "Should retrieve all events for aggregate");
+                    assertEquals("TestEvent1", firstEventType);
+                    assertEquals("TestEvent100", lastEventType);
                 }
             }
             
@@ -138,6 +152,8 @@ class EventStorePerformanceTest {
                 // For H2, we just check that it's not doing a full table scan
                 // H2 EXPLAIN format is different from PostgreSQL
                 assertFalse(planStr.isEmpty(), "Should have a query plan");
+                assertTrue(planStr.toUpperCase().contains("AGGREGATE_ID"));
+                assertTrue(planStr.toUpperCase().contains("SEQUENCE_NUMBER"));
             }
         }
     }
@@ -175,7 +191,7 @@ class EventStorePerformanceTest {
              Statement stmt = conn.createStatement()) {
             
             // Create multiple aggregates with same event type
-            String eventType = "CommonEventType";
+            String eventType = "CommonEventType-" + UUID.randomUUID();
             
             for (int i = 0; i < 10; i++) {
                 UUID aggregateId = UUID.randomUUID();
@@ -193,8 +209,8 @@ class EventStorePerformanceTest {
                 
                 try (ResultSet rs = ps.executeQuery()) {
                     assertTrue(rs.next());
-                    assertTrue(rs.getInt(1) >= 10, 
-                        "Should find at least 10 events of this type");
+                    assertEquals(10, rs.getInt(1), 
+                        "Should find exactly the inserted events of this type");
                 }
             }
             
@@ -227,12 +243,12 @@ class EventStorePerformanceTest {
             long startTime = System.currentTimeMillis();
             
             try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT COUNT(*) FROM event_store WHERE created_at >= DATEADD('HOUR', -1, CURRENT_TIMESTAMP)"
+                "SELECT COUNT(*) FROM event_store WHERE aggregate_id = ? AND created_at >= DATEADD('HOUR', -1, CURRENT_TIMESTAMP)"
             )) {
+                ps.setObject(1, aggregateId);
                 try (ResultSet rs = ps.executeQuery()) {
                     assertTrue(rs.next());
-                    assertTrue(rs.getInt(1) >= 10, 
-                        "Should find recent events");
+                    assertEquals(10, rs.getInt(1), "Should find only this aggregate's recent events");
                 }
             }
             
