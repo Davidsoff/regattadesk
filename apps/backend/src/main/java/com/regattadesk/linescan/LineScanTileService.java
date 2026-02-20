@@ -21,18 +21,15 @@ public class LineScanTileService {
     private final LineScanTileRepository tileRepository;
     private final LineScanManifestRepository manifestRepository;
     private final MinioStorageAdapter storageAdapter;
-    private final MinioConfiguration minioConfig;
     
     @Inject
     public LineScanTileService(
             LineScanTileRepository tileRepository,
             LineScanManifestRepository manifestRepository,
-            MinioStorageAdapter storageAdapter,
-            MinioConfiguration minioConfig) {
+            MinioStorageAdapter storageAdapter) {
         this.tileRepository = tileRepository;
         this.manifestRepository = manifestRepository;
         this.storageAdapter = storageAdapter;
-        this.minioConfig = minioConfig;
     }
     
     /**

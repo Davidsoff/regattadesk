@@ -217,6 +217,8 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
     }
     
     private LineScanTileMetadata mapResultSetToMetadata(ResultSet rs) throws SQLException {
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
         return LineScanTileMetadata.builder()
             .id(rs.getObject("id", UUID.class))
             .manifestId(rs.getObject("manifest_id", UUID.class))
@@ -227,8 +229,8 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
             .byteSize(rs.getObject("byte_size", Integer.class))
             .minioBucket(rs.getString("minio_bucket"))
             .minioObjectKey(rs.getString("minio_object_key"))
-            .createdAt(rs.getTimestamp("created_at").toInstant())
-            .updatedAt(rs.getTimestamp("updated_at").toInstant())
+            .createdAt(createdAt != null ? createdAt.toInstant() : null)
+            .updatedAt(updatedAt != null ? updatedAt.toInstant() : null)
             .build();
     }
 }
