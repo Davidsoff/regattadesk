@@ -1,4 +1,4 @@
--- V003: Station Handoff Schema (H2 Compatible)
+-- V005: Station Handoff Schema (H2 Compatible)
 -- 
 -- This migration implements the station handoff system for BC06:
 -- - station_handoffs table for PIN-based device handoff
