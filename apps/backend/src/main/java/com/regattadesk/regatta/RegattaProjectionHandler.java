@@ -38,13 +38,16 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     
     @Override
     public boolean canHandle(EventEnvelope event) {
-        return "RegattaCreated".equals(event.getEventType());
+        return "RegattaCreated".equals(event.getEventType()) ||
+               "DrawPublished".equals(event.getEventType());
     }
     
     @Override
     public void handle(EventEnvelope event) {
         if ("RegattaCreated".equals(event.getEventType())) {
             handleRegattaCreated(event);
+        } else if ("DrawPublished".equals(event.getEventType())) {
+            handleDrawPublished(event);
         }
     }
     
@@ -64,6 +67,23 @@ public class RegattaProjectionHandler implements ProjectionHandler {
         }
     }
     
+    private void handleDrawPublished(EventEnvelope envelope) {
+        try {
+            // Parse the event payload
+            DrawPublishedEvent event = parseEvent(envelope, DrawPublishedEvent.class);
+            
+            // Update draw revision and seed in read model
+            updateDrawRevision(event);
+            
+            LOG.debug("Projected DrawPublished event for regatta {}, revision {}", 
+                     event.getRegattaId(), event.getDrawRevision());
+            
+        } catch (Exception e) {
+            LOG.error("Failed to handle DrawPublished event", e);
+            throw new RuntimeException("Failed to handle DrawPublished event", e);
+        }
+    }
+    
     private void insertRegatta(RegattaCreatedEvent event) {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(insertRegattaSql(conn))) {
@@ -79,6 +99,25 @@ public class RegattaProjectionHandler implements ProjectionHandler {
             
         } catch (SQLException e) {
             throw new RuntimeException("Failed to insert regatta into read model", e);
+        }
+    }
+    
+    private void updateDrawRevision(DrawPublishedEvent event) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE regattas SET draw_revision = ?, draw_seed = ?, updated_at = now() WHERE id = ?")) {
+            
+            stmt.setInt(1, event.getDrawRevision());
+            stmt.setLong(2, event.getDrawSeed());
+            stmt.setObject(3, event.getRegattaId());
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                LOG.warn("No rows updated for DrawPublished event, regatta {} may not exist", event.getRegattaId());
+            }
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update draw revision in read model", e);
         }
     }
     
