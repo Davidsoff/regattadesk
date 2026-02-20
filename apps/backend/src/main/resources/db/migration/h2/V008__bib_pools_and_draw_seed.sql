@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS bib_pools (
     allocation_mode CHARACTER VARYING(20) NOT NULL DEFAULT 'range',
     start_bib INTEGER,
     end_bib INTEGER,
-    bib_numbers ARRAY,
+    bib_numbers INTEGER ARRAY,
     priority INTEGER NOT NULL DEFAULT 0,
     is_overflow BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
