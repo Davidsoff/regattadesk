@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,7 +14,7 @@ import java.util.UUID;
 /**
  * Service for line-scan manifest operations.
  * 
- * Coordinates manifest persistence with event logging.
+ * Coordinates manifest persistence and tile metadata initialization.
  */
 @ApplicationScoped
 public class LineScanManifestService {
@@ -74,6 +75,10 @@ public class LineScanManifestService {
                 .tileY(tile.getTileY())
                 .contentType(tile.getContentType())
                 .byteSize(tile.getByteSize())
+                .uploadState(LineScanTileMetadata.UploadState.PENDING)
+                .uploadAttempts(0)
+                .lastUploadError(null)
+                .lastUploadAttemptAt((Instant) null)
                 .minioBucket(bucket)
                 .minioObjectKey(objectKey)
                 .build());

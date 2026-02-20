@@ -82,7 +82,11 @@ class LineScanManifestServiceTest {
 
         verify(storageAdapter).ensureBucket(regattaId);
         verify(tileRepository).deleteByManifestId(manifestId);
-        verify(tileRepository).saveAll(argThat(list -> list.size() == 2));
+        verify(tileRepository).saveAll(argThat(list ->
+            list.size() == 2
+                && list.stream().allMatch(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.PENDING)
+                && list.stream().allMatch(tile -> tile.getUploadAttempts() != null && tile.getUploadAttempts() == 0)
+        ));
         verify(manifestRepository).findById(manifestId);
         assertEquals(manifestId, result.getId());
         assertEquals(1, result.getTiles().size());

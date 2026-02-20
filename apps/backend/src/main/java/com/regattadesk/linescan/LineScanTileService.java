@@ -5,6 +5,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,41 +50,35 @@ public class LineScanTileService {
         // Get manifest to retrieve capture session ID
         LineScanManifest manifest = manifestRepository.findById(existingMetadata.getManifestId())
             .orElseThrow(() -> new TileNotFoundException("Manifest not found for tile: " + tileId));
-        
-        // Store binary data in MinIO
-        storageAdapter.storeTile(
-            regattaId,
-            manifest.getCaptureSessionId(),
-            tileId,
-            tileData,
-            contentType
-        );
 
-        // Update metadata with size information. If this fails, compensate by deleting the uploaded blob.
+        int nextAttempt = (existingMetadata.getUploadAttempts() != null ? existingMetadata.getUploadAttempts() : 0) + 1;
+        Instant now = Instant.now();
+
+        // Persist upload intent first, then attempt object storage.
+        LineScanTileMetadata pending = buildState(existingMetadata, contentType, null,
+            LineScanTileMetadata.UploadState.PENDING, nextAttempt, null, now);
+        tileRepository.save(pending);
+
         try {
-            LineScanTileMetadata updated = LineScanTileMetadata.builder()
-                .id(existingMetadata.getId())
-                .manifestId(existingMetadata.getManifestId())
-                .tileId(existingMetadata.getTileId())
-                .tileX(existingMetadata.getTileX())
-                .tileY(existingMetadata.getTileY())
-                .contentType(contentType)
-                .byteSize(tileData.length)
-                .minioBucket(existingMetadata.getMinioBucket())
-                .minioObjectKey(existingMetadata.getMinioObjectKey())
-                .createdAt(existingMetadata.getCreatedAt())
-                .build();
-
-            tileRepository.save(updated);
+            storageAdapter.storeTile(
+                regattaId,
+                manifest.getCaptureSessionId(),
+                tileId,
+                tileData,
+                contentType
+            );
+        } catch (MinioStorageAdapter.MinioStorageException e) {
+            tileRepository.save(buildState(existingMetadata, contentType, null,
+                LineScanTileMetadata.UploadState.FAILED, nextAttempt, safeErrorMessage(e), now));
+            throw e;
         } catch (RuntimeException e) {
-            try {
-                storageAdapter.deleteTile(regattaId, manifest.getCaptureSessionId(), tileId);
-            } catch (MinioStorageAdapter.MinioStorageException cleanupError) {
-                LOG.errorf(cleanupError, "Failed to clean up tile after metadata save failure: %s", tileId);
-            }
-            throw new MinioStorageAdapter.MinioStorageException(
-                "Failed to persist tile metadata after storing tile binary data", e);
+            tileRepository.save(buildState(existingMetadata, contentType, null,
+                LineScanTileMetadata.UploadState.FAILED, nextAttempt, safeErrorMessage(e), now));
+            throw new MinioStorageAdapter.MinioStorageException("Unexpected tile upload failure", e);
         }
+
+        tileRepository.save(buildState(existingMetadata, contentType, tileData.length,
+            LineScanTileMetadata.UploadState.READY, nextAttempt, null, now));
         
         LOG.infof("Stored tile: regatta=%s, tile=%s, size=%d", regattaId, tileId, tileData.length);
     }
@@ -101,9 +96,47 @@ public class LineScanTileService {
         // Get manifest to retrieve capture session ID
         LineScanManifest manifest = manifestRepository.findById(metadata.getManifestId())
             .orElseThrow(() -> new TileNotFoundException("Manifest not found for tile: " + tileId));
+
+        if (metadata.getUploadState() != LineScanTileMetadata.UploadState.READY) {
+            throw new TileNotFoundException("Tile data not yet available: " + tileId);
+        }
         
         // Retrieve from MinIO
         return storageAdapter.retrieveTile(regattaId, manifest.getCaptureSessionId(), tileId);
+    }
+
+    private LineScanTileMetadata buildState(
+            LineScanTileMetadata base,
+            String contentType,
+            Integer byteSize,
+            LineScanTileMetadata.UploadState state,
+            Integer attempts,
+            String lastError,
+            Instant attemptAt) {
+        return LineScanTileMetadata.builder()
+            .id(base.getId())
+            .manifestId(base.getManifestId())
+            .tileId(base.getTileId())
+            .tileX(base.getTileX())
+            .tileY(base.getTileY())
+            .contentType(contentType)
+            .byteSize(byteSize)
+            .uploadState(state)
+            .uploadAttempts(attempts)
+            .lastUploadError(lastError)
+            .lastUploadAttemptAt(attemptAt)
+            .minioBucket(base.getMinioBucket())
+            .minioObjectKey(base.getMinioObjectKey())
+            .createdAt(base.getCreatedAt())
+            .build();
+    }
+
+    private String safeErrorMessage(Throwable error) {
+        String message = error.getMessage();
+        if (message == null || message.isBlank()) {
+            return error.getClass().getSimpleName();
+        }
+        return message.length() <= 500 ? message : message.substring(0, 500);
     }
     
     /**

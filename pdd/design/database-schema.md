@@ -558,6 +558,7 @@ CREATE INDEX idx_timing_markers_frame ON timing_markers(frame_offset);
 Line-scan storage note (v0.1):
 - `line_scan_manifests`, `line_scan_tiles`, and `timing_markers` are API-managed read/write tables for line-scan workflows.
 - BC06 tile binary storage plus immediate manifest/tile metadata persistence are intentionally non-event-sourced in v0.1.
+- `line_scan_tiles` tracks upload lifecycle metadata (`upload_state`, `upload_attempts`, `last_upload_error`, `last_upload_attempt_at`) to support deterministic retries without event sourcing.
 
 ## Event Sourcing Tables
 

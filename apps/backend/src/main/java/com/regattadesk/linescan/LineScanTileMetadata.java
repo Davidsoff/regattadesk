@@ -17,6 +17,10 @@ public class LineScanTileMetadata {
     private final int tileY;
     private final String contentType;
     private final Integer byteSize;
+    private final UploadState uploadState;
+    private final Integer uploadAttempts;
+    private final String lastUploadError;
+    private final Instant lastUploadAttemptAt;
     private final String minioBucket;
     private final String minioObjectKey;
     private final Instant createdAt;
@@ -30,6 +34,10 @@ public class LineScanTileMetadata {
         this.tileY = builder.tileY;
         this.contentType = builder.contentType;
         this.byteSize = builder.byteSize;
+        this.uploadState = builder.uploadState;
+        this.uploadAttempts = builder.uploadAttempts;
+        this.lastUploadError = builder.lastUploadError;
+        this.lastUploadAttemptAt = builder.lastUploadAttemptAt;
         this.minioBucket = builder.minioBucket;
         this.minioObjectKey = builder.minioObjectKey;
         this.createdAt = builder.createdAt;
@@ -63,6 +71,22 @@ public class LineScanTileMetadata {
     public Integer getByteSize() {
         return byteSize;
     }
+
+    public UploadState getUploadState() {
+        return uploadState;
+    }
+
+    public Integer getUploadAttempts() {
+        return uploadAttempts;
+    }
+
+    public String getLastUploadError() {
+        return lastUploadError;
+    }
+
+    public Instant getLastUploadAttemptAt() {
+        return lastUploadAttemptAt;
+    }
     
     public String getMinioBucket() {
         return minioBucket;
@@ -92,6 +116,10 @@ public class LineScanTileMetadata {
         private int tileY;
         private String contentType;
         private Integer byteSize;
+        private UploadState uploadState;
+        private Integer uploadAttempts;
+        private String lastUploadError;
+        private Instant lastUploadAttemptAt;
         private String minioBucket;
         private String minioObjectKey;
         private Instant createdAt;
@@ -131,6 +159,26 @@ public class LineScanTileMetadata {
             this.byteSize = byteSize;
             return this;
         }
+
+        public Builder uploadState(UploadState uploadState) {
+            this.uploadState = uploadState;
+            return this;
+        }
+
+        public Builder uploadAttempts(Integer uploadAttempts) {
+            this.uploadAttempts = uploadAttempts;
+            return this;
+        }
+
+        public Builder lastUploadError(String lastUploadError) {
+            this.lastUploadError = lastUploadError;
+            return this;
+        }
+
+        public Builder lastUploadAttemptAt(Instant lastUploadAttemptAt) {
+            this.lastUploadAttemptAt = lastUploadAttemptAt;
+            return this;
+        }
         
         public Builder minioBucket(String minioBucket) {
             this.minioBucket = minioBucket;
@@ -154,6 +202,34 @@ public class LineScanTileMetadata {
         
         public LineScanTileMetadata build() {
             return new LineScanTileMetadata(this);
+        }
+    }
+
+    public enum UploadState {
+        PENDING("pending"),
+        READY("ready"),
+        FAILED("failed");
+
+        private final String value;
+
+        UploadState(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public static UploadState fromValue(String value) {
+            if (value == null) {
+                return PENDING;
+            }
+            for (UploadState state : values()) {
+                if (state.value.equalsIgnoreCase(value)) {
+                    return state;
+                }
+            }
+            throw new IllegalArgumentException("Unknown upload state: " + value);
         }
     }
 }

@@ -136,6 +136,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
     - Tile retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (OperatorTokenAuth or StaffProxyAuth).
     - Manifest payload is canonical for tile grid plus `x_origin_timestamp_ms` and `ms_per_pixel` mapping.
     - Tile/manifest storage persistence path is API-managed and not represented as domain events in v0.1.
+    - Tile upload lifecycle is metadata-driven (`pending`, `failed`, `ready`) with idempotent retry on `PUT /line_scan/tiles/{tile_id}`.
   - Unlinked marker create/delete is not audited.
   - Link/unlink actions and edits to linked markers are always audited.
   - Pre-approval deletes of linked markers emit audit events.

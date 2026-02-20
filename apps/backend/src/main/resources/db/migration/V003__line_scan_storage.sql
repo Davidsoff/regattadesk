@@ -36,6 +36,11 @@ CREATE TABLE line_scan_tiles (
     tile_y INTEGER NOT NULL,
     content_type VARCHAR(50) NOT NULL CHECK (content_type IN ('image/webp', 'image/png')),
     byte_size INTEGER CHECK (byte_size >= 0),
+    upload_state VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (upload_state IN ('pending', 'ready', 'failed')),
+    upload_attempts INTEGER NOT NULL DEFAULT 0 CHECK (upload_attempts >= 0),
+    last_upload_error TEXT,
+    last_upload_attempt_at TIMESTAMPTZ,
     minio_bucket VARCHAR(255) NOT NULL,
     minio_object_key VARCHAR(512) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
