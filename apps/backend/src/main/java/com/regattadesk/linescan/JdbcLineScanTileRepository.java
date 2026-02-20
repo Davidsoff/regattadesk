@@ -73,6 +73,52 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
             throw new RuntimeException("Database error saving tile metadata", e);
         }
     }
+
+    @Override
+    public void saveAll(List<LineScanTileMetadata> metadataList) {
+        if (metadataList == null || metadataList.isEmpty()) {
+            return;
+        }
+
+        String sql = """
+            INSERT INTO line_scan_tiles (
+                id, manifest_id, tile_id, tile_x, tile_y, content_type,
+                byte_size, minio_bucket, minio_object_key, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (manifest_id, tile_id) DO UPDATE SET
+                tile_x = EXCLUDED.tile_x,
+                tile_y = EXCLUDED.tile_y,
+                content_type = EXCLUDED.content_type,
+                byte_size = EXCLUDED.byte_size,
+                minio_bucket = EXCLUDED.minio_bucket,
+                minio_object_key = EXCLUDED.minio_object_key,
+                updated_at = EXCLUDED.updated_at
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            Instant now = Instant.now();
+            for (LineScanTileMetadata metadata : metadataList) {
+                UUID id = metadata.getId() != null ? metadata.getId() : UUID.randomUUID();
+                Instant createdAt = metadata.getCreatedAt() != null ? metadata.getCreatedAt() : now;
+                stmt.setObject(1, id);
+                stmt.setObject(2, metadata.getManifestId());
+                stmt.setString(3, metadata.getTileId());
+                stmt.setInt(4, metadata.getTileX());
+                stmt.setInt(5, metadata.getTileY());
+                stmt.setString(6, metadata.getContentType());
+                stmt.setObject(7, metadata.getByteSize());
+                stmt.setString(8, metadata.getMinioBucket());
+                stmt.setString(9, metadata.getMinioObjectKey());
+                stmt.setTimestamp(10, Timestamp.from(createdAt));
+                stmt.setTimestamp(11, Timestamp.from(now));
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error saving tile metadata batch", e);
+        }
+    }
     
     @Override
     public Optional<LineScanTileMetadata> findByManifestAndTileId(UUID manifestId, String tileId) {

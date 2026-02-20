@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,7 @@ public class LineScanManifestUpsertRequest {
     private UUID captureSessionId;
     
     @NotNull(message = "tile_size_px is required")
+    @Min(value = 1, message = "tile_size_px must be >= 1")
     @JsonProperty("tile_size_px")
     private Integer tileSizePx;
     
@@ -37,6 +39,7 @@ public class LineScanManifestUpsertRequest {
     private Long xOriginTimestampMs;
     
     @NotNull(message = "ms_per_pixel is required")
+    @Positive(message = "ms_per_pixel must be > 0")
     @JsonProperty("ms_per_pixel")
     private Double msPerPixel;
     

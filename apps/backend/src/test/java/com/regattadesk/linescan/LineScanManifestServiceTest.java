@@ -11,7 +11,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,7 +82,7 @@ class LineScanManifestServiceTest {
 
         verify(storageAdapter).ensureBucket(regattaId);
         verify(tileRepository).deleteByManifestId(manifestId);
-        verify(tileRepository, times(2)).save(any(LineScanTileMetadata.class));
+        verify(tileRepository).saveAll(argThat(list -> list.size() == 2));
         verify(manifestRepository).findById(manifestId);
         assertEquals(manifestId, result.getId());
         assertEquals(1, result.getTiles().size());

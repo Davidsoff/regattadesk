@@ -1,6 +1,8 @@
 package com.regattadesk.linescan;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,7 +69,7 @@ public class LineScanManifest {
         this.fallbackFormat = builder.fallbackFormat;
         this.xOriginTimestampMs = builder.xOriginTimestampMs;
         this.msPerPixel = builder.msPerPixel;
-        this.tiles = builder.tiles;
+        this.tiles = builder.tiles == null ? List.of() : List.copyOf(new ArrayList<>(builder.tiles));
         this.retentionDays = builder.retentionDays;
         this.pruneWindowSeconds = builder.pruneWindowSeconds;
         this.retentionState = builder.retentionState;
@@ -110,7 +112,7 @@ public class LineScanManifest {
     }
     
     public List<LineScanManifestTile> getTiles() {
-        return tiles;
+        return Collections.unmodifiableList(tiles);
     }
     
     public int getRetentionDays() {

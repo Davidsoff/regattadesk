@@ -1,9 +1,12 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.operator.OperatorTokenService;
+import jakarta.inject.Inject;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -16,11 +19,25 @@ import static org.hamcrest.Matchers.*;
  */
 @QuarkusTest
 public class LineScanManifestResourceIT {
+
+    @Inject
+    OperatorTokenService operatorTokenService;
+
+    private String validOperatorToken(UUID regattaId) {
+        return operatorTokenService.issueToken(
+                regattaId,
+                null,
+                "line-scan",
+                Instant.now().minusSeconds(60),
+                Instant.now().plusSeconds(3600))
+            .getToken();
+    }
     
     @Test
     public void testUpsertManifest_withOperatorToken_succeeds() {
         UUID regattaId = UUID.randomUUID();
         UUID captureSessionId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
         
         // Create manifest request
         Map<String, Object> request = Map.of(
@@ -46,7 +63,7 @@ public class LineScanManifestResourceIT {
         );
         
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(request)
         .when()
@@ -100,6 +117,7 @@ public class LineScanManifestResourceIT {
         // First create a manifest
         UUID regattaId = UUID.randomUUID();
         UUID captureSessionId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
         
         Map<String, Object> createRequest = Map.of(
             "capture_session_id", captureSessionId.toString(),
@@ -118,7 +136,7 @@ public class LineScanManifestResourceIT {
         );
         
         String manifestId = given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(createRequest)
         .when()
@@ -130,7 +148,7 @@ public class LineScanManifestResourceIT {
         
         // Now retrieve it
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
         .when()
             .get("/api/v1/regattas/" + regattaId + "/line_scan/manifests/" + manifestId)
         .then()
@@ -148,6 +166,7 @@ public class LineScanManifestResourceIT {
         // First create a manifest
         UUID regattaId = UUID.randomUUID();
         UUID captureSessionId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
         
         Map<String, Object> createRequest = Map.of(
             "capture_session_id", captureSessionId.toString(),
@@ -166,7 +185,7 @@ public class LineScanManifestResourceIT {
         );
         
         String manifestId = given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(createRequest)
         .when()
@@ -178,7 +197,7 @@ public class LineScanManifestResourceIT {
         
         // Now retrieve it with staff auth
         given()
-            .header("x_forwarded_user", "admin@example.com")
+            .header("X-Forwarded-User", "admin@example.com")
         .when()
             .get("/api/v1/regattas/" + regattaId + "/line_scan/manifests/" + manifestId)
         .then()
@@ -202,9 +221,10 @@ public class LineScanManifestResourceIT {
     public void testGetManifest_notFound_returns404() {
         UUID regattaId = UUID.randomUUID();
         UUID manifestId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
         
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
         .when()
             .get("/api/v1/regattas/" + regattaId + "/line_scan/manifests/" + manifestId)
         .then()
@@ -215,6 +235,7 @@ public class LineScanManifestResourceIT {
     public void testUpsertManifest_replacesExistingTiles() {
         UUID regattaId = UUID.randomUUID();
         UUID captureSessionId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
 
         Map<String, Object> initialRequest = Map.of(
             "capture_session_id", captureSessionId.toString(),
@@ -239,7 +260,7 @@ public class LineScanManifestResourceIT {
         );
 
         String manifestId = given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(initialRequest)
         .when()
@@ -267,7 +288,7 @@ public class LineScanManifestResourceIT {
         );
 
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(replacementRequest)
         .when()
@@ -278,7 +299,7 @@ public class LineScanManifestResourceIT {
             .body("tiles[0].tile_id", equalTo("tile_0_0"));
 
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
         .when()
             .get("/api/v1/regattas/" + regattaId + "/line_scan/manifests/" + manifestId)
         .then()
@@ -290,6 +311,7 @@ public class LineScanManifestResourceIT {
     @Test
     public void testUpsertManifest_withInvalidTileSize_returnsBadRequest() {
         UUID regattaId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
 
         Map<String, Object> request = Map.of(
             "capture_session_id", UUID.randomUUID().toString(),
@@ -301,7 +323,7 @@ public class LineScanManifestResourceIT {
         );
 
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(request)
         .when()
@@ -313,6 +335,7 @@ public class LineScanManifestResourceIT {
     @Test
     public void testUpsertManifest_withInvalidFormats_returnsBadRequest() {
         UUID regattaId = UUID.randomUUID();
+        String token = validOperatorToken(regattaId);
 
         Map<String, Object> request = Map.of(
             "capture_session_id", UUID.randomUUID().toString(),
@@ -325,7 +348,7 @@ public class LineScanManifestResourceIT {
         );
 
         given()
-            .header("x_operator_token", "test-operator-token")
+            .header("X-Operator-Token", token)
             .contentType(ContentType.JSON)
             .body(request)
         .when()

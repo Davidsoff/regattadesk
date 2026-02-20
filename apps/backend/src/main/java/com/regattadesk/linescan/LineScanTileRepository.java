@@ -13,6 +13,11 @@ public interface LineScanTileRepository {
      * Save tile metadata.
      */
     LineScanTileMetadata save(LineScanTileMetadata metadata);
+
+    /**
+     * Save tile metadata in a batch operation.
+     */
+    void saveAll(List<LineScanTileMetadata> metadata);
     
     /**
      * Find tile metadata by manifest ID and tile ID.

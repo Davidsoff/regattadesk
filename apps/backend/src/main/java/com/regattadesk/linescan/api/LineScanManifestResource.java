@@ -1,6 +1,8 @@
 package com.regattadesk.linescan.api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.linescan.*;
+import com.regattadesk.operator.OperatorTokenService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +12,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,12 +29,17 @@ import java.util.stream.Collectors;
 public class LineScanManifestResource {
     
     private static final Logger LOG = Logger.getLogger(LineScanManifestResource.class);
+    private static final String LINE_SCAN_STATION = "line-scan";
     
     private final LineScanManifestService manifestService;
+    private final OperatorTokenService operatorTokenService;
     
     @Inject
-    public LineScanManifestResource(LineScanManifestService manifestService) {
+    public LineScanManifestResource(
+            LineScanManifestService manifestService,
+            OperatorTokenService operatorTokenService) {
         this.manifestService = manifestService;
+        this.operatorTokenService = operatorTokenService;
     }
     
     /**
@@ -41,14 +49,12 @@ public class LineScanManifestResource {
     @POST
     public Response upsertManifest(
             @PathParam("regatta_id") UUID regattaId,
-            @HeaderParam("x_operator_token") String operatorToken,
+            @HeaderParam("X-Operator-Token") String operatorToken,
             @Valid @NotNull(message = "request body is required") LineScanManifestUpsertRequest request) {
         
-        // TODO: Validate operator token (BC06-001 should provide validation)
-        // For now, we'll proceed assuming BC06-001 implements token validation
-        if (operatorToken == null || operatorToken.isBlank()) {
+        if (!isValidOperatorToken(operatorToken, regattaId)) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new ErrorResponse("Missing or invalid operator token"))
+                .entity(new ErrorResponse("UNAUTHORIZED", "Missing or invalid operator token"))
                 .build();
         }
         
@@ -84,12 +90,12 @@ public class LineScanManifestResource {
         } catch (MinioStorageAdapter.MinioStorageException e) {
             LOG.error("MinIO storage error during manifest upsert", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ErrorResponse("Storage error: " + e.getMessage()))
+                .entity(ErrorResponse.internalError("Internal storage error"))
                 .build();
         } catch (Exception e) {
             LOG.error("Unexpected error during manifest upsert", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ErrorResponse("Internal error"))
+                .entity(ErrorResponse.internalError("Internal error"))
                 .build();
         }
     }
@@ -103,31 +109,29 @@ public class LineScanManifestResource {
     public Response getManifest(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("manifest_id") UUID manifestId,
-            @HeaderParam("x_operator_token") String operatorToken,
-            @HeaderParam("x_forwarded_user") String forwardedUser) {
+            @HeaderParam("X-Operator-Token") String operatorToken,
+            @HeaderParam("X-Forwarded-User") String forwardedUser) {
         
-        // Auth check: either operator token or staff proxy auth
-        if ((operatorToken == null || operatorToken.isBlank()) && 
-            (forwardedUser == null || forwardedUser.isBlank())) {
+        boolean hasStaffAuth = forwardedUser != null && !forwardedUser.isBlank();
+        if (!hasStaffAuth && !isValidOperatorToken(operatorToken, regattaId)) {
             return Response.status(Response.Status.UNAUTHORIZED)
-                .entity(new ErrorResponse("Authentication required"))
+                .entity(new ErrorResponse("UNAUTHORIZED", "Authentication required"))
                 .build();
         }
         
         try {
-            LineScanManifest manifest = manifestService.getManifest(manifestId)
-                .orElse(null);
-            
-            if (manifest == null) {
+            Optional<LineScanManifest> optionalManifest = manifestService.getManifest(manifestId);
+            if (optionalManifest.isEmpty()) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Manifest not found"))
+                    .entity(ErrorResponse.notFound("Manifest not found"))
                     .build();
             }
+            LineScanManifest manifest = optionalManifest.get();
             
             // Verify manifest belongs to the requested regatta
             if (!manifest.getRegattaId().equals(regattaId)) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("Manifest not found in this regatta"))
+                    .entity(ErrorResponse.notFound("Manifest not found in this regatta"))
                     .build();
             }
             
@@ -136,23 +140,19 @@ public class LineScanManifestResource {
         } catch (Exception e) {
             LOG.error("Error retrieving manifest", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ErrorResponse("Internal error"))
+                .entity(ErrorResponse.internalError("Internal error"))
                 .build();
         }
     }
-    
-    /**
-     * Simple error response DTO.
-     */
-    public static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
+
+    private boolean isValidOperatorToken(String operatorToken, UUID regattaId) {
+        try {
+            return operatorToken != null
+                && !operatorToken.isBlank()
+                && operatorTokenService.validateToken(operatorToken, regattaId, LINE_SCAN_STATION, null).isValid();
+        } catch (RuntimeException e) {
+            LOG.warn("Operator token validation failed", e);
+            return false;
         }
     }
 }

@@ -35,12 +35,12 @@ public class LineScanTileResource {
      * Auth: OperatorTokenAuth only (via x_operator_token header)
      */
     @PUT
-    @Consumes({"image/webp", "image/png", MediaType.APPLICATION_OCTET_STREAM})
+    @Consumes({"image/webp", "image/png"})
     @Produces(MediaType.APPLICATION_JSON)
     public Response uploadTile(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("tile_id") String tileId,
-            @HeaderParam("x_operator_token") String operatorToken,
+            @HeaderParam("X-Operator-Token") String operatorToken,
             @HeaderParam("Content-Type") String contentType,
             byte[] tileData) {
         
@@ -52,8 +52,7 @@ public class LineScanTileResource {
         }
         
         // Validate content type
-        if (contentType == null || 
-            (!contentType.equals("image/webp") && !contentType.equals("image/png"))) {
+        if (!isSupportedImageContentType(contentType)) {
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new OperationResult("error", "Content-Type must be image/webp or image/png"))
                 .build();
@@ -103,8 +102,8 @@ public class LineScanTileResource {
     public Response downloadTile(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("tile_id") String tileId,
-            @HeaderParam("x_operator_token") String operatorToken,
-            @HeaderParam("x_forwarded_user") String forwardedUser) {
+            @HeaderParam("X-Operator-Token") String operatorToken,
+            @HeaderParam("X-Forwarded-User") String forwardedUser) {
         
         // Auth check: either operator token or staff proxy auth
         if ((operatorToken == null || operatorToken.isBlank()) && 
@@ -145,6 +144,14 @@ public class LineScanTileResource {
                 .type(MediaType.TEXT_PLAIN)
                 .build();
         }
+    }
+
+    private boolean isSupportedImageContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return false;
+        }
+        String normalized = contentType.toLowerCase().split(";", 2)[0].trim();
+        return "image/webp".equals(normalized) || "image/png".equals(normalized);
     }
     
     /**

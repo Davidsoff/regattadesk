@@ -22,6 +22,7 @@ import java.util.UUID;
 public class MinioStorageAdapter {
     
     private static final Logger LOG = Logger.getLogger(MinioStorageAdapter.class);
+    private static final long MAX_RETRIEVABLE_TILE_BYTES = 10L * 1024 * 1024;
     
     private final MinioClient minioClient;
     private final MinioConfiguration config;
@@ -111,6 +112,12 @@ public class MinioStorageAdapter {
                     .object(objectKey)
                     .build()
             );
+            if (stat.size() > MAX_RETRIEVABLE_TILE_BYTES) {
+                throw new MinioStorageException(
+                    "Tile exceeds maximum retrievable size of " + MAX_RETRIEVABLE_TILE_BYTES + " bytes: " + objectKey,
+                    null
+                );
+            }
             
             // Then get the object data
             try (GetObjectResponse response = minioClient.getObject(
@@ -166,9 +173,6 @@ public class MinioStorageAdapter {
                  InvalidResponseException | IOException | NoSuchAlgorithmException |
                  ServerException | XmlParserException e) {
             throw new MinioStorageException("Failed to check tile existence: " + objectKey, e);
-        } catch (Exception e) {
-            LOG.errorf(e, "Unexpected error checking tile existence: bucket=%s key=%s", bucketName, objectKey);
-            return false;
         }
     }
 

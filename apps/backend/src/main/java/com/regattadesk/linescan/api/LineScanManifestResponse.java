@@ -5,7 +5,9 @@ import com.regattadesk.linescan.LineScanManifest;
 import com.regattadesk.linescan.LineScanManifestTile;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -66,7 +68,7 @@ public class LineScanManifestResponse {
         this.fallbackFormat = manifest.getFallbackFormat();
         this.xOriginTimestampMs = manifest.getXOriginTimestampMs();
         this.msPerPixel = manifest.getMsPerPixel();
-        this.tiles = manifest.getTiles().stream()
+        this.tiles = Objects.requireNonNullElse(manifest.getTiles(), Collections.<LineScanManifestTile>emptyList()).stream()
             .map(TileDto::new)
             .collect(Collectors.toList());
         this.retentionDays = manifest.getRetentionDays();

@@ -173,6 +173,10 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
     }
 
     private LineScanManifest mapResultSetToManifest(ResultSet rs, List<LineScanManifestTile> tiles) throws SQLException {
+        Timestamp pruneEligibleAtTs = rs.getTimestamp("prune_eligible_at");
+        Timestamp prunedAtTs = rs.getTimestamp("pruned_at");
+        Timestamp createdAtTs = rs.getTimestamp("created_at");
+        Timestamp updatedAtTs = rs.getTimestamp("updated_at");
         return LineScanManifest.builder()
             .id(rs.getObject("id", UUID.class))
             .regattaId(rs.getObject("regatta_id", UUID.class))
@@ -186,12 +190,10 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             .retentionDays(rs.getInt("retention_days"))
             .pruneWindowSeconds(rs.getInt("prune_window_seconds"))
             .retentionState(LineScanManifest.RetentionState.fromValue(rs.getString("retention_state")))
-            .pruneEligibleAt(rs.getTimestamp("prune_eligible_at") != null ? 
-                rs.getTimestamp("prune_eligible_at").toInstant() : null)
-            .prunedAt(rs.getTimestamp("pruned_at") != null ? 
-                rs.getTimestamp("pruned_at").toInstant() : null)
-            .createdAt(rs.getTimestamp("created_at").toInstant())
-            .updatedAt(rs.getTimestamp("updated_at").toInstant())
+            .pruneEligibleAt(pruneEligibleAtTs != null ? pruneEligibleAtTs.toInstant() : null)
+            .prunedAt(prunedAtTs != null ? prunedAtTs.toInstant() : null)
+            .createdAt(createdAtTs != null ? createdAtTs.toInstant() : null)
+            .updatedAt(updatedAtTs != null ? updatedAtTs.toInstant() : null)
             .build();
     }
 }
