@@ -14,6 +14,8 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.31.3</quarkus.platform.version>
+        <quarkus.http.test-port>8081</quarkus.http.test-port>
+        <quarkus.http.test-ssl-port>8444</quarkus.http.test-ssl-port>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
     </properties>
@@ -71,6 +73,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -166,6 +173,8 @@
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <quarkus.http.test-port>${quarkus.http.test-port}</quarkus.http.test-port>
+                        <quarkus.http.test-ssl-port>${quarkus.http.test-ssl-port}</quarkus.http.test-ssl-port>
                     </systemPropertyVariables>
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
@@ -191,6 +200,8 @@
                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <maven.home>${maven.home}</maven.home>
+                        <quarkus.http.test-port>${quarkus.http.test-port}</quarkus.http.test-port>
+                        <quarkus.http.test-ssl-port>${quarkus.http.test-ssl-port}</quarkus.http.test-ssl-port>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -220,6 +231,8 @@
             </activation>
             <properties>
                 <skipITs>false</skipITs>
+                <quarkus.http.test-port>18081</quarkus.http.test-port>
+                <quarkus.http.test-ssl-port>18481</quarkus.http.test-ssl-port>
             </properties>
             <build>
                 <plugins>
@@ -244,6 +257,8 @@
             </activation>
             <properties>
                 <skipITs>false</skipITs>
+                <quarkus.http.test-port>18082</quarkus.http.test-port>
+                <quarkus.http.test-ssl-port>18482</quarkus.http.test-ssl-port>
             </properties>
             <build>
                 <plugins>
