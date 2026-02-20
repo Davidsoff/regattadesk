@@ -55,14 +55,6 @@ class EntryPaymentStatusEventTest {
     }
 
     @Test
-    void entryPaymentStatusUpdatedEvent_invalidStatus_shouldThrow() {
-        UUID entryId = UUID.randomUUID();
-        
-        // This will be enforced by aggregate validation
-        // For now just document expected behavior
-    }
-
-    @Test
     void entryPaymentStatusUpdatedEvent_getEventType_shouldReturnCorrectType() {
         UUID entryId = UUID.randomUUID();
         var event = new EntryPaymentStatusUpdatedEvent(
