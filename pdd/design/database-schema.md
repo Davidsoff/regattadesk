@@ -555,7 +555,15 @@ CREATE INDEX idx_timing_markers_approved ON timing_markers(is_approved);
 CREATE INDEX idx_timing_markers_frame ON timing_markers(frame_offset);
 ```
 
+Line-scan storage note (v0.1):
+- `line_scan_manifests`, `line_scan_tiles`, and `timing_markers` are API-managed read/write tables for line-scan workflows.
+- BC06 tile binary storage plus immediate manifest/tile metadata persistence are intentionally non-event-sourced in v0.1.
+
 ## Event Sourcing Tables
+
+Event-sourcing scope note (v0.1):
+- Event sourcing remains the default for core regatta domains.
+- BC06 line-scan tile storage and immediate manifest/tile metadata persistence path are an explicit exception and do not flow through `event_store` in v0.1.
 
 ### Aggregates Table
 ```sql

@@ -84,6 +84,7 @@ Application configuration is in `src/main/resources/application.properties`:
 7. **Contract/doc sync**: If backend behavior changes, update the relevant `pdd/` contract/design docs in the same change
 8. **Deterministic CI gates**: PR-gating backend tests must be deterministic (no wall-clock sleeps, timing thresholds, or host-performance assumptions)
 9. **Performance tests**: Keep performance and query-latency tests non-gating and separate from the default `./mvnw test` PR gate path
+10. **Line-scan tile storage policy**: BC06 tile binary storage (and immediate manifest/tile storage metadata persistence path) is intentionally non-event-sourced in v0.1.
 
 ## Common Commands
 - `./mvnw quarkus:dev` - Start in dev mode

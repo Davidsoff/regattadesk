@@ -14,7 +14,7 @@ apps/
 
 ### Backend (`apps/backend/`)
 - **Technology**: Quarkus 3.8+ with Java 25
-- **Purpose**: REST API, business logic, event sourcing, database access
+- **Purpose**: REST API, business logic, event sourcing, database access, and line-scan tile storage workflows (non-event-sourced in v0.1)
 - **Development**: `cd apps/backend && ./mvnw quarkus:dev`
 - **Port**: 8080 (default)
 
