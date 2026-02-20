@@ -15,8 +15,6 @@ class IdentityHeaderSanitizerTest {
     
     @Test
     void testPublicEndpoint_ForgedHeadersStripped() {
-        // Attempt to access /api/health (public path) with forged identity headers
-        // Headers should be stripped, endpoint should still work normally
         given()
             .header("Remote-User", "attacker")
             .header("Remote-Groups", "super_admin")
@@ -25,40 +23,38 @@ class IdentityHeaderSanitizerTest {
             .when().get("/api/health")
             .then()
             .statusCode(200)
-            .body("status", equalTo("UP"));
+            .body("status", equalTo("UP"))
+            .body("version", equalTo("0.1.0-SNAPSHOT"));
     }
-    
+
     @Test
-    void testProtectedEndpoint_ForgedHeadersStripped_AccessDenied() {
-        // Attempt to access a @RequireRole protected endpoint on a public path
-        // with forged identity headers. Since /api/health is public (no ForwardAuth),
-        // headers should be stripped and the request should be denied (403)
-        // Note: We can't use /test/auth as it's trusted for testing purposes
-        // So we verify the behavior by testing that public paths reject auth attempts
+    void testTrustedPath_PreservesIdentityHeaders() {
         given()
             .header("Remote-User", "attacker")
             .header("Remote-Groups", "super_admin")
             .header("Remote-Name", "Attacker")
             .header("Remote-Email", "attacker@evil.com")
-            .when().get("/api/health")  // Public endpoint
-            .then()
-            .statusCode(200);  // Works normally, headers are stripped
-    }
-    
-    @Test
-    void testPublicEndpoint_NoHeaders_Works() {
-        // Public endpoint should work without any headers
-        given()
-            .when().get("/api/health")
+            .when().get("/test/auth/public")
             .then()
             .statusCode(200)
-            .body("status", equalTo("UP"));
+            .body("endpoint", equalTo("public"))
+            .body("username", equalTo("attacker"));
     }
-    
+
+    @Test
+    void testTrustedProtectedPath_AllowsAuthorizedRole() {
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+            .when().get("/test/auth/admin")
+            .then()
+            .statusCode(200)
+            .body("endpoint", equalTo("admin"))
+            .body("username", equalTo("admin"));
+    }
+
     @Test
     void testProtectedEndpoint_NoHeaders_AccessDenied() {
-        // Protected endpoint without authentication should be denied  
-        // Using /test/auth which requires authentication
         given()
             .when().get("/test/auth/admin")
             .then()

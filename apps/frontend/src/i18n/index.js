@@ -2,6 +2,26 @@ import { createI18n } from 'vue-i18n';
 import en from './locales/en.json';
 import nl from './locales/nl.json';
 
+function normalizeLocale(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalizedValue = value.trim();
+  if (normalizedValue.length === 0) {
+    return null;
+  }
+
+  const baseLanguage = normalizedValue.toLowerCase().split(/[-_]/)[0];
+  if (baseLanguage === 'nl') {
+    return 'nl';
+  }
+  if (baseLanguage === 'en') {
+    return 'en';
+  }
+  return null;
+}
+
 /**
  * Get the user's preferred locale from localStorage or browser settings.
  * Defaults to 'nl' (Dutch) as per RegattaDesk requirements.
@@ -14,13 +34,13 @@ function getDefaultLocale() {
     stored = null;
   }
 
-  if (stored && ['nl', 'en'].includes(stored)) {
-    return stored;
+  const storedLocale = normalizeLocale(stored);
+  if (storedLocale) {
+    return storedLocale;
   }
 
   try {
-    const browserLang = navigator.language.split('-')[0];
-    return ['nl', 'en'].includes(browserLang) ? browserLang : 'nl';
+    return normalizeLocale(navigator.language) || 'nl';
   } catch {
     return 'nl';
   }
@@ -47,8 +67,8 @@ export default i18n;
  * Update the locale and persist it to localStorage
  */
 export function setLocale(locale) {
-  let normalizedLocale = locale;
-  if (!['nl', 'en'].includes(locale)) {
+  let normalizedLocale = normalizeLocale(locale);
+  if (!normalizedLocale) {
     console.warn(`Unsupported locale: ${locale}. Using 'nl' instead.`);
     normalizedLocale = 'nl';
   }

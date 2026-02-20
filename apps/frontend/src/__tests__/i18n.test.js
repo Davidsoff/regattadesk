@@ -33,6 +33,18 @@ describe('i18n initialization', () => {
     expect(document.documentElement.getAttribute('lang')).toBe('nl');
   });
 
+  it('normalizes stored locale tags to supported base locale', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'en-US',
+      setItem: vi.fn()
+    });
+    vi.stubGlobal('navigator', { language: 'nl-NL' });
+
+    const { default: i18n } = await importFreshI18n();
+    expect(i18n.global.locale.value).toBe('en');
+    expect(document.documentElement.getAttribute('lang')).toBe('en');
+  });
+
   it('falls back to navigator locale when localStorage access fails', async () => {
     vi.stubGlobal('localStorage', {
       getItem: () => {
@@ -41,6 +53,18 @@ describe('i18n initialization', () => {
       setItem: vi.fn()
     });
     vi.stubGlobal('navigator', { language: 'en-US' });
+
+    const { default: i18n } = await importFreshI18n();
+    expect(i18n.global.locale.value).toBe('en');
+    expect(document.documentElement.getAttribute('lang')).toBe('en');
+  });
+
+  it('normalizes mixed-case and underscore locale tags from navigator', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: vi.fn()
+    });
+    vi.stubGlobal('navigator', { language: 'EN_us' });
 
     const { default: i18n } = await importFreshI18n();
     expect(i18n.global.locale.value).toBe('en');
@@ -102,6 +126,31 @@ describe('setLocale', () => {
     expect(document.documentElement.getAttribute('lang')).toBe('nl');
     expect(warnSpy).toHaveBeenCalled();
     warnSpy.mockRestore();
+  });
+
+  it('normalizes locale tags to supported base locale', async () => {
+    const storage = globalThis.localStorage;
+    const { default: i18n, setLocale } = await importFreshI18n();
+
+    setLocale('nl-BE');
+    expect(i18n.global.locale.value).toBe('nl');
+    expect(storage.setItem).toHaveBeenLastCalledWith('regattadesk-locale', 'nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
+
+    setLocale('en-US');
+    expect(i18n.global.locale.value).toBe('en');
+    expect(storage.setItem).toHaveBeenLastCalledWith('regattadesk-locale', 'en');
+    expect(document.documentElement.getAttribute('lang')).toBe('en');
+  });
+
+  it('trims and normalizes locale tags before persisting', async () => {
+    const storage = globalThis.localStorage;
+    const { default: i18n, setLocale } = await importFreshI18n();
+
+    setLocale('  NL_be  ');
+    expect(i18n.global.locale.value).toBe('nl');
+    expect(storage.setItem).toHaveBeenLastCalledWith('regattadesk-locale', 'nl');
+    expect(document.documentElement.getAttribute('lang')).toBe('nl');
   });
 
   it('still updates runtime locale when storage write fails', async () => {

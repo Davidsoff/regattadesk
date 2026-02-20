@@ -1,11 +1,13 @@
 package com.regattadesk.operator;
 
 import com.regattadesk.operator.events.OperatorTokenIssuedEvent;
+import com.regattadesk.operator.events.OperatorTokenRevokedEvent;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Instant;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JdbcOperatorTokenRepositoryTest {
@@ -77,7 +81,7 @@ class JdbcOperatorTokenRepositoryTest {
     @Test
     void saveAndFindByToken_shouldRoundTrip() {
         UUID regattaId = UUID.randomUUID();
-        Instant now = Instant.now();
+        Instant now = Instant.parse("2026-02-20T10:00:00Z");
         OperatorToken token = new OperatorToken(
             UUID.randomUUID(),
             regattaId,
@@ -97,6 +101,11 @@ class JdbcOperatorTokenRepositoryTest {
 
         assertEquals(token.getId(), loaded.getId());
         assertEquals(regattaId, loaded.getRegattaId());
+        assertEquals("start-line", loaded.getStation());
+        assertEquals("123456", loaded.getPin());
+        assertEquals(token.getValidFrom(), loaded.getValidFrom());
+        assertEquals(token.getValidUntil(), loaded.getValidUntil());
+        assertTrue(loaded.isActive());
     }
 
     @Test
@@ -145,9 +154,97 @@ class JdbcOperatorTokenRepositoryTest {
 
         try (Connection conn = dataSource.getConnection();
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM event_store WHERE aggregate_id = '" + tokenId + "'")) {
-            rs.next();
-            assertEquals(1, rs.getInt(1));
+             ResultSet rs = stmt.executeQuery(
+                 "SELECT event_type, sequence_number, payload, metadata FROM event_store WHERE aggregate_id = '" + tokenId + "'"
+             )) {
+            assertTrue(rs.next());
+            assertEquals("OperatorTokenIssued", rs.getString("event_type"));
+            assertEquals(1L, rs.getLong("sequence_number"));
+            assertTrue(rs.getString("payload").contains("\"tokenId\":\"" + tokenId + "\""));
+            assertTrue(rs.getString("payload").contains("\"regattaId\":\"" + regattaId + "\""));
+            assertEquals("{\"source\":\"operator-token-service\"}", rs.getString("metadata"));
+            assertTrue(rs.isLast());
         }
+    }
+
+    @Test
+    void appendEvent_shouldIncrementSequenceNumberPerTokenStream() throws Exception {
+        UUID tokenId = UUID.randomUUID();
+        UUID regattaId = UUID.randomUUID();
+        Instant now = Instant.now();
+        repository.appendEvent(new OperatorTokenIssuedEvent(
+            tokenId,
+            regattaId,
+            null,
+            "start",
+            now,
+            now.plus(1, ChronoUnit.HOURS),
+            now,
+            "tester"
+        ));
+        repository.appendEvent(new OperatorTokenRevokedEvent(
+            tokenId,
+            regattaId,
+            "start",
+            "revoked",
+            now.plus(5, ChronoUnit.MINUTES),
+            "tester"
+        ));
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "SELECT sequence_number, event_type FROM event_store WHERE aggregate_id = ? ORDER BY sequence_number"
+             )) {
+            stmt.setObject(1, tokenId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue(rs.next());
+                assertEquals(1L, rs.getLong("sequence_number"));
+                assertEquals("OperatorTokenIssued", rs.getString("event_type"));
+
+                assertTrue(rs.next());
+                assertEquals(2L, rs.getLong("sequence_number"));
+                assertEquals("OperatorTokenRevoked", rs.getString("event_type"));
+
+                assertTrue(rs.isLast());
+            }
+        }
+    }
+
+    @Test
+    void appendEvent_shouldCreateAggregateStreamIfMissing() throws Exception {
+        UUID tokenId = UUID.randomUUID();
+        UUID regattaId = UUID.randomUUID();
+        Instant now = Instant.now();
+        repository.appendEvent(new OperatorTokenIssuedEvent(
+            tokenId,
+            regattaId,
+            null,
+            "start",
+            now,
+            now.plus(1, ChronoUnit.HOURS),
+            now,
+            "tester"
+        ));
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT aggregate_type, version FROM aggregates WHERE id = ?")) {
+            stmt.setObject(1, tokenId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                assertTrue(rs.next());
+                assertEquals("OperatorToken", rs.getString("aggregate_type"));
+                assertEquals(0L, rs.getLong("version"));
+                assertNotNull(rs.getString("aggregate_type"));
+            }
+        }
+    }
+
+    @Test
+    void findByToken_shouldReturnEmptyWhenTokenDoesNotExist() {
+        assertTrue(repository.findByToken("missing-token").isEmpty());
+    }
+
+    @Test
+    void revoke_shouldReturnFalseWhenTokenDoesNotExist() {
+        assertFalse(repository.revoke(UUID.randomUUID()));
     }
 }
