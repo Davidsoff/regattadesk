@@ -31,21 +31,21 @@ print_test() {
 print_pass() {
     local message="$1"
     echo -e "${GREEN}[PASS]${NC} $message"
-    ((PASSED++))
+    ((PASSED += 1))
     return 0
 }
 
 print_fail() {
     local message="$1"
     echo -e "${RED}[FAIL]${NC} $message"
-    ((FAILED++))
+    ((FAILED += 1))
     return 0
 }
 
 print_warn() {
     local message="$1"
     echo -e "${YELLOW}[WARN]${NC} $message"
-    ((WARNINGS++))
+    ((WARNINGS += 1))
     return 0
 }
 
@@ -171,15 +171,19 @@ test_request_size_limits() {
     
     print_test "Testing request body size limits..."
     
-    # Create a 15MB payload (exceeds 10MB limit)
-    LARGE_PAYLOAD=$(head -c 15728640 /dev/zero | base64)
-    
+    # Create a 15MB payload (exceeds 10MB limit) in a temp file to avoid large shell variables
+    LARGE_PAYLOAD_FILE=$(mktemp)
+    printf '{"data":"'> "$LARGE_PAYLOAD_FILE"
+    head -c 15728640 /dev/zero | base64 | tr -d '\n' >> "$LARGE_PAYLOAD_FILE"
+    printf '"}' >> "$LARGE_PAYLOAD_FILE"
+
     # Attempt to POST large payload
     HTTP_CODE=$(curl -s -o /dev/null -w "${HTTP_CODE_FORMAT}" \
         -X POST \
         -H "Content-Type: application/json" \
-        -d "{\"data\": \"$LARGE_PAYLOAD\"}" \
+        -d @"$LARGE_PAYLOAD_FILE" \
         "${BASE_URL}/api/health" 2>/dev/null || echo "000")
+    rm -f "$LARGE_PAYLOAD_FILE"
     
     if [[ "$HTTP_CODE" == "413" ]] || [[ "$HTTP_CODE" == "000" ]]; then
         print_pass "Large request rejected (HTTP $HTTP_CODE or connection refused)"

@@ -315,7 +315,7 @@ curl -v http://localhost/api/v1/staff/regattas
 # Expected: 302 redirect to /auth/
 
 # Use edge auth test script
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./edge-auth-test.sh
 ```
 
@@ -427,8 +427,8 @@ Escalate to senior engineer or security team if:
 ## Related Runbooks
 
 - [RB-001: Service Unavailability](./incident-service-unavailability.md)
-- [RB-004: Database Issues](./incident-database-failures.md)
-- [RB-008: Configuration Management](./procedure-configuration-management.md)
+- RB-004: Database Issues (planned, runbook not yet published)
+- RB-008: Configuration Management (planned, runbook not yet published)
 
 ## Additional Resources
 

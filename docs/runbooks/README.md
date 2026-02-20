@@ -30,7 +30,7 @@ This directory contains operational runbooks for RegattaDesk v0.1 incident respo
    - SSE connection failures
    - Rate limiting triggers
 
-4. **[Database Issues](./incident-database-failures.md)**
+4. **Database Issues (RB-004, planned)**
    - Connection pool exhaustion
    - Query performance degradation
    - PostgreSQL service failures
@@ -44,18 +44,18 @@ This directory contains operational runbooks for RegattaDesk v0.1 incident respo
    - Configuration updates
    - Zero-downtime deployment strategies
 
-6. **[Log Analysis and Troubleshooting](./procedure-log-analysis.md)**
+6. **Log Analysis and Troubleshooting (RB-006, planned)**
    - Accessing logs
    - Common log patterns
    - Correlation techniques
    - Using Grafana and Prometheus
 
-7. **[Health Check Interpretation](./procedure-health-checks.md)**
+7. **Health Check Interpretation (RB-007, planned)**
    - Understanding health endpoint responses
    - Readiness vs liveness vs startup probes
    - When to escalate health check failures
 
-8. **[Configuration Management](./procedure-configuration-management.md)**
+8. **Configuration Management (RB-008, planned)**
    - Environment variable management
    - Secret rotation procedures
    - Traefik configuration updates

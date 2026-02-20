@@ -26,7 +26,7 @@ Before starting deployment:
 
 ```bash
 # 1. Verify current system health
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./smoke-test.sh
 
 # 2. Check resource utilization
@@ -48,7 +48,7 @@ docker compose images > versions-before-$(date +%Y%m%d-%H%M%S).txt
 
 ```bash
 # 1. Pull latest code
-cd /home/runner/work/regattadesk/regattadesk
+cd <repo-root>
 git fetch origin
 git checkout main
 git pull origin main
@@ -85,7 +85,7 @@ docker compose ps
 
 ```bash
 # 1. Stop all services
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 docker compose down
 
 # 2. Pull new images or rebuild
@@ -105,7 +105,7 @@ watch -n 2 'docker compose ps'
 
 ```bash
 # 1. Run smoke tests
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./smoke-test.sh
 
 # 2. Run edge hardening tests
@@ -172,7 +172,7 @@ Immediately rollback if:
 
 ```bash
 # 1. Stop current services
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 docker compose down
 
 # 2. Check available images
@@ -195,7 +195,7 @@ docker compose logs -f
 
 ```bash
 # 1. Identify commit to rollback to
-cd /home/runner/work/regattadesk/regattadesk
+cd <repo-root>
 git log --oneline -20
 
 # 2. Create rollback branch
@@ -223,7 +223,7 @@ docker compose up -d --no-deps backend
 
 ```bash
 # 1. Stop application services
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 docker compose stop backend
 
 # 2. Create safety backup of current state
@@ -246,7 +246,7 @@ docker compose start backend
 
 ```bash
 # 1. Verify system is stable
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./smoke-test.sh
 
 # 2. Document rollback reason
@@ -275,7 +275,7 @@ EOF
 
 ```bash
 # 1. Update .env file
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 nano .env
 
 # 2. Restart affected services
@@ -491,8 +491,8 @@ For critical security updates or critical bugs:
 ## Related Runbooks
 
 - [RB-001: Service Unavailability](./incident-service-unavailability.md)
-- [RB-008: Configuration Management](./procedure-configuration-management.md)
-- [RB-006: Log Analysis](./procedure-log-analysis.md)
+- RB-008: Configuration Management (planned, runbook not yet published)
+- RB-006: Log Analysis (planned, runbook not yet published)
 
 ## Additional Resources
 

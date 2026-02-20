@@ -126,7 +126,7 @@ Implemented in `traefik/dynamic.yml` via `security-headers` middleware:
 |--------|-------|---------|
 | `X-Content-Type-Options` | `nosniff` | Prevent MIME type sniffing |
 | `X-Frame-Options` | `SAMEORIGIN` | Prevent clickjacking |
-| `X-XSS-Protection` | `1; mode=block` | Enable browser XSS protection |
+| `X-XSS-Protection` | `1; mode=block` | Deprecated header kept for legacy browser compatibility; use CSP as primary defense |
 | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains; preload` | Enforce HTTPS |
 | `Content-Security-Policy` | `default-src 'self'; ...` | Control resource loading |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Control referrer information |
@@ -289,7 +289,6 @@ public-chain:
       - security-headers
       - rate-limit-public
       - request-size-limit
-      - request-timeout
       - compress-response
 ```
 
@@ -301,7 +300,6 @@ staff-chain:
       - security-headers
       - rate-limit-staff
       - request-size-limit
-      - request-timeout
       - compress-response
 ```
 
@@ -313,9 +311,10 @@ operator-chain:
       - security-headers
       - rate-limit-operator
       - request-size-limit
-      - request-timeout
       - compress-response
 ```
+
+Transport timeouts are configured via `http.serversTransports.default-transport.forwardingTimeouts` in `infra/compose/traefik/dynamic.yml` and attached per service from Docker labels.
 
 ## Abuse Prevention
 
@@ -384,7 +383,7 @@ docker compose logs backend | grep "csp-report"
 ### Automated Tests
 
 ```bash
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./edge-hardening-test.sh
 
 # Tests:
@@ -468,10 +467,10 @@ Before going to production:
 
 ## Related Documentation
 
-- [Traefik Dynamic Configuration](../../infra/compose/traefik/dynamic.yml)
-- [Docker Compose Configuration](../../infra/compose/docker-compose.yml)
+- [Traefik Dynamic Configuration](../infra/compose/traefik/dynamic.yml)
+- [Docker Compose Configuration](../infra/compose/docker-compose.yml)
 - [Incident Runbooks](./runbooks/)
-- [BC09-002 Implementation Summary](../../infra/compose/BC09-002-IMPLEMENTATION-SUMMARY.md)
+- [BC09-002 Implementation Summary](../infra/compose/BC09-002-IMPLEMENTATION-SUMMARY.md)
 
 ## References
 

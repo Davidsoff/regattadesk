@@ -267,7 +267,7 @@ docker compose logs --tail=100 backend | grep -i "slow\|timeout"
 
 5. Test new limits:
    ```bash
-   cd /home/runner/work/regattadesk/regattadesk/infra/compose
+   cd infra/compose
    ./edge-hardening-test.sh
    ```
 
@@ -289,13 +289,15 @@ docker compose logs --tail=100 backend | grep -i "slow\|timeout"
    docker compose exec traefik cat /etc/traefik/dynamic/dynamic.yml | grep -A 5 "timeout"
    ```
 
-3. Increase timeout for SSE endpoints:
+3. Increase timeout for SSE endpoints by using a dedicated serversTransport:
    ```yaml
    # In traefik/dynamic.yml
-   sse-timeouts:
-     forwardingTimeouts:
-       responseHeaderTimeout: 0  # Disable for SSE
-       idleConnTimeout: 300s     # 5 minutes idle
+   http:
+     serversTransports:
+       sse-transport:
+         forwardingTimeouts:
+           responseHeaderTimeout: 0  # Disable for SSE
+           idleConnTimeout: 300s     # 5 minutes idle
    ```
 
 4. Monitor active SSE connections:
@@ -394,7 +396,7 @@ curl -s http://localhost/q/metrics | grep "http_server_requests_seconds_count" |
 ### 4. End-to-End Tests
 
 ```bash
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./smoke-test.sh
 ./edge-hardening-test.sh
 ```
@@ -461,8 +463,8 @@ Escalate if:
 ## Related Runbooks
 
 - [RB-001: Service Unavailability](./incident-service-unavailability.md)
-- [RB-004: Database Issues](./incident-database-failures.md)
-- [RB-006: Log Analysis](./procedure-log-analysis.md)
+- RB-004: Database Issues (planned, runbook not yet published)
+- RB-006: Log Analysis (planned, runbook not yet published)
 
 ## Additional Resources
 

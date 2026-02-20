@@ -305,7 +305,7 @@ docker compose ps
 
 ```bash
 # Run smoke test
-cd /home/runner/work/regattadesk/regattadesk/infra/compose
+cd infra/compose
 ./smoke-test.sh
 ```
 
@@ -409,7 +409,7 @@ Escalate to senior engineer if:
 
 ## Related Runbooks
 
-- [RB-004: Database Issues](./incident-database-failures.md)
+- RB-004: Database Issues (planned, runbook not yet published)
 - [RB-002: Authentication Failures](./incident-authentication-failures.md)
 - [RB-005: Deployment and Rollback](./procedure-deployment-rollback.md)
 
