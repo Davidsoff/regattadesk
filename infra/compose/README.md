@@ -42,7 +42,7 @@ The full Docker Compose stack includes:
 
 ### Default Behavior (Secure)
 - PostgreSQL, MinIO, Jaeger, and Prometheus are only accessible within Docker networks
-- All public endpoints are routed through Traefik (ports 80, 443, 8080)
+- All public endpoints are routed through Traefik (ports 80, 443)
 - No direct host access to internal databases or storage
 
 ### Development Mode (Opt-in)
@@ -65,7 +65,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose
 This exposes:
 - **docker-compose.dev.yml**: PostgreSQL (5432), MinIO API (9000), MinIO Console (9001)
 - **docker-compose.observability.dev.yml**: Jaeger UI (16686), Prometheus (9090)
-- **Always exposed**: Traefik (80, 443, 8080), Grafana (via Traefik at /grafana)
+- **Always exposed**: Traefik (80, 443), Grafana (via Traefik at /grafana)
 
 ### Production Deployment
 **Never use `docker-compose.dev.yml` or `docker-compose.observability.dev.yml` in production.** They are explicitly designed for development convenience and bypass network isolation.
@@ -75,7 +75,7 @@ This exposes:
 - Docker Engine 24.0+ or Docker Desktop
 - Docker Compose 2.24+
 - At least 4GB RAM available for Docker
-- Ports 80, 443, 8080 available on host
+- Ports 80, 443 available on host
 - Optional (dev mode): Ports 5432, 9000, 9001, 16686, 9090 available
 
 ## Building the Backend Image
@@ -165,8 +165,6 @@ This creates a container image using Jib, which optimizes the image layers witho
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - Authelia SSO: http://localhost.local/auth
-   - Traefik Dashboard: http://localhost:8080
-   
    **Development mode only** (requires docker-compose.dev.yml):
    - MinIO Console: http://localhost:9001
    - PostgreSQL: localhost:5432 (use psql or database client)
@@ -247,7 +245,7 @@ For detailed information about the identity forwarding contract and trust bounda
 - **Image**: `traefik:v3.0`
 - **HTTP Port**: 80
 - **HTTPS Port**: 443
-- **Dashboard Port**: 8080
+- **Dashboard**: Not exposed (secure by default)
 - **Features**:
   - Automatic service discovery
   - Let's Encrypt (ACME) certificate management for TLS
@@ -377,8 +375,8 @@ Services show as "healthy" when ready.
 3. **Never commit `authelia/users_database.yml`** to version control
 4. **Use strong secrets** (min 32 characters) for Authelia
 5. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
-6. **Restrict Traefik dashboard** access
-7. **Review access control rules** in `authelia/configuration.yml`
+6. **Review access control rules** in `authelia/configuration.yml`
+7. **Traefik dashboard**: Disabled by default for security. If needed, enable with authenticated middleware.
 
 **Edge Hardening (BC09-002):**
 - ✅ Rate limiting on all endpoints (public: 100 req/s, staff: 50 req/s, operator: 30 req/s)
@@ -413,18 +411,18 @@ docker compose exec minio mc mirror regattadesk/line-scan-tiles /backup/tiles
 
 ### Monitoring
 
-- **Traefik Dashboard**: http://localhost:8080
 - **Backend Health**: http://localhost/q/health
 - **Grafana**: http://localhost/grafana (when observability stack is enabled)
 - **PostgreSQL**: Use `docker compose exec postgres psql -U regattadesk` or enable docker-compose.dev.yml
 - **MinIO Console**: Enable docker-compose.dev.yml for http://localhost:9001
+- **Traefik**: Monitoring available via logs (`docker compose logs traefik`)
 
 ## Troubleshooting
 
 ### Services Won't Start
 
 1. **Check logs**: `docker compose logs`
-2. **Check ports**: Ensure 80, 443, 8080 are available (or 5432, 9000, 9001, etc. if using docker-compose.dev.yml)
+2. **Check ports**: Ensure 80 and 443 are available (plus 5432, 9000, 9001, 16686, 9090 if using dev overlays)
 3. **Check .env**: Ensure all required secrets are set
 4. **Check resources**: Ensure Docker has enough memory
 
