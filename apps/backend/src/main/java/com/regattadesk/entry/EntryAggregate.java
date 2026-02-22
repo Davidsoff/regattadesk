@@ -4,7 +4,6 @@ import com.regattadesk.aggregate.AggregateRoot;
 import com.regattadesk.eventstore.DomainEvent;
 
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,12 +27,7 @@ public class EntryAggregate extends AggregateRoot<EntryAggregate> {
     private String paidBy;
     private String paymentReference;
 
-    private static final List<String> VALID_STATUSES = Arrays.asList(
-        "entered", "withdrawn_before_draw", "withdrawn_after_draw", 
-        "dns", "dnf", "excluded", "dsq"
-    );
-    
-    private static final List<String> VALID_PAYMENT_STATUSES = Arrays.asList("unpaid", "paid");
+    private static final List<String> VALID_PAYMENT_STATUSES = List.of("unpaid", "paid");
 
     public EntryAggregate(UUID id) {
         super(id);
@@ -143,13 +137,6 @@ public class EntryAggregate extends AggregateRoot<EntryAggregate> {
         }
     }
     
-    /**
-     * Public method to apply event (for testing).
-     */
-    public void applyEvent(DomainEvent event) {
-        applyEventToState(event);
-    }
-
     @Override
     public String getAggregateType() {
         return "Entry";

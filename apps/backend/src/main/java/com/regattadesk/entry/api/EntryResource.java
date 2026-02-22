@@ -1,8 +1,10 @@
 package com.regattadesk.entry.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.regattadesk.entry.EntryNotFoundException;
 import com.regattadesk.entry.EntryService;
 import com.regattadesk.security.RequireRole;
+import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -54,6 +56,7 @@ public class EntryResource {
             
             return Response.ok(EntryResponse.from(entry.get())).build();
         } catch (Exception e) {
+            Log.errorf(e, "Failed to retrieve entry: %s", id);
             return Response.serverError()
                 .entity(ErrorResponse.internalError("Failed to retrieve entry"))
                 .build();
@@ -89,17 +92,16 @@ public class EntryResource {
             );
             
             return Response.ok(EntryResponse.from(entry)).build();
+        } catch (EntryNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(ErrorResponse.notFound(e.getMessage()))
+                .build();
         } catch (IllegalArgumentException e) {
-            // Entry not found or invalid status
-            if (e.getMessage().contains("not found")) {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity(ErrorResponse.notFound(e.getMessage()))
-                    .build();
-            }
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         } catch (Exception e) {
+            Log.errorf(e, "Failed to update payment status for entry: %s", id);
             return Response.serverError()
                 .entity(ErrorResponse.internalError("Failed to update payment status"))
                 .build();

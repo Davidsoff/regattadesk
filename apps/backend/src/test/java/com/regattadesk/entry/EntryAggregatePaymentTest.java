@@ -154,10 +154,9 @@ class EntryAggregatePaymentTest {
         // Act - update with same values
         entry.updatePaymentStatus("paid", paidAt, "Finance Staff", "BANK-2026-001");
         
-        // Assert - should not emit another event if values haven't changed
-        // This is optional optimization - for now we allow re-emitting
-        // var changes = entry.getUncommittedChanges();
-        // assertEquals(0, changes.size(), "Idempotent operation should not emit events");
+        // Assert - current behavior re-emits event for repeat update.
+        var changes = entry.getUncommittedChanges();
+        assertEquals(1, changes.size(), "Expect one event re-emitted for non-idempotent behavior");
     }
 
     @Test
@@ -187,7 +186,7 @@ class EntryAggregatePaymentTest {
         );
         
         // Act
-        entry.applyEvent(paymentEvent);
+        entry.loadFromHistory(java.util.List.of(paymentEvent));
         
         // Assert - internal state should be updated
         assertEquals("paid", entry.getPaymentStatus());

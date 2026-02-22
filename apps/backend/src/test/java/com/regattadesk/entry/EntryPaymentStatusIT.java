@@ -3,6 +3,7 @@ package com.regattadesk.entry;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -36,7 +37,6 @@ class EntryPaymentStatusIT {
     private UUID testRegattaId;
     private UUID testEventId;
     private UUID testBlockId;
-    private UUID testCrewId;
     private UUID testEntryId;
 
     @BeforeAll
@@ -46,7 +46,6 @@ class EntryPaymentStatusIT {
         testRegattaId = UUID.randomUUID();
         testEventId = UUID.randomUUID();
         testBlockId = UUID.randomUUID();
-        testCrewId = UUID.randomUUID();
         
         // Create test regatta, event, block, crew via direct DB insert
         // This is a workaround until full CRUD APIs are available
@@ -72,7 +71,7 @@ class EntryPaymentStatusIT {
             
             // Insert test boat type (use unique code)
             UUID boatTypeId = UUID.randomUUID();
-            String uniqueCode = "T" + (System.currentTimeMillis() % 100000000); // Max 9 digits + T
+            String uniqueCode = "T" + boatTypeId.toString().substring(0, 8).toUpperCase();
             String boatTypeSql = "INSERT INTO boat_types (id, code, name, rowers, coxswain, sculling) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement stmt = conn.prepareStatement(boatTypeSql)) {
                 stmt.setObject(1, boatTypeId);
@@ -104,18 +103,26 @@ class EntryPaymentStatusIT {
                 stmt.executeUpdate();
             }
             
-            // Insert test crew
+        }
+    }
+
+    @BeforeEach
+    @Transactional
+    void createFreshEntry() {
+        UUID crewId = UUID.randomUUID();
+        try (Connection conn = dataSource.getConnection()) {
             String crewSql = "INSERT INTO crews (id, display_name, is_composite) VALUES (?, ?, ?)";
             try (PreparedStatement stmt = conn.prepareStatement(crewSql)) {
-                stmt.setObject(1, testCrewId);
-                stmt.setString(2, "Test Crew");
+                stmt.setObject(1, crewId);
+                stmt.setString(2, "Test Crew " + crewId.toString().substring(0, 8));
                 stmt.setBoolean(3, false);
                 stmt.executeUpdate();
             }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create test crew", e);
         }
-        
-        // Create entry via service (this will use event sourcing)
-        var entry = entryService.createEntry(testRegattaId, testEventId, testBlockId, testCrewId, null);
+
+        var entry = entryService.createEntry(testRegattaId, testEventId, testBlockId, crewId, null);
         testEntryId = entry.id();
     }
 

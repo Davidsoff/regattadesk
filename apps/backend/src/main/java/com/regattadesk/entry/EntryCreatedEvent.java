@@ -38,7 +38,7 @@ public class EntryCreatedEvent implements DomainEvent {
 
     @Override
     public String getEventType() {
-        return "EntryCreated";
+        return "EntryCreatedEvent";
     }
 
     @Override

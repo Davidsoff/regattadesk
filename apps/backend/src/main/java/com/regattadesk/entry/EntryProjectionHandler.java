@@ -37,6 +37,7 @@ public class EntryProjectionHandler implements ProjectionHandler {
     public boolean canHandle(EventEnvelope event) {
         String eventType = event.getEventType();
         return "EntryCreated".equals(eventType) ||
+               "EntryCreatedEvent".equals(eventType) ||
                "EntryPaymentStatusUpdatedEvent".equals(eventType);
     }
 
@@ -46,7 +47,7 @@ public class EntryProjectionHandler implements ProjectionHandler {
 
         try {
             switch (eventType) {
-                case "EntryCreated" -> handleEntryCreated(envelope);
+                case "EntryCreated", "EntryCreatedEvent" -> handleEntryCreated(envelope);
                 case "EntryPaymentStatusUpdatedEvent" -> handlePaymentStatusUpdated(envelope);
                 default -> Log.debugf("Ignoring event type: %s", eventType);
             }
@@ -100,7 +101,15 @@ public class EntryProjectionHandler implements ProjectionHandler {
                 stmt.setString(4, event.getPaymentReference());
                 stmt.setTimestamp(5, now);
                 stmt.setObject(6, event.getEntryId());
-                stmt.executeUpdate();
+                int rowsAffected = stmt.executeUpdate();
+                if (rowsAffected == 0) {
+                    Log.warnf(
+                        "Payment status update affected 0 rows for entry %s (eventId=%s, status=%s)",
+                        event.getEntryId(),
+                        envelope.getEventId(),
+                        event.getPaymentStatus()
+                    );
+                }
             }
         }
     }

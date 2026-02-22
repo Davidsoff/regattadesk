@@ -1,6 +1,7 @@
 package com.regattadesk.entry.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
@@ -24,4 +25,8 @@ public record UpdatePaymentStatusRequest(
     @JsonProperty("payment_reference")
     String paymentReference
 ) {
+    @AssertTrue(message = "paid_at is required when payment_status is 'paid'")
+    public boolean isPaidAtValid() {
+        return !"paid".equals(paymentStatus) || paidAt != null;
+    }
 }

@@ -13,6 +13,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -84,7 +85,7 @@ public class EntryService {
             String paymentReference
     ) {
         EntryAggregate aggregate = loadAggregate(entryId)
-            .orElseThrow(() -> new IllegalArgumentException("Entry not found"));
+            .orElseThrow(() -> new EntryNotFoundException(entryId));
 
         aggregate.updatePaymentStatus(paymentStatus, paidAt, paidBy, paymentReference);
         appendChanges(aggregate);
@@ -94,7 +95,7 @@ public class EntryService {
     /**
      * Retrieves an entry by ID from the read model.
      */
-    public Optional<EntryDto> getEntry(UUID entryId) throws Exception {
+    public Optional<EntryDto> getEntry(UUID entryId) {
         try (Connection conn = dataSource.getConnection()) {
             String sql = "SELECT * FROM entries WHERE id = ?";
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -106,6 +107,8 @@ public class EntryService {
                     return Optional.empty();
                 }
             }
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to retrieve entry: " + entryId, e);
         }
     }
 
@@ -153,7 +156,7 @@ public class EntryService {
         String payload = envelope.getRawPayload();
 
         try {
-            if ("EntryCreated".equals(eventType)) {
+            if ("EntryCreated".equals(eventType) || "EntryCreatedEvent".equals(eventType)) {
                 return objectMapper.readValue(payload, EntryCreatedEvent.class);
             }
             if ("EntryPaymentStatusUpdatedEvent".equals(eventType)) {
@@ -165,7 +168,7 @@ public class EntryService {
         }
     }
 
-    private EntryDto mapToDto(ResultSet rs) throws Exception {
+    private EntryDto mapToDto(ResultSet rs) throws SQLException {
         Timestamp paidAtTs = rs.getTimestamp("paid_at");
         Instant paidAt = paidAtTs != null ? paidAtTs.toInstant() : null;
         
