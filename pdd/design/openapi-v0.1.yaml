@@ -1479,6 +1479,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/entry_billing_details"
 
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/payment_status:
+    get:
+      tags: [Finance]
+      summary: Get payment status for entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
+      responses:
+        "200":
+          description: Entry payment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/entry_billing_details"
+    put:
+      tags: [Finance]
+      summary: Update payment status for entry
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/entry_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/payment_status_update_request"
+      responses:
+        "200":
+          description: Entry payment status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/entry_billing_details"
+
+  /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status:
+    get:
+      tags: [Finance]
+      summary: Get derived payment status for club
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/club_id"
+      responses:
+        "200":
+          description: Club payment status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/club_payment_status"
+    put:
+      tags: [Finance]
+      summary: Update payment status for all billable entries of club
+      security:
+        - StaffProxyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/regatta_id"
+        - $ref: "#/components/parameters/club_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/payment_status_update_request"
+      responses:
+        "200":
+          description: Club payment status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/club_payment_status"
+
   /api/v1/regattas/{regatta_id}/payments/mark_bulk:
     post:
       tags: [Finance]
@@ -3492,6 +3568,23 @@ components:
           items: { type: string, format: uuid }
         payment_status: { type: string, enum: [unpaid, paid] }
         payment_reference: { type: string }
+
+    payment_status_update_request:
+      type: object
+      required: [payment_status]
+      properties:
+        payment_status: { type: string, enum: [unpaid, paid] }
+        payment_reference: { type: string }
+
+    club_payment_status:
+      type: object
+      required: [regatta_id, club_id, payment_status, billable_entry_count, paid_entry_count]
+      properties:
+        regatta_id: { type: string, format: uuid }
+        club_id: { type: string, format: uuid }
+        payment_status: { type: string, enum: [unpaid, paid] }
+        billable_entry_count: { type: integer, minimum: 0 }
+        paid_entry_count: { type: integer, minimum: 0 }
 
     operator_token:
       type: object

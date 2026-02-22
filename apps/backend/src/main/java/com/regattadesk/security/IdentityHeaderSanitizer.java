@@ -42,6 +42,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
         "/api/v1/athletes",
         "/api/v1/rulesets",
         "/api/v1/regattas",  // Operator paths are under /api/v1/regattas/{id}/operator
+        "/api/v1/entries",   // Entry management including payment status (BC08-001)
         "/test/auth"  // Test endpoints (only present in test environment)
     );
     
