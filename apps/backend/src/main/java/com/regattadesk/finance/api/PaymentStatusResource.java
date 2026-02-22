@@ -8,6 +8,7 @@ import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -148,6 +149,46 @@ public class PaymentStatusResource {
         } catch (Exception e) {
             return Response.serverError()
                 .entity(ErrorResponse.internalError("Failed to update club payment status"))
+                .build();
+        }
+    }
+
+    @POST
+    @Path("/payments/mark_bulk")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, FINANCIAL_MANAGER})
+    public Response bulkMarkPaymentStatus(
+        @PathParam("regatta_id") UUID regattaId,
+        PaymentBulkMarkRequest request
+    ) {
+        try {
+            if (request == null) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(ErrorResponse.badRequest("Request body is required"))
+                    .build();
+            }
+
+            PaymentStatus targetStatus = PaymentStatus.fromValue(request.paymentStatus());
+            String actor = securityContext.getPrincipal() != null
+                ? securityContext.getPrincipal().getUsername()
+                : "unknown";
+
+            var result = paymentStatusService.bulkMarkPaymentStatuses(
+                regattaId,
+                request.entryIds(),
+                request.clubIds(),
+                targetStatus,
+                request.paymentReference(),
+                actor,
+                request.idempotencyKey()
+            );
+            return Response.ok(PaymentBulkMarkResponse.from(result)).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(ErrorResponse.internalError("Failed to bulk update payment status"))
                 .build();
         }
     }

@@ -1,5 +1,6 @@
 package com.regattadesk.finance;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.DomainEvent;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.eventstore.EventMetadata;
@@ -15,8 +16,10 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -30,6 +33,9 @@ public class PaymentStatusService {
 
     @Inject
     FinanceProjectionHandler projectionHandler;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     public Optional<EntryPaymentStatusDetails> getEntryPaymentStatus(UUID regattaId, UUID entryId) {
         String sql = """
@@ -221,6 +227,136 @@ public class PaymentStatusService {
             .orElseThrow(() -> new IllegalStateException("Club disappeared during payment status update"));
     }
 
+    @Transactional
+    public BulkPaymentMarkResult bulkMarkPaymentStatuses(
+        UUID regattaId,
+        List<UUID> entryIds,
+        List<UUID> clubIds,
+        PaymentStatus targetStatus,
+        String paymentReference,
+        String actor,
+        String idempotencyKey
+    ) {
+        Set<UUID> normalizedEntryIds = normalizeIds(entryIds);
+        Set<UUID> normalizedClubIds = normalizeIds(clubIds);
+        if (normalizedEntryIds.isEmpty() && normalizedClubIds.isEmpty()) {
+            throw new IllegalArgumentException("At least one entry_id or club_id is required");
+        }
+
+        String normalizedActor = (actor == null || actor.isBlank()) ? "unknown" : actor.trim();
+        String normalizedReference = normalizeText(paymentReference);
+        String normalizedIdempotencyKey = normalizeText(idempotencyKey);
+        if (normalizedIdempotencyKey != null && normalizedIdempotencyKey.length() > 128) {
+            throw new IllegalArgumentException("idempotency_key must be 128 characters or fewer");
+        }
+
+        if (normalizedIdempotencyKey != null) {
+            Optional<BulkPaymentMarkResult> replay = findBulkOperationReplay(
+                regattaId,
+                normalizedActor,
+                normalizedIdempotencyKey,
+                targetStatus
+            );
+            if (replay.isPresent()) {
+                return replay.get();
+            }
+        }
+
+        int totalRequested = normalizedEntryIds.size() + normalizedClubIds.size();
+        Set<UUID> targetEntryIds = new LinkedHashSet<>();
+        List<BulkPaymentFailure> failures = new ArrayList<>();
+
+        for (UUID clubId : normalizedClubIds) {
+            if (!clubExists(clubId)) {
+                failures.add(new BulkPaymentFailure("club", clubId, "CLUB_NOT_FOUND", "Club not found"));
+                continue;
+            }
+            listClubEntryPaymentRows(regattaId, clubId).stream()
+                .map(EntryPaymentRow::entryId)
+                .forEach(targetEntryIds::add);
+        }
+        targetEntryIds.addAll(normalizedEntryIds);
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        for (UUID entryId : targetEntryIds) {
+            Optional<EntryPaymentRow> rowOptional = loadEntryPaymentRow(regattaId, entryId);
+            if (rowOptional.isEmpty()) {
+                failures.add(new BulkPaymentFailure("entry", entryId, "ENTRY_NOT_FOUND", "Entry not found"));
+                continue;
+            }
+
+            EntryPaymentRow row = rowOptional.get();
+            EntryPaymentStatusModel model = new EntryPaymentStatusModel(
+                row.paymentStatus(),
+                row.paidAt(),
+                row.paidBy(),
+                row.paymentReference()
+            );
+            EntryPaymentStatusModel.TransitionResult transition = model.transitionTo(
+                targetStatus,
+                normalizedReference,
+                normalizedActor,
+                Instant.now()
+            );
+
+            if (!transition.changed()) {
+                unchangedCount++;
+                continue;
+            }
+
+            updatedCount++;
+            EntryPaymentStatusUpdatedEvent entryEvent = new EntryPaymentStatusUpdatedEvent(
+                row.entryId(),
+                regattaId,
+                row.effectiveClubId(),
+                transition.previousStatus().value(),
+                transition.nextStatus().value(),
+                transition.nextPaidAt(),
+                transition.nextPaidBy(),
+                transition.nextPaymentReference(),
+                "bulk_update"
+            );
+            appendAndProject(row.entryId(), "EntryPayment", List.of(entryEvent), normalizedActor);
+        }
+
+        int processedCount = updatedCount + unchangedCount;
+        int failedCount = failures.size();
+        String message = failedCount == 0
+            ? "Bulk payment update completed"
+            : "Bulk payment update completed with partial failures";
+
+        BulkPaymentMarkResult result = new BulkPaymentMarkResult(
+            failedCount == 0,
+            message,
+            totalRequested,
+            processedCount,
+            updatedCount,
+            unchangedCount,
+            failedCount,
+            List.copyOf(failures),
+            normalizedIdempotencyKey,
+            false
+        );
+
+        BulkPaymentStatusMarkedEvent summaryEvent = new BulkPaymentStatusMarkedEvent(
+            regattaId,
+            targetStatus.value(),
+            totalRequested,
+            processedCount,
+            updatedCount,
+            unchangedCount,
+            failedCount,
+            result.failures(),
+            normalizedActor,
+            normalizedReference,
+            normalizedIdempotencyKey
+        );
+        appendAndProject(regattaId, "BulkPayment", List.of(summaryEvent), normalizedActor);
+
+        return result;
+    }
+
     private Optional<EntryPaymentRow> loadEntryPaymentRow(UUID regattaId, UUID entryId) {
         String sql = """
             SELECT
@@ -336,6 +472,79 @@ public class PaymentStatusService {
                 projectionHandler.handle(envelope);
             }
         }
+    }
+
+    private Optional<BulkPaymentMarkResult> findBulkOperationReplay(
+        UUID regattaId,
+        String actor,
+        String idempotencyKey,
+        PaymentStatus targetStatus
+    ) {
+        String sql = """
+            SELECT payload
+            FROM event_store
+            WHERE aggregate_id = ? AND event_type = 'BulkPaymentStatusMarked'
+            ORDER BY created_at DESC
+            LIMIT 200
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    BulkPaymentStatusMarkedEvent event = objectMapper.readValue(
+                        rs.getString("payload"),
+                        BulkPaymentStatusMarkedEvent.class
+                    );
+                    if (!idempotencyKey.equals(event.getIdempotencyKey())) {
+                        continue;
+                    }
+                    if (!actor.equals(event.getRequestedBy())) {
+                        continue;
+                    }
+                    if (!targetStatus.value().equals(event.getTargetStatus())) {
+                        continue;
+                    }
+
+                    return Optional.of(new BulkPaymentMarkResult(
+                        event.getFailedCount() == 0,
+                        "Replayed previous bulk payment update",
+                        event.getTotalRequested(),
+                        event.getProcessedCount(),
+                        event.getUpdatedCount(),
+                        event.getUnchangedCount(),
+                        event.getFailedCount(),
+                        event.getFailures() == null ? List.of() : List.copyOf(event.getFailures()),
+                        event.getIdempotencyKey(),
+                        true
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to resolve idempotency replay", e);
+        }
+        return Optional.empty();
+    }
+
+    private Set<UUID> normalizeIds(List<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Set.of();
+        }
+        Set<UUID> normalized = new LinkedHashSet<>();
+        for (UUID id : ids) {
+            if (id != null) {
+                normalized.add(id);
+            }
+        }
+        return normalized;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Instant toInstant(Timestamp timestamp) {

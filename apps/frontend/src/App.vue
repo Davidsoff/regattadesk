@@ -1,7 +1,7 @@
 <script setup>
-import DesignSystemDemo from './components/DesignSystemDemo.vue'
+import FinanceBulkPaymentWorkflow from './components/FinanceBulkPaymentWorkflow.vue'
 </script>
 
 <template>
-  <DesignSystemDemo />
+  <FinanceBulkPaymentWorkflow />
 </template>

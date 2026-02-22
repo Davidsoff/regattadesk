@@ -1575,7 +1575,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/operation_result"
+                $ref: "#/components/schemas/payment_bulk_mark_result"
 
   /api/v1/regattas/{regatta_id}/operator/tokens:
     get:
@@ -3560,14 +3560,60 @@ components:
 
     payment_bulk_mark_request:
       type: object
-      required: [entry_ids, payment_status]
+      required: [payment_status]
+      anyOf:
+        - required: [entry_ids]
+        - required: [club_ids]
       properties:
         entry_ids:
           type: array
           minItems: 1
           items: { type: string, format: uuid }
+        club_ids:
+          type: array
+          minItems: 1
+          items: { type: string, format: uuid }
         payment_status: { type: string, enum: [unpaid, paid] }
         payment_reference: { type: string }
+        idempotency_key: { type: string, maxLength: 128 }
+
+    payment_bulk_mark_result:
+      type: object
+      required:
+        [
+          success,
+          message,
+          total_requested,
+          processed_count,
+          updated_count,
+          unchanged_count,
+          failed_count,
+          failures,
+          idempotent_replay,
+        ]
+      properties:
+        success: { type: boolean }
+        message: { type: string }
+        total_requested: { type: integer, minimum: 0 }
+        processed_count: { type: integer, minimum: 0 }
+        updated_count: { type: integer, minimum: 0 }
+        unchanged_count: { type: integer, minimum: 0 }
+        failed_count: { type: integer, minimum: 0 }
+        idempotency_key: { type: string, nullable: true }
+        idempotent_replay: { type: boolean }
+        failures:
+          type: array
+          items:
+            $ref: "#/components/schemas/payment_bulk_mark_failure"
+
+    payment_bulk_mark_failure:
+      type: object
+      required: [scope_type, id, code, message]
+      properties:
+        scope_type: { type: string, enum: [entry, club] }
+        id: { type: string, format: uuid }
+        code: { type: string }
+        message: { type: string }
 
     payment_status_update_request:
       type: object
