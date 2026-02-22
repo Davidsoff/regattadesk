@@ -114,7 +114,7 @@ public class EntryService {
 
     private void appendChanges(EntryAggregate aggregate) {
         long expectedVersion = eventStore.getCurrentVersion(aggregate.getId());
-        long fromSequence = expectedVersion + 1;
+        List<DomainEvent> newEvents = List.copyOf(aggregate.getUncommittedEvents());
         EventMetadata metadata = EventMetadata.builder()
             .correlationId(UUID.randomUUID())
             .build();
@@ -123,11 +123,23 @@ public class EntryService {
             aggregate.getId(),
             aggregate.getAggregateType(),
             expectedVersion,
-            aggregate.getUncommittedEvents(),
+            newEvents,
             metadata
         );
 
-        for (EventEnvelope envelope : eventStore.readStream(aggregate.getId(), fromSequence)) {
+        long sequenceNumber = expectedVersion + 1;
+        Instant createdAt = Instant.now();
+        for (DomainEvent event : newEvents) {
+            EventEnvelope envelope = EventEnvelope.builder()
+                .eventId(UUID.randomUUID())
+                .aggregateId(aggregate.getId())
+                .aggregateType(aggregate.getAggregateType())
+                .eventType(event.getEventType())
+                .sequenceNumber(sequenceNumber++)
+                .payload(event)
+                .metadata(metadata)
+                .createdAt(createdAt)
+                .build();
             if (projectionHandler.canHandle(envelope)) {
                 projectionHandler.handle(envelope);
             }
