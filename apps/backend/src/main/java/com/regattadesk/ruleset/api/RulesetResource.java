@@ -5,6 +5,7 @@ import com.regattadesk.ruleset.RulesetAggregate;
 import com.regattadesk.ruleset.RulesetService;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.Role;
+import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,10 +30,12 @@ import java.util.stream.Collectors;
 public class RulesetResource {
     
     private final RulesetService rulesetService;
+    private final SecurityContext securityContext;
     
     @Inject
-    public RulesetResource(RulesetService rulesetService) {
+    public RulesetResource(RulesetService rulesetService, SecurityContext securityContext) {
         this.rulesetService = rulesetService;
+        this.securityContext = securityContext;
     }
     
     /**
@@ -41,8 +44,7 @@ public class RulesetResource {
     @GET
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
     public Response listRulesets(@QueryParam("is_global") Boolean isGlobal) {
-        // TODO: Implement filtering by is_global when projection/read model is available
-        List<RulesetAggregate> rulesets = rulesetService.listRulesets();
+        List<RulesetAggregate> rulesets = rulesetService.listRulesets(isGlobal);
         List<RulesetResponse> responses = rulesets.stream()
             .map(RulesetResponse::new)
             .collect(Collectors.toList());
@@ -181,6 +183,42 @@ public class RulesetResource {
         } catch (IllegalStateException e) {
             return Response.status(Response.Status.CONFLICT)
                 .entity(ErrorResponse.conflict(e.getMessage()))
+                .build();
+        }
+    }
+    
+    /**
+     * Promote a ruleset to the global catalog.
+     * 
+     * This endpoint is restricted to SUPER_ADMIN role only.
+     * The promotion is auditable with the actor and timestamp recorded in the event.
+     */
+    @POST
+    @Path("/{ruleset_id}/promote")
+    @RequireRole(Role.SUPER_ADMIN)
+    public Response promoteToGlobal(@PathParam("ruleset_id") UUID rulesetId) {
+        try {
+            // Get the authenticated user from security context
+            // Since this endpoint requires SUPER_ADMIN role, the principal should always exist
+            if (securityContext.getPrincipal() == null) {
+                // This should never happen due to @RequireRole, but guard against it
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Authentication principal not available"))
+                    .build();
+            }
+            
+            String promotedBy = securityContext.getPrincipal().getUsername();
+            RulesetAggregate ruleset = rulesetService.promoteToGlobal(rulesetId, promotedBy);
+            return Response.ok(new RulesetResponse(ruleset)).build();
+            
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Ruleset not found:")) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Ruleset not found"))
+                    .build();
+            }
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest(e.getMessage()))
                 .build();
         }
     }

@@ -393,4 +393,103 @@ class RulesetAggregateTest {
         
         assertEquals("Ruleset", ruleset.getAggregateType());
     }
+    
+    // === Promotion Tests ===
+    
+    @Test
+    void testPromoteToGlobal() {
+        UUID id = UUID.randomUUID();
+        RulesetAggregate ruleset = RulesetAggregate.create(
+            id, "Test Ruleset", "v1.0", "Description", "actual_at_start"
+        );
+        
+        assertFalse(ruleset.isGlobal());
+        ruleset.markEventsAsCommitted();
+        
+        String promotedBy = "admin@example.com";
+        ruleset.promoteToGlobal(promotedBy);
+        
+        // Verify state was updated
+        assertTrue(ruleset.isGlobal());
+        
+        // Verify event was emitted
+        List<DomainEvent> events = ruleset.getUncommittedEvents();
+        assertEquals(1, events.size());
+        assertTrue(events.get(0) instanceof RulesetPromotedToGlobalEvent);
+        
+        RulesetPromotedToGlobalEvent event = (RulesetPromotedToGlobalEvent) events.get(0);
+        assertEquals(id, event.getRulesetId());
+        assertEquals(promotedBy, event.getPromotedBy());
+        assertNotNull(event.getPromotedAt());
+    }
+    
+    @Test
+    void testPromoteToGlobalIsIdempotent() {
+        UUID id = UUID.randomUUID();
+        RulesetAggregate ruleset = RulesetAggregate.create(
+            id, "Test Ruleset", "v1.0", "Description", "actual_at_start"
+        );
+        
+        ruleset.markEventsAsCommitted();
+        ruleset.promoteToGlobal("admin@example.com");
+        ruleset.markEventsAsCommitted();
+        
+        assertTrue(ruleset.isGlobal());
+        
+        // Second promotion should not raise another event
+        ruleset.promoteToGlobal("another_admin@example.com");
+        
+        // Verify no new event was emitted
+        List<DomainEvent> events = ruleset.getUncommittedEvents();
+        assertEquals(0, events.size());
+        assertTrue(ruleset.isGlobal());
+    }
+    
+    @Test
+    void testPromoteToGlobalWithNullPromotedByThrowsException() {
+        UUID id = UUID.randomUUID();
+        RulesetAggregate ruleset = RulesetAggregate.create(
+            id, "Test Ruleset", "v1.0", "Description", "actual_at_start"
+        );
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            ruleset.promoteToGlobal(null);
+        });
+    }
+    
+    @Test
+    void testPromoteToGlobalWithBlankPromotedByThrowsException() {
+        UUID id = UUID.randomUUID();
+        RulesetAggregate ruleset = RulesetAggregate.create(
+            id, "Test Ruleset", "v1.0", "Description", "actual_at_start"
+        );
+        
+        assertThrows(IllegalArgumentException.class, () -> {
+            ruleset.promoteToGlobal("  ");
+        });
+    }
+    
+    @Test
+    void testLoadRulesetFromHistoryWithPromotion() {
+        UUID id = UUID.randomUUID();
+        
+        // Create event history with promotion
+        RulesetCreatedEvent created = new RulesetCreatedEvent(
+            id, "Test Ruleset", "v1.0", "Description", "actual_at_start", false
+        );
+        RulesetPromotedToGlobalEvent promoted = new RulesetPromotedToGlobalEvent(
+            id, "admin@example.com", java.time.Instant.now()
+        );
+        
+        // Load aggregate from event history
+        RulesetAggregate ruleset = new RulesetAggregate(id);
+        ruleset.loadFromHistory(List.of(created, promoted));
+        
+        // Verify state reflects promotion
+        assertTrue(ruleset.isGlobal());
+        assertEquals("Test Ruleset", ruleset.getName());
+        
+        // No uncommitted events after loading from history
+        assertTrue(ruleset.getUncommittedEvents().isEmpty());
+    }
 }
