@@ -3366,7 +3366,7 @@ components:
 
     entry:
       type: object
-      required: [id, regatta_id, event_id, crew_id, status, payment_status]
+      required: [id, regatta_id, event_id, crew_id, status, payment_status, completion_status]
       properties:
         id: { type: string, format: uuid }
         regatta_id: { type: string, format: uuid }
@@ -3392,6 +3392,11 @@ components:
         paid_at: { type: string, format: date-time, nullable: true }
         paid_by: { type: string, nullable: true }
         payment_reference: { type: string, nullable: true }
+        marker_start_time_ms: { type: integer, format: int64, nullable: true }
+        marker_finish_time_ms: { type: integer, format: int64, nullable: true }
+        completion_status:
+          type: string
+          enum: [incomplete, pending_approval, completed]
 
     entry_create_request:
       type: object
@@ -3968,6 +3973,7 @@ components:
         tile_id: { type: string }
         tile_x: { type: integer }
         tile_y: { type: integer }
+        is_approved: { type: boolean }
 
     marker_link_request:
       type: object

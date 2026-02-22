@@ -315,11 +315,15 @@ CREATE TABLE entries (
     paid_at TIMESTAMPTZ,
     paid_by VARCHAR(255),
     payment_reference VARCHAR(255),
+    marker_start_time_ms BIGINT,
+    marker_finish_time_ms BIGINT,
+    completion_status VARCHAR(30) NOT NULL DEFAULT 'incomplete',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(regatta_id, bib),
     CHECK (status IN ('entered', 'withdrawn_before_draw', 'withdrawn_after_draw', 'dns', 'dnf', 'excluded', 'dsq')),
-    CHECK (payment_status IN ('unpaid', 'paid'))
+    CHECK (payment_status IN ('unpaid', 'paid')),
+    CHECK (completion_status IN ('incomplete', 'pending_approval', 'completed'))
 );
 
 CREATE INDEX idx_entries_regatta ON entries(regatta_id);

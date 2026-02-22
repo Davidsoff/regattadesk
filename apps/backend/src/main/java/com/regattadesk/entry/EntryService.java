@@ -195,7 +195,10 @@ public class EntryService {
             rs.getString("payment_status"),
             paidAt,
             rs.getString("paid_by"),
-            rs.getString("payment_reference")
+            rs.getString("payment_reference"),
+            (Long) rs.getObject("marker_start_time_ms"),
+            (Long) rs.getObject("marker_finish_time_ms"),
+            rs.getString("completion_status")
         );
     }
 
@@ -211,7 +214,10 @@ public class EntryService {
             aggregate.getPaymentStatus(),
             aggregate.getPaidAt(),
             aggregate.getPaidBy(),
-            aggregate.getPaymentReference()
+            aggregate.getPaymentReference(),
+            null,
+            null,
+            "incomplete"
         );
     }
 }

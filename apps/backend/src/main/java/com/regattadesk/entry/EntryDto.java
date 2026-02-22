@@ -19,6 +19,9 @@ public record EntryDto(
     String paymentStatus,
     Instant paidAt,
     String paidBy,
-    String paymentReference
+    String paymentReference,
+    Long markerStartTimeMs,
+    Long markerFinishTimeMs,
+    String completionStatus
 ) {
 }
