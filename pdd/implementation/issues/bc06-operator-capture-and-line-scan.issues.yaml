@@ -136,6 +136,7 @@ tickets:
         - `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
         - `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
       - Persist metadata and payload references.
+      - Keep tile/manifest storage path API-managed (non-event-sourced) for v0.1.
       - Enforce auth modes per ingest/retrieval requirement.
       - Integrate MinIO bucket/object naming conventions.
 

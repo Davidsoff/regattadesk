@@ -37,6 +37,7 @@ This meets “no width/height restriction” by construction and enables post-re
 - Tile retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (Operator token or staff proxy auth).
 - Manifest is the source of truth for tile grid and `x_origin_timestamp_ms` + `ms_per_pixel` mapping.
 - Retention metadata in manifest tracks `retention_days`, prune eligibility, and prune status.
+- Persistence model in v0.1 is API-managed/object storage and intentionally non-event-sourced for line-scan tile/manifest storage path.
 
 ## API version references
 - This research note aligns with the current API namespace: `/api/v1/...`.

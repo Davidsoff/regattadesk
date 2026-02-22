@@ -24,7 +24,7 @@ Key capabilities (v0.1):
 - Random draw, designed for future algorithms
 - API-first for all operations (imports can be external tools later)
 - Photo-finish line camera UI for start and finish (markers create/move/delete; overview + draggable detail window)
-- Strong auditability (adopt event sourcing)
+- Strong auditability (adopt event sourcing; later v0.1 exception added for BC06 line-scan tile/manifest storage path, which is API-managed and non-event-sourced)
 - Public pages cacheable; results auto-update via server push
 - Staff auth via Authelia SSO; per-regatta roles; operators use QR token links (no personal accounts)
 - Operators pages work without stable internet; offline conflict policy uses LWW for marker adjustments/unlinks when entry is not approved, and requires manual resolution for duplicate links or edits against approved/immutable entries

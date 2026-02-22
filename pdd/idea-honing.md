@@ -15,6 +15,7 @@ This document consolidates the decisions made during requirements clarification 
 - Finance: payment status per entry or per club; bulk mark paid/unpaid
 - API-first for all operations; staff/operator/public UIs consume the same API surface (imports can be external tools later)
 - Event sourcing for auditability and reversibility
+- Exception: BC06 line-scan tile storage (tile binaries + immediate manifest/tile metadata persistence path) is intentionally API-managed/non-event-sourced in v0.1
 
 ### Out of scope (v0.1)
 - Side-by-side racing, multi-distance, handicap/conversion factors (beyond “winner time” ranking)
@@ -92,6 +93,7 @@ This document consolidates the decisions made during requirements clarification 
   - drift handling: periodic resync; apply offset correction; if drift exceeds threshold, flag session for review
   - fallback: if device time is invalid or sync fails, mark the capture session as unsynced and require manual timestamp correction before approvals (server-received timestamps are provisional only)
 - store full line scan during regatta; after configured delay (default 14 days after regatta end) keep only ±2s around approved markers
+  - storage/persistence path for line-scan tiles/manifests is API-managed and intentionally non-event-sourced in v0.1
   - do not prune until the regatta is archived or all entries are approved
   - if the retention delay elapses first, keep the full scan and raise an admin alert
 - Markers:
@@ -276,7 +278,7 @@ This document consolidates the decisions made during requirements clarification 
 ## 13) Observability + ops
 - Health endpoint + OpenTelemetry endpoint
 - Audit logs retained indefinitely (v0.1)
-- Event sourcing chosen for auditability and easy correction of mistakes
+- Event sourcing chosen for auditability and easy correction of mistakes (exception: BC06 line-scan tile/manifest storage path is API-managed and non-event-sourced in v0.1)
 - Containerized deployment + automated pipeline (CI/CD)
 
 ## 14) UX, accessibility, i18n, and printing

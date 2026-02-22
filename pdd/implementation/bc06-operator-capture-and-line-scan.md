@@ -22,6 +22,8 @@ Operator authentication artifacts, line-scan ingest/retrieval, offline-first ope
 
 ## Non-Functional Features to Implement
 - Enforce auth boundaries: ingest via `OperatorTokenAuth`; retrieval via `OperatorTokenAuth` or `StaffProxyAuth`.
+- Keep line-scan tile storage non-event-sourced in v0.1 (API-managed object/metadata persistence path).
+- Persist tile upload lifecycle state in metadata (`pending`, `failed`, `ready`) with idempotent retry semantics for unreliable networks.
 - Default operator UI to high-contrast mode with per-device persistence.
 - Keep full line-scan data during regatta.
 - Apply default 14-day delay after regatta end before pruning logic can execute.

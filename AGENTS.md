@@ -33,6 +33,7 @@ If implementation and docs diverge, update docs in the same change.
 ## Architecture guardrails
 - Follow API-first development for staff and operator surfaces.
 - Treat event history as append-only; do not mutate audit/event records.
+- Exception: BC06 line-scan tile storage is intentionally not event-sourced in v0.1; tile binaries and immediate storage metadata are API-managed persistence.
 - Keep revision-driven public delivery semantics (`draw_revision`, `results_revision`) intact.
 - Keep auth boundaries explicit: edge identity via Traefik/Authelia, API role enforcement in backend, and operator token rules for line-scan ingest/retrieval.
 - Respect bounded-context ownership; avoid leaking domain logic across contexts.

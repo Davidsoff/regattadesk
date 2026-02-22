@@ -12,6 +12,7 @@ RegattaDesk is a regatta management system for rowing head races (single distanc
 
 Backend: Quarkus (Java) + Postgres. Frontend: Vue.
 Architecture adopts Event Sourcing + projections for read models and public delivery.
+Exception: BC06 line-scan tile storage (binary objects plus immediate storage metadata path) is API-managed and intentionally not event-sourced in v0.1.
 API-first for all operations; staff/operator/public clients consume the same API surface (imports can be external tools later).
 
 ## Detailed Requirements
@@ -134,6 +135,8 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
     - Tile ingestion: `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (OperatorTokenAuth; `image/webp` or `image/png`).
     - Tile retrieval: `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}` (OperatorTokenAuth or StaffProxyAuth).
     - Manifest payload is canonical for tile grid plus `x_origin_timestamp_ms` and `ms_per_pixel` mapping.
+    - Tile/manifest storage persistence path is API-managed and not represented as domain events in v0.1.
+    - Tile upload lifecycle is metadata-driven (`pending`, `failed`, `ready`) with idempotent retry on `PUT /line_scan/tiles/{tile_id}`.
   - Unlinked marker create/delete is not audited.
   - Link/unlink actions and edits to linked markers are always audited.
   - Pre-approval deletes of linked markers emit audit events.
@@ -217,7 +220,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `pdd/desi
 - TLS certificates are managed at the Traefik edge using Let's Encrypt (ACME) in production.
 - Local development TLS uses self-signed certificates managed by Traefik (no production ACME against localhost/local-only hosts).
 - Observability: health + OpenTelemetry + metrics.
-- Audit: event sourcing + immutable log.
+- Audit: event sourcing + immutable log for event-sourced domains; line-scan tile storage relies on API/object-store metadata auditing in v0.1.
 
 ### Out of scope (v0.1)
 - Side-by-side racing, multi-distance, handicap/conversion factors (beyond “winner time” ranking).

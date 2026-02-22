@@ -1,0 +1,242 @@
+package com.regattadesk.linescan;
+
+import io.minio.*;
+import io.minio.errors.*;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.UUID;
+
+/**
+ * Storage adapter for line-scan manifests and tiles using MinIO.
+ * 
+ * Handles object storage operations including bucket creation, tile upload/retrieval.
+ */
+@ApplicationScoped
+public class MinioStorageAdapter {
+    
+    private static final Logger LOG = Logger.getLogger(MinioStorageAdapter.class);
+    private static final long MAX_RETRIEVABLE_TILE_BYTES = 10L * 1024 * 1024;
+    
+    private final MinioClient minioClient;
+    private final MinioConfiguration config;
+    
+    @Inject
+    public MinioStorageAdapter(MinioClient minioClient, MinioConfiguration config) {
+        this.minioClient = minioClient;
+        this.config = config;
+    }
+    
+    /**
+     * Ensure bucket exists for the given regatta, creating it if necessary.
+     */
+    public void ensureBucket(UUID regattaId) throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        try {
+            boolean exists = minioClient.bucketExists(
+                BucketExistsArgs.builder()
+                    .bucket(bucketName)
+                    .build()
+            );
+            
+            if (!exists) {
+                try {
+                    minioClient.makeBucket(
+                        MakeBucketArgs.builder()
+                            .bucket(bucketName)
+                            .build()
+                    );
+                    LOG.infof("Created MinIO bucket: %s", bucketName);
+                } catch (ErrorResponseException e) {
+                    String code = e.errorResponse().code();
+                    if ("BucketAlreadyOwnedByYou".equals(code) || "BucketAlreadyExists".equals(code)) {
+                        LOG.debugf("MinIO bucket already exists: %s", bucketName);
+                        return;
+                    }
+                    throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
+                }
+            }
+        } catch (ErrorResponseException e) {
+            throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
+        } catch (InsufficientDataException | InternalException |
+                 InvalidKeyException | InvalidResponseException | IOException |
+                 NoSuchAlgorithmException | ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to ensure bucket exists: " + bucketName, e);
+        }
+    }
+    
+    /**
+     * Store a tile in MinIO.
+     */
+    public void storeTile(UUID regattaId, UUID captureSessionId, String tileId, 
+                         byte[] tileData, String contentType) throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
+        
+        try {
+            minioClient.putObject(
+                PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .stream(new ByteArrayInputStream(tileData), tileData.length, -1)
+                    .contentType(contentType)
+                    .build()
+            );
+            LOG.debugf("Stored tile: bucket=%s, key=%s, size=%d", bucketName, objectKey, tileData.length);
+        } catch (ErrorResponseException | InsufficientDataException | InternalException |
+                 InvalidKeyException | InvalidResponseException | IOException |
+                 NoSuchAlgorithmException | ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to store tile: " + objectKey, e);
+        }
+    }
+    
+    /**
+     * Retrieve a tile from MinIO.
+     */
+    public TileData retrieveTile(UUID regattaId, UUID captureSessionId, String tileId) 
+            throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
+        
+        try {
+            // First get object metadata to determine content type
+            StatObjectResponse stat = minioClient.statObject(
+                StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            );
+            if (stat.size() > MAX_RETRIEVABLE_TILE_BYTES) {
+                throw new MinioStorageException(
+                    "Tile exceeds maximum retrievable size of " + MAX_RETRIEVABLE_TILE_BYTES + " bytes: " + objectKey,
+                    null
+                );
+            }
+            
+            // Then get the object data
+            try (GetObjectResponse response = minioClient.getObject(
+                GetObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            )) {
+                byte[] data = response.readAllBytes();
+                String contentType = stat.contentType();
+                if (contentType == null || contentType.isEmpty()) {
+                    contentType = "application/octet-stream";
+                }
+
+                LOG.debugf("Retrieved tile: bucket=%s, key=%s, size=%d", bucketName, objectKey, data.length);
+                return new TileData(data, contentType);
+            }
+            
+        } catch (ErrorResponseException e) {
+            if (e.errorResponse().code().equals("NoSuchKey")) {
+                throw new TileNotFoundException("Tile not found: " + objectKey);
+            }
+            throw new MinioStorageException("Failed to retrieve tile: " + objectKey, e);
+        } catch (InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException |
+                 ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to retrieve tile: " + objectKey, e);
+        }
+    }
+    
+    /**
+     * Check if a tile exists in MinIO.
+     */
+    public boolean tileExists(UUID regattaId, UUID captureSessionId, String tileId)
+            throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
+        
+        try {
+            minioClient.statObject(
+                StatObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            );
+            return true;
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                return false;
+            }
+            throw new MinioStorageException("Failed to check tile existence: " + objectKey, e);
+        } catch (InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException |
+                 ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to check tile existence: " + objectKey, e);
+        }
+    }
+
+    /**
+     * Delete a tile object. Missing objects are treated as already deleted.
+     */
+    public void deleteTile(UUID regattaId, UUID captureSessionId, String tileId) throws MinioStorageException {
+        String bucketName = config.getBucketName(regattaId.toString());
+        String objectKey = config.getTileObjectKey(captureSessionId.toString(), tileId);
+        try {
+            minioClient.removeObject(
+                RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectKey)
+                    .build()
+            );
+        } catch (ErrorResponseException e) {
+            if ("NoSuchKey".equals(e.errorResponse().code())) {
+                return;
+            }
+            throw new MinioStorageException("Failed to delete tile: " + objectKey, e);
+        } catch (InsufficientDataException | InternalException | InvalidKeyException |
+                 InvalidResponseException | IOException | NoSuchAlgorithmException |
+                 ServerException | XmlParserException e) {
+            throw new MinioStorageException("Failed to delete tile: " + objectKey, e);
+        }
+    }
+    
+    /**
+     * Container for tile binary data and content type.
+     */
+    public static class TileData {
+        private final byte[] data;
+        private final String contentType;
+        
+        public TileData(byte[] data, String contentType) {
+            this.data = Arrays.copyOf(data, data.length);
+            this.contentType = contentType;
+        }
+        
+        public byte[] getData() {
+            return Arrays.copyOf(data, data.length);
+        }
+        
+        public String getContentType() {
+            return contentType;
+        }
+    }
+    
+    /**
+     * Exception thrown when MinIO storage operations fail.
+     */
+    public static class MinioStorageException extends Exception {
+        public MinioStorageException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    /**
+     * Exception thrown when a tile is not found in storage.
+     */
+    public static class TileNotFoundException extends MinioStorageException {
+        public TileNotFoundException(String message) {
+            super(message, null);
+        }
+    }
+}

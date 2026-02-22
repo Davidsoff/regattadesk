@@ -1888,6 +1888,7 @@ paths:
       description: |
         Stores or replaces the manifest describing tile grid and x-coordinate to timestamp mapping for one capture session.
         Auth model: operator token only.
+        Persistence model: API-managed/object storage metadata path, intentionally non-event-sourced in v0.1.
       security:
         - OperatorTokenAuth: []
       parameters:
@@ -1938,6 +1939,8 @@ paths:
       description: |
         Uploads tile binary data for a tile id referenced by a manifest.
         Auth model: operator token only.
+        Persistence model: API-managed/object storage path, intentionally non-event-sourced in v0.1.
+        Server tracks upload lifecycle in tile metadata (`pending`, `failed`, `ready`); repeated PUT calls are idempotent retries.
       security:
         - OperatorTokenAuth: []
       parameters:
@@ -1967,6 +1970,7 @@ paths:
       description: |
         Retrieves tile binary by id.
         Auth model: operator token or staff proxy auth.
+        Persistence model: API-managed/object storage path, intentionally non-event-sourced in v0.1.
       security:
         - OperatorTokenAuth: []
         - StaffProxyAuth: []
