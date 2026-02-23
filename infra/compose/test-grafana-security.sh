@@ -20,6 +20,7 @@ echo "-----------------------------------------------------------"
 
 # Create test env file without Grafana credentials
 TEST_ENV_FILE="/tmp/test-grafana-security-$$.env"
+trap 'rm -f "$TEST_ENV_FILE"' EXIT
 cat > "$TEST_ENV_FILE" << 'EOF'
 DOMAIN=localhost.local
 POSTGRES_DB=regattadesk
@@ -44,16 +45,26 @@ TRAEFIK_LOG_LEVEL=INFO
 EOF
 
 # Try to validate config without Grafana credentials - should fail
+ERR_FILE="$(mktemp /tmp/test-grafana-security-stderr-XXXXXX)"
 if docker compose --env-file "$TEST_ENV_FILE" \
     -f "$COMPOSE_DIR/docker-compose.yml" \
     -f "$COMPOSE_DIR/docker-compose.observability.yml" \
-    config >/dev/null 2>&1; then
+    config >/dev/null 2>"$ERR_FILE"; then
     echo "❌ FAILED: Docker Compose should fail without Grafana credentials"
-    rm -f "$TEST_ENV_FILE"
+    rm -f "$ERR_FILE"
     exit 1
 else
-    echo "✅ PASSED: Docker Compose correctly requires GRAFANA_ADMIN_USER"
+    if grep -q 'GRAFANA_ADMIN_USER' "$ERR_FILE" || grep -q 'GRAFANA_ADMIN_PASSWORD' "$ERR_FILE"; then
+        echo "✅ PASSED: Docker Compose correctly fails when Grafana credentials are missing"
+    else
+        echo "❌ FAILED: Docker Compose failed, but not due to missing Grafana credentials"
+        echo "Error output was:"
+        cat "$ERR_FILE"
+        rm -f "$ERR_FILE"
+        exit 1
+    fi
 fi
+rm -f "$ERR_FILE"
 
 # Test 2: Verify Grafana works with credentials
 echo ""
@@ -103,10 +114,16 @@ echo "-------------------------------------------------------------"
 
 if grep -q "GRAFANA_ADMIN_PASSWORD:-admin" "$COMPOSE_DIR/docker-compose.observability.yml"; then
     echo "❌ FAILED: Default password fallback still exists in docker-compose.observability.yml"
-    rm -f "$TEST_ENV_FILE"
     exit 1
 else
     echo "✅ PASSED: No default password fallback in docker-compose.observability.yml"
+fi
+
+if grep -q "GRAFANA_ADMIN_USER:-admin" "$COMPOSE_DIR/docker-compose.observability.yml"; then
+    echo "❌ FAILED: Default username fallback still exists in docker-compose.observability.yml"
+    exit 1
+else
+    echo "✅ PASSED: No default username fallback in docker-compose.observability.yml"
 fi
 
 # Test 5: Verify documentation exists
@@ -146,7 +163,7 @@ echo "  • Security documentation is in place"
 echo ""
 echo "Manual verification still required:"
 echo "  1. Start the stack with observability enabled"
-echo "  2. Attempt to access http://localhost/grafana without authentication"
+echo "  2. Attempt to access http://localhost.local/grafana without authentication"
 echo "  3. Verify redirect to Authelia login page"
 echo "  4. After Authelia authentication, verify Grafana login prompt"
 echo ""

@@ -40,14 +40,14 @@ labels:
 
 ## Authentication Flow
 
-1. **User accesses Grafana** at `http://localhost/grafana`
+1. **User accesses Grafana** at `http://localhost.local/grafana`
 2. **Traefik intercepts request** and forwards to Authelia for verification
-3. **Authelia checks session**:
+3. **Authelia checks its own session**:
    - If not authenticated → Redirect to Authelia login page
-   - If authenticated → Forward identity headers to Grafana
-4. **Grafana receives request** with authenticated user context
-5. **User prompted for Grafana credentials** (first time only)
-6. **Grafana dashboard accessible** after both authentication layers
+   - If authenticated → Allow the request to continue to Grafana
+4. **Grafana receives the request** as it would from any authenticated browser session at the proxy layer; by default, Grafana is not configured to trust `Remote-*` headers for SSO in this setup.
+5. **Grafana prompts for Grafana-specific credentials** and establishes its own session using cookies; how often this prompt appears depends on Grafana's session and cookie settings, independent of Authelia.
+6. **Grafana dashboard becomes accessible** only after the user has an active Authelia session (proxy access) and a valid Grafana session (application login).
 
 ## Required Configuration
 
@@ -102,7 +102,7 @@ docker compose --env-file /tmp/test.env -f docker-compose.yml -f docker-compose.
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 # Attempt to access Grafana without authentication
-curl -I http://localhost/grafana
+curl -I http://localhost.local/grafana
 
 # Expected: 302 redirect to Authelia login page
 ```

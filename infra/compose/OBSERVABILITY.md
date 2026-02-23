@@ -132,7 +132,7 @@ Standard attributes included in traces:
 
 ### Grafana Setup
 
-Grafana is accessible at `http://localhost/grafana` (or your configured domain) and is protected by Authelia SSO authentication.
+Grafana is accessible at `http://localhost.local/grafana` (or at `http://$DOMAIN/grafana` if `DOMAIN` is set) and is protected by Authelia SSO authentication.
 
 **Authentication:**
 - Grafana is protected by Authelia ForwardAuth middleware
@@ -143,6 +143,11 @@ Grafana is accessible at `http://localhost/grafana` (or your configured domain) 
 - Set `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` in your `.env` file
 - These credentials are required; Grafana will not start without them (no default fallback)
 - Use strong, unique passwords for production deployments
+
+**Authelia Access Control:**
+- Grafana access is gated by an Authelia access-control rule for `^/grafana(/.*)?$` (see `authelia/configuration.yml`)
+- Only users in the `super_admin` or `regatta_admin` groups are permitted
+- Without this rule, Authelia's `default_policy: deny` would block all Grafana requests even after authentication
 
 ### Available Dashboards
 
