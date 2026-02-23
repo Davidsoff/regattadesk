@@ -57,9 +57,9 @@ else
     if grep -q 'GRAFANA_ADMIN_USER' "$ERR_FILE" || grep -q 'GRAFANA_ADMIN_PASSWORD' "$ERR_FILE"; then
         echo "✅ PASSED: Docker Compose correctly fails when Grafana credentials are missing"
     else
-        echo "❌ FAILED: Docker Compose failed, but not due to missing Grafana credentials"
-        echo "Error output was:"
-        cat "$ERR_FILE"
+        echo "❌ FAILED: Docker Compose failed, but not due to missing Grafana credentials" >&2
+        echo "Error output was:" >&2
+        cat "$ERR_FILE" >&2
         rm -f "$ERR_FILE"
         exit 1
     fi
