@@ -3,21 +3,21 @@
 CREATE TABLE capture_sessions (
     id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
     regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
-    block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
+    block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
     station CHARACTER VARYING(100) NOT NULL,
     device_id CHARACTER VARYING(255) NOT NULL,
     session_type CHARACTER VARYING(50) NOT NULL,
     state CHARACTER VARYING(20) NOT NULL DEFAULT 'open',
-    server_time_at_start TIMESTAMP WITH TIME ZONE NOT NULL,
+    server_time_at_start TIMESTAMP NOT NULL,
     device_monotonic_offset_ms BIGINT,
     fps INTEGER NOT NULL,
     is_synced BOOLEAN NOT NULL DEFAULT TRUE,
     drift_exceeded_threshold BOOLEAN NOT NULL DEFAULT FALSE,
     unsynced_reason CLOB,
-    closed_at TIMESTAMP WITH TIME ZONE,
+    closed_at TIMESTAMP,
     close_reason CLOB,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (session_type IN ('start', 'finish')),
     CHECK (state IN ('open', 'closed'))
 );
@@ -38,8 +38,8 @@ CREATE TABLE timing_markers (
     tile_x INTEGER,
     tile_y INTEGER,
     tile_id CHARACTER VARYING(255),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_timing_markers_session ON timing_markers(capture_session_id);
@@ -58,8 +58,8 @@ ALTER TABLE entries
 
 CREATE TRIGGER set_updated_at_capture_sessions
     BEFORE UPDATE ON capture_sessions
-    FOR EACH ROW CALL 'com.regattadesk.eventstore.UpdateTimestampTrigger';
+    FOR EACH ROW CALL "com.regattadesk.eventstore.UpdateTimestampTrigger";
 
 CREATE TRIGGER set_updated_at_timing_markers
     BEFORE UPDATE ON timing_markers
-    FOR EACH ROW CALL 'com.regattadesk.eventstore.UpdateTimestampTrigger';
+    FOR EACH ROW CALL "com.regattadesk.eventstore.UpdateTimestampTrigger";

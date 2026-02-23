@@ -146,6 +146,13 @@ public class TimingMarkerService {
             || !intEquals(newTileX, existing.tileX())
             || !intEquals(newTileY, existing.tileY());
 
+        if (existing.isApproved() && contentChanged) {
+            throw new IllegalStateException("Approved marker evidence is immutable");
+        }
+        if (existing.isApproved() && isApproved != null && isApproved != existing.isApproved()) {
+            throw new IllegalStateException("Approved marker evidence cannot change approval state");
+        }
+
         boolean newApproval = isApproved != null ? isApproved : existing.isApproved();
         if (existing.isLinked() && contentChanged) {
             newApproval = false;
@@ -220,6 +227,9 @@ public class TimingMarkerService {
     public TimingMarker unlink(UUID regattaId, UUID markerId) {
         TimingMarker existing = findById(regattaId, markerId)
             .orElseThrow(() -> new NotFoundException("Marker not found"));
+        if (existing.isApproved()) {
+            throw new IllegalStateException("Approved markers cannot be unlinked");
+        }
 
         String sql = """
             UPDATE timing_markers
@@ -245,6 +255,9 @@ public class TimingMarkerService {
     public void delete(UUID regattaId, UUID markerId) {
         TimingMarker existing = findById(regattaId, markerId)
             .orElseThrow(() -> new NotFoundException("Marker not found"));
+        if (existing.isApproved()) {
+            throw new IllegalStateException("Approved markers cannot be deleted");
+        }
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement("DELETE FROM timing_markers WHERE id = ?")) {

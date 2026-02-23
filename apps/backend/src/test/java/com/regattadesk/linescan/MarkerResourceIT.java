@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -84,11 +85,10 @@ class MarkerResourceIT {
         .when()
             .patch("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerOneId)
         .then()
-            .statusCode(200)
-            .body("timestamp_ms", equalTo(900))
-            .body("is_approved", equalTo(false));
+            .statusCode(409)
+            .body("error.code", equalTo("CONFLICT"));
 
-        assertEntryCompletion(data.entryId(), "pending_approval", null, null);
+        assertEntryCompletion(data.entryId(), "completed", 1_000L, 2_000L);
     }
 
     @Test
@@ -189,13 +189,15 @@ class MarkerResourceIT {
         if (startMs == null) {
             spec.body("marker_start_time_ms", nullValue());
         } else {
-            spec.body("marker_start_time_ms", equalTo(startMs.intValue()));
+            spec.body("marker_start_time_ms",
+                anyOf(equalTo(startMs.intValue()), equalTo(startMs.longValue())));
         }
 
         if (finishMs == null) {
             spec.body("marker_finish_time_ms", nullValue());
         } else {
-            spec.body("marker_finish_time_ms", equalTo(finishMs.intValue()));
+            spec.body("marker_finish_time_ms",
+                anyOf(equalTo(finishMs.intValue()), equalTo(finishMs.longValue())));
         }
     }
 

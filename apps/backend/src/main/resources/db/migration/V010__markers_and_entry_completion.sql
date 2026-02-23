@@ -4,7 +4,7 @@
 CREATE TABLE capture_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
-    block_id UUID REFERENCES blocks(id) ON DELETE CASCADE,
+    block_id UUID NOT NULL REFERENCES blocks(id) ON DELETE CASCADE,
     station VARCHAR(100) NOT NULL,
     device_id VARCHAR(255) NOT NULL,
     session_type VARCHAR(50) NOT NULL,

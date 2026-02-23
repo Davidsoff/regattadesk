@@ -203,7 +203,7 @@ public class EntryService {
     }
 
     private EntryDto toDto(EntryAggregate aggregate) {
-        return new EntryDto(
+        return getEntry(aggregate.getId()).orElseGet(() -> new EntryDto(
             aggregate.getId(),
             aggregate.getRegattaId(),
             aggregate.getEventId(),
@@ -218,6 +218,6 @@ public class EntryService {
             null,
             null,
             "incomplete"
-        );
+        ));
     }
 }

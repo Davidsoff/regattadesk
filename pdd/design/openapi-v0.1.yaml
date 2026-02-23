@@ -3392,8 +3392,8 @@ components:
         paid_at: { type: string, format: date-time, nullable: true }
         paid_by: { type: string, nullable: true }
         payment_reference: { type: string, nullable: true }
-        marker_start_time_ms: { type: integer, format: int64, nullable: true }
-        marker_finish_time_ms: { type: integer, format: int64, nullable: true }
+        marker_start_time_ms: {type: integer, format: int64, nullable: true}
+        marker_finish_time_ms: {type: integer, format: int64, nullable: true}
         completion_status:
           type: string
           enum: [incomplete, pending_approval, completed]
@@ -3949,7 +3949,7 @@ components:
         frame_offset: { type: integer, format: int64 }
         timestamp_ms: { type: integer, format: int64 }
         is_linked: { type: boolean }
-        is_approved: { type: boolean }
+        is_approved: {type: boolean}
         tile_id: { type: string, nullable: true }
         tile_x: { type: integer, nullable: true }
         tile_y: { type: integer, nullable: true }
