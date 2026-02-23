@@ -3568,14 +3568,14 @@ components:
         entry_ids:
           type: array
           minItems: 1
-          items: { type: string, format: uuid }
+          items: {type: string, format: uuid}
         club_ids:
           type: array
           minItems: 1
-          items: { type: string, format: uuid }
-        payment_status: { type: string, enum: [unpaid, paid] }
-        payment_reference: { type: string }
-        idempotency_key: { type: string, maxLength: 128 }
+          items: {type: string, format: uuid}
+        payment_status: {type: string, enum: [unpaid, paid]}
+        payment_reference: {type: string}
+        idempotency_key: {type: string, maxLength: 128}
 
     payment_bulk_mark_result:
       type: object
@@ -3592,15 +3592,15 @@ components:
           idempotent_replay,
         ]
       properties:
-        success: { type: boolean }
-        message: { type: string }
-        total_requested: { type: integer, minimum: 0 }
-        processed_count: { type: integer, minimum: 0 }
-        updated_count: { type: integer, minimum: 0 }
-        unchanged_count: { type: integer, minimum: 0 }
-        failed_count: { type: integer, minimum: 0 }
-        idempotency_key: { type: string, nullable: true }
-        idempotent_replay: { type: boolean }
+        success: {type: boolean}
+        message: {type: string}
+        total_requested: {type: integer, minimum: 0}
+        processed_count: {type: integer, minimum: 0}
+        updated_count: {type: integer, minimum: 0}
+        unchanged_count: {type: integer, minimum: 0}
+        failed_count: {type: integer, minimum: 0}
+        idempotency_key: {type: string, nullable: true}
+        idempotent_replay: {type: boolean}
         failures:
           type: array
           items:
@@ -3610,10 +3610,10 @@ components:
       type: object
       required: [scope_type, id, code, message]
       properties:
-        scope_type: { type: string, enum: [entry, club] }
-        id: { type: string, format: uuid }
-        code: { type: string }
-        message: { type: string }
+        scope_type: {type: string, enum: [entry, club]}
+        id: {type: string, format: uuid}
+        code: {type: string}
+        message: {type: string}
 
     payment_status_update_request:
       type: object

@@ -41,7 +41,7 @@ public class BulkPaymentStatusMarkedEvent implements DomainEvent {
         this.updatedCount = updatedCount;
         this.unchangedCount = unchangedCount;
         this.failedCount = failedCount;
-        this.failures = failures;
+        this.failures = failures == null ? List.of() : List.copyOf(failures);
         this.requestedBy = requestedBy;
         this.paymentReference = paymentReference;
         this.idempotencyKey = idempotencyKey;

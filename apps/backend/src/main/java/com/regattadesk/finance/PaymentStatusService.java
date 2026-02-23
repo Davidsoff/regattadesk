@@ -16,8 +16,10 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -276,17 +278,17 @@ public class PaymentStatusService {
                 .forEach(targetEntryIds::add);
         }
         targetEntryIds.addAll(normalizedEntryIds);
+        Map<UUID, EntryPaymentRow> rowsByEntryId = loadEntryPaymentRows(regattaId, targetEntryIds);
 
         int updatedCount = 0;
         int unchangedCount = 0;
         for (UUID entryId : targetEntryIds) {
-            Optional<EntryPaymentRow> rowOptional = loadEntryPaymentRow(regattaId, entryId);
-            if (rowOptional.isEmpty()) {
+            EntryPaymentRow row = rowsByEntryId.get(entryId);
+            if (row == null) {
                 failures.add(new BulkPaymentFailure("entry", entryId, "ENTRY_NOT_FOUND", "Entry not found"));
                 continue;
             }
 
-            EntryPaymentRow row = rowOptional.get();
             EntryPaymentStatusModel model = new EntryPaymentStatusModel(
                 row.paymentStatus(),
                 row.paidAt(),
@@ -388,6 +390,58 @@ public class PaymentStatusService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load entry payment row", e);
         }
+    }
+
+    private Map<UUID, EntryPaymentRow> loadEntryPaymentRows(UUID regattaId, Set<UUID> entryIds) {
+        if (entryIds == null || entryIds.isEmpty()) {
+            return Map.of();
+        }
+
+        StringBuilder placeholders = new StringBuilder();
+        int index = 0;
+        for (UUID ignored : entryIds) {
+            if (index++ > 0) {
+                placeholders.append(", ");
+            }
+            placeholders.append("?");
+        }
+
+        String sql = """
+            SELECT
+                e.id,
+                e.regatta_id,
+                e.billing_club_id,
+                e.payment_status,
+                e.paid_at,
+                e.paid_by,
+                e.payment_reference,
+                c.id AS crew_id,
+                c.club_id AS crew_club_id,
+                c.is_composite
+            FROM entries e
+            JOIN crews c ON c.id = e.crew_id
+            WHERE e.regatta_id = ? AND e.id IN (%s)
+            """.formatted(placeholders);
+
+        Map<UUID, EntryPaymentRow> rowsByEntryId = new HashMap<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            int parameterIndex = 2;
+            for (UUID entryId : entryIds) {
+                stmt.setObject(parameterIndex++, entryId);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    EntryPaymentRow row = mapEntryPaymentRow(rs);
+                    rowsByEntryId.put(row.entryId(), row);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load entry payment rows", e);
+        }
+
+        return rowsByEntryId;
     }
 
     private List<EntryPaymentRow> listClubEntryPaymentRows(UUID regattaId, UUID clubId) {

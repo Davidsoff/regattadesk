@@ -1,5 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   regattaId: {
@@ -7,6 +8,7 @@ const props = defineProps({
     default: '00000000-0000-0000-0000-000000000000'
   }
 })
+const { t } = useI18n()
 
 const entryIdsText = ref('')
 const clubIdsText = ref('')
@@ -17,6 +19,9 @@ const isSubmitting = ref(false)
 const submitError = ref('')
 const result = ref(null)
 const pendingPayload = ref(null)
+const density = ref('comfortable')
+const sseStatus = ref('offline')
+let eventSource = null
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -38,12 +43,12 @@ function startConfirmation() {
   submitError.value = ''
 
   if (parsedEntryIds.value.length === 0 && parsedClubIds.value.length === 0) {
-    submitError.value = 'Select at least one entry ID or club ID.'
+    submitError.value = t('finance.bulk.select_one')
     return
   }
 
   if (invalidEntryIds.value.length > 0 || invalidClubIds.value.length > 0) {
-    submitError.value = 'All IDs must be valid UUIDs.'
+    submitError.value = t('finance.bulk.invalid_uuid')
     return
   }
 
@@ -76,14 +81,14 @@ async function confirmSubmit() {
     const payload = await response.json()
 
     if (!response.ok) {
-      const message = payload?.error?.message || 'Bulk payment update failed.'
+      const message = payload?.error?.message || t('finance.bulk.error')
       throw new Error(message)
     }
 
     result.value = payload
     pendingPayload.value = null
   } catch (error) {
-    submitError.value = error instanceof Error ? error.message : 'Bulk payment update failed.'
+    submitError.value = error instanceof Error ? error.message : t('finance.bulk.error')
   } finally {
     isSubmitting.value = false
   }
@@ -92,97 +97,138 @@ async function confirmSubmit() {
 function cancelConfirmation() {
   pendingPayload.value = null
 }
+
+onMounted(() => {
+  if (typeof EventSource === 'undefined') {
+    return
+  }
+  eventSource = new EventSource('/api/v1/live/status')
+  eventSource.onopen = () => {
+    sseStatus.value = 'live'
+  }
+  eventSource.onerror = () => {
+    sseStatus.value = 'offline'
+  }
+})
+
+onUnmounted(() => {
+  if (eventSource) {
+    eventSource.close()
+  }
+})
 </script>
 
 <template>
   <section class="finance-bulk" aria-labelledby="finance-bulk-title">
-    <h1 id="finance-bulk-title">Bulk Payment Status</h1>
-    <p class="lead">Mark multiple entries or clubs as paid/unpaid with one auditable operation.</p>
+    <div class="top-row">
+      <h1 id="finance-bulk-title">{{ t('finance.bulk.title') }}</h1>
+      <span class="sse-pill" :class="`sse-pill--${sseStatus}`">
+        {{ sseStatus === 'live' ? t('live.live') : t('live.offline') }}
+      </span>
+    </div>
+    <p class="lead">{{ t('finance.bulk.subtitle') }}</p>
 
     <form class="form-grid" @submit.prevent="startConfirmation">
       <label>
-        <span>Entry IDs (UUID, comma/newline separated)</span>
+        <span>{{ t('finance.bulk.entry_ids_label') }}</span>
         <textarea
           v-model="entryIdsText"
           rows="4"
           name="entry_ids"
           autocomplete="off"
-          placeholder="7f7af3d8-9090-49d5-b21c-9cc12d35a0e6"
+          :placeholder="t('finance.bulk.entry_ids_placeholder')"
         />
       </label>
 
       <label>
-        <span>Club IDs (UUID, comma/newline separated)</span>
+        <span>{{ t('finance.bulk.club_ids_label') }}</span>
         <textarea
           v-model="clubIdsText"
           rows="3"
           name="club_ids"
           autocomplete="off"
-          placeholder="81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd"
+          :placeholder="t('finance.bulk.club_ids_placeholder')"
         />
       </label>
 
       <label>
-        <span>Target Status</span>
+        <span>{{ t('finance.bulk.target_status') }}</span>
         <select v-model="paymentStatus" name="payment_status">
-          <option value="paid">Paid</option>
-          <option value="unpaid">Unpaid</option>
+          <option value="paid">{{ t('finance.bulk.status_paid') }}</option>
+          <option value="unpaid">{{ t('finance.bulk.status_unpaid') }}</option>
         </select>
       </label>
 
       <label>
-        <span>Payment Reference (optional)</span>
+        <span>{{ t('finance.bulk.payment_reference') }}</span>
         <input v-model="paymentReference" type="text" name="payment_reference" />
       </label>
 
       <label>
-        <span>Idempotency Key (optional)</span>
+        <span>{{ t('finance.bulk.idempotency_key') }}</span>
         <input v-model="idempotencyKey" type="text" name="idempotency_key" maxlength="128" />
       </label>
 
       <p v-if="submitError" class="error" role="alert">{{ submitError }}</p>
 
-      <button type="submit" class="primary">Review Bulk Update</button>
+      <button type="submit" class="primary">{{ t('finance.bulk.review_button') }}</button>
     </form>
 
     <section v-if="pendingPayload" class="confirm" aria-live="polite">
-      <h2>Confirm Bulk Update</h2>
+      <h2>{{ t('finance.bulk.confirm') }}</h2>
       <p>
-        You are about to mark
+        {{ t('finance.bulk.confirm_prefix') }}
         <strong>{{ pendingPayload.entry_ids.length }}</strong>
-        entries and
+        {{ t('finance.bulk.confirm_entries_and') }}
         <strong>{{ pendingPayload.club_ids.length }}</strong>
-        clubs as
+        {{ t('finance.bulk.confirm_clubs_as') }}
         <strong>{{ pendingPayload.payment_status }}</strong>.
       </p>
       <div class="confirm-actions">
         <button type="button" class="primary" :disabled="isSubmitting" @click="confirmSubmit">
-          {{ isSubmitting ? 'Submitting…' : 'Confirm and Apply' }}
+          {{ isSubmitting ? t('finance.bulk.submitting') : t('finance.bulk.confirm_apply') }}
         </button>
-        <button type="button" @click="cancelConfirmation">Cancel</button>
+        <button type="button" @click="cancelConfirmation">{{ t('common.cancel') }}</button>
       </div>
     </section>
 
     <section v-if="result" class="result" aria-live="polite">
-      <h2>Result</h2>
+      <h2>{{ t('finance.bulk.result') }}</h2>
       <p>{{ result.message }}</p>
       <ul>
-        <li>Total requested: {{ result.total_requested }}</li>
-        <li>Processed: {{ result.processed_count }}</li>
-        <li>Updated: {{ result.updated_count }}</li>
-        <li>Unchanged: {{ result.unchanged_count }}</li>
-        <li>Failed: {{ result.failed_count }}</li>
-        <li>Idempotent replay: {{ result.idempotent_replay ? 'yes' : 'no' }}</li>
+        <li>{{ t('finance.bulk.total_requested') }}: {{ result.total_requested }}</li>
+        <li>{{ t('finance.bulk.processed') }}: {{ result.processed_count }}</li>
+        <li>{{ t('finance.bulk.updated', { count: result.updated_count }) }}</li>
+        <li>{{ t('finance.bulk.unchanged') }}: {{ result.unchanged_count }}</li>
+        <li>{{ t('finance.bulk.failed') }}: {{ result.failed_count }}</li>
+        <li>
+          {{ t('finance.bulk.idempotent_replay') }}:
+          {{ result.idempotent_replay ? t('common.yes') : t('common.no') }}
+        </li>
       </ul>
 
-      <table v-if="result.failures?.length" class="failures">
-        <caption>Partial failure diagnostics</caption>
+      <div v-if="result.failures?.length" class="table-controls">
+        <label>
+          <span>{{ t('finance.bulk.density') }}</span>
+          <select v-model="density" name="density">
+            <option value="comfortable">{{ t('finance.bulk.density_comfortable') }}</option>
+            <option value="compact">{{ t('finance.bulk.density_compact') }}</option>
+          </select>
+        </label>
+      </div>
+
+      <table
+        v-if="result.failures?.length"
+        class="failures"
+        :class="{ 'failures--compact': density === 'compact' }"
+      >
+        <caption>{{ t('finance.bulk.partial_failures') }}</caption>
         <thead>
           <tr>
-            <th scope="col">Scope</th>
+            <th scope="col">{{ t('finance.bulk.scope') }}</th>
             <th scope="col">ID</th>
-            <th scope="col">Code</th>
-            <th scope="col">Message</th>
+            <th scope="col">{{ t('finance.bulk.code') }}</th>
+            <th scope="col">{{ t('finance.bulk.message') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -212,6 +258,30 @@ h1,
 h2 {
   margin: 0;
   color: #1d3557;
+}
+
+.top-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sse-pill {
+  border-radius: 99px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sse-pill--live {
+  color: #0a6d35;
+  background: #dff5e6;
+}
+
+.sse-pill--offline {
+  color: #8b2531;
+  background: #fce4e8;
 }
 
 .lead {
@@ -268,6 +338,11 @@ button.primary {
   color: #ac1a2f;
 }
 
+.table-controls {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
 .failures {
   margin-top: 1rem;
   width: 100%;
@@ -279,6 +354,12 @@ button.primary {
   border: 1px solid #d7dee7;
   text-align: left;
   padding: 0.45rem 0.5rem;
+}
+
+.failures--compact th,
+.failures--compact td {
+  padding: 0.25rem 0.4rem;
+  line-height: 1.2;
 }
 
 .mono {
