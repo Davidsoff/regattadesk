@@ -97,7 +97,7 @@ class BibPoolAggregateTest {
             name,
             200,
             299,
-            999, // High priority for overflow
+            999, // High numeric priority => low allocation precedence (use overflow last)
             true // is overflow
         );
         

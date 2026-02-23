@@ -111,9 +111,10 @@ class RegattaDrawPublicationTest {
         UUID blockId = UUID.randomUUID();
         UUID crewId = UUID.randomUUID();
         
-        assertThrows(IllegalStateException.class, () -> {
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
             regatta.addEntry(entryId, eventId, blockId, crewId, null);
-        }, "Cannot add entry after draw publication in v0.1");
+        });
+        assertEquals("Cannot add entry after draw publication in v0.1", exception.getMessage());
     }
     
     @Test

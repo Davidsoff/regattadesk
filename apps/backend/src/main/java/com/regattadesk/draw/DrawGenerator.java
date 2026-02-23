@@ -29,8 +29,9 @@ public class DrawGenerator {
         // Create a seeded random for deterministic shuffling
         Random random = new Random(seed);
         
-        // Shuffle the entry IDs to create random draw order
+        // Normalize entry IDs to a stable order before shuffling to ensure reproducibility
         List<UUID> shuffled = new ArrayList<>(entryIds);
+        Collections.sort(shuffled);
         Collections.shuffle(shuffled, random);
         
         // Assign bibs based on direction

@@ -24,6 +24,7 @@ CREATE TABLE bib_pools (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (allocation_mode IN ('range', 'explicit_list')),
+    CHECK ((NOT is_overflow) OR block_id IS NULL),
     CHECK (
         (allocation_mode = 'range'
             AND start_bib IS NOT NULL

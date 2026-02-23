@@ -87,6 +87,10 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         if (drawRevision > 0) {
             throw new IllegalStateException("Cannot add entry after draw publication in v0.1");
         }
+        if (entryId == null) throw new IllegalArgumentException("Entry ID cannot be null");
+        if (eventId == null) throw new IllegalArgumentException("Event ID cannot be null");
+        if (blockId == null) throw new IllegalArgumentException("Block ID cannot be null");
+        if (crewId == null) throw new IllegalArgumentException("Crew ID cannot be null");
         raiseEvent(new EntryAddedEvent(getId(), entryId, eventId, blockId, crewId, billingClubId));
     }
     

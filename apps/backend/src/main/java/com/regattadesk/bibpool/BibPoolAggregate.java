@@ -48,7 +48,8 @@ public class BibPoolAggregate extends AggregateRoot<BibPoolAggregate> {
     ) {
         validateCreate(regattaId, name, priority);
         validateRange(startBib, endBib);
-        
+        validateOverflow(blockId, isOverflow);
+
         var aggregate = new BibPoolAggregate(poolId);
         aggregate.raiseEvent(new BibPoolCreatedEvent(
                 poolId,
@@ -79,7 +80,8 @@ public class BibPoolAggregate extends AggregateRoot<BibPoolAggregate> {
     ) {
         validateCreate(regattaId, name, priority);
         validateExplicitList(bibNumbers);
-        
+        validateOverflow(blockId, isOverflow);
+
         var aggregate = new BibPoolAggregate(poolId);
         aggregate.raiseEvent(new BibPoolCreatedEvent(
                 poolId,
@@ -186,6 +188,12 @@ public class BibPoolAggregate extends AggregateRoot<BibPoolAggregate> {
         return "BibPool";
     }
     
+    private static void validateOverflow(UUID blockId, boolean isOverflow) {
+        if (isOverflow && blockId != null) {
+            throw new IllegalArgumentException("Overflow pool must be regatta-level: blockId must be null when isOverflow is true");
+        }
+    }
+
     private static void validateCreate(UUID regattaId, String name, int priority) {
         if (regattaId == null) {
             throw new IllegalArgumentException("Regatta ID cannot be null");
