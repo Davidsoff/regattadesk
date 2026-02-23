@@ -69,6 +69,16 @@ access_control:
         - ["group:regatta_admin"]
         - ["group:super_admin"]
     
+    # Grafana observability dashboard (require authentication, admin roles only)
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/grafana(/.*)?$"
+      subject:
+        - ["group:super_admin"]
+        - ["group:regatta_admin"]
+
     # Staff API endpoints requiring super_admin (global access)
     - domain:
         - "localhost.local"
