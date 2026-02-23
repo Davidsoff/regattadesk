@@ -24,7 +24,8 @@
     "export": "Export",
     "import": "Import",
     "print": "Print",
-    "download": "Download"
+    "download": "Download",
+    "open": "Open"
   },
   "status": {
     "entered": "Entered",
@@ -122,7 +123,9 @@
       "message": "Message",
       "density": "Table density",
       "density_comfortable": "Comfortable",
-      "density_compact": "Compact"
+      "density_compact": "Compact",
+      "regatta_id_label": "Regatta ID (UUID)",
+      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     }
   }
 }

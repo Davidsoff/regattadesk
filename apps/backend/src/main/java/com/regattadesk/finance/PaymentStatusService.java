@@ -269,13 +269,14 @@ public class PaymentStatusService {
             }
         }
 
-        int totalRequested = normalizedEntryIds.size() + normalizedClubIds.size();
         Set<UUID> targetEntryIds = new LinkedHashSet<>();
         List<BulkPaymentFailure> failures = new ArrayList<>();
+        int missingClubCount = 0;
 
         for (UUID clubId : normalizedClubIds) {
             if (!clubExists(clubId)) {
                 failures.add(new BulkPaymentFailure("club", clubId, "CLUB_NOT_FOUND", "Club not found"));
+                missingClubCount++;
                 continue;
             }
             listClubEntryPaymentRows(regattaId, clubId).stream()
@@ -283,6 +284,8 @@ public class PaymentStatusService {
                 .forEach(targetEntryIds::add);
         }
         targetEntryIds.addAll(normalizedEntryIds);
+        // totalRequested reflects the actual expanded set: entries after club resolution + unresolvable clubs
+        int totalRequested = targetEntryIds.size() + missingClubCount;
         Map<UUID, EntryPaymentRow> rowsByEntryId = loadEntryPaymentRows(regattaId, targetEntryIds);
 
         int updatedCount = 0;
