@@ -19,6 +19,7 @@ public class BulkPaymentStatusMarkedEvent implements DomainEvent {
     private final String requestedBy;
     private final String paymentReference;
     private final String idempotencyKey;
+    private final String requestFingerprint;
 
     @JsonCreator
     public BulkPaymentStatusMarkedEvent(
@@ -32,7 +33,8 @@ public class BulkPaymentStatusMarkedEvent implements DomainEvent {
         @JsonProperty("failures") List<BulkPaymentFailure> failures,
         @JsonProperty("requestedBy") String requestedBy,
         @JsonProperty("paymentReference") String paymentReference,
-        @JsonProperty("idempotencyKey") String idempotencyKey
+        @JsonProperty("idempotencyKey") String idempotencyKey,
+        @JsonProperty("requestFingerprint") String requestFingerprint
     ) {
         this.regattaId = regattaId;
         this.targetStatus = targetStatus;
@@ -45,6 +47,7 @@ public class BulkPaymentStatusMarkedEvent implements DomainEvent {
         this.requestedBy = requestedBy;
         this.paymentReference = paymentReference;
         this.idempotencyKey = idempotencyKey;
+        this.requestFingerprint = requestFingerprint;
     }
 
     @Override
@@ -99,5 +102,9 @@ public class BulkPaymentStatusMarkedEvent implements DomainEvent {
 
     public String getIdempotencyKey() {
         return idempotencyKey;
+    }
+
+    public String getRequestFingerprint() {
+        return requestFingerprint;
     }
 }

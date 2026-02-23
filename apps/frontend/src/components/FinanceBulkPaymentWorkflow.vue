@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 const props = defineProps({
   regattaId: {
     type: String,
-    default: '00000000-0000-0000-0000-000000000000'
+    required: true
   }
 })
 const { t } = useI18n()
@@ -52,13 +52,18 @@ function startConfirmation() {
     return
   }
 
-  pendingPayload.value = {
-    entry_ids: parsedEntryIds.value,
-    club_ids: parsedClubIds.value,
+  const payload = {
     payment_status: paymentStatus.value,
     payment_reference: paymentReference.value.trim() || undefined,
     idempotency_key: idempotencyKey.value.trim() || undefined
   }
+  if (parsedEntryIds.value.length > 0) {
+    payload.entry_ids = parsedEntryIds.value
+  }
+  if (parsedClubIds.value.length > 0) {
+    payload.club_ids = parsedClubIds.value
+  }
+  pendingPayload.value = payload
 }
 
 async function confirmSubmit() {
@@ -102,7 +107,7 @@ onMounted(() => {
   if (typeof EventSource === 'undefined') {
     return
   }
-  eventSource = new EventSource('/api/v1/live/status')
+  eventSource = new EventSource(`/public/regattas/${props.regattaId}/events`)
   eventSource.onopen = () => {
     sseStatus.value = 'live'
   }
@@ -178,9 +183,9 @@ onUnmounted(() => {
       <h2>{{ t('finance.bulk.confirm') }}</h2>
       <p>
         {{ t('finance.bulk.confirm_prefix') }}
-        <strong>{{ pendingPayload.entry_ids.length }}</strong>
+        <strong>{{ pendingPayload.entry_ids?.length ?? 0 }}</strong>
         {{ t('finance.bulk.confirm_entries_and') }}
-        <strong>{{ pendingPayload.club_ids.length }}</strong>
+        <strong>{{ pendingPayload.club_ids?.length ?? 0 }}</strong>
         {{ t('finance.bulk.confirm_clubs_as') }}
         <strong>{{ pendingPayload.payment_status }}</strong>.
       </p>

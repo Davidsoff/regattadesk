@@ -16,6 +16,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -252,12 +253,16 @@ public class PaymentStatusService {
             throw new IllegalArgumentException("idempotency_key must be 128 characters or fewer");
         }
 
+        String requestFingerprint = computeRequestFingerprint(
+            normalizedEntryIds, normalizedClubIds, normalizedReference);
+
         if (normalizedIdempotencyKey != null) {
             Optional<BulkPaymentMarkResult> replay = findBulkOperationReplay(
                 regattaId,
                 normalizedActor,
                 normalizedIdempotencyKey,
-                targetStatus
+                targetStatus,
+                requestFingerprint
             );
             if (replay.isPresent()) {
                 return replay.get();
@@ -352,7 +357,8 @@ public class PaymentStatusService {
             result.failures(),
             normalizedActor,
             normalizedReference,
-            normalizedIdempotencyKey
+            normalizedIdempotencyKey,
+            requestFingerprint
         );
         appendAndProject(regattaId, "BulkPayment", List.of(summaryEvent), normalizedActor);
 
@@ -392,11 +398,28 @@ public class PaymentStatusService {
         }
     }
 
+    private static final int IN_CLAUSE_CHUNK_SIZE = 500;
+
     private Map<UUID, EntryPaymentRow> loadEntryPaymentRows(UUID regattaId, Set<UUID> entryIds) {
         if (entryIds == null || entryIds.isEmpty()) {
             return Map.of();
         }
+        // Chunk large sets to avoid hitting DB IN-clause limits and query planner degradation
+        if (entryIds.size() > IN_CLAUSE_CHUNK_SIZE) {
+            Map<UUID, EntryPaymentRow> result = new HashMap<>();
+            List<UUID> idList = new ArrayList<>(entryIds);
+            for (int i = 0; i < idList.size(); i += IN_CLAUSE_CHUNK_SIZE) {
+                Set<UUID> chunk = new LinkedHashSet<>(
+                    idList.subList(i, Math.min(i + IN_CLAUSE_CHUNK_SIZE, idList.size()))
+                );
+                result.putAll(loadEntryPaymentRowsChunk(regattaId, chunk));
+            }
+            return result;
+        }
+        return loadEntryPaymentRowsChunk(regattaId, entryIds);
+    }
 
+    private Map<UUID, EntryPaymentRow> loadEntryPaymentRowsChunk(UUID regattaId, Set<UUID> entryIds) {
         StringBuilder placeholders = new StringBuilder();
         int index = 0;
         for (UUID ignored : entryIds) {
@@ -532,34 +555,37 @@ public class PaymentStatusService {
         UUID regattaId,
         String actor,
         String idempotencyKey,
-        PaymentStatus targetStatus
+        PaymentStatus targetStatus,
+        String requestFingerprint
     ) {
+        // Query directly by idempotency key fields including a request fingerprint
+        // (sorted entry/club IDs + payment reference) to prevent incorrect replay
+        // when the same actor reuses a key with a different request payload.
         String sql = """
             SELECT payload
             FROM event_store
-            WHERE aggregate_id = ? AND event_type = 'BulkPaymentStatusMarked'
+            WHERE aggregate_id = ?
+              AND event_type = 'BulkPaymentStatusMarked'
+              AND payload->>'idempotencyKey' = ?
+              AND payload->>'requestedBy' = ?
+              AND payload->>'targetStatus' = ?
+              AND payload->>'requestFingerprint' = ?
             ORDER BY created_at DESC
-            LIMIT 200
+            LIMIT 1
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, regattaId);
+            stmt.setString(2, idempotencyKey);
+            stmt.setString(3, actor);
+            stmt.setString(4, targetStatus.value());
+            stmt.setString(5, requestFingerprint);
             try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
+                if (rs.next()) {
                     BulkPaymentStatusMarkedEvent event = objectMapper.readValue(
                         rs.getString("payload"),
                         BulkPaymentStatusMarkedEvent.class
                     );
-                    if (!idempotencyKey.equals(event.getIdempotencyKey())) {
-                        continue;
-                    }
-                    if (!actor.equals(event.getRequestedBy())) {
-                        continue;
-                    }
-                    if (!targetStatus.value().equals(event.getTargetStatus())) {
-                        continue;
-                    }
-
                     return Optional.of(new BulkPaymentMarkResult(
                         event.getFailedCount() == 0,
                         "Replayed previous bulk payment update",
@@ -591,6 +617,19 @@ public class PaymentStatusService {
             }
         }
         return normalized;
+    }
+
+    private String computeRequestFingerprint(Set<UUID> entryIds, Set<UUID> clubIds, String paymentReference) {
+        List<String> entries = new ArrayList<>();
+        for (UUID id : entryIds) entries.add(id.toString());
+        Collections.sort(entries);
+
+        List<String> clubs = new ArrayList<>();
+        for (UUID id : clubIds) clubs.add(id.toString());
+        Collections.sort(clubs);
+
+        String ref = paymentReference != null ? paymentReference : "";
+        return String.join(",", entries) + "|" + String.join(",", clubs) + "|" + ref;
     }
 
     private String normalizeText(String value) {
