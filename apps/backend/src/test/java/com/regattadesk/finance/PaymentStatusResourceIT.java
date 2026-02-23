@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import javax.sql.DataSource;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
@@ -115,6 +117,135 @@ class PaymentStatusResourceIT {
             .put("/api/v1/regattas/" + data.regattaId + "/clubs/" + data.clubId + "/payment_status")
             .then()
             .statusCode(403);
+    }
+
+    @Test
+    void bulkMarkPaymentStatus_supportsPartialFailuresAndIdempotentReplay() throws Exception {
+        TestData data = seedFinanceData();
+        UUID missingEntryId = UUID.randomUUID();
+        String idempotencyKey = "bulk-payments-31";
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "entry_ids": ["%s", "%s", "%s"],
+                  "payment_status": "paid",
+                  "payment_reference": "BULK-REF-001",
+                  "idempotency_key": "%s"
+                }
+                """.formatted(data.entryOneId, data.entryTwoId, missingEntryId, idempotencyKey))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/payments/mark_bulk")
+            .then()
+            .statusCode(200)
+            .body("success", equalTo(false))
+            .body("updated_count", equalTo(2))
+            .body("unchanged_count", equalTo(0))
+            .body("failed_count", equalTo(1))
+            .body("failures[0].code", equalTo("ENTRY_NOT_FOUND"))
+            .body("idempotent_replay", equalTo(false));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "entry_ids": ["%s", "%s", "%s"],
+                  "payment_status": "paid",
+                  "payment_reference": "BULK-REF-001",
+                  "idempotency_key": "%s"
+                }
+                """.formatted(data.entryOneId, data.entryTwoId, missingEntryId, idempotencyKey))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/payments/mark_bulk")
+            .then()
+            .statusCode(200)
+            .body("updated_count", equalTo(2))
+            .body("failed_count", equalTo(1))
+            .body("idempotent_replay", equalTo(true));
+
+        assertEquals(1, countAuditEvents("BulkPaymentStatusMarked", data.regattaId));
+        assertEquals(1, countAuditEvents("EntryPaymentStatusUpdated", data.entryOneId));
+        assertEquals(1, countAuditEvents("EntryPaymentStatusUpdated", data.entryTwoId));
+    }
+
+    @Test
+    void bulkMarkPaymentStatus_largeDuplicateBatch_isRepeatable() throws Exception {
+        TestData data = seedFinanceData();
+        UUID missingEntryId = UUID.randomUUID();
+
+        List<UUID> requestedEntries = new ArrayList<>();
+        for (int i = 0; i < 120; i++) {
+            requestedEntries.add((i % 2 == 0) ? data.entryOneId : data.entryTwoId);
+        }
+        requestedEntries.add(missingEntryId);
+
+        String body = """
+            {
+              "entry_ids": %s,
+              "payment_status": "paid",
+              "payment_reference": "BULK-LARGE-001"
+            }
+            """.formatted(toJsonUuidArray(requestedEntries));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body(body)
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/payments/mark_bulk")
+            .then()
+            .statusCode(200)
+            .body("updated_count", equalTo(2))
+            .body("unchanged_count", equalTo(0))
+            .body("failed_count", equalTo(1));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body(body)
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/payments/mark_bulk")
+            .then()
+            .statusCode(200)
+            .body("updated_count", equalTo(0))
+            .body("unchanged_count", equalTo(2))
+            .body("failed_count", equalTo(1));
+
+        assertEquals(2, countAuditEvents("BulkPaymentStatusMarked", data.regattaId));
+        assertEquals(1, countAuditEvents("EntryPaymentStatusUpdated", data.entryOneId));
+        assertEquals(1, countAuditEvents("EntryPaymentStatusUpdated", data.entryTwoId));
+    }
+
+    @Test
+    void bulkMarkPaymentStatus_supportsClubSelection() throws Exception {
+        TestData data = seedFinanceData();
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "club_ids": ["%s"],
+                  "payment_status": "paid",
+                  "payment_reference": "CLUB-BULK-31"
+                }
+                """.formatted(data.clubId))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/payments/mark_bulk")
+            .then()
+            .statusCode(200)
+            .body("success", equalTo(true))
+            .body("processed_count", equalTo(2))
+            .body("updated_count", equalTo(2))
+            .body("failed_count", equalTo(0));
     }
 
     private int countAuditEvents(String eventType, UUID aggregateId) throws Exception {
@@ -287,6 +418,18 @@ class PaymentStatusResourceIT {
         }
 
         return new TestData(regattaId, clubId, entryOneId, entryTwoId);
+    }
+
+    private String toJsonUuidArray(List<UUID> values) {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                json.append(", ");
+            }
+            json.append("\"").append(values.get(i)).append("\"");
+        }
+        json.append("]");
+        return json.toString();
     }
 
     private record TestData(

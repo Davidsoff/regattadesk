@@ -24,7 +24,8 @@
     "export": "Export",
     "import": "Import",
     "print": "Print",
-    "download": "Download"
+    "download": "Download",
+    "open": "Open"
   },
   "status": {
     "entered": "Entered",
@@ -85,5 +86,46 @@
     "offline": "Offline",
     "update_available": "New results available",
     "view_latest": "View latest"
+  },
+  "finance": {
+    "bulk": {
+      "title": "Bulk Payment Status",
+      "subtitle": "Mark multiple entries or clubs as paid/unpaid with one auditable operation.",
+      "select_one": "Select at least one entry ID or club ID.",
+      "invalid_uuid": "All IDs must be valid UUIDs.",
+      "error": "Failed to bulk update payment status",
+      "entry_ids_label": "Entry IDs (UUID, comma/newline separated)",
+      "entry_ids_placeholder": "7f7af3d8-9090-49d5-b21c-9cc12d35a0e6",
+      "club_ids_label": "Club IDs (UUID, comma/newline separated)",
+      "club_ids_placeholder": "81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd",
+      "target_status": "Target Status",
+      "status_paid": "Paid",
+      "status_unpaid": "Unpaid",
+      "payment_reference": "Payment Reference (optional)",
+      "idempotency_key": "Idempotency Key (optional)",
+      "review_button": "Review Bulk Update",
+      "confirm": "Confirm Bulk Update",
+      "confirm_prefix": "You are about to mark",
+      "confirm_entries_and": "entries and",
+      "confirm_clubs_as": "clubs as",
+      "submitting": "Submitting...",
+      "confirm_apply": "Confirm and Apply",
+      "result": "Result",
+      "total_requested": "Total requested",
+      "processed": "Processed",
+      "updated": "Updated: {count}",
+      "unchanged": "Unchanged",
+      "failed": "Failed",
+      "idempotent_replay": "Idempotent replay",
+      "partial_failures": "Partial failure diagnostics",
+      "scope": "Scope",
+      "code": "Code",
+      "message": "Message",
+      "density": "Table density",
+      "density_comfortable": "Comfortable",
+      "density_compact": "Compact",
+      "regatta_id_label": "Regatta ID (UUID)",
+      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    }
   }
 }

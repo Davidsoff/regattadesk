@@ -13,6 +13,7 @@ Payment-status operations for entries and clubs.
 - `PUT /api/v1/regattas/{regatta_id}/entries/{entry_id}/payment_status`
 - `GET /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status`
 - `PUT /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status`
+- `POST /api/v1/regattas/{regatta_id}/payments/mark_bulk`
 
 ## Non-Functional Features to Implement
 - Enforce role-based access for financial operations.
