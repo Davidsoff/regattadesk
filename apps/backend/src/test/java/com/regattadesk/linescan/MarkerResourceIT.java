@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
@@ -73,6 +72,35 @@ class MarkerResourceIT {
             .body("is_approved", equalTo(true));
 
         assertEntryCompletion(data.entryId(), "completed", 1_000L, 2_000L);
+
+        given()
+            .header("X-Operator-Token", data.token())
+            .contentType("application/json")
+            .body(Map.of("entry_id", data.entryId().toString()))
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerOneId + "/link")
+        .then()
+            .statusCode(200)
+            .body("entry_id", equalTo(data.entryId().toString()))
+            .body("is_approved", equalTo(true));
+
+        UUID secondEntryId = entryService.createEntry(
+            data.regattaId(),
+            data.eventId(),
+            data.blockId(),
+            data.crewId(),
+            null
+        ).id();
+
+        given()
+            .header("X-Operator-Token", data.token())
+            .contentType("application/json")
+            .body(Map.of("entry_id", secondEntryId.toString()))
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerOneId + "/link")
+        .then()
+            .statusCode(409)
+            .body("error.code", equalTo("CONFLICT"));
 
         given()
             .header("X-Operator-Token", data.token())
@@ -189,15 +217,13 @@ class MarkerResourceIT {
         if (startMs == null) {
             spec.body("marker_start_time_ms", nullValue());
         } else {
-            spec.body("marker_start_time_ms",
-                anyOf(equalTo(startMs.intValue()), equalTo(startMs.longValue())));
+            spec.body("marker_start_time_ms.longValue()", equalTo(startMs.longValue()));
         }
 
         if (finishMs == null) {
             spec.body("marker_finish_time_ms", nullValue());
         } else {
-            spec.body("marker_finish_time_ms",
-                anyOf(equalTo(finishMs.intValue()), equalTo(finishMs.longValue())));
+            spec.body("marker_finish_time_ms.longValue()", equalTo(finishMs.longValue()));
         }
     }
 
@@ -225,7 +251,7 @@ class MarkerResourceIT {
                 Instant.now().plusSeconds(3600)
             ).getToken();
 
-            return new TestData(regattaId, entryId, captureSessionId, token);
+            return new TestData(regattaId, entryId, eventId, blockId, crewId, captureSessionId, token);
         }
     }
 
@@ -328,6 +354,14 @@ class MarkerResourceIT {
         }
     }
 
-    private record TestData(UUID regattaId, UUID entryId, UUID captureSessionId, String token) {
+    private record TestData(
+        UUID regattaId,
+        UUID entryId,
+        UUID eventId,
+        UUID blockId,
+        UUID crewId,
+        UUID captureSessionId,
+        String token
+    ) {
     }
 }

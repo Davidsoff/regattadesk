@@ -26,6 +26,8 @@ CREATE INDEX idx_capture_sessions_regatta ON capture_sessions(regatta_id);
 CREATE INDEX idx_capture_sessions_block ON capture_sessions(block_id);
 CREATE INDEX idx_capture_sessions_type ON capture_sessions(session_type);
 CREATE INDEX idx_capture_sessions_state ON capture_sessions(state);
+CREATE INDEX idx_capture_sessions_regatta_type ON capture_sessions(regatta_id, session_type);
+CREATE INDEX idx_capture_sessions_regatta_state ON capture_sessions(regatta_id, state);
 
 CREATE TABLE timing_markers (
     id UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
@@ -44,8 +46,7 @@ CREATE TABLE timing_markers (
 
 CREATE INDEX idx_timing_markers_session ON timing_markers(capture_session_id);
 CREATE INDEX idx_timing_markers_entry ON timing_markers(entry_id);
-CREATE INDEX idx_timing_markers_linked ON timing_markers(is_linked);
-CREATE INDEX idx_timing_markers_approved ON timing_markers(is_approved);
+CREATE INDEX idx_timing_markers_entry_linked_approved ON timing_markers(entry_id, is_linked, is_approved);
 CREATE INDEX idx_timing_markers_timestamp ON timing_markers(timestamp_ms);
 
 ALTER TABLE entries ADD COLUMN marker_start_time_ms BIGINT;

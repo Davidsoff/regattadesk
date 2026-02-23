@@ -200,10 +200,16 @@ public class TimingMarkerService {
 
         TimingMarker existing = findById(regattaId, markerId)
             .orElseThrow(() -> new NotFoundException("Marker not found"));
+        if (existing.entryId() != null && existing.entryId().equals(entryId)) {
+            return existing;
+        }
+        if (existing.isApproved()) {
+            throw new IllegalStateException("Approved markers cannot be re-linked");
+        }
 
         String sql = """
             UPDATE timing_markers
-            SET entry_id = ?, is_linked = TRUE, is_approved = FALSE
+            SET entry_id = ?, is_linked = TRUE
             WHERE id = ?
             """;
 

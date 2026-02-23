@@ -187,6 +187,10 @@ public class MarkerResource {
             return Response.status(Response.Status.NOT_FOUND)
                 .entity(ErrorResponse.notFound(e.getMessage()))
                 .build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(ErrorResponse.conflict(e.getMessage()))
+                .build();
         } catch (Exception e) {
             LOG.error("Failed to link marker", e);
             return Response.serverError().entity(ErrorResponse.internalError("Failed to link marker")).build();
