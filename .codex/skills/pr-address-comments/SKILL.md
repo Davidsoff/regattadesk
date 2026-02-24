@@ -1,6 +1,6 @@
 ---
 name: pr-address-comments
-description: Address all open review thread comments for a GitHub PR, commit and push the fixes, wait for all CI checks and CodeRabbit to finish, fix any new findings, then resolve the threads. Also handles SonarQube findings and rebases onto master.
+description: Address all open review thread comments for a GitHub PR, commit and push the fixes, wait for all CI checks and CodeRabbit to finish, fix any new findings, then resolve the threads. Also handles SonarQube findings and rebases onto the base branch.
 license: MIT
 metadata:
   author: regattadesk
