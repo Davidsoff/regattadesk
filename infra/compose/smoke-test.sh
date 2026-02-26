@@ -161,6 +161,38 @@ else
     exit 1
 fi
 
+echo -n "  Verifying frontend security headers... "
+FRONTEND_HEADERS=$(curl -sSI http://localhost/)
+if [[ -z "$FRONTEND_HEADERS" ]]; then
+    echo -e "${RED}✗${NC}" >&2
+    echo "Failed to fetch frontend response headers" >&2
+    exit 1
+fi
+
+required_headers=(
+    "x-frame-options: SAMEORIGIN"
+    "x-content-type-options: nosniff"
+    "x-xss-protection: 1; mode=block"
+    "content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; object-src 'none'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+    "referrer-policy: strict-origin-when-cross-origin"
+    "permissions-policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+)
+
+for required_header in "${required_headers[@]}"; do
+    if ! printf '%s\n' "$FRONTEND_HEADERS" | grep -iqF "$required_header"; then
+        echo -e "${RED}✗${NC}" >&2
+        echo "Missing expected header: $required_header" >&2
+        exit 1
+    fi
+done
+
+if printf '%s\n' "$FRONTEND_HEADERS" | grep -iq '^strict-transport-security:'; then
+    echo -e "${RED}✗${NC}" >&2
+    echo "Strict-Transport-Security should not be sent over plain HTTP" >&2
+    exit 1
+fi
+echo -e "${GREEN}✓${NC}"
+
 # Test backend health
 echo -n "  Testing backend health (inside backend container)... "
 if docker compose exec -T backend wget --no-verbose --tries=1 --spider http://localhost:8080/q/health/ready > /dev/null 2>&1; then
