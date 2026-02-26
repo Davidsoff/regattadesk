@@ -18,6 +18,8 @@ public class RegattaCreatedEvent implements DomainEvent {
     private final String timeZone;
     private final BigDecimal entryFee;
     private final String currency;
+    private final Integer defaultPenaltySeconds;
+    private final Boolean allowCustomPenaltySeconds;
     
     @JsonCreator
     public RegattaCreatedEvent(@JsonProperty("regattaId") UUID regattaId,
@@ -25,13 +27,17 @@ public class RegattaCreatedEvent implements DomainEvent {
                               @JsonProperty("description") String description,
                               @JsonProperty("timeZone") String timeZone,
                               @JsonProperty("entryFee") BigDecimal entryFee,
-                              @JsonProperty("currency") String currency) {
+                              @JsonProperty("currency") String currency,
+                              @JsonProperty("defaultPenaltySeconds") Integer defaultPenaltySeconds,
+                              @JsonProperty("allowCustomPenaltySeconds") Boolean allowCustomPenaltySeconds) {
         this.regattaId = regattaId;
         this.name = name;
         this.description = description;
         this.timeZone = timeZone;
         this.entryFee = entryFee;
         this.currency = currency;
+        this.defaultPenaltySeconds = defaultPenaltySeconds;
+        this.allowCustomPenaltySeconds = allowCustomPenaltySeconds;
     }
     
     @Override
@@ -66,5 +72,13 @@ public class RegattaCreatedEvent implements DomainEvent {
     
     public String getCurrency() {
         return currency;
+    }
+    
+    public Integer getDefaultPenaltySeconds() {
+        return defaultPenaltySeconds;
+    }
+    
+    public Boolean getAllowCustomPenaltySeconds() {
+        return allowCustomPenaltySeconds;
     }
 }

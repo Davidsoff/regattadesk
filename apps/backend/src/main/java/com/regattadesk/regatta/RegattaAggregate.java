@@ -25,6 +25,8 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
     private String currency;
     private int drawRevision;
     private int resultsRevision;
+    private Integer defaultPenaltySeconds;
+    private Boolean allowCustomPenaltySeconds;
     
     /**
      * Creates a new regatta aggregate.
@@ -34,13 +36,16 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         this.status = "draft";
         this.drawRevision = 0;
         this.resultsRevision = 0;
+        this.defaultPenaltySeconds = 60; // Default 60 seconds
+        this.allowCustomPenaltySeconds = false; // Default false
     }
     
     /**
      * Creates a new regatta.
      */
     public static RegattaAggregate create(UUID id, String name, String description, 
-                                         String timeZone, BigDecimal entryFee, String currency) {
+                                         String timeZone, BigDecimal entryFee, String currency,
+                                         Integer defaultPenaltySeconds, Boolean allowCustomPenaltySeconds) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Regatta name cannot be null or blank");
         }
@@ -65,8 +70,21 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
             throw new IllegalArgumentException("Currency must be a valid ISO 4217 currency code", e);
         }
         
+        // Validate penalty configuration
+        if (defaultPenaltySeconds == null) {
+            defaultPenaltySeconds = 60; // Default
+        }
+        if (defaultPenaltySeconds < 0) {
+            throw new IllegalArgumentException("Default penalty seconds cannot be negative");
+        }
+        if (allowCustomPenaltySeconds == null) {
+            allowCustomPenaltySeconds = false; // Default
+        }
+        
         RegattaAggregate regatta = new RegattaAggregate(id);
-        regatta.raiseEvent(new RegattaCreatedEvent(id, name, description, timeZone, entryFee, normalizedCurrency));
+        regatta.raiseEvent(new RegattaCreatedEvent(id, name, description, timeZone, entryFee, 
+                                                   normalizedCurrency, defaultPenaltySeconds, 
+                                                   allowCustomPenaltySeconds));
         return regatta;
     }
     
@@ -94,6 +112,28 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         raiseEvent(new EntryAddedEvent(getId(), entryId, eventId, blockId, crewId, billingClubId));
     }
     
+    /**
+     * Updates the penalty configuration for the regatta (BC07-001).
+     * 
+     * @param defaultPenaltySeconds default penalty seconds for investigations
+     * @param allowCustomPenaltySeconds whether custom penalty seconds are allowed
+     */
+    public void updatePenaltyConfiguration(Integer defaultPenaltySeconds, Boolean allowCustomPenaltySeconds) {
+        if (defaultPenaltySeconds == null) {
+            throw new IllegalArgumentException("Default penalty seconds cannot be null");
+        }
+        if (defaultPenaltySeconds < 0) {
+            throw new IllegalArgumentException("Default penalty seconds cannot be negative");
+        }
+        if (allowCustomPenaltySeconds == null) {
+            throw new IllegalArgumentException("Allow custom penalty seconds cannot be null");
+        }
+        
+        raiseEvent(new RegattaPenaltyConfigurationUpdatedEvent(
+            getId(), defaultPenaltySeconds, allowCustomPenaltySeconds
+        ));
+    }
+    
     @Override
     protected void applyEventToState(DomainEvent event) {
         if (event instanceof RegattaCreatedEvent created) {
@@ -103,11 +143,16 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
             this.entryFee = created.getEntryFee();
             this.currency = created.getCurrency();
             this.status = "draft";
+            this.defaultPenaltySeconds = created.getDefaultPenaltySeconds();
+            this.allowCustomPenaltySeconds = created.getAllowCustomPenaltySeconds();
         } else if (event instanceof DrawPublishedEvent published) {
             this.drawRevision = published.getDrawRevision();
         } else if (event instanceof EntryAddedEvent) {
             // Entry tracking would be handled in a separate projection
             // This aggregate only needs to track if draw has been published
+        } else if (event instanceof RegattaPenaltyConfigurationUpdatedEvent penaltyUpdated) {
+            this.defaultPenaltySeconds = penaltyUpdated.getDefaultPenaltySeconds();
+            this.allowCustomPenaltySeconds = penaltyUpdated.getAllowCustomPenaltySeconds();
         }
         // Additional event handlers will be added as more events are defined
     }
@@ -149,5 +194,13 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
     
     public int getResultsRevision() {
         return resultsRevision;
+    }
+    
+    public Integer getDefaultPenaltySeconds() {
+        return defaultPenaltySeconds;
+    }
+    
+    public Boolean getAllowCustomPenaltySeconds() {
+        return allowCustomPenaltySeconds;
     }
 }
