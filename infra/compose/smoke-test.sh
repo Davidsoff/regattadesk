@@ -173,7 +173,7 @@ required_headers=(
     "x-frame-options: SAMEORIGIN"
     "x-content-type-options: nosniff"
     "x-xss-protection: 1; mode=block"
-    "content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; object-src 'none'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+    "content-security-policy: default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; object-src 'none'; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
     "referrer-policy: strict-origin-when-cross-origin"
     "permissions-policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
 )
