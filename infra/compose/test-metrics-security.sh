@@ -3,6 +3,24 @@
 # This script tests that:
 # 1. /q/metrics is NOT accessible via Traefik (public route)
 # 2. /q/metrics IS accessible from internal network (Prometheus scraping)
+#
+# Prerequisites:
+# - The RegattaDesk docker compose stack is running.
+# - For Test 4, include the observability compose file so `regattadesk-prometheus` exists.
+# - Required containers:
+#   - regattadesk-backend
+#   - regattadesk-prometheus
+#
+# Configuration:
+# - BACKEND_URL (optional): Public URL for backend as reached via Traefik.
+#   Defaults to "http://localhost".
+#
+# Usage:
+#   ./infra/compose/test-metrics-security.sh
+#   BACKEND_URL="http://localhost:8080" ./infra/compose/test-metrics-security.sh
+#
+# Exit behavior:
+# - Returns non-zero on failure (CI-friendly).
 
 set -e
 
@@ -54,7 +72,7 @@ fi
 
 # Test 4: Prometheus should be able to scrape metrics
 echo -n "Test 4: Prometheus scraping should work... "
-if docker exec regattadesk-prometheus curl -s http://backend:8080/q/metrics | grep -q "jvm_memory"; then
+if docker exec regattadesk-prometheus wget -qO- http://backend:8080/q/metrics | grep -q "jvm_memory"; then
     echo -e "${GREEN}✓ PASS${NC} (Prometheus can scrape)"
 else
     echo -e "${RED}✗ FAIL${NC} (Prometheus cannot scrape)"

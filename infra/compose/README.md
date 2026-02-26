@@ -459,13 +459,14 @@ This compose stack is designed for both local development and production deploym
 
 ```bash
 # Start services
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 # Wait for health checks
 sleep 30
 
 # Run tests against the stack
-# (Tests to be implemented in BC09)
+./observability-smoke-test.sh
+./test-metrics-security.sh
 
 # Cleanup
 docker compose down -v

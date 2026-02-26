@@ -304,13 +304,26 @@ cd apps/backend
    curl http://localhost/q/metrics  # Expected: 404 Not Found
    
    # Access via internal network from another container
-   docker exec regattadesk-prometheus curl http://backend:8080/q/metrics
+   docker exec regattadesk-prometheus wget -qO- http://backend:8080/q/metrics
    
    # Or directly from backend container
    docker exec regattadesk-backend curl http://localhost:8080/q/metrics
    ```
 
 3. **Traces:** Make API requests and view in Jaeger UI
+
+### Metrics Security Regression Script
+
+Run `infra/compose/test-metrics-security.sh` to validate that `/q/metrics` stays blocked on public routing while remaining reachable on the internal network.
+
+```bash
+# Start stack with observability services (Prometheus required for test 4)
+cd infra/compose
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+
+# Run security regression check
+./test-metrics-security.sh
+```
 
 ## Production Considerations
 
