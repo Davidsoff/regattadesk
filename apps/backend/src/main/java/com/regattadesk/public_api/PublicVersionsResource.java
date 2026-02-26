@@ -1,5 +1,6 @@
 package com.regattadesk.public_api;
 
+import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.jwt.JwtTokenService;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
 import jakarta.inject.Inject;
@@ -28,6 +29,7 @@ public class PublicVersionsResource {
     private static final Logger LOG = Logger.getLogger(PublicVersionsResource.class);
     
     private static final String COOKIE_NAME = "regattadesk_public_session";
+    private static final String CACHE_CONTROL_NO_STORE = "no-store, must-revalidate";
     
     @Inject
     DataSource dataSource;
@@ -52,7 +54,8 @@ public class PublicVersionsResource {
         if (!isValidSession(sessionCookie)) {
             LOG.debug("Rejecting versions request due to missing or invalid session cookie");
             return Response.status(Response.Status.UNAUTHORIZED)
-                .header("Cache-Control", "no-store, must-revalidate")
+                .header("Cache-Control", CACHE_CONTROL_NO_STORE)
+                .entity(new ErrorResponse("UNAUTHORIZED", "Missing or invalid public session"))
                 .build();
         }
         
@@ -61,18 +64,20 @@ public class PublicVersionsResource {
             PublicVersionsResponse versions = fetchVersions(regattaId);
             if (versions == null) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .header("Cache-Control", "no-store, must-revalidate")
+                    .header("Cache-Control", CACHE_CONTROL_NO_STORE)
+                    .entity(ErrorResponse.notFound("Regatta not found"))
                     .build();
             }
             
             return Response.ok(versions)
-                .header("Cache-Control", "no-store, must-revalidate")
+                .header("Cache-Control", CACHE_CONTROL_NO_STORE)
                 .build();
                 
         } catch (SQLException e) {
             LOG.error("Failed to fetch versions for regatta " + regattaId, e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .header("Cache-Control", "no-store, must-revalidate")
+                .header("Cache-Control", CACHE_CONTROL_NO_STORE)
+                .entity(ErrorResponse.internalError("Failed to fetch regatta versions"))
                 .build();
         }
     }

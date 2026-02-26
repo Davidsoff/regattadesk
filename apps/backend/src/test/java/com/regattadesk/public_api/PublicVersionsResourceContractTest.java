@@ -90,7 +90,10 @@ class PublicVersionsResourceContractTest {
             .get("/public/regattas/" + testRegattaId + "/versions")
         .then()
             .statusCode(401)
-            .header("Cache-Control", "no-store, must-revalidate");
+            .header("Cache-Control", "no-store, must-revalidate")
+            .contentType("application/json")
+            .body("error.code", equalTo("UNAUTHORIZED"))
+            .body("error.message", equalTo("Missing or invalid public session"));
     }
     
     @Test
@@ -101,7 +104,10 @@ class PublicVersionsResourceContractTest {
             .get("/public/regattas/" + testRegattaId + "/versions")
         .then()
             .statusCode(401)
-            .header("Cache-Control", "no-store, must-revalidate");
+            .header("Cache-Control", "no-store, must-revalidate")
+            .contentType("application/json")
+            .body("error.code", equalTo("UNAUTHORIZED"))
+            .body("error.message", equalTo("Missing or invalid public session"));
     }
     
     @Test
@@ -114,7 +120,10 @@ class PublicVersionsResourceContractTest {
             .get("/public/regattas/" + nonExistentId + "/versions")
         .then()
             .statusCode(404)
-            .header("Cache-Control", "no-store, must-revalidate");
+            .header("Cache-Control", "no-store, must-revalidate")
+            .contentType("application/json")
+            .body("error.code", equalTo("NOT_FOUND"))
+            .body("error.message", equalTo("Regatta not found"));
     }
     
     @Test
@@ -150,7 +159,9 @@ class PublicVersionsResourceContractTest {
             .get("/public/regattas/" + testRegattaId + "/versions")
         .then()
             .statusCode(401)
-            .header("Cache-Control", "no-store, must-revalidate");
+            .header("Cache-Control", "no-store, must-revalidate")
+            .contentType("application/json")
+            .body("error.code", equalTo("UNAUTHORIZED"));
         
         // Step 2: Create session
         Response sessionResponse = given()

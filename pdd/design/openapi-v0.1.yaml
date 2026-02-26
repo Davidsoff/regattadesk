@@ -2256,6 +2256,10 @@ paths:
                 $ref: "#/components/schemas/public_versions_response"
         "401":
           $ref: "#/components/responses/unauthorized"
+        "404":
+          $ref: "#/components/responses/not_found"
+        "500":
+          $ref: "#/components/responses/internal_server_error"
 
   /public/regattas/{regatta_id}/events:
     get:
@@ -2597,6 +2601,12 @@ components:
             $ref: "#/components/schemas/error_response"
     rate_limited:
       description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/error_response"
+    internal_server_error:
+      description: Internal server error
       content:
         application/json:
           schema:
