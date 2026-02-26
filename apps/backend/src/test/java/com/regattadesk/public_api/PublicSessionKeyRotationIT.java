@@ -173,7 +173,8 @@ class PublicSessionKeyRotationIT {
     
     @Test
     void testTokensWithDifferentKeys_BothAcceptedDuringOverlap() {
-        // Get two tokens in sequence
+        // Get two tokens in sequence - they should both use the same key
+        // since there's only one key configured at initialization
         Response response1 = given()
             .when()
             .post(SESSION_ENDPOINT)
@@ -182,13 +183,6 @@ class PublicSessionKeyRotationIT {
             .extract().response();
         
         Cookie cookie1 = response1.getDetailedCookie(COOKIE_NAME);
-        
-        // Small delay to potentially trigger different key selection
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
         
         Response response2 = given()
             .when()
@@ -209,7 +203,8 @@ class PublicSessionKeyRotationIT {
                 .then()
                 .extract().statusCode();
             
-            assertNotEquals(401, status1, "First token should be valid");
+            assertTrue(status1 == 404 || status1 == 200,
+                "First token should be valid, got: " + status1);
         }
         
         if (cookie2 != null) {
@@ -221,7 +216,8 @@ class PublicSessionKeyRotationIT {
                 .then()
                 .extract().statusCode();
             
-            assertNotEquals(401, status2, "Second token should be valid");
+            assertTrue(status2 == 404 || status2 == 200,
+                "Second token should be valid, got: " + status2);
         }
     }
     

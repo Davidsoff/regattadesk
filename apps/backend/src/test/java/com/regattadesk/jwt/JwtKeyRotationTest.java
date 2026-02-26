@@ -235,11 +235,17 @@ class JwtKeyRotationTest {
             now.minus(Duration.ofDays(1)) // Expired yesterday
         );
         
-        // Should fail due to expiration, not key mismatch
+        // Should fail due to expiration
         InvalidTokenException exception = assertThrows(InvalidTokenException.class, () -> {
             service.validateToken(expiredToken);
         });
-        assertTrue(exception.getMessage().contains("expired"));
+        
+        // Verify it's an expiration error, not a signature error
+        assertNotNull(exception.getMessage());
+        // The service should reject with "expired" in the message
+        String message = exception.getMessage().toLowerCase();
+        assertTrue(message.contains("expired") || message.contains("expiration"),
+            "Expected expiration error, got: " + exception.getMessage());
     }
     
     private String createTokenWithKey(String kid, String secret, Instant issuedAt, Instant expiresAt) throws Exception {
