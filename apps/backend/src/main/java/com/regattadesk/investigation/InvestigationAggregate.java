@@ -141,6 +141,9 @@ public class InvestigationAggregate extends AggregateRoot<InvestigationAggregate
                 throw new IllegalArgumentException(
                     "Penalty seconds must be positive when outcome is PENALTY");
             }
+        } else if (penaltySeconds != null) {
+            throw new IllegalArgumentException(
+                "Penalty seconds must be null when outcome is not PENALTY");
         }
     }
 

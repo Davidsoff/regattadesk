@@ -261,6 +261,22 @@ class InvestigationAggregateTest {
     }
 
     @Test
+    void closeWithNonPenaltyOutcome_withPenaltySeconds_shouldThrowException() {
+        // Arrange
+        InvestigationAggregate investigation = InvestigationAggregate.open(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "Description"
+        );
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            investigation.close(InvestigationOutcome.NO_ACTION, 10);
+        });
+    }
+
+    @Test
     void closeWithExcluded_shouldEmitEvent() {
         // Arrange
         InvestigationAggregate investigation = InvestigationAggregate.open(

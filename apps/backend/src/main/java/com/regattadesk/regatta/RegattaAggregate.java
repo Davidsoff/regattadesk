@@ -143,8 +143,12 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
             this.entryFee = created.getEntryFee();
             this.currency = created.getCurrency();
             this.status = "draft";
-            this.defaultPenaltySeconds = created.getDefaultPenaltySeconds();
-            this.allowCustomPenaltySeconds = created.getAllowCustomPenaltySeconds();
+            this.defaultPenaltySeconds = created.getDefaultPenaltySeconds() != null
+                ? created.getDefaultPenaltySeconds()
+                : 60;
+            this.allowCustomPenaltySeconds = created.getAllowCustomPenaltySeconds() != null
+                ? created.getAllowCustomPenaltySeconds()
+                : false;
         } else if (event instanceof DrawPublishedEvent published) {
             this.drawRevision = published.getDrawRevision();
         } else if (event instanceof EntryAddedEvent) {

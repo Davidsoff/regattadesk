@@ -185,4 +185,23 @@ class RegattaAggregatePenaltyConfigTest {
         assertEquals(45, regatta.getDefaultPenaltySeconds());
         assertTrue(regatta.getAllowCustomPenaltySeconds());
     }
+
+    @Test
+    void loadFromHistory_withNullPenaltyFields_shouldUseDefaults() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        RegattaCreatedEvent createdEvent = new RegattaCreatedEvent(
+            id, "Test", "Desc", "Europe/Amsterdam",
+            new BigDecimal("25.00"), "EUR",
+            null, null
+        );
+
+        // Act
+        RegattaAggregate regatta = new RegattaAggregate(id);
+        regatta.loadFromHistory(List.of(createdEvent));
+
+        // Assert
+        assertEquals(60, regatta.getDefaultPenaltySeconds());
+        assertFalse(regatta.getAllowCustomPenaltySeconds());
+    }
 }
