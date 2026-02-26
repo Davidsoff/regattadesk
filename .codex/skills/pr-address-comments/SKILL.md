@@ -40,8 +40,14 @@ Note `headRefName` (the PR branch) and `baseRefName` (the PR base branch).
 ### 3. Fetch all open review threads
 
 ```bash
-cursor=null
+cursor=""
 while :; do
+  if [[ -n "$cursor" ]]; then
+    cursor_field=(-F cursor="$cursor")
+  else
+    cursor_field=(-F cursor=null)
+  fi
+
   result=$(gh api graphql -f query='
   query($owner:String!, $repo:String!, $pr:Int!, $cursor:String) {
     repository(owner:$owner, name:$repo) {
@@ -66,7 +72,7 @@ while :; do
         }
       }
     }
-  }' -f owner="$OWNER" -f repo="$REPO" -F pr=<PR> -f cursor="$cursor")
+  }' -f owner="$OWNER" -f repo="$REPO" -F pr=<PR> "${cursor_field[@]}")
 
   # Process this page's threads here.
 
@@ -211,8 +217,14 @@ gh api repos/$OWNER/$REPO/issues/<PR>/comments \
 Also check for any new CodeRabbit review threads opened since the last push:
 
 ```bash
-cursor=null
+cursor=""
 while :; do
+  if [[ -n "$cursor" ]]; then
+    cursor_field=(-F cursor="$cursor")
+  else
+    cursor_field=(-F cursor=null)
+  fi
+
   result=$(gh api graphql -f query='
   query($owner:String!, $repo:String!, $pr:Int!, $cursor:String) {
     repository(owner:$owner, name:$repo) {
@@ -230,7 +242,7 @@ while :; do
         }
       }
     }
-  }' -f owner="$OWNER" -f repo="$REPO" -F pr=<PR> -f cursor="$cursor")
+  }' -f owner="$OWNER" -f repo="$REPO" -F pr=<PR> "${cursor_field[@]}")
 
   # Process this page's threads here.
 
