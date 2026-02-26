@@ -228,13 +228,8 @@ public class MarkerResource {
     }
 
     private boolean isValidOperatorToken(String operatorToken, UUID regattaId) {
-        try {
-            return operatorToken != null
-                && !operatorToken.isBlank()
-                && operatorTokenService.validateToken(operatorToken, regattaId, LINE_SCAN_STATION, null).isValid();
-        } catch (RuntimeException e) {
-            LOG.warn("Operator token validation failed", e);
-            return false;
-        }
+        return operatorToken != null
+            && !operatorToken.isBlank()
+            && operatorTokenService.validateToken(operatorToken, regattaId, LINE_SCAN_STATION, null).isValid();
     }
 }

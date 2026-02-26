@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -142,15 +143,21 @@ public class TimingMarkerService {
 
         boolean contentChanged = newFrameOffset != existing.frameOffset()
             || newTimestampMs != existing.timestampMs()
-            || !stringEquals(newTileId, existing.tileId())
-            || !intEquals(newTileX, existing.tileX())
-            || !intEquals(newTileY, existing.tileY());
+            || !Objects.equals(newTileId, existing.tileId())
+            || !Objects.equals(newTileX, existing.tileX())
+            || !Objects.equals(newTileY, existing.tileY());
 
         if (existing.isApproved() && contentChanged) {
             throw new IllegalStateException("Approved marker evidence is immutable");
         }
         if (existing.isApproved() && isApproved != null && isApproved != existing.isApproved()) {
             throw new IllegalStateException("Approved marker evidence cannot change approval state");
+        }
+        if (isApproved != null && isApproved && !existing.isLinked()) {
+            throw new IllegalStateException("Cannot approve an unlinked marker");
+        }
+        if (existing.isLinked() && contentChanged && isApproved != null && isApproved) {
+            throw new IllegalStateException("Cannot approve marker in the same request as evidence changes");
         }
 
         boolean newApproval = isApproved != null ? isApproved : existing.isApproved();
@@ -368,17 +375,9 @@ public class TimingMarkerService {
             rs.getBoolean("is_linked"),
             rs.getBoolean("is_approved"),
             rs.getString("tile_id"),
-            (Integer) rs.getObject("tile_x"),
-            (Integer) rs.getObject("tile_y")
+            rs.getObject("tile_x", Integer.class),
+            rs.getObject("tile_y", Integer.class)
         );
-    }
-
-    private boolean stringEquals(String left, String right) {
-        return left == null ? right == null : left.equals(right);
-    }
-
-    private boolean intEquals(Integer left, Integer right) {
-        return left == null ? right == null : left.equals(right);
     }
 
     public static class NotFoundException extends RuntimeException {

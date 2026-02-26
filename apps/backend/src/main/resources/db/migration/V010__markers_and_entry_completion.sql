@@ -19,6 +19,7 @@ CREATE TABLE capture_sessions (
     close_reason TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (fps > 0),
     CHECK (session_type IN ('start', 'finish')),
     CHECK (state IN ('open', 'closed'))
 );
@@ -34,7 +35,7 @@ CREATE INDEX idx_capture_sessions_regatta_state ON capture_sessions(regatta_id, 
 CREATE TABLE timing_markers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     capture_session_id UUID NOT NULL REFERENCES capture_sessions(id) ON DELETE CASCADE,
-    entry_id UUID REFERENCES entries(id) ON DELETE SET NULL,
+    entry_id UUID REFERENCES entries(id) ON DELETE RESTRICT,
     frame_offset BIGINT NOT NULL,
     timestamp_ms BIGINT NOT NULL,
     is_linked BOOLEAN NOT NULL DEFAULT FALSE,

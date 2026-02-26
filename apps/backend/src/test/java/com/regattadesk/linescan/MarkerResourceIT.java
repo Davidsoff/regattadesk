@@ -14,10 +14,12 @@ import java.util.Map;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @QuarkusTest
 class MarkerResourceIT {
@@ -170,6 +172,106 @@ class MarkerResourceIT {
             .body("data", hasSize(0));
     }
 
+    @Test
+    void markerEndpoints_requireValidOperatorTokenAndRespectRegattaScope() throws Exception {
+        TestData data = createTestData();
+        TestData otherRegatta = createTestData();
+        String markerId = createMarker(data.regattaId(), data.token(), data.captureSessionId(), 150L, 1_500L);
+
+        given()
+        .when()
+            .get("/api/v1/regattas/" + data.regattaId() + "/operator/markers")
+        .then()
+            .statusCode(401)
+            .body("error.code", equalTo("UNAUTHORIZED"));
+
+        given()
+            .header("X-Operator-Token", otherRegatta.token())
+        .when()
+            .get("/api/v1/regattas/" + data.regattaId() + "/operator/markers")
+        .then()
+            .statusCode(401)
+            .body("error.code", equalTo("UNAUTHORIZED"));
+
+        given()
+            .header("X-Operator-Token", otherRegatta.token())
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerId + "/unlink")
+        .then()
+            .statusCode(401)
+            .body("error.code", equalTo("UNAUTHORIZED"));
+    }
+
+    @Test
+    void unlinkClearsMarkerLinkAndEntryCompletion() throws Exception {
+        TestData data = createTestData();
+        String markerOneId = createMarker(data.regattaId(), data.token(), data.captureSessionId(), 100L, 1_000L);
+        String markerTwoId = createMarker(data.regattaId(), data.token(), data.captureSessionId(), 200L, 2_000L);
+
+        linkMarker(data.regattaId(), data.token(), markerOneId, data.entryId());
+        linkMarker(data.regattaId(), data.token(), markerTwoId, data.entryId());
+
+        given()
+            .header("X-Operator-Token", data.token())
+            .contentType("application/json")
+            .body(Map.of("is_approved", true))
+        .when()
+            .patch("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerOneId)
+        .then()
+            .statusCode(200)
+            .body("is_approved", equalTo(true));
+
+        given()
+            .header("X-Operator-Token", data.token())
+            .contentType("application/json")
+            .body(Map.of("is_approved", true))
+        .when()
+            .patch("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerTwoId)
+        .then()
+            .statusCode(200)
+            .body("is_approved", equalTo(true));
+
+        assertEntryCompletion(data.entryId(), "completed", 1_000L, 2_000L);
+
+        given()
+            .header("X-Operator-Token", data.token())
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + markerOneId + "/unlink")
+        .then()
+            .statusCode(409)
+            .body("error.code", equalTo("CONFLICT"));
+
+        String unapprovedMarkerId = createMarker(data.regattaId(), data.token(), data.captureSessionId(), 300L, 3_000L);
+        linkMarker(data.regattaId(), data.token(), unapprovedMarkerId, data.entryId());
+
+        given()
+            .header("X-Operator-Token", data.token())
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers/" + unapprovedMarkerId + "/unlink")
+        .then()
+            .statusCode(200)
+            .body("is_linked", equalTo(false))
+            .body("entry_id", nullValue());
+    }
+
+    @Test
+    void createRejectsNegativeOffsetsAndTimestamps() throws Exception {
+        TestData data = createTestData();
+
+        given()
+            .header("X-Operator-Token", data.token())
+            .contentType("application/json")
+            .body(Map.of(
+                "capture_session_id", data.captureSessionId().toString(),
+                "frame_offset", -1,
+                "timestamp_ms", -10
+            ))
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId() + "/operator/markers")
+        .then()
+            .statusCode(400);
+    }
+
     private String createMarker(UUID regattaId, String token, UUID captureSessionId, long frameOffset, long timestampMs) {
         return given()
             .header("X-Operator-Token", token)
@@ -205,25 +307,29 @@ class MarkerResourceIT {
     }
 
     private void assertEntryCompletion(UUID entryId, String expectedStatus, Long startMs, Long finishMs) {
-        var spec = given()
+        var response = given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "regatta_admin")
         .when()
             .get("/api/v1/entries/" + entryId)
         .then()
             .statusCode(200)
-            .body("completion_status", equalTo(expectedStatus));
+            .body("completion_status", equalTo(expectedStatus))
+            .extract()
+            .response();
 
+        Object markerStart = response.path("marker_start_time_ms");
         if (startMs == null) {
-            spec.body("marker_start_time_ms", nullValue());
+            assertNull(markerStart);
         } else {
-            spec.body("marker_start_time_ms.longValue()", equalTo(startMs.longValue()));
+            assertThat(((Number) markerStart).longValue(), equalTo(startMs));
         }
 
+        Object markerFinish = response.path("marker_finish_time_ms");
         if (finishMs == null) {
-            spec.body("marker_finish_time_ms", nullValue());
+            assertNull(markerFinish);
         } else {
-            spec.body("marker_finish_time_ms.longValue()", equalTo(finishMs.longValue()));
+            assertThat(((Number) markerFinish).longValue(), equalTo(finishMs));
         }
     }
 

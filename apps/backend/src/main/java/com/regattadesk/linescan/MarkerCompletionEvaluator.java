@@ -1,5 +1,6 @@
 package com.regattadesk.linescan;
 
+import java.util.LongSummaryStatistics;
 import java.util.List;
 
 /**
@@ -11,6 +12,10 @@ import java.util.List;
  * - At least 2 approved linked markers -> completed, start/finish derived from approved marker timestamps.
  */
 public final class MarkerCompletionEvaluator {
+
+    public static final String STATUS_INCOMPLETE = "incomplete";
+    public static final String STATUS_PENDING_APPROVAL = "pending_approval";
+    public static final String STATUS_COMPLETED = "completed";
 
     private MarkerCompletionEvaluator() {
     }
@@ -28,10 +33,11 @@ public final class MarkerCompletionEvaluator {
             return CompletionResult.pendingApproval();
         }
 
-        long start = approved.stream().mapToLong(MarkerEvidence::timestampMs).min().orElseThrow();
-        long finish = approved.stream().mapToLong(MarkerEvidence::timestampMs).max().orElseThrow();
+        LongSummaryStatistics summary = approved.stream()
+            .mapToLong(MarkerEvidence::timestampMs)
+            .summaryStatistics();
 
-        return CompletionResult.completed(start, finish);
+        return CompletionResult.completed(summary.getMin(), summary.getMax());
     }
 
     public record MarkerEvidence(long timestampMs, boolean isApproved) {
@@ -39,15 +45,15 @@ public final class MarkerCompletionEvaluator {
 
     public record CompletionResult(String completionStatus, Long markerStartTimeMs, Long markerFinishTimeMs) {
         private static CompletionResult incomplete() {
-            return new CompletionResult("incomplete", null, null);
+            return new CompletionResult(STATUS_INCOMPLETE, null, null);
         }
 
         private static CompletionResult pendingApproval() {
-            return new CompletionResult("pending_approval", null, null);
+            return new CompletionResult(STATUS_PENDING_APPROVAL, null, null);
         }
 
         private static CompletionResult completed(long start, long finish) {
-            return new CompletionResult("completed", start, finish);
+            return new CompletionResult(STATUS_COMPLETED, start, finish);
         }
     }
 }
