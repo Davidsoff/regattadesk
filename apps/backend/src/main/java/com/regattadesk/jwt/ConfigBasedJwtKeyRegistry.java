@@ -35,7 +35,7 @@ public class ConfigBasedJwtKeyRegistry implements JwtKeyRegistry {
     
     @Inject
     public ConfigBasedJwtKeyRegistry(
-            JwtConfig legacyConfig,
+            Optional<JwtConfig> legacyConfig,
             @ConfigProperty(name = "jwt.public.keys") Optional<Map<String, Map<String, String>>> keysConfig) {
         
         if (keysConfig.isPresent() && !keysConfig.get().isEmpty()) {
@@ -45,9 +45,14 @@ public class ConfigBasedJwtKeyRegistry implements JwtKeyRegistry {
         } else {
             // Legacy single-key configuration (backward compatibility)
             LOG.info("Using legacy single-key JWT configuration");
+            JwtConfig config = legacyConfig.orElseThrow(() ->
+                new IllegalStateException(
+                    "No multi-key configuration found and legacy JWT config is not available"
+                )
+            );
             KeyEntry singleKey = new KeyEntry(
-                legacyConfig.kid(),
-                legacyConfig.secret().getBytes(StandardCharsets.UTF_8),
+                config.kid(),
+                config.secret().getBytes(StandardCharsets.UTF_8),
                 Instant.now() // Assume activated now for legacy config
             );
             this.activeKeys = List.of(singleKey);
@@ -57,8 +62,16 @@ public class ConfigBasedJwtKeyRegistry implements JwtKeyRegistry {
             throw new IllegalStateException("No JWT keys configured");
         }
         
-        // Find newest key (by activation time)
-        this.newestKey = activeKeys.stream()
+        Instant now = Instant.now();
+        List<KeyEntry> signingCandidates = activeKeys.stream()
+            .filter(key -> !key.activatedAt().isAfter(now))
+            .toList();
+        if (signingCandidates.isEmpty()) {
+            throw new IllegalStateException("No active JWT signing key is available yet");
+        }
+
+        // Find newest active key (by activation time)
+        this.newestKey = signingCandidates.stream()
             .max(Comparator.comparing(KeyEntry::activatedAt))
             .orElseThrow(() -> new IllegalStateException("No keys available"));
         
