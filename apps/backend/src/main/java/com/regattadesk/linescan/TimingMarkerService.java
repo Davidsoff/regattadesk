@@ -53,24 +53,8 @@ public class TimingMarkerService {
     }
 
     public Optional<TimingMarker> findById(UUID regattaId, UUID markerId) {
-        String sql = """
-            SELECT tm.id, tm.capture_session_id, tm.entry_id, tm.frame_offset, tm.timestamp_ms,
-                   tm.is_linked, tm.is_approved, tm.tile_id, tm.tile_x, tm.tile_y
-            FROM timing_markers tm
-            JOIN capture_sessions cs ON cs.id = tm.capture_session_id
-            WHERE cs.regatta_id = ? AND tm.id = ?
-            """;
-
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setObject(1, regattaId);
-            stmt.setObject(2, markerId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                return Optional.of(mapMarker(rs));
-            }
+        try (Connection conn = dataSource.getConnection()) {
+            return findById(conn, regattaId, markerId, false);
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get marker", e);
         }
@@ -132,68 +116,72 @@ public class TimingMarkerService {
         Integer tileY,
         Boolean isApproved
     ) {
-        TimingMarker existing = findById(regattaId, markerId)
-            .orElseThrow(() -> new NotFoundException("Marker not found"));
-
-        long newFrameOffset = frameOffset != null ? frameOffset : existing.frameOffset();
-        long newTimestampMs = timestampMs != null ? timestampMs : existing.timestampMs();
-        String newTileId = tileId != null ? tileId : existing.tileId();
-        Integer newTileX = tileX != null ? tileX : existing.tileX();
-        Integer newTileY = tileY != null ? tileY : existing.tileY();
-
-        boolean contentChanged = newFrameOffset != existing.frameOffset()
-            || newTimestampMs != existing.timestampMs()
-            || !Objects.equals(newTileId, existing.tileId())
-            || !Objects.equals(newTileX, existing.tileX())
-            || !Objects.equals(newTileY, existing.tileY());
-
-        if (existing.isApproved() && contentChanged) {
-            throw new IllegalStateException("Approved marker evidence is immutable");
-        }
-        if (existing.isApproved() && isApproved != null && isApproved != existing.isApproved()) {
-            throw new IllegalStateException("Approved marker evidence cannot change approval state");
-        }
-        if (isApproved != null && isApproved && !existing.isLinked()) {
-            throw new IllegalStateException("Cannot approve an unlinked marker");
-        }
-        if (existing.isLinked() && contentChanged && isApproved != null && isApproved) {
-            throw new IllegalStateException("Cannot approve marker in the same request as evidence changes");
-        }
-
-        boolean newApproval = isApproved != null ? isApproved : existing.isApproved();
-        if (existing.isLinked() && contentChanged) {
-            newApproval = false;
-        }
-
         String sql = """
             UPDATE timing_markers
             SET frame_offset = ?, timestamp_ms = ?, tile_id = ?, tile_x = ?, tile_y = ?, is_approved = ?
             WHERE id = ?
             """;
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setLong(1, newFrameOffset);
-            stmt.setLong(2, newTimestampMs);
-            stmt.setString(3, newTileId);
-            if (newTileX == null) {
-                stmt.setNull(4, java.sql.Types.INTEGER);
-            } else {
-                stmt.setInt(4, newTileX);
+        try (Connection conn = dataSource.getConnection()) {
+            TimingMarker existing = findById(conn, regattaId, markerId, true)
+                .orElseThrow(() -> new NotFoundException("Marker not found"));
+
+            long newFrameOffset = frameOffset != null ? frameOffset : existing.frameOffset();
+            long newTimestampMs = timestampMs != null ? timestampMs : existing.timestampMs();
+            String newTileId = tileId != null ? tileId : existing.tileId();
+            Integer newTileX = tileX != null ? tileX : existing.tileX();
+            Integer newTileY = tileY != null ? tileY : existing.tileY();
+
+            boolean contentChanged = newFrameOffset != existing.frameOffset()
+                || newTimestampMs != existing.timestampMs()
+                || !Objects.equals(newTileId, existing.tileId())
+                || !Objects.equals(newTileX, existing.tileX())
+                || !Objects.equals(newTileY, existing.tileY());
+
+            if (existing.isApproved() && contentChanged) {
+                throw new IllegalStateException("Approved marker evidence is immutable");
             }
-            if (newTileY == null) {
-                stmt.setNull(5, java.sql.Types.INTEGER);
-            } else {
-                stmt.setInt(5, newTileY);
+            if (existing.isApproved() && isApproved != null && isApproved != existing.isApproved()) {
+                throw new IllegalStateException("Approved marker evidence cannot change approval state");
             }
-            stmt.setBoolean(6, newApproval);
-            stmt.setObject(7, markerId);
-            stmt.executeUpdate();
+            if (isApproved != null && isApproved && !existing.isLinked()) {
+                throw new IllegalStateException("Cannot approve an unlinked marker");
+            }
+            if (existing.isLinked() && contentChanged && isApproved != null && isApproved) {
+                throw new IllegalStateException("Cannot approve marker in the same request as evidence changes");
+            }
+
+            boolean newApproval = isApproved != null ? isApproved : existing.isApproved();
+            if (existing.isLinked() && contentChanged) {
+                newApproval = false;
+            }
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setLong(1, newFrameOffset);
+                stmt.setLong(2, newTimestampMs);
+                stmt.setString(3, newTileId);
+                if (newTileX == null) {
+                    stmt.setNull(4, java.sql.Types.INTEGER);
+                } else {
+                    stmt.setInt(4, newTileX);
+                }
+                if (newTileY == null) {
+                    stmt.setNull(5, java.sql.Types.INTEGER);
+                } else {
+                    stmt.setInt(5, newTileY);
+                }
+                stmt.setBoolean(6, newApproval);
+                stmt.setObject(7, markerId);
+                if (stmt.executeUpdate() == 0) {
+                    throw new NotFoundException("Marker not found");
+                }
+            }
+
+            if (existing.entryId() != null) {
+                refreshEntryCompletion(existing.entryId());
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update marker", e);
-        }
-
-        if (existing.entryId() != null) {
-            refreshEntryCompletion(existing.entryId());
         }
 
         return findById(regattaId, markerId).orElseThrow();
@@ -217,13 +205,15 @@ public class TimingMarkerService {
         String sql = """
             UPDATE timing_markers
             SET entry_id = ?, is_linked = TRUE
-            WHERE id = ?
+            WHERE id = ? AND is_approved = FALSE
             """;
 
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, entryId);
             stmt.setObject(2, markerId);
-            stmt.executeUpdate();
+            if (stmt.executeUpdate() == 0) {
+                throw new IllegalStateException("Approved markers cannot be re-linked");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to link marker", e);
         }
@@ -247,12 +237,14 @@ public class TimingMarkerService {
         String sql = """
             UPDATE timing_markers
             SET entry_id = NULL, is_linked = FALSE, is_approved = FALSE
-            WHERE id = ?
+            WHERE id = ? AND is_approved = FALSE
             """;
 
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, markerId);
-            stmt.executeUpdate();
+            if (stmt.executeUpdate() == 0) {
+                throw new IllegalStateException("Approved markers cannot be unlinked");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to unlink marker", e);
         }
@@ -273,9 +265,13 @@ public class TimingMarkerService {
         }
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("DELETE FROM timing_markers WHERE id = ?")) {
+             PreparedStatement stmt = conn.prepareStatement(
+                 "DELETE FROM timing_markers WHERE id = ? AND is_approved = FALSE"
+             )) {
             stmt.setObject(1, markerId);
-            stmt.executeUpdate();
+            if (stmt.executeUpdate() == 0) {
+                throw new IllegalStateException("Approved markers cannot be deleted");
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete marker", e);
         }
@@ -349,6 +345,29 @@ public class TimingMarkerService {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to validate capture session", e);
+        }
+    }
+
+    private Optional<TimingMarker> findById(Connection conn, UUID regattaId, UUID markerId, boolean forUpdate)
+        throws SQLException {
+        String sql = """
+            SELECT tm.id, tm.capture_session_id, tm.entry_id, tm.frame_offset, tm.timestamp_ms,
+                   tm.is_linked, tm.is_approved, tm.tile_id, tm.tile_x, tm.tile_y
+            FROM timing_markers tm
+            JOIN capture_sessions cs ON cs.id = tm.capture_session_id
+            WHERE cs.regatta_id = ? AND tm.id = ?
+            """ + (forUpdate ? " FOR UPDATE" : "");
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setObject(2, markerId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapMarker(rs));
+            }
         }
     }
 
