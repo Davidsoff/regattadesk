@@ -207,6 +207,8 @@ RegattaDesk uses Authelia for Single Sign-On (SSO) at the Traefik edge. Protecte
 - `/api/health`, `/q/health/*` - Health checks
 - `/`, `/assets/*` - Frontend static files
 
+**Note:** The `/q/metrics` endpoint is intentionally not exposed publicly for security reasons. It is only accessible from the internal Docker network for Prometheus scraping.
+
 For detailed information about the identity forwarding contract and trust boundary, see [Identity Forwarding Documentation](../../docs/IDENTITY_FORWARDING.md).
 
 ## Service Details
@@ -457,13 +459,14 @@ This compose stack is designed for both local development and production deploym
 
 ```bash
 # Start services
-docker compose up -d
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 
 # Wait for health checks
 sleep 30
 
 # Run tests against the stack
-# (Tests to be implemented in BC09)
+./observability-smoke-test.sh
+./test-metrics-security.sh
 
 # Cleanup
 docker compose down -v
@@ -536,7 +539,7 @@ docker compose -f docker-compose.yml -f docker-compose.observability.yml -f dock
 ### Available Endpoints
 
 - Health: `http://localhost/q/health/ready`, `/q/health/live`, `/q/health/started`
-- Metrics: `http://localhost/q/metrics`
+- Metrics: Not publicly accessible (internal network only)
 - Custom health: `http://localhost/api/health`
 
 See [OBSERVABILITY.md](./OBSERVABILITY.md) for complete documentation including:
