@@ -9,10 +9,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
-import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,6 +21,7 @@ import java.util.UUID;
  * 
  * This service implements the JWT lifecycle with:
  * - HS256 signing with kid in header
+ * - Key rotation support with multiple active keys
  * - 5-day TTL with 20% refresh window (idempotent)
  * - Session ID (sid) claim for SSE connection tracking
  */
@@ -28,21 +30,55 @@ public class JwtTokenService {
     private static final Logger LOG = Logger.getLogger(JwtTokenService.class);
     
     private final JwtConfig config;
+    private final JwtKeyRegistry keyRegistry;
     private final MACSigner signer;
-    private final MACVerifier verifier;
+    private final Map<String, MACVerifier> verifiers;
     
     @Inject
-    public JwtTokenService(JwtConfig config) {
+    public JwtTokenService(JwtConfig config, JwtKeyRegistry keyRegistry) {
         this.config = config;
+        this.keyRegistry = keyRegistry;
+        
         try {
-            byte[] secret = config.secret().getBytes(StandardCharsets.UTF_8);
+            // Get the newest key for signing
+            JwtKeyRegistry.KeyEntry newestKey = keyRegistry.getNewestKey();
+            this.signer = new MACSigner(newestKey.secret());
+            
+            // Create verifiers for all active keys
+            this.verifiers = new HashMap<>();
+            for (JwtKeyRegistry.KeyEntry key : keyRegistry.getActiveKeys()) {
+                this.verifiers.put(key.kid(), new MACVerifier(key.secret()));
+            }
+            
+            LOG.infof("JWT service initialized with %d active keys", verifiers.size());
+        } catch (JOSEException e) {
+            throw new IllegalStateException("Invalid JWT key configuration", e);
+        }
+    }
+    
+    /**
+     * Constructor for backward compatibility with tests that use JwtConfig only.
+     * Creates a single-key registry from the config.
+     * 
+     * @deprecated Use constructor with JwtKeyRegistry
+     */
+    @Deprecated(forRemoval = false)
+    JwtTokenService(JwtConfig config) {
+        this.config = config;
+        this.keyRegistry = null;
+        
+        try {
+            byte[] secret = config.secret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
             if (secret.length < 32) {
                 throw new IllegalArgumentException(
                     "JWT secret must be at least 256 bits (32 bytes) for HS256"
                 );
             }
             this.signer = new MACSigner(secret);
-            this.verifier = new MACVerifier(secret);
+            
+            // Single key verifier
+            this.verifiers = new HashMap<>();
+            this.verifiers.put(config.kid(), new MACVerifier(secret));
         } catch (JOSEException e) {
             throw new IllegalStateException("Invalid JWT secret configuration", e);
         }
@@ -50,6 +86,7 @@ public class JwtTokenService {
     
     /**
      * Issues a new anonymous session JWT token.
+     * Token is signed with the newest active key.
      * 
      * @return the signed JWT token string
      */
@@ -63,15 +100,18 @@ public class JwtTokenService {
             .expirationTime(Date.from(expiration))
             .build();
         
+        // Use the newest key's kid for signing
+        String kid = keyRegistry != null ? keyRegistry.getNewestKey().kid() : config.kid();
+        
         JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.HS256)
-            .keyID(config.kid())
+            .keyID(kid)
             .build();
         
         SignedJWT signedJWT = new SignedJWT(header, claims);
         
         try {
             signedJWT.sign(signer);
-            LOG.debug("Issued anonymous session JWT token");
+            LOG.debugf("Issued anonymous session JWT token with kid=%s", kid);
             return signedJWT.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException("Failed to sign JWT token", e);
@@ -80,6 +120,7 @@ public class JwtTokenService {
     
     /**
      * Validates a JWT token and returns the parsed token.
+     * Verifies signature against all active keys.
      * 
      * @param token the JWT token string
      * @return the validated parsed JWT token
@@ -89,8 +130,19 @@ public class JwtTokenService {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
             
+            // Get the kid from the token header
+            String kid = signedJWT.getHeader().getKeyID();
+            
+            // Try to verify with the appropriate key
+            MACVerifier verifier = verifiers.get(kid);
+            if (verifier == null) {
+                LOG.warnf("Rejected JWT token with unknown kid: %s", kid);
+                throw new InvalidTokenException("Invalid JWT signature: unknown key ID");
+            }
+            
             // Verify signature
             if (!signedJWT.verify(verifier)) {
+                LOG.warnf("Rejected JWT token with kid=%s due to invalid signature", kid);
                 throw new InvalidTokenException("Invalid JWT signature");
             }
             
@@ -99,21 +151,23 @@ public class JwtTokenService {
             // Check expiration
             Date expiration = claims.getExpirationTime();
             if (expiration == null || expiration.before(new Date())) {
-                LOG.warn("Rejected JWT token due to missing or expired exp claim");
+                LOG.warnf("Rejected JWT token with kid=%s due to missing or expired exp claim", kid);
                 throw new InvalidTokenException("Token has expired");
             }
 
             String sessionId = claims.getStringClaim("sid");
             if (sessionId == null || sessionId.isBlank()) {
-                LOG.warn("Rejected JWT token missing sid claim");
+                LOG.warnf("Rejected JWT token with kid=%s missing sid claim", kid);
                 throw new InvalidTokenException("Token missing required sid claim");
             }
 
             Date issueTime = claims.getIssueTime();
             if (issueTime == null) {
-                LOG.warn("Rejected JWT token missing iat claim");
+                LOG.warnf("Rejected JWT token with kid=%s missing iat claim", kid);
                 throw new InvalidTokenException("Token missing required iat claim");
             }
+            
+            LOG.debugf("Successfully validated JWT token with kid=%s, sid=%s", kid, sessionId);
             
             return new ValidatedToken(
                 sessionId,
