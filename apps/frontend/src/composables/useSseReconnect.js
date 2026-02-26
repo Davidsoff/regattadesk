@@ -84,10 +84,8 @@ export function createSseConnection(url, options = {}) {
       return
     }
     
-    // EventSource automatically sends Last-Event-ID header on reconnection
-    // Browser handles this transparently when EventSource reconnects
     try {
-      eventSource = new EventSource(url, {
+      eventSource = new EventSource(buildReconnectUrl(url, lastEventId), {
         withCredentials: true
       })
       
@@ -195,6 +193,16 @@ export function createSseConnection(url, options = {}) {
     _getReconnectAttempt: () => reconnectAttempt,
     _getLastEventId: () => lastEventId
   }
+}
+
+function buildReconnectUrl(baseUrl, lastEventId) {
+  if (!lastEventId) {
+    return baseUrl
+  }
+
+  const urlObject = new URL(baseUrl, window.location.origin)
+  urlObject.searchParams.set('last_event_id', lastEventId)
+  return urlObject.pathname + urlObject.search
 }
 
 /**

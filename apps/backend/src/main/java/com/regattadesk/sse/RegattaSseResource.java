@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.jwt.JwtTokenService;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
+import com.regattadesk.jwt.JwtTokenService.ValidatedToken;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -12,6 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
+import org.jboss.resteasy.reactive.ResponseHeader;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -45,7 +47,7 @@ public class RegattaSseResource {
     
     private static final Logger LOG = Logger.getLogger(RegattaSseResource.class);
     private static final String COOKIE_NAME = "regattadesk_public_session";
-    private static final int MAX_CONNECTIONS_PER_REGATTA = 100;
+    private static final int MAX_CONNECTIONS_PER_CLIENT_PER_REGATTA = 20;
     
     @Inject
     DataSource dataSource;
@@ -55,9 +57,12 @@ public class RegattaSseResource {
     
     @Inject
     RegattaSsePublisher ssePublisher;
+
+    @Inject
+    ObjectMapper objectMapper;
     
-    // Per-regatta connection counters
-    private final Map<UUID, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
+    // Per-client-per-regatta connection counters
+    private final Map<ConnectionKey, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
     
     /**
      * Opens an SSE stream for regatta live updates.
@@ -69,12 +74,15 @@ public class RegattaSseResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.TEXT_PLAIN)
+    @ResponseHeader(name = "Cache-Control", value = "no-cache")
+    @ResponseHeader(name = "X-Accel-Buffering", value = "no")
     public Multi<String> streamEvents(
             @PathParam("regatta_id") UUID regattaId,
             @CookieParam(COOKIE_NAME) Cookie sessionCookie) {
         
         // Validate session cookie
-        if (!isValidSession(sessionCookie)) {
+        String sessionId = validateAndExtractSessionId(sessionCookie);
+        if (sessionId == null) {
             LOG.debugf("Rejecting SSE connection for regatta %s due to missing/invalid session", regattaId);
             return Multi.createFrom().failure(
                 new WebApplicationException(
@@ -111,31 +119,25 @@ public class RegattaSseResource {
         }
         
         // Check connection cap
-        AtomicInteger connectionCount = connectionCounts.computeIfAbsent(
-            regattaId, id -> new AtomicInteger(0)
-        );
-        
-        int currentConnections = connectionCount.get();
-        if (currentConnections >= MAX_CONNECTIONS_PER_REGATTA) {
-            LOG.warnf("Connection cap reached for regatta %s (%d connections)", 
-                     regattaId, currentConnections);
+        ConnectionKey connectionKey = new ConnectionKey(regattaId, sessionId);
+        AtomicInteger connectionCount = connectionCounts.computeIfAbsent(connectionKey, id -> new AtomicInteger(0));
+        int currentConnections = tryIncrementWithinLimit(connectionCount, MAX_CONNECTIONS_PER_CLIENT_PER_REGATTA);
+        if (currentConnections < 0) {
+            int existingCount = connectionCount.get();
+            LOG.warnf("Connection cap reached for regatta %s session %s (%d connections)",
+                     regattaId, sessionId, existingCount);
             return Multi.createFrom().failure(
                 new WebApplicationException(
                     Response.status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity(new ErrorResponse("TOO_MANY_CONNECTIONS", 
-                               "Connection limit reached for this regatta"))
+                               "Connection limit reached for this client"))
                         .build()
                 )
             );
         }
         
-        // Increment connection count
-        connectionCount.incrementAndGet();
-        LOG.infof("SSE connection opened for regatta %s (total: %d)", 
-                 regattaId, connectionCount.get());
-        
         // Get the stream from publisher
-        Multi<String> stream = ssePublisher.getStream(regattaId);
+        Multi<String> stream = ssePublisher.getStream(regattaId, true);
         
         // Prepend snapshot event before joining the broadcast stream
         String snapshotEventId = SseEventIdGenerator.generate(
@@ -144,11 +146,12 @@ public class RegattaSseResource {
         SseEvent snapshotEvent = new SseEvent(revisions.drawRevision, revisions.resultsRevision);
         String snapshotMessage;
         try {
-            String data = new ObjectMapper().writeValueAsString(snapshotEvent);
+            String data = objectMapper.writeValueAsString(snapshotEvent);
             snapshotMessage = String.format("id: %s\nevent: snapshot\ndata: %s\n\n", 
                                           snapshotEventId, data);
         } catch (Exception e) {
             LOG.errorf(e, "Failed to serialize snapshot event for regatta %s", regattaId);
+            releaseConnection(connectionKey, connectionCount, regattaId);
             return Multi.createFrom().failure(
                 new WebApplicationException(
                     Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -157,19 +160,39 @@ public class RegattaSseResource {
                 )
             );
         }
-        
-        // Return stream with snapshot prepended
-        Multi<String> snapshotFirst = Multi.createFrom().item(snapshotMessage);
-        Multi<String> combinedStream = Multi.createBy().concatenating()
-            .streams(snapshotFirst, stream);
-        
-        // Decrement connection count when stream completes or fails
-        return combinedStream
-            .onTermination().invoke(() -> {
-                int remaining = connectionCount.decrementAndGet();
-                LOG.infof("SSE connection closed for regatta %s (remaining: %d)", 
-                         regattaId, remaining);
+
+        LOG.infof("SSE connection opened for regatta %s session %s (session total: %d)",
+            regattaId, sessionId, currentConnections);
+
+        // Subscribe to the broadcaster before emitting snapshot to avoid missing updates during connect.
+        return Multi.createFrom().emitter(emitter -> {
+            AtomicInteger snapshotSent = new AtomicInteger(0);
+            java.util.Queue<String> pendingBeforeSnapshot = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+            var cancellable = stream.subscribe().with(
+                item -> {
+                    if (snapshotSent.get() == 1) {
+                        emitter.emit(item);
+                    } else {
+                        pendingBeforeSnapshot.offer(item);
+                    }
+                },
+                emitter::fail
+            );
+
+            emitter.emit(snapshotMessage);
+            snapshotSent.set(1);
+
+            String buffered;
+            while ((buffered = pendingBeforeSnapshot.poll()) != null) {
+                emitter.emit(buffered);
+            }
+
+            emitter.onTermination(() -> {
+                cancellable.cancel();
+                releaseConnection(connectionKey, connectionCount, regattaId);
             });
+        });
     }
     
     /**
@@ -178,17 +201,17 @@ public class RegattaSseResource {
      * @param cookie the session cookie
      * @return true if the session is valid, false otherwise
      */
-    private boolean isValidSession(Cookie cookie) {
+    private String validateAndExtractSessionId(Cookie cookie) {
         if (cookie == null || cookie.getValue() == null || cookie.getValue().isBlank()) {
-            return false;
+            return null;
         }
         
         try {
-            jwtTokenService.validateToken(cookie.getValue());
-            return true;
+            ValidatedToken token = jwtTokenService.validateToken(cookie.getValue());
+            return token.sessionId();
         } catch (InvalidTokenException e) {
             LOG.debug("Invalid session token: " + e.getMessage());
-            return false;
+            return null;
         }
     }
     
@@ -200,7 +223,7 @@ public class RegattaSseResource {
      * @throws SQLException if database query fails
      */
     private RegattaRevisions fetchRevisions(UUID regattaId) throws SQLException {
-        String sql = "SELECT draw_revision, results_revision FROM regattas WHERE id = ?";
+        String sql = "SELECT draw_revision, results_revision, status FROM regattas WHERE id = ?";
         
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -209,6 +232,10 @@ public class RegattaSseResource {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
+                    String status = rs.getString("status");
+                    if (!"published".equals(status)) {
+                        return null;
+                    }
                     int drawRevision = rs.getInt("draw_revision");
                     int resultsRevision = rs.getInt("results_revision");
                     return new RegattaRevisions(drawRevision, resultsRevision);
@@ -216,6 +243,28 @@ public class RegattaSseResource {
                 return null;
             }
         }
+    }
+
+    private int tryIncrementWithinLimit(AtomicInteger counter, int limit) {
+        while (true) {
+            int current = counter.get();
+            if (current >= limit) {
+                return -1;
+            }
+            if (counter.compareAndSet(current, current + 1)) {
+                return current + 1;
+            }
+        }
+    }
+
+    private void releaseConnection(ConnectionKey key, AtomicInteger counter, UUID regattaId) {
+        int remaining = counter.decrementAndGet();
+        if (remaining <= 0) {
+            connectionCounts.remove(key, counter);
+            remaining = 0;
+        }
+        LOG.infof("SSE connection closed for regatta %s session %s (session remaining: %d)",
+            regattaId, key.sessionId(), remaining);
     }
     
     /**
@@ -231,7 +280,11 @@ public class RegattaSseResource {
      * @return current connection count
      */
     int getConnectionCount(UUID regattaId) {
-        AtomicInteger count = connectionCounts.get(regattaId);
-        return count != null ? count.get() : 0;
+        return connectionCounts.entrySet().stream()
+            .filter(entry -> entry.getKey().regattaId().equals(regattaId))
+            .mapToInt(entry -> entry.getValue().get())
+            .sum();
     }
+
+    private record ConnectionKey(UUID regattaId, String sessionId) {}
 }

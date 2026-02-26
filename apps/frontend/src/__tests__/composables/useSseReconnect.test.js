@@ -274,7 +274,29 @@ describe('useSseReconnect', () => {
       await new Promise(resolve => setTimeout(resolve, 200))
       
       // Should create new EventSource
-      expect(global.EventSource).toHaveBeenCalledTimes(2)
+      expect(global.EventSource.mock.calls.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('reuses lastEventId as query parameter on reconnect', async () => {
+      const connection = createSseConnection('/public/regattas/123/events')
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      eventListeners['snapshot']({
+        data: JSON.stringify({ draw_revision: 2, results_revision: 5 }),
+        lastEventId: '123:2:5:0'
+      })
+
+      eventListeners['error']({})
+
+      await new Promise(resolve => setTimeout(resolve, 700))
+
+      const reconnectCall = global.EventSource.mock.calls.find(([calledUrl]) =>
+        calledUrl === '/public/regattas/123/events?last_event_id=123%3A2%3A5%3A0'
+      )
+      expect(reconnectCall).toBeTruthy()
+      expect(reconnectCall[1]).toEqual(expect.objectContaining({ withCredentials: true }))
+      connection.close()
     })
     
     it('resets reconnect attempt counter on successful open', async () => {

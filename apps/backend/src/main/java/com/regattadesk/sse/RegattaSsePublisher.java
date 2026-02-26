@@ -2,6 +2,7 @@ package com.regattadesk.sse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -79,8 +80,9 @@ public class RegattaSsePublisher {
         Multi<String> heartbeat = Multi.createFrom().ticks().every(HEARTBEAT_INTERVAL)
             .map(tick -> ":keepalive\n\n");
         
-        // Merge event stream with heartbeat
-        return Multi.createBy().merging().streams(eventStream, heartbeat);
+        // Serialize merged emissions so each SSE frame is emitted atomically.
+        return Multi.createBy().merging().streams(eventStream, heartbeat)
+            .onItem().transformToUniAndConcatenate(item -> Uni.createFrom().item(item));
     }
     
     /**
