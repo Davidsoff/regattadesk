@@ -8,6 +8,7 @@ import jakarta.ws.rs.ext.Provider;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Security filter that strips identity headers from requests on untrusted paths.
@@ -20,8 +21,8 @@ import java.util.List;
  * identity extraction occurs.
  * 
  * Trust model:
- * - Trusted paths: Routes protected by Traefik ForwardAuth middleware (e.g., /api/v1/staff, /api/v1/regattas/.../operator)
- * - Untrusted paths: Public routes without ForwardAuth (e.g., /api/health, /api/v1/public, /q/health)
+ * - Trusted paths: Routes protected by Traefik ForwardAuth middleware (e.g., /api/v1/staff, /api/v1/regattas/{id}/operator/*)
+ * - Untrusted paths: Public routes without ForwardAuth (e.g., /api/health, /api/v1/public, /q/health, /api/v1/regattas/{id}/events)
  * 
  * On untrusted paths, identity headers are stripped to prevent forgery attacks.
  * 
@@ -38,12 +39,19 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
      * Identity headers on these paths are trusted.
      */
     private static final List<String> TRUSTED_PATH_PREFIXES = List.of(
-        "/api/v1/staff",
-        "/api/v1/athletes",
-        "/api/v1/rulesets",
-        "/api/v1/regattas",  // Operator paths are under /api/v1/regattas/{id}/operator
-        "/api/v1/entries",   // Entry management including payment status (BC08-001)
-        "/test/auth"  // Test endpoints (only present in test environment)
+        "api/v1/staff",
+        "api/v1/athletes",
+        "api/v1/rulesets",
+        "test/auth"  // Test endpoints (only present in test environment)
+    );
+    
+    /**
+     * Operator paths pattern matching /api/v1/regattas/{id}/operator/*.
+     * This pattern precisely matches the Traefik ForwardAuth route configuration.
+     * Only these specific paths under /api/v1/regattas should trust identity headers.
+     */
+    private static final Pattern OPERATOR_PATH_PATTERN = Pattern.compile(
+        "^api/v1/regattas/[^/]+/operator(/.*)?$"
     );
     
     /**
@@ -59,10 +67,12 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) {
         String path = requestContext.getUriInfo().getPath();
+        String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
         
         // Check if this is a trusted path (protected by ForwardAuth)
         boolean isTrustedPath = TRUSTED_PATH_PREFIXES.stream()
-            .anyMatch(path::startsWith);
+            .anyMatch(normalizedPath::startsWith)
+            || OPERATOR_PATH_PATTERN.matcher(normalizedPath).matches();
         
         if (!isTrustedPath) {
             // Untrusted path - strip identity headers to prevent forgery
