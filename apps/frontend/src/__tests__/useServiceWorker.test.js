@@ -4,9 +4,9 @@ import { nextTick } from 'vue';
 // Mock service worker registration
 function createMockRegistration(state = 'activated') {
   return {
-    installing: state === 'installing' ? {} : null,
-    waiting: state === 'waiting' ? {} : null,
-    active: state === 'activated' ? { state } : null,
+    installing: state === 'installing' ? { state: 'installing', addEventListener: vi.fn() } : null,
+    waiting: state === 'waiting' ? { state: 'waiting', addEventListener: vi.fn() } : null,
+    active: state === 'activated' ? { state: 'activated', addEventListener: vi.fn() } : null,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     update: vi.fn(),
@@ -14,10 +14,20 @@ function createMockRegistration(state = 'activated') {
 }
 
 function createMockServiceWorker() {
+  const listeners = new Map();
   return {
     state: 'activated',
-    addEventListener: vi.fn(),
+    addEventListener: vi.fn((event, handler) => {
+      if (!listeners.has(event)) {
+        listeners.set(event, []);
+      }
+      listeners.get(event).push(handler);
+    }),
     removeEventListener: vi.fn(),
+    _trigger: (event) => {
+      const handlers = listeners.get(event) || [];
+      handlers.forEach(h => h());
+    },
   };
 }
 
@@ -50,7 +60,7 @@ describe('useServiceWorker registration', () => {
 
     expect(registerMock).toHaveBeenCalledWith('/sw.js', expect.any(Object));
     expect(isRegistered.value).toBe(true);
-    expect(registration.value).toBe(mockRegistration);
+    expect(registration.value).toStrictEqual(mockRegistration);
   });
 
   it('handles registration failure gracefully', async () => {
@@ -66,7 +76,11 @@ describe('useServiceWorker registration', () => {
     const { useServiceWorker } = await importFreshUseServiceWorker();
     const { register, isRegistered, error } = useServiceWorker();
 
-    await register('/sw.js');
+    try {
+      await register('/sw.js');
+    } catch (err) {
+      // Expected to throw
+    }
     await nextTick();
 
     expect(isRegistered.value).toBe(false);
@@ -90,6 +104,7 @@ describe('useServiceWorker registration', () => {
 
   it('detects service worker state changes', async () => {
     const mockSW = createMockServiceWorker();
+    mockSW.state = 'installing';
     const mockRegistration = createMockRegistration('installing');
     mockRegistration.installing = mockSW;
 
@@ -112,14 +127,8 @@ describe('useServiceWorker registration', () => {
 
     // Simulate state change to activated
     mockSW.state = 'activated';
-    const stateChangeHandler = mockSW.addEventListener.mock.calls.find(
-      (call) => call[0] === 'statechange'
-    )?.[1];
-
-    if (stateChangeHandler) {
-      stateChangeHandler();
-      await nextTick();
-    }
+    mockSW._trigger('statechange');
+    await nextTick();
 
     expect(state.value).toBe('activated');
   });

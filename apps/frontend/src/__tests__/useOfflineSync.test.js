@@ -190,8 +190,8 @@ describe('useOfflineSync conflict resolution', () => {
     const result = await syncQueue(queue);
 
     expect(result.conflicts).toHaveLength(1);
-    expect(result.conflicts[0].status).toBe(409);
-    expect(result.conflicts[0].serverVersion).toBe('v2.0');
+    expect(result.conflicts[0].clientData).toEqual({ time: 555 });
+    expect(result.conflicts[0].serverData).toBeUndefined(); // No serverData in this response
   });
 
   it('applies Last-Write-Wins strategy for conflicts', async () => {

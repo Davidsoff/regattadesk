@@ -6,6 +6,10 @@ class MockIDBDatabase {
   constructor() {
     this.stores = new Map();
     this.version = 1;
+    this.objectStoreNames = {
+      contains: (name) => this.stores.has(name),
+      length: 0,
+    };
   }
 
   transaction(storeNames, mode) {
@@ -13,8 +17,14 @@ class MockIDBDatabase {
   }
 
   createObjectStore(name, options) {
-    const store = { name, keyPath: options?.keyPath, autoIncrement: options?.autoIncrement };
+    const store = { 
+      name, 
+      keyPath: options?.keyPath, 
+      autoIncrement: options?.autoIncrement,
+      createIndex: vi.fn(), // Add createIndex method
+    };
     this.stores.set(name, store);
+    this.objectStoreNames.length = this.stores.size;
     return store;
   }
 }
