@@ -194,14 +194,14 @@ gh api repos/$OWNER/$REPO/issues/<PR>/comments \
 If the comment contains "New issue" (e.g., "1 New issue"), fetch the details from the public SonarCloud API:
 
 ```bash
-SONAR_COMPONENT_KEY="${OWNER}_${REPO}"
-curl -s "https://sonarcloud.io/api/issues/search?componentKeys=${SONAR_COMPONENT_KEY}&pullRequest=<PR>&statuses=OPEN,CONFIRMED&sinceLeakPeriod=true" \
-  | python3 -c "
-import json,sys
-data=json.load(sys.stdin)
-for i in data.get('issues',[]):
-    print(i['rule'], i['severity'], i.get('message',''), i['component'], i.get('line',''))
-"
+SONAR_COMPONENT_KEY_PRIMARY="${OWNER}_${REPO}"
+SONAR_COMPONENT_KEY_FALLBACK="${OWNER}-${REPO}"
+SONAR_RESPONSE=$(curl -s "https://sonarcloud.io/api/issues/search?componentKeys=${SONAR_COMPONENT_KEY_PRIMARY}&pullRequest=<PR>&statuses=OPEN,CONFIRMED&sinceLeakPeriod=true")
+if [[ "$(printf '%s' "$SONAR_RESPONSE" | jq -r '.errors | length // 0')" != "0" ]]; then
+  SONAR_RESPONSE=$(curl -s "https://sonarcloud.io/api/issues/search?componentKeys=${SONAR_COMPONENT_KEY_FALLBACK}&pullRequest=<PR>&statuses=OPEN,CONFIRMED&sinceLeakPeriod=true")
+fi
+printf '%s' "$SONAR_RESPONSE" \
+  | jq -r '.issues[] | [.rule, .severity, (.message // ""), .component, (.line // "")] | @tsv'
 ```
 
 Fix each finding, add a new commit, push, and return to step 8 to wait for checks again. Repeat until Sonar reports 0 new issues, up to a maximum of 3 iterations. If issues persist after 3 attempts, stop and report remaining findings.
