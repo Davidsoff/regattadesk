@@ -1,11 +1,14 @@
-.PHONY: help install build test lint clean dev backend-dev frontend-dev backend-image
+.PHONY: help install build test lint clean dev backend-dev frontend-dev backend-image \
+        test-backend-lint test-backend test-backend-integration test-backend-contract \
+        test-frontend-lint test-frontend test-frontend-a11y \
+        lint-backend lint-frontend
 
 help:
 	@echo "RegattaDesk Build Commands"
 	@echo "=========================="
 	@echo "install        - Install all dependencies (backend + frontend)"
 	@echo "build          - Build all applications"
-	@echo "test           - Run all tests"
+	@echo "test           - Run all tests and linters (mirrors CI pipeline)"
 	@echo "lint           - Run linters for all applications"
 	@echo "clean          - Clean build artifacts"
 	@echo "dev            - Run both backend and frontend in dev mode (requires separate terminals)"
@@ -33,15 +36,46 @@ build-frontend:
 	@echo "Building frontend..."
 	cd apps/frontend && npm run build
 
-test: test-backend test-frontend
+# Run all tests and linters exactly as the CI pipeline does.
+# Required checks (exit non-zero on failure):
+#   backend lint, backend unit tests, frontend lint
+# Optional checks (continue-on-error, mirrors CI continue-on-error: true):
+#   backend integration tests, backend contract tests,
+#   frontend unit tests, frontend accessibility tests
+test: test-backend-lint test-backend test-backend-integration test-backend-contract \
+      test-frontend-lint test-frontend test-frontend-a11y
+
+test-backend-lint:
+	@echo "--- Backend Lint ---"
+	cd apps/backend && ./mvnw verify -Dformat.validate
 
 test-backend:
-	@echo "Testing backend..."
+	@echo "--- Backend Unit Tests ---"
 	cd apps/backend && ./mvnw test
 
+test-backend-integration:
+	@echo "--- Backend Integration Tests ---"
+	cd apps/backend && ./mvnw verify -Pintegration || \
+	  echo "⚠️  Integration tests failed or not yet implemented (non-blocking)"
+
+test-backend-contract:
+	@echo "--- Backend Contract Tests (Pact) ---"
+	cd apps/backend && ./mvnw verify -Pcontract || \
+	  echo "⚠️  Contract tests failed or not yet implemented (non-blocking)"
+
+test-frontend-lint:
+	@echo "--- Frontend Lint ---"
+	cd apps/frontend && npm run lint
+
 test-frontend:
-	@echo "Testing frontend..."
-	@echo "Frontend tests not yet configured"
+	@echo "--- Frontend Unit Tests ---"
+	cd apps/frontend && npm run test:run || \
+	  echo "⚠️  Frontend unit tests failed or not yet configured (non-blocking)"
+
+test-frontend-a11y:
+	@echo "--- Frontend Accessibility Tests ---"
+	cd apps/frontend && npm run test:a11y || \
+	  echo "⚠️  Accessibility tests failed or not yet configured (non-blocking)"
 
 lint: lint-backend lint-frontend
 

@@ -70,6 +70,30 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         return regatta;
     }
     
+    /**
+     * Publishes the draw with the given seed.
+     * Increments the draw revision.
+     */
+    public void publishDraw(long drawSeed) {
+        int newDrawRevision = this.drawRevision + 1;
+        raiseEvent(new DrawPublishedEvent(getId(), drawSeed, newDrawRevision));
+    }
+    
+    /**
+     * Adds an entry to the regatta.
+     * In v0.1, this is prohibited after draw publication.
+     */
+    public void addEntry(UUID entryId, UUID eventId, UUID blockId, UUID crewId, UUID billingClubId) {
+        if (drawRevision > 0) {
+            throw new IllegalStateException("Cannot add entry after draw publication in v0.1");
+        }
+        if (entryId == null) throw new IllegalArgumentException("Entry ID cannot be null");
+        if (eventId == null) throw new IllegalArgumentException("Event ID cannot be null");
+        if (blockId == null) throw new IllegalArgumentException("Block ID cannot be null");
+        if (crewId == null) throw new IllegalArgumentException("Crew ID cannot be null");
+        raiseEvent(new EntryAddedEvent(getId(), entryId, eventId, blockId, crewId, billingClubId));
+    }
+    
     @Override
     protected void applyEventToState(DomainEvent event) {
         if (event instanceof RegattaCreatedEvent created) {
@@ -79,6 +103,11 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
             this.entryFee = created.getEntryFee();
             this.currency = created.getCurrency();
             this.status = "draft";
+        } else if (event instanceof DrawPublishedEvent published) {
+            this.drawRevision = published.getDrawRevision();
+        } else if (event instanceof EntryAddedEvent) {
+            // Entry tracking would be handled in a separate projection
+            // This aggregate only needs to track if draw has been published
         }
         // Additional event handlers will be added as more events are defined
     }
