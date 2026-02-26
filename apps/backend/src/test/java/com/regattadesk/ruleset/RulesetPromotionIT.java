@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 
 /**
  * Integration tests for ruleset promotion authorization and functionality.
@@ -306,8 +305,8 @@ class RulesetPromotionIT {
             org.hamcrest.Matchers.greaterThanOrEqualTo(2)
         );
         
-        // List only global rulesets - should get only the promoted one
-        String globalRulesetsResponse = given()
+        // List only global rulesets - should include promoted ruleset and exclude non-promoted one
+        java.util.List<String> globalRulesetIds = given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "regatta_admin")
             .queryParam("is_global", true)
@@ -316,17 +315,20 @@ class RulesetPromotionIT {
             .then()
             .statusCode(200)
             .extract()
-            .asString();
-        
-        // Verify that ruleset1 is in the global list and ruleset2 is not
-        // (Note: we can't easily check exact counts due to other tests, but we can verify presence)
+            .jsonPath()
+            .getList("data.id");
+
         org.hamcrest.MatcherAssert.assertThat(
-            globalRulesetsResponse,
-            org.hamcrest.Matchers.containsString(rulesetId1.toString())
+            globalRulesetIds,
+            org.hamcrest.Matchers.hasItem(rulesetId1.toString())
+        );
+        org.hamcrest.MatcherAssert.assertThat(
+            globalRulesetIds,
+            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(rulesetId2.toString()))
         );
         
-        // List only non-global rulesets
-        String nonGlobalRulesetsResponse = given()
+        // List only non-global rulesets - should include non-promoted ruleset and exclude promoted one
+        java.util.List<String> nonGlobalRulesetIds = given()
             .header("Remote-User", "admin")
             .header("Remote-Groups", "regatta_admin")
             .queryParam("is_global", false)
@@ -335,12 +337,16 @@ class RulesetPromotionIT {
             .then()
             .statusCode(200)
             .extract()
-            .asString();
-        
-        // Verify that ruleset2 is in the non-global list
+            .jsonPath()
+            .getList("data.id");
+
         org.hamcrest.MatcherAssert.assertThat(
-            nonGlobalRulesetsResponse,
-            org.hamcrest.Matchers.containsString(rulesetId2.toString())
+            nonGlobalRulesetIds,
+            org.hamcrest.Matchers.hasItem(rulesetId2.toString())
+        );
+        org.hamcrest.MatcherAssert.assertThat(
+            nonGlobalRulesetIds,
+            org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(rulesetId1.toString()))
         );
     }
 }

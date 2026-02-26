@@ -1,6 +1,7 @@
 package com.regattadesk.ruleset.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.regattadesk.eventstore.ConcurrencyException;
 import com.regattadesk.ruleset.RulesetAggregate;
 import com.regattadesk.ruleset.RulesetService;
 import com.regattadesk.security.RequireRole;
@@ -219,6 +220,10 @@ public class RulesetResource {
             }
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(ErrorResponse.badRequest(e.getMessage()))
+                .build();
+        } catch (IllegalStateException | ConcurrencyException e) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(ErrorResponse.conflict(e.getMessage()))
                 .build();
         }
     }
