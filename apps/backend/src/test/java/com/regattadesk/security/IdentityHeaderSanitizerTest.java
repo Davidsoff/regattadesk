@@ -42,8 +42,8 @@ class IdentityHeaderSanitizerTest {
             .when().get("/api/health")
             .then()
             .statusCode(200)
-            .body("endpoint", equalTo("public"))
-            .body("username", equalTo("attacker"));
+            .body("status", equalTo("UP"))
+            .body("version", equalTo("0.1.0-SNAPSHOT"));
     }
 
     @Test
