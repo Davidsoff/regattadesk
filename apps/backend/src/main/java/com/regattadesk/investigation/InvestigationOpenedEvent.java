@@ -32,7 +32,7 @@ public class InvestigationOpenedEvent implements DomainEvent {
 
     @Override
     public String getEventType() {
-        return "InvestigationOpenedEvent";
+        return "InvestigationOpened";
     }
 
     @Override

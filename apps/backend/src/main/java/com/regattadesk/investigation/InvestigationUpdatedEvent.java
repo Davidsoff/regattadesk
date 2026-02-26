@@ -26,7 +26,7 @@ public class InvestigationUpdatedEvent implements DomainEvent {
 
     @Override
     public String getEventType() {
-        return "InvestigationUpdatedEvent";
+        return "InvestigationUpdated";
     }
 
     @Override
