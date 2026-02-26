@@ -80,7 +80,7 @@ Collect all threads where `isResolved: false` and `isOutdated: false`. If there 
 
 Print a summary:
 
-```
+```text
 Found N open review threads across these files:
   • <file> (line X) — <short description of issue>
   ...
@@ -328,7 +328,7 @@ git worktree remove /tmp/pr-<PR>-fix
 
 Print a summary:
 
-```
+```text
 ## PR <N> — Review Comments Addressed
 
 **Branch:** <headRefName>
