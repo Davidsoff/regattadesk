@@ -172,7 +172,9 @@ fi
 
 # Security check: Verify Traefik dashboard is NOT publicly accessible
 echo -n "  Security check: Traefik dashboard NOT accessible... "
-if curl -sf http://localhost:8080 > /dev/null 2>&1; then
+if docker compose ps traefik --format json 2>/dev/null | jq -e \
+    'if length > 0 then .[0].Publishers[]? | select(.TargetPort == 8080) else false end' \
+    > /dev/null 2>&1; then
     echo -e "${RED}✗ Dashboard is publicly accessible (security risk)${NC}" >&2
     exit 1
 else

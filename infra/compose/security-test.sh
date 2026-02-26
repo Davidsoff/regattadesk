@@ -44,6 +44,14 @@ log_warn() {
     return 0
 }
 
+# Return an HTTP status code for a URL, using 000 when the target is unreachable.
+http_status() {
+    local url="$1"
+    local status_code
+    status_code=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || true)
+    echo "${status_code:-000}"
+}
+
 test_start() {
     local test_name="$1"
     TESTS_RUN=$((TESTS_RUN + 1))
@@ -84,7 +92,7 @@ test_traefik_dashboard_blocked() {
     
     # Try to access dashboard
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080" 2>/dev/null || echo "000")
+    status_code=$(http_status "http://localhost:8080")
     
     if [[ "$status_code" == "000" ]]; then
         log_info "Port 8080 is not accessible (correct - port not published)"
@@ -100,7 +108,7 @@ test_traefik_api_blocked() {
     test_start "Traefik API endpoint NOT accessible"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8080/api/overview" 2>/dev/null || echo "000")
+    status_code=$(http_status "http://localhost:8080/api/overview")
     
     if [[ "$status_code" == "000" ]]; then
         log_info "Traefik API not accessible (correct - secure configuration)"
@@ -128,8 +136,10 @@ test_insecure_api_flag() {
 test_dashboard_port_not_published() {
     test_start "Traefik dashboard port (8080) NOT published"
     
-    if docker compose config | grep -q "8080:8080"; then
-        test_fail "Port 8080 is published in docker-compose.yml (security risk)"
+    if docker compose ps traefik --format json | jq -e \
+        'if length > 0 then .[0].Publishers[]? | select(.TargetPort == 8080) else false end' \
+        > /dev/null 2>&1; then
+        test_fail "Traefik container port 8080 is published to host (security risk)"
     else
         log_info "Dashboard port not published (correct)"
         test_pass
@@ -142,7 +152,7 @@ test_routing_still_works() {
     test_start "Regular routing through Traefik still works"
     
     local status_code
-    status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/" 2>/dev/null || echo "000")
+    status_code=$(http_status "http://localhost/")
     
     if [[ "$status_code" == "200" ]] || [[ "$status_code" == "404" ]]; then
         log_info "Traefik routing works correctly"
