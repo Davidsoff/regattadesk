@@ -40,6 +40,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false, // regatta not archived
             false, // not all entries approved
             Instant.now()
@@ -60,6 +61,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false, // regatta not archived
             false, // not all entries approved
             Instant.now()
@@ -81,6 +83,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             true,  // regatta archived
             false, // not all entries approved (but archive is enough)
             Instant.now()
@@ -100,6 +103,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false, // regatta not archived (but approvals are enough)
             true,  // all entries approved
             Instant.now()
@@ -119,6 +123,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             true, // regatta archived
             true, // all entries approved
             Instant.now()
@@ -138,6 +143,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false, // regatta not archived
             false, // not all entries approved
             Instant.now()
@@ -163,6 +169,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             true, // regatta archived
             true, // all entries approved
             Instant.now()
@@ -197,6 +204,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             true,
             true,
             Instant.now()
@@ -216,6 +224,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false,
             false,
             Instant.now()
@@ -236,6 +245,7 @@ class LineScanRetentionEvaluatorTest {
         
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            createdAt,
             false,
             false,
             now
@@ -272,6 +282,25 @@ class LineScanRetentionEvaluatorTest {
         // Third marker: 40000ms ± 2000ms = [38000, 42000]
         assertEquals(38000L, windows.get(2).startMs());
         assertEquals(42000L, windows.get(2).endMs());
+    }
+
+    @Test
+    void evaluate_missingRegattaEndAt_keepsFullRetained() {
+        Instant createdAt = Instant.now().minus(30, ChronoUnit.DAYS);
+        LineScanManifest manifest = createManifest(FULL_RETAINED, createdAt, 14, null);
+
+        LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
+            manifest,
+            null,
+            false,
+            false,
+            Instant.now()
+        );
+
+        assertEquals(FULL_RETAINED, result.getTargetState());
+        assertFalse(result.shouldTransitionState());
+        assertFalse(result.shouldPrune());
+        assertNull(result.getAlertReason());
     }
     
     @Test

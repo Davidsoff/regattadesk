@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.regattadesk.linescan.LineScanManifest.RetentionState.*;
@@ -100,6 +101,7 @@ class LineScanRetentionSchedulerTest {
         
         // Mock repository responses
         when(manifestRepository.findByRetentionStateIn(anyList())).thenReturn(List.of(manifest));
+        when(regattaRepository.findRegattaEndAt(regattaId)).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId)).thenReturn(true);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId)).thenReturn(true);
         when(markerRepository.findApprovedByRegattaId(regattaId)).thenReturn(markers);
@@ -107,7 +109,7 @@ class LineScanRetentionSchedulerTest {
         // Mock evaluator to indicate pruning should occur
         LineScanRetentionEvaluator.EvaluationResult evalResult = 
             LineScanRetentionEvaluator.EvaluationResult.readyToPrune(markerWindows);
-        when(evaluator.evaluate(eq(manifest), eq(true), eq(true), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest), any(), eq(true), eq(true), any(Instant.class)))
             .thenReturn(evalResult);
         when(evaluator.getMarkerWindows(markers, 2)).thenReturn(markerWindows);
         
@@ -140,6 +142,7 @@ class LineScanRetentionSchedulerTest {
             .build();
         
         when(manifestRepository.findByRetentionStateIn(anyList())).thenReturn(List.of(manifest));
+        when(regattaRepository.findRegattaEndAt(regattaId)).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId)).thenReturn(true);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId)).thenReturn(true);
         
@@ -149,7 +152,7 @@ class LineScanRetentionSchedulerTest {
                 ELIGIBLE_WAITING_ARCHIVE_OR_APPROVALS,
                 null
             );
-        when(evaluator.evaluate(eq(manifest), eq(true), eq(true), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest), any(), eq(true), eq(true), any(Instant.class)))
             .thenReturn(evalResult);
         
         scheduler.evaluateAndPrune();
@@ -185,6 +188,7 @@ class LineScanRetentionSchedulerTest {
             .build();
         
         when(manifestRepository.findByRetentionStateIn(anyList())).thenReturn(List.of(manifest));
+        when(regattaRepository.findRegattaEndAt(regattaId)).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId)).thenReturn(false);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId)).thenReturn(false);
         
@@ -192,7 +196,7 @@ class LineScanRetentionSchedulerTest {
         String alertReason = "Retention delay elapsed but regatta not archived and entries not all approved";
         LineScanRetentionEvaluator.EvaluationResult evalResult = 
             LineScanRetentionEvaluator.EvaluationResult.needsAlert(alertReason);
-        when(evaluator.evaluate(eq(manifest), eq(false), eq(false), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest), any(), eq(false), eq(false), any(Instant.class)))
             .thenReturn(evalResult);
         
         scheduler.evaluateAndPrune();
@@ -226,13 +230,14 @@ class LineScanRetentionSchedulerTest {
             .build();
         
         when(manifestRepository.findByRetentionStateIn(anyList())).thenReturn(List.of(manifest));
+        when(regattaRepository.findRegattaEndAt(regattaId)).thenReturn(Optional.of(Instant.now().minus(10, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId)).thenReturn(false);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId)).thenReturn(false);
         
         // Mock evaluator to indicate no action needed
         LineScanRetentionEvaluator.EvaluationResult evalResult = 
             LineScanRetentionEvaluator.EvaluationResult.noAction();
-        when(evaluator.evaluate(eq(manifest), eq(false), eq(false), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest), any(), eq(false), eq(false), any(Instant.class)))
             .thenReturn(evalResult);
         
         scheduler.evaluateAndPrune();
@@ -268,7 +273,7 @@ class LineScanRetentionSchedulerTest {
         scheduler.evaluateAndPrune();
         
         // Verify evaluator was never called for pruned manifest
-        verify(evaluator, never()).evaluate(any(), anyBoolean(), anyBoolean(), any());
+        verify(evaluator, never()).evaluate(any(), any(), anyBoolean(), anyBoolean(), any());
         verify(pruningService, never()).prune(any(), any());
     }
     
@@ -284,26 +289,28 @@ class LineScanRetentionSchedulerTest {
             .thenReturn(List.of(manifest1, manifest2));
         
         // Regatta 1: not archived, not approved
+        when(regattaRepository.findRegattaEndAt(regattaId1)).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId1)).thenReturn(false);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId1)).thenReturn(false);
         
         // Regatta 2: archived and approved
+        when(regattaRepository.findRegattaEndAt(regattaId2)).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(regattaId2)).thenReturn(true);
         when(entryRepository.areAllEntriesApprovedForRegatta(regattaId2)).thenReturn(true);
         when(markerRepository.findApprovedByRegattaId(regattaId2)).thenReturn(List.of());
         
         // Mock evaluator results
-        when(evaluator.evaluate(eq(manifest1), eq(false), eq(false), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest1), any(), eq(false), eq(false), any(Instant.class)))
             .thenReturn(LineScanRetentionEvaluator.EvaluationResult.needsAlert("Test alert"));
-        when(evaluator.evaluate(eq(manifest2), eq(true), eq(true), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest2), any(), eq(true), eq(true), any(Instant.class)))
             .thenReturn(LineScanRetentionEvaluator.EvaluationResult.readyToPrune(List.of()));
         when(evaluator.getMarkerWindows(any(), anyInt())).thenReturn(List.of());
         
         scheduler.evaluateAndPrune();
         
         // Verify both manifests were evaluated
-        verify(evaluator).evaluate(eq(manifest1), eq(false), eq(false), any(Instant.class));
-        verify(evaluator).evaluate(eq(manifest2), eq(true), eq(true), any(Instant.class));
+        verify(evaluator).evaluate(eq(manifest1), any(), eq(false), eq(false), any(Instant.class));
+        verify(evaluator).evaluate(eq(manifest2), any(), eq(true), eq(true), any(Instant.class));
         
         // Verify only manifest2 was pruned
         verify(pruningService).prune(eq(manifest2), anyList());
@@ -321,16 +328,17 @@ class LineScanRetentionSchedulerTest {
         when(manifestRepository.findByRetentionStateIn(anyList()))
             .thenReturn(List.of(manifest1, manifest2));
         
+        when(regattaRepository.findRegattaEndAt(any())).thenReturn(Optional.of(Instant.now().minus(20, ChronoUnit.DAYS)));
         when(regattaRepository.isArchived(any())).thenReturn(true);
         when(entryRepository.areAllEntriesApprovedForRegatta(any())).thenReturn(true);
         when(markerRepository.findApprovedByRegattaId(any())).thenReturn(List.of());
         
         // First manifest throws exception during evaluation
-        when(evaluator.evaluate(eq(manifest1), anyBoolean(), anyBoolean(), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest1), any(), anyBoolean(), anyBoolean(), any(Instant.class)))
             .thenThrow(new RuntimeException("Test exception"));
         
         // Second manifest should still be evaluated
-        when(evaluator.evaluate(eq(manifest2), anyBoolean(), anyBoolean(), any(Instant.class)))
+        when(evaluator.evaluate(eq(manifest2), any(), anyBoolean(), anyBoolean(), any(Instant.class)))
             .thenReturn(LineScanRetentionEvaluator.EvaluationResult.readyToPrune(List.of()));
         when(evaluator.getMarkerWindows(any(), anyInt())).thenReturn(List.of());
         

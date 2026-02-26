@@ -100,6 +100,7 @@ public class LineScanRetentionEvaluator {
      * Evaluates a manifest to determine retention actions.
      * 
      * @param manifest The manifest to evaluate
+     * @param regattaEndAt Regatta end timestamp used as retention delay anchor
      * @param regattaArchived Whether the regatta is archived
      * @param allEntriesApproved Whether all entries are approved
      * @param now Current time for deterministic evaluation
@@ -107,6 +108,7 @@ public class LineScanRetentionEvaluator {
      */
     public EvaluationResult evaluate(
         LineScanManifest manifest,
+        Instant regattaEndAt,
         boolean regattaArchived,
         boolean allEntriesApproved,
         Instant now
@@ -125,9 +127,11 @@ public class LineScanRetentionEvaluator {
             );
         }
         
-        // Check if delay period has elapsed
-        Instant pruneEligibleAt = manifest.getCreatedAt().plus(manifest.getRetentionDays(), ChronoUnit.DAYS);
-        boolean delayElapsed = !now.isBefore(pruneEligibleAt);
+        // Delay starts after regatta end. If end timestamp is missing, keep full data.
+        Instant pruneEligibleAt = regattaEndAt != null
+            ? regattaEndAt.plus(manifest.getRetentionDays(), ChronoUnit.DAYS)
+            : null;
+        boolean delayElapsed = pruneEligibleAt != null && !now.isBefore(pruneEligibleAt);
         
         // Check safety gates
         boolean gatesSatisfied = regattaArchived || allEntriesApproved;
@@ -153,6 +157,17 @@ public class LineScanRetentionEvaluator {
                 );
                 
             case PENDING_DELAY:
+                if (!delayElapsed) {
+                    // Existing records may still be in this state; do not alert before delay window.
+                    return new EvaluationResult(
+                        LineScanManifest.RetentionState.PENDING_DELAY,
+                        false,
+                        false,
+                        null,
+                        pruneEligibleAt,
+                        null
+                    );
+                }
                 if (gatesSatisfied) {
                     // Gates satisfied - transition to ELIGIBLE
                     return EvaluationResult.transitionTo(

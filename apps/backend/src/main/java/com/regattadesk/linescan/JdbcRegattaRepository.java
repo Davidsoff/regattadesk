@@ -8,6 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -44,6 +47,33 @@ public class JdbcRegattaRepository implements RegattaRepository {
             
         } catch (SQLException e) {
             throw new RuntimeException("Database error checking regatta archived status", e);
+        }
+    }
+
+    @Override
+    public Optional<Instant> findRegattaEndAt(UUID regattaId) {
+        String sql = """
+            SELECT regatta_end_at FROM regattas WHERE id = ?
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, regattaId);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()) {
+                return Optional.empty();
+            }
+
+            Timestamp regattaEndAt = rs.getTimestamp("regatta_end_at");
+            if (regattaEndAt == null) {
+                return Optional.empty();
+            }
+
+            return Optional.of(regattaEndAt.toInstant());
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error reading regatta end timestamp", e);
         }
     }
 }

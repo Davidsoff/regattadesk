@@ -1,5 +1,7 @@
 package com.regattadesk.linescan;
 
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -15,4 +17,12 @@ public interface RegattaRepository {
      * @return true if regatta is archived
      */
     boolean isArchived(UUID regattaId);
+
+    /**
+     * Find configured regatta end timestamp.
+     *
+     * @param regattaId The regatta ID
+     * @return regatta end time when configured
+     */
+    Optional<Instant> findRegattaEndAt(UUID regattaId);
 }

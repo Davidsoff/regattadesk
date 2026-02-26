@@ -122,12 +122,14 @@ public class LineScanRetentionScheduler {
     @Transactional
     protected ActionResult evaluateAndPruneManifest(LineScanManifest manifest, Instant now) {
         // Check safety gates
+        Instant regattaEndAt = regattaRepository.findRegattaEndAt(manifest.getRegattaId()).orElse(null);
         boolean regattaArchived = regattaRepository.isArchived(manifest.getRegattaId());
         boolean allEntriesApproved = entryRepository.areAllEntriesApprovedForRegatta(manifest.getRegattaId());
         
         // Evaluate retention state
         LineScanRetentionEvaluator.EvaluationResult result = evaluator.evaluate(
             manifest,
+            regattaEndAt,
             regattaArchived,
             allEntriesApproved,
             now
