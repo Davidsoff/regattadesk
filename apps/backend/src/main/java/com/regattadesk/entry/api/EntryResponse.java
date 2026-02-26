@@ -39,7 +39,16 @@ public record EntryResponse(
     String paidBy,
     
     @JsonProperty("payment_reference")
-    String paymentReference
+    String paymentReference,
+
+    @JsonProperty("marker_start_time_ms")
+    Long markerStartTimeMs,
+
+    @JsonProperty("marker_finish_time_ms")
+    Long markerFinishTimeMs,
+
+    @JsonProperty("completion_status")
+    String completionStatus
 ) {
     public static EntryResponse from(EntryDto dto) {
         return new EntryResponse(
@@ -53,7 +62,10 @@ public record EntryResponse(
             dto.paymentStatus(),
             dto.paidAt(),
             dto.paidBy(),
-            dto.paymentReference()
+            dto.paymentReference(),
+            dto.markerStartTimeMs(),
+            dto.markerFinishTimeMs(),
+            dto.completionStatus()
         );
     }
 }

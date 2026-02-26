@@ -13,11 +13,16 @@ Operator authentication artifacts, line-scan ingest/retrieval, offline-first ope
 - `PUT /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
 - `GET /api/v1/regattas/{regatta_id}/line_scan/tiles/{tile_id}`
 - Implement marker CRUD for captured line-scan data.
+- Support marker approval state transitions (`is_approved`) during review/edit flows.
 - Implement Operator PWA offline shell.
 - Implement local queue and sync protocol for offline-to-online transitions.
 - Implement conflict policy handling (last-write-wins or manual resolution).
 - Implement marker linking to entries with start/finish times.
 - Implement entry completion rule and approval gates.
+- Apply completion states from linked marker evidence:
+  - `incomplete`: fewer than two linked markers
+  - `pending_approval`: at least two linked markers but fewer than two approved markers
+  - `completed`: at least two approved linked markers with derived start/finish timestamps
 - Implement retention-pruning workflow for line-scan data.
 
 ## Non-Functional Features to Implement

@@ -5,6 +5,7 @@ import com.regattadesk.eventstore.DomainEvent;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.eventstore.EventMetadata;
 import com.regattadesk.eventstore.EventStore;
+import com.regattadesk.linescan.MarkerCompletionEvaluator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -195,7 +196,10 @@ public class EntryService {
             rs.getString("payment_status"),
             paidAt,
             rs.getString("paid_by"),
-            rs.getString("payment_reference")
+            rs.getString("payment_reference"),
+            rs.getObject("marker_start_time_ms", Long.class),
+            rs.getObject("marker_finish_time_ms", Long.class),
+            rs.getString("completion_status")
         );
     }
 
@@ -211,7 +215,10 @@ public class EntryService {
             aggregate.getPaymentStatus(),
             aggregate.getPaidAt(),
             aggregate.getPaidBy(),
-            aggregate.getPaymentReference()
+            aggregate.getPaymentReference(),
+            null,
+            null,
+            MarkerCompletionEvaluator.STATUS_INCOMPLETE
         );
     }
 }
