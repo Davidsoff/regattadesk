@@ -1,5 +1,6 @@
 package com.regattadesk.linescan;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,4 +23,10 @@ public interface LineScanManifestRepository {
      * Find a manifest by capture session ID.
      */
     Optional<LineScanManifest> findByCaptureSessionId(UUID captureSessionId);
+    
+    /**
+     * Find all manifests with retention states in the given list.
+     * Used by retention scheduler to find manifests needing evaluation.
+     */
+    List<LineScanManifest> findByRetentionStateIn(List<LineScanManifest.RetentionState> states);
 }

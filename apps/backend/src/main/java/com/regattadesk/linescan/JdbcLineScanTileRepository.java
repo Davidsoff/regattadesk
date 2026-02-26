@@ -246,6 +246,34 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
         }
     }
     
+    @Override
+    public void deleteByIds(List<UUID> tileIds) {
+        if (tileIds == null || tileIds.isEmpty()) {
+            return;
+        }
+        
+        // Build IN clause dynamically
+        String placeholders = String.join(",", tileIds.stream()
+            .map(id -> "?")
+            .toList());
+        
+        String sql = "DELETE FROM line_scan_tiles WHERE id IN (%s)".formatted(placeholders);
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            // Set parameters for IN clause
+            for (int i = 0; i < tileIds.size(); i++) {
+                stmt.setObject(i + 1, tileIds.get(i));
+            }
+            
+            stmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error deleting tiles by IDs", e);
+        }
+    }
+    
     private LineScanTileMetadata mapResultSetToMetadata(ResultSet rs) throws SQLException {
         Timestamp createdAt = rs.getTimestamp("created_at");
         Timestamp updatedAt = rs.getTimestamp("updated_at");

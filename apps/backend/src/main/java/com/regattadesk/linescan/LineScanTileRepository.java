@@ -39,4 +39,10 @@ public interface LineScanTileRepository {
      * Delete all tiles for a manifest.
      */
     void deleteByManifestId(UUID manifestId);
+    
+    /**
+     * Delete tiles by their IDs.
+     * Used during pruning to remove tiles outside marker windows.
+     */
+    void deleteByIds(List<UUID> tileIds);
 }
