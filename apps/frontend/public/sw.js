@@ -122,6 +122,19 @@ self.addEventListener('fetch', (event) => {
  */
 self.addEventListener('message', (event) => {
   const { type } = event.data || {};
+  const sourceUrl = event.source && 'url' in event.source ? event.source.url : null;
+
+  if (sourceUrl) {
+    try {
+      if (new URL(sourceUrl).origin !== self.location.origin) {
+        console.warn('[SW] Ignoring cross-origin message source');
+        return;
+      }
+    } catch (error) {
+      console.warn('[SW] Ignoring message with invalid source URL');
+      return;
+    }
+  }
 
   switch (type) {
     case 'SYNC_QUEUE':
