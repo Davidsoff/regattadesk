@@ -84,13 +84,10 @@ export function createSseConnection(url, options = {}) {
       return
     }
     
-    // Build URL with Last-Event-ID if we have one
-    const connectionUrl = lastEventId 
-      ? `${url}?lastEventId=${encodeURIComponent(lastEventId)}`
-      : url
-    
+    // EventSource automatically sends Last-Event-ID header on reconnection
+    // Browser handles this transparently when EventSource reconnects
     try {
-      eventSource = new EventSource(connectionUrl, {
+      eventSource = new EventSource(url, {
         withCredentials: true
       })
       

@@ -1,5 +1,6 @@
 package com.regattadesk.sse;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.jwt.JwtTokenService;
 import com.regattadesk.jwt.JwtTokenService.InvalidTokenException;
@@ -63,7 +64,6 @@ public class RegattaSseResource {
      * 
      * @param regattaId the regatta UUID
      * @param sessionCookie the public session cookie
-     * @param lastEventId optional Last-Event-ID header for reconnection
      * @return SSE stream or error response
      */
     @GET
@@ -71,8 +71,7 @@ public class RegattaSseResource {
     @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<String> streamEvents(
             @PathParam("regatta_id") UUID regattaId,
-            @CookieParam(COOKIE_NAME) Cookie sessionCookie,
-            @HeaderParam("Last-Event-ID") String lastEventId) {
+            @CookieParam(COOKIE_NAME) Cookie sessionCookie) {
         
         // Validate session cookie
         if (!isValidSession(sessionCookie)) {
@@ -138,11 +137,34 @@ public class RegattaSseResource {
         // Get the stream from publisher
         Multi<String> stream = ssePublisher.getStream(regattaId);
         
-        // Send initial snapshot event
-        ssePublisher.broadcastSnapshot(regattaId, revisions.drawRevision, revisions.resultsRevision);
+        // Prepend snapshot event before joining the broadcast stream
+        String snapshotEventId = SseEventIdGenerator.generate(
+            regattaId, revisions.drawRevision, revisions.resultsRevision, 0
+        );
+        SseEvent snapshotEvent = new SseEvent(revisions.drawRevision, revisions.resultsRevision);
+        String snapshotMessage;
+        try {
+            String data = new ObjectMapper().writeValueAsString(snapshotEvent);
+            snapshotMessage = String.format("id: %s\nevent: snapshot\ndata: %s\n\n", 
+                                          snapshotEventId, data);
+        } catch (Exception e) {
+            LOG.errorf(e, "Failed to serialize snapshot event for regatta %s", regattaId);
+            return Multi.createFrom().failure(
+                new WebApplicationException(
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                        .entity(ErrorResponse.internalError("Failed to create snapshot"))
+                        .build()
+                )
+            );
+        }
+        
+        // Return stream with snapshot prepended
+        Multi<String> snapshotFirst = Multi.createFrom().item(snapshotMessage);
+        Multi<String> combinedStream = Multi.createBy().concatenating()
+            .streams(snapshotFirst, stream);
         
         // Decrement connection count when stream completes or fails
-        return stream
+        return combinedStream
             .onTermination().invoke(() -> {
                 int remaining = connectionCount.decrementAndGet();
                 LOG.infof("SSE connection closed for regatta %s (remaining: %d)", 

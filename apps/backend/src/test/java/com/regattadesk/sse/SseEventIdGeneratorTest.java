@@ -223,8 +223,16 @@ class SseEventIdGeneratorTest {
         String id3 = SseEventIdGenerator.generate(regattaId, 2, 2, 0);
         
         // IDs should be comparable by their components
-        assertTrue(SseEventIdGenerator.parseDrawRevision(id1) < SseEventIdGenerator.parseDrawRevision(id2));
-        assertTrue(SseEventIdGenerator.parseDrawRevision(id2) == SseEventIdGenerator.parseDrawRevision(id3));
-        assertTrue(SseEventIdGenerator.parseResultsRevision(id2) < SseEventIdGenerator.parseResultsRevision(id3));
+        int drawRev1 = SseEventIdGenerator.parseDrawRevision(id1);
+        int drawRev2 = SseEventIdGenerator.parseDrawRevision(id2);
+        int drawRev3 = SseEventIdGenerator.parseDrawRevision(id3);
+        
+        assertTrue(drawRev1 < drawRev2);
+        assertEquals(drawRev2, drawRev3);
+        
+        int resultsRev2 = SseEventIdGenerator.parseResultsRevision(id2);
+        int resultsRev3 = SseEventIdGenerator.parseResultsRevision(id3);
+        
+        assertTrue(resultsRev2 < resultsRev3);
     }
 }
