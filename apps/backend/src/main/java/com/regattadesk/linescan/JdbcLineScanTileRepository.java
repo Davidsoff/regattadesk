@@ -252,25 +252,33 @@ public class JdbcLineScanTileRepository implements LineScanTileRepository {
             return;
         }
         
-        // Build IN clause dynamically
-        String placeholders = String.join(",", tileIds.stream()
-            .map(id -> "?")
-            .toList());
-        
-        String sql = "DELETE FROM line_scan_tiles WHERE id IN (%s)".formatted(placeholders);
-        
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        // Process in batches to avoid exceeding database query limits
+        // Maximum 1000 items per batch
+        int batchSize = 1000;
+        for (int i = 0; i < tileIds.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, tileIds.size());
+            List<UUID> batch = tileIds.subList(i, end);
             
-            // Set parameters for IN clause
-            for (int i = 0; i < tileIds.size(); i++) {
-                stmt.setObject(i + 1, tileIds.get(i));
+            // Build IN clause dynamically for this batch
+            String placeholders = String.join(",", batch.stream()
+                .map(id -> "?")
+                .toList());
+            
+            String sql = "DELETE FROM line_scan_tiles WHERE id IN (%s)".formatted(placeholders);
+            
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(sql)) {
+                
+                // Set parameters for IN clause
+                for (int j = 0; j < batch.size(); j++) {
+                    stmt.setObject(j + 1, batch.get(j));
+                }
+                
+                stmt.executeUpdate();
+                
+            } catch (SQLException e) {
+                throw new RuntimeException("Database error deleting tiles batch starting at index " + i, e);
             }
-            
-            stmt.executeUpdate();
-            
-        } catch (SQLException e) {
-            throw new RuntimeException("Database error deleting tiles by IDs", e);
         }
     }
     

@@ -45,7 +45,8 @@ public class JdbcEntryRepository implements EntryRepository {
                 
                 // All entries approved means:
                 // - Either no active entries (totalCount == 0), return true
-                // - Or all active entries are completed
+                // - Or all active entries are completed (totalCount == completedCount)
+                // Active entries: entries not withdrawn (excluded by WHERE clause)
                 return totalCount == 0 || totalCount == completedCount;
             }
             

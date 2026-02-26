@@ -100,8 +100,10 @@ public class LineScanPruningService {
             manifest.getId(), tilesToKeep.size(), tilesToDelete.size());
         
         // Delete tiles from MinIO storage
+        // Convert to Set for O(1) lookup performance
+        java.util.Set<UUID> tilesToDeleteSet = new java.util.HashSet<>(tilesToDelete);
         for (LineScanTileMetadata tile : allTiles) {
-            if (tilesToDelete.contains(tile.getId())) {
+            if (tilesToDeleteSet.contains(tile.getId())) {
                 try {
                     storageAdapter.deleteTile(
                         manifest.getRegattaId(),

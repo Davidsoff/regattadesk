@@ -88,16 +88,12 @@ public class LineScanRetentionScheduler {
         
         for (LineScanManifest manifest : manifests) {
             try {
-                boolean result = evaluateAndPruneManifest(manifest, now);
-                if (result) {
-                    // Check what action was taken by examining the evaluation result
-                    LineScanManifest updated = manifestRepository.findById(manifest.getId())
-                        .orElse(manifest);
-                    if (updated.getRetentionState() == LineScanManifest.RetentionState.PRUNED) {
-                        pruned++;
-                    } else if (!updated.getRetentionState().equals(manifest.getRetentionState())) {
-                        transitioned++;
-                    }
+                ActionResult result = evaluateAndPruneManifest(manifest, now);
+                switch (result) {
+                    case PRUNED -> pruned++;
+                    case TRANSITIONED -> transitioned++;
+                    case ALERTED -> alerted++;
+                    case NO_ACTION -> {}
                 }
             } catch (Exception e) {
                 LOG.errorf(e, "Error evaluating manifest %s, continuing with others", manifest.getId());
@@ -109,15 +105,22 @@ public class LineScanRetentionScheduler {
             transitioned, pruned, alerted, errors);
     }
     
+    private enum ActionResult {
+        NO_ACTION,
+        TRANSITIONED,
+        PRUNED,
+        ALERTED
+    }
+    
     /**
      * Evaluates and processes a single manifest.
      * 
      * @param manifest The manifest to evaluate
      * @param now Current timestamp for evaluation
-     * @return true if action was taken (state change or pruning)
+     * @return ActionResult indicating what action was taken
      */
     @Transactional
-    protected boolean evaluateAndPruneManifest(LineScanManifest manifest, Instant now) {
+    protected ActionResult evaluateAndPruneManifest(LineScanManifest manifest, Instant now) {
         // Check safety gates
         boolean regattaArchived = regattaRepository.isArchived(manifest.getRegattaId());
         boolean allEntriesApproved = entryRepository.areAllEntriesApprovedForRegatta(manifest.getRegattaId());
@@ -133,23 +136,23 @@ public class LineScanRetentionScheduler {
         // Handle alert condition
         if (result.getAlertReason() != null) {
             emitAdminAlert(manifest, result.getAlertReason());
-            return false;
+            return ActionResult.ALERTED;
         }
         
         // Handle state transition
         if (result.shouldTransitionState()) {
             transitionManifestState(manifest, result);
-            return true;
+            return ActionResult.TRANSITIONED;
         }
         
         // Handle pruning
         if (result.shouldPrune()) {
             executeManifestPruning(manifest);
-            return true;
+            return ActionResult.PRUNED;
         }
         
         // No action needed
-        return false;
+        return ActionResult.NO_ACTION;
     }
     
     private void transitionManifestState(

@@ -203,7 +203,9 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             return List.of();
         }
         
-        // Build IN clause dynamically
+        // Note: The number of retention states is bounded (currently 4 states: 
+        // FULL_RETAINED, PENDING_DELAY, ELIGIBLE_WAITING_ARCHIVE_OR_APPROVALS, PRUNED)
+        // so dynamic SQL construction is safe here.
         String placeholders = String.join(",", states.stream()
             .map(s -> "?")
             .toList());
