@@ -6,11 +6,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import javax.sql.DataSource;
 import jakarta.inject.Inject;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
@@ -30,7 +26,7 @@ public class PublicVersionedScheduleResource {
     private static final Logger LOG = Logger.getLogger(PublicVersionedScheduleResource.class);
     
     @Inject
-    DataSource dataSource;
+    RegattaVersionRepository versionRepository;
     
     /**
      * Get the schedule for a regatta at a specific version.
@@ -52,7 +48,7 @@ public class PublicVersionedScheduleResource {
         
         try {
             // Verify the regatta exists and check current versions
-            RegattaVersionInfo versionInfo = fetchRegattaVersionInfo(regattaId);
+            RegattaVersionRepository.VersionInfo versionInfo = versionRepository.fetchVersionInfo(regattaId);
             
             if (versionInfo == null) {
                 return Response.status(Response.Status.NOT_FOUND)
@@ -82,29 +78,6 @@ public class PublicVersionedScheduleResource {
     }
     
     /**
-     * Fetches version information for a regatta.
-     */
-    private RegattaVersionInfo fetchRegattaVersionInfo(UUID regattaId) throws SQLException {
-        String sql = "SELECT draw_revision, results_revision FROM regattas WHERE id = ?";
-        
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setObject(1, regattaId);
-            
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return new RegattaVersionInfo(
-                        rs.getInt("draw_revision"),
-                        rs.getInt("results_revision")
-                    );
-                }
-                return null;
-            }
-        }
-    }
-    
-    /**
      * Response DTO for schedule endpoint.
      */
     public record ScheduleResponse(
@@ -113,9 +86,4 @@ public class PublicVersionedScheduleResource {
         int resultsRevision,
         String scheduleData
     ) {}
-    
-    /**
-     * Internal DTO for regatta version information.
-     */
-    private record RegattaVersionInfo(int drawRevision, int resultsRevision) {}
 }
