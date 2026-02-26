@@ -8,36 +8,66 @@
 import { ref, computed } from 'vue';
 
 let installPromptEvent = null;
-let isInitialized = false;
+let isInstallableState = null;
+let platformState = null;
+let listenersRegistered = false;
+
+function hasNavigator() {
+  return typeof navigator !== 'undefined';
+}
+
+function hasWindow() {
+  return typeof window !== 'undefined';
+}
+
+function detectPlatformValue() {
+  if (!hasNavigator()) {
+    return 'desktop';
+  }
+
+  const ua = navigator.userAgent || '';
+  const p = navigator.platform || '';
+
+  if (/iPhone|iPad|iPod/.test(ua) || /iPhone|iPad|iPod/.test(p)) {
+    return 'ios';
+  }
+
+  if (/Android/.test(ua)) {
+    return 'android';
+  }
+
+  return 'desktop';
+}
+
+function setupListeners(handleBeforeInstallPrompt, handleAppInstalled) {
+  if (!hasWindow() || listenersRegistered) {
+    return;
+  }
+
+  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  window.addEventListener('appinstalled', handleAppInstalled);
+  listenersRegistered = true;
+}
 
 export function usePWAInstall() {
-  const isInstallable = ref(false);
-  
-  // Detect platform immediately
-  function detectPlatformValue() {
-    const ua = navigator.userAgent || '';
-    const p = navigator.platform || '';
-
-    if (/iPhone|iPad|iPod/.test(ua) || /iPhone|iPad|iPod/.test(p)) {
-      return 'ios';
-    } else if (/Android/.test(ua)) {
-      return 'android';
-    } else {
-      return 'desktop';
-    }
+  if (!isInstallableState) {
+    isInstallableState = ref(false);
   }
-  
-  const platform = ref(detectPlatformValue());
+
+  if (!platformState) {
+    platformState = ref(detectPlatformValue());
+  }
+
+  const isInstallable = isInstallableState;
+  const platform = platformState;
 
   // Detect if already installed
   const isInstalled = computed(() => {
-    // Check for standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (hasWindow() && typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) {
       return true;
     }
-    
-    // Check iOS standalone mode
-    if (navigator.standalone === true) {
+
+    if (hasNavigator() && navigator.standalone === true) {
       return true;
     }
 
@@ -91,22 +121,15 @@ export function usePWAInstall() {
   }
 
   function cleanup() {
-    if (typeof window !== 'undefined') {
+    if (hasWindow()) {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      listenersRegistered = false;
     }
   }
 
-  // Set up event listeners immediately (not in onMounted for SSR compatibility)
-  if (typeof window !== 'undefined') {
-    detectPlatform();
-    
-    // Listen for beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    
-    // Listen for appinstalled event
-    window.addEventListener('appinstalled', handleAppInstalled);
-  }
+  detectPlatform();
+  setupListeners(handleBeforeInstallPrompt, handleAppInstalled);
 
   return {
     isInstallable,

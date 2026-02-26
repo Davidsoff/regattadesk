@@ -5,7 +5,7 @@
  * Defaults to high-contrast mode with per-device persistence.
  */
 
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 
 const STORAGE_KEY_CONTRAST = 'regattadesk-operator-contrast';
 const STORAGE_KEY_DENSITY = 'regattadesk-operator-density';
@@ -16,15 +16,25 @@ const VALID_DENSITY_VALUES = ['comfortable', 'compact', 'spacious'];
 let contrastState = null;
 let densityState = null;
 
+function canUseLocalStorage() {
+  return typeof localStorage !== 'undefined';
+}
+
+function canUseDocument() {
+  return typeof document !== 'undefined';
+}
+
 function initializeContrast() {
   if (contrastState) return contrastState;
 
   let initial = 'high'; // Default to high-contrast for operators
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_CONTRAST);
-    if (stored && VALID_CONTRAST_VALUES.includes(stored)) {
-      initial = stored;
+    if (canUseLocalStorage()) {
+      const stored = localStorage.getItem(STORAGE_KEY_CONTRAST);
+      if (stored && VALID_CONTRAST_VALUES.includes(stored)) {
+        initial = stored;
+      }
     }
   } catch (error) {
     console.warn('Failed to read operator contrast from localStorage:', error);
@@ -32,8 +42,9 @@ function initializeContrast() {
 
   contrastState = ref(initial);
   
-  // Apply to DOM immediately
-  document.documentElement.setAttribute('data-contrast', initial);
+  if (canUseDocument()) {
+    document.documentElement.setAttribute('data-contrast', initial);
+  }
 
   return contrastState;
 }
@@ -44,9 +55,11 @@ function initializeDensity() {
   let initial = 'comfortable'; // Default density
 
   try {
-    const stored = localStorage.getItem(STORAGE_KEY_DENSITY);
-    if (stored && VALID_DENSITY_VALUES.includes(stored)) {
-      initial = stored;
+    if (canUseLocalStorage()) {
+      const stored = localStorage.getItem(STORAGE_KEY_DENSITY);
+      if (stored && VALID_DENSITY_VALUES.includes(stored)) {
+        initial = stored;
+      }
     }
   } catch (error) {
     console.warn('Failed to read operator density from localStorage:', error);
@@ -54,8 +67,9 @@ function initializeDensity() {
 
   densityState = ref(initial);
   
-  // Apply to DOM immediately
-  document.documentElement.setAttribute('data-density', initial);
+  if (canUseDocument()) {
+    document.documentElement.setAttribute('data-density', initial);
+  }
 
   return densityState;
 }
@@ -73,10 +87,14 @@ export function useOperatorTheme() {
     }
 
     contrast.value = value;
-    document.documentElement.setAttribute('data-contrast', value);
+    if (canUseDocument()) {
+      document.documentElement.setAttribute('data-contrast', value);
+    }
 
     try {
-      localStorage.setItem(STORAGE_KEY_CONTRAST, value);
+      if (canUseLocalStorage()) {
+        localStorage.setItem(STORAGE_KEY_CONTRAST, value);
+      }
     } catch (error) {
       console.warn('Failed to persist operator contrast to localStorage:', error);
     }
@@ -89,10 +107,14 @@ export function useOperatorTheme() {
     }
 
     density.value = value;
-    document.documentElement.setAttribute('data-density', value);
+    if (canUseDocument()) {
+      document.documentElement.setAttribute('data-density', value);
+    }
 
     try {
-      localStorage.setItem(STORAGE_KEY_DENSITY, value);
+      if (canUseLocalStorage()) {
+        localStorage.setItem(STORAGE_KEY_DENSITY, value);
+      }
     } catch (error) {
       console.warn('Failed to persist operator density to localStorage:', error);
     }

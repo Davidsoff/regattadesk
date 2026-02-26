@@ -28,7 +28,7 @@ export function useServiceWorker() {
   const error = errorState;
 
   const isSupported = computed(() => {
-    return 'serviceWorker' in navigator;
+    return typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
   });
 
   function updateServiceWorkerState(sw) {
@@ -160,6 +160,10 @@ export function useServiceWorker() {
       }
     });
     messageListeners = [];
+    registrationState = null;
+    isRegisteredState = null;
+    stateRef = null;
+    errorState = null;
   }
 
   return {

@@ -16,8 +16,43 @@ let isReadyState = null;
 let errorState = null;
 let queueSizeState = null;
 
+function isIndexedDbAvailable() {
+  return typeof indexedDB !== 'undefined';
+}
+
+function sanitizeOperation(operation) {
+  if (!operation || typeof operation !== 'object' || Array.isArray(operation)) {
+    throw new Error('Invalid operation payload');
+  }
+
+  const allowedMethods = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
+  const method = typeof operation.method === 'string' ? operation.method.toUpperCase() : '';
+  if (!allowedMethods.has(method)) {
+    throw new Error('Invalid operation method');
+  }
+
+  if (typeof operation.endpoint !== 'string' || operation.endpoint.length === 0) {
+    throw new Error('Invalid operation endpoint');
+  }
+
+  return {
+    endpoint: operation.endpoint,
+    method,
+    data: operation.data ?? null,
+    timestamp: Number.isFinite(operation.timestamp) ? operation.timestamp : Date.now(),
+    clientVersion: operation.clientVersion,
+    maxRetries: operation.maxRetries,
+    conflictStrategy: operation.conflictStrategy,
+  };
+}
+
 function openDatabase() {
   return new Promise((resolve, reject) => {
+    if (!isIndexedDbAvailable()) {
+      reject(new Error('IndexedDB is not available in this environment'));
+      return;
+    }
+
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
@@ -83,6 +118,11 @@ export function useOfflineQueue() {
   const error = errorState;
   const queueSize = queueSizeState;
 
+  async function refreshQueueSize() {
+    const queue = await getQueueInternal();
+    queueSizeState.value = queue.length;
+  }
+
   async function getQueueInternal() {
     const db = await ensureDatabase();
     
@@ -103,21 +143,18 @@ export function useOfflineQueue() {
 
   async function enqueue(operation) {
     const db = await ensureDatabase();
+    const item = sanitizeOperation(operation);
     
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
-      
-      const item = {
-        ...operation,
-        timestamp: operation.timestamp || Date.now(),
-      };
-      
+
       const request = store.add(item);
 
       request.onsuccess = () => {
-        queueSizeState.value++;
-        resolve(request.result);
+        refreshQueueSize()
+          .then(() => resolve(request.result))
+          .catch(reject);
       };
 
       request.onerror = () => {
@@ -135,8 +172,9 @@ export function useOfflineQueue() {
       const request = store.delete(queueId);
 
       request.onsuccess = () => {
-        queueSizeState.value = Math.max(0, queueSizeState.value - 1);
-        resolve();
+        refreshQueueSize()
+          .then(() => resolve())
+          .catch(reject);
       };
 
       request.onerror = () => {
@@ -158,8 +196,9 @@ export function useOfflineQueue() {
       const request = store.clear();
 
       request.onsuccess = () => {
-        queueSizeState.value = 0;
-        resolve();
+        refreshQueueSize()
+          .then(() => resolve())
+          .catch(reject);
       };
 
       request.onerror = () => {
@@ -216,4 +255,11 @@ export function useOfflineQueue() {
     clearQueue,
     updateQueueItem,
   };
+}
+
+export function closeOfflineQueueDatabase() {
+  if (dbInstance) {
+    dbInstance.close();
+    dbInstance = null;
+  }
 }
