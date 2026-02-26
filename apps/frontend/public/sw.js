@@ -122,6 +122,12 @@ self.addEventListener('fetch', (event) => {
  */
 self.addEventListener('message', (event) => {
   const { type } = event.data || {};
+
+  if (event.origin && event.origin !== self.location.origin) {
+    console.warn('[SW] Ignoring cross-origin message');
+    return;
+  }
+
   const sourceUrl = event.source && 'url' in event.source ? event.source.url : null;
 
   if (sourceUrl) {
