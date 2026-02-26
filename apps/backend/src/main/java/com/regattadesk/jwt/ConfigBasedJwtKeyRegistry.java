@@ -1,6 +1,7 @@
 package com.regattadesk.jwt;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -35,9 +36,15 @@ public class ConfigBasedJwtKeyRegistry implements JwtKeyRegistry {
     
     @Inject
     public ConfigBasedJwtKeyRegistry(
-            Optional<JwtConfig> legacyConfig,
+            Instance<JwtConfig> legacyConfig,
             @ConfigProperty(name = "jwt.public.keys") Optional<Map<String, Map<String, String>>> keysConfig) {
-        
+        this(legacyConfig.isResolvable() ? Optional.of(legacyConfig.get()) : Optional.empty(), keysConfig);
+    }
+
+    ConfigBasedJwtKeyRegistry(
+            Optional<JwtConfig> legacyConfig,
+            Optional<Map<String, Map<String, String>>> keysConfig) {
+
         if (keysConfig.isPresent() && !keysConfig.get().isEmpty()) {
             // Multi-key configuration
             this.activeKeys = parseMultiKeyConfig(keysConfig.get());
