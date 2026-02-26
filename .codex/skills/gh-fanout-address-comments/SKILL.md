@@ -1,13 +1,13 @@
 ---
 name: gh-fanout-address-comments
-description: Orchestrate comment resolution across many open GitHub pull requests in one run. Use when you need to gather open PRs and delegate each PR to a subagent that runs the gh-address-comments skill for that PR.
+description: Orchestrate comment resolution across many open GitHub pull requests in one run. Use when you need to gather open PRs and delegate each PR to a subagent that runs the pr-address-comments skill for that PR.
 ---
 
 # GH Fanout Address Comments
 
 ## Overview
 
-Gather all open pull requests for the current repository, then spawn one subagent per PR to run the [gh-address-comments](/Users/david/.codex/skills/gh-address-comments/SKILL.md) workflow for that PR.
+Gather all open pull requests for the current repository, then spawn one subagent per PR to run the `pr-address-comments` skill for that PR.
 
 ## Workflow
 
@@ -19,10 +19,27 @@ gh auth status
 
 If auth fails, stop and ask the user to run `gh auth login`.
 
-2. Gather open PRs.
+2. Gather open PRs (with pagination).
 
 ```bash
-gh pr list --state open --limit 200 --json number,title,headRefName,author,url
+cursor=null
+while :; do
+  result=$(gh api graphql -f query='
+  query($owner:String!, $repo:String!, $cursor:String) {
+    repository(owner:$owner, name:$repo) {
+      pullRequests(states:OPEN, first:100, after:$cursor, orderBy:{field:CREATED_AT, direction:ASC}) {
+        pageInfo { hasNextPage endCursor }
+        nodes { number title headRefName author { login } url }
+      }
+    }
+  }' -f owner="$OWNER" -f repo="$REPO" -F cursor="$cursor")
+
+  # Process this page's PR nodes here.
+
+  has_next=$(printf '%s' "$result" | jq -r '.data.repository.pullRequests.pageInfo.hasNextPage')
+  cursor=$(printf '%s' "$result" | jq -r '.data.repository.pullRequests.pageInfo.endCursor')
+  [[ "$has_next" == "true" ]] || break
+done
 ```
 
 3. If no open PRs exist, report "No open PRs" and stop.
@@ -49,20 +66,20 @@ git worktree add /tmp/pr-<PR>-fanout <headRefName>
 
 For each PR, give the subagent:
 - The PR number
-- The requirement to run the `gh-address-comments` process for that PR
+- The requirement to run the `pr-address-comments` skill for that PR
 - A reminder to handle only that PR
 
 Subagent instruction template:
 
 ```text
-Use [$gh-address-comments](/Users/david/.codex/skills/gh-address-comments/SKILL.md) for PR #<N>.
+Use `$pr-address-comments` for PR #<N>.
 
 Run inside this dedicated worktree:
 - `/tmp/pr-<N>-fanout`
 
 Scope:
 - Work only on PR #<N>.
-- Address the PR comments per the skill workflow.
+- Address the PR comments per the `pr-address-comments` skill workflow.
 - Commit and push fixes to the PR branch.
 - Report blockers immediately.
 - Do not edit files outside `/tmp/pr-<N>-fanout`.
