@@ -75,8 +75,7 @@ This exposes:
 - Docker Engine 24.0+ or Docker Desktop
 - Docker Compose 2.24+
 - At least 4GB RAM available for Docker
-- Ports 80, 443, 8080 available on host
-- Optional (dev mode): Ports 5432, 9000, 9001, 16686, 9090 available
+- Ports 80, 443, 5432, 9000, 9001 available on host
 
 ## Building the Backend Image
 
@@ -165,9 +164,6 @@ This creates a container image using Jib, which optimizes the image layers witho
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - Authelia SSO: http://localhost.local/auth
-   - Traefik Dashboard: http://localhost:8080
-   
-   **Development mode only** (requires docker-compose.dev.yml):
    - MinIO Console: http://localhost:9001
    - PostgreSQL: localhost:5432 (use psql or database client)
 
@@ -249,7 +245,7 @@ For detailed information about the identity forwarding contract and trust bounda
 - **Image**: `traefik:v3.0`
 - **HTTP Port**: 80
 - **HTTPS Port**: 443
-- **Dashboard Port**: 8080
+- **Dashboard**: Not exposed (secure by default)
 - **Features**:
   - Automatic service discovery
   - Let's Encrypt (ACME) certificate management for TLS
@@ -379,23 +375,8 @@ Services show as "healthy" when ready.
 3. **Never commit `authelia/users_database.yml`** to version control
 4. **Use strong secrets** (min 32 characters) for Authelia
 5. **Configure HTTPS** in Traefik with Let's Encrypt (ACME) certificate resolver
-6. **Restrict Traefik dashboard** access
-7. **Review access control rules** in `authelia/configuration.yml`
-8. **Set Grafana credentials** - Required: `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` in `.env` (see [SECURITY-GRAFANA.md](./SECURITY-GRAFANA.md))
-
-**Edge Hardening (BC09-002):**
-- ✅ Rate limiting on all endpoints (public: 100 req/s, staff: 50 req/s, operator: 30 req/s)
-- ✅ Security headers (CSP, HSTS, X-Frame-Options, etc.)
-- ✅ Request size limits (10 MB max)
-- ✅ Timeout controls (30s/60s/90s)
-- ✅ Gzip compression for text responses
-
-**Test edge security:**
-```bash
-./edge-hardening-test.sh
-```
-
-**See also:** [Edge Security Documentation](../../docs/EDGE_SECURITY.md)
+6. **Review access control rules** in `authelia/configuration.yml`
+7. **Traefik dashboard**: Disabled by default for security. If needed, enable with authenticated middleware.
 
 ### Performance
 
@@ -416,18 +397,17 @@ docker compose exec minio mc mirror regattadesk/line-scan-tiles /backup/tiles
 
 ### Monitoring
 
-- **Traefik Dashboard**: http://localhost:8080
 - **Backend Health**: http://localhost/q/health
-- **Grafana**: http://localhost/grafana (when observability stack is enabled)
-- **PostgreSQL**: Use `docker compose exec postgres psql -U regattadesk` or enable docker-compose.dev.yml
-- **MinIO Console**: Enable docker-compose.dev.yml for http://localhost:9001
+- **PostgreSQL**: Connect with standard tools on port 5432
+- **MinIO Console**: http://localhost:9001
+- **Traefik**: Monitoring available via logs (`docker compose logs traefik`)
 
 ## Troubleshooting
 
 ### Services Won't Start
 
 1. **Check logs**: `docker compose logs`
-2. **Check ports**: Ensure 80, 443, 8080 are available (or 5432, 9000, 9001, etc. if using docker-compose.dev.yml)
+2. **Check ports**: Ensure 80, 443, 5432, 9000, 9001 are available
 3. **Check .env**: Ensure all required secrets are set
 4. **Check resources**: Ensure Docker has enough memory
 

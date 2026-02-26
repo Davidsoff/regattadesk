@@ -21,10 +21,10 @@
 3. **Traefik v3.0.4 (Reverse Proxy)**
    - Dynamic Docker provider configuration
    - File-based configuration support
-   - Dashboard on port 8080
+   - Dashboard disabled by default (security hardened)
    - HTTP/HTTPS entry points configured
    - Network segmentation: edge + internal
-   - Status: ✅ Running successfully
+   - Status: ✅ Running successfully (secured)
 
 ### Application Services (Configured, Build Pending)
 
@@ -66,7 +66,9 @@
 - `apps/frontend/nginx.conf` - Nginx configuration
 - `README.md` - Comprehensive documentation
 - `BUILD_ISSUES.md` - Known issues and solutions
-- `smoke-test.sh` - Automated testing script
+- `smoke-test.sh` - Automated testing script (includes security checks)
+- `security-test.sh` - Security regression testing script
+- `edge-auth-test.sh` - Authentication integration testing
 
 ## Network Architecture
 
@@ -99,9 +101,10 @@ Internet
 - 80: HTTP (Traefik)
 - 443: HTTPS (Traefik, configured but not used without TLS)
 - 5432: PostgreSQL (optional, for debugging)
-- 8080: Traefik dashboard
 - 9000: MinIO API
 - 9001: MinIO console
+
+**Security Note**: Traefik dashboard (port 8080) is not exposed by default for security. Can be enabled with authenticated middleware if needed.
 
 ## Environment Variables Required
 
@@ -220,9 +223,9 @@ docker compose logs -f
 ```
 
 ### Access Services
-- Traefik Dashboard: http://localhost:8080
 - MinIO Console: http://localhost:9001
 - Application: http://localhost.local (when running)
+- Traefik Dashboard: Not exposed (secure by default)
 
 ### Cleanup
 ```bash
@@ -256,6 +259,33 @@ docker compose down -v     # Also remove volumes
 ✅ Automated smoke test script  
 ✅ Infrastructure services validated and working  
 ⏸️ Full stack test pending build environment resolution  
+
+## Security Hardening
+
+### Traefik Dashboard Security (2026-02-14)
+
+**Issue**: Traefik was configured with insecure admin API enabled (`--api.insecure=true`) and dashboard port (8080) publicly exposed, creating an unauthenticated attack surface.
+
+**Changes Made**:
+1. Removed `--api.insecure=true` command flag from Traefik configuration
+2. Removed port 8080 publication from docker-compose.yml
+3. Updated all documentation to reflect secure configuration
+4. Added security regression test (`security-test.sh`) to verify dashboard is not accessible
+5. Updated smoke test and edge auth test to verify security posture
+
+**Security Impact**:
+- ✅ Traefik dashboard/API no longer publicly accessible by default
+- ✅ Reduced attack surface and improved security posture
+- ✅ Routing functionality unchanged (ports 80/443 still work)
+- ✅ Dashboard can be re-enabled later with proper authentication if needed
+
+**Testing**:
+```bash
+cd infra/compose
+./security-test.sh  # Runs security regression checks
+./smoke-test.sh     # Includes security verification
+./edge-auth-test.sh # Verifies dashboard is blocked
+```
 
 ---
 
