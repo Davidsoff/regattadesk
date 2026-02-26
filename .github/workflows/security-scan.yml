@@ -22,10 +22,10 @@ jobs:
         working-directory: apps/backend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: ${{ env.JAVA_DISTRIBUTION }}
@@ -40,7 +40,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload dependency check report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: backend-dependency-check-report
@@ -57,10 +57,10 @@ jobs:
         working-directory: apps/frontend
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -76,7 +76,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload npm audit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: frontend-npm-audit-report
@@ -90,19 +90,25 @@ jobs:
     strategy:
       matrix:
         # NOTE: Scanning actual images from docker-compose.yml
-        # Action items: Pin minio/minio and authelia/authelia to specific tags
-        # See docs/dependencies.md for tracking
+        # Images pinned to specific versions/releases for reproducibility
+        # Update procedure:
+        #   1. Check for new releases: MinIO (https://github.com/minio/minio/releases),
+        #      Authelia (https://github.com/authelia/authelia/releases)
+        #   2. Test new versions in docker-compose.yml first
+        #   3. Update tags here to match tested versions
+        #   4. Run security scan workflow to validate
         image:
           - postgres:16-alpine
-          - minio/minio:latest
+          - minio/minio:RELEASE.2025-10-15T17-29-55Z
           - traefik:v3.0
-          - authelia/authelia:latest
+          - authelia/authelia:4.38
     steps:
       - name: Pull image
         run: docker pull ${{ matrix.image }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        # Pinned to v0.34.0 commit for immutable behavior
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
         with:
           image-ref: ${{ matrix.image }}
           format: 'sarif'
@@ -110,7 +116,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: trivy-scan-${{ matrix.image }}
@@ -125,7 +131,7 @@ jobs:
     if: always()
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
 
       - name: Create summary report
         run: |
@@ -163,7 +169,7 @@ jobs:
           cat security-summary.md
 
       - name: Upload consolidated summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: security-scan-summary
           path: security-summary.md

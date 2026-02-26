@@ -2,7 +2,7 @@
 
 This document tracks all third-party dependencies used in RegattaDesk v0.1.
 
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-02-14
 
 ## Backend Dependencies (Maven/Quarkus)
 
@@ -55,14 +55,9 @@ This document tracks all third-party dependencies used in RegattaDesk v0.1.
 | Image | Tag/Version | Purpose | Update Frequency | Last Reviewed |
 |-------|-------------|---------|------------------|---------------|
 | postgres | 16-alpine | Database server | Quarterly for minor, annually for major | 2026-02-01 |
-| minio/minio | latest → specific tag needed | Object storage (S3-compatible) | Monthly | 2026-02-01 |
+| minio/minio | RELEASE.2025-10-15T17-29-55Z | Object storage (S3-compatible) | Monthly | 2026-02-14 |
 | traefik | v3.0 | Reverse proxy and edge router | Quarterly | 2026-02-01 |
-| authelia/authelia | latest → specific tag needed | Authentication and SSO | Monthly | 2026-02-01 |
-
-**Action Items:**
-- [ ] Pin MinIO to specific stable tag instead of `latest`
-- [ ] Pin Authelia to specific stable tag instead of `latest`
-- [ ] Document rationale for version choices
+| authelia/authelia | 4.38 | Authentication and SSO | Monthly | 2026-02-14 |
 
 ### Runtime Components
 
@@ -120,6 +115,11 @@ This document tracks all third-party dependencies used in RegattaDesk v0.1.
 - **Update strategy:** Test updates in staging first, roll out incrementally
 
 ## Update History
+
+### 2026-02-14
+- Pinned MinIO to `RELEASE.2025-10-15T17-29-55Z` (latest stable release)
+- Pinned Authelia to `4.38` (matching docker-compose.yml)
+- Updated security-scan.yml workflow to use immutable image tags and action refs
 
 ### 2026-02-13
 - Initial dependency inventory created
