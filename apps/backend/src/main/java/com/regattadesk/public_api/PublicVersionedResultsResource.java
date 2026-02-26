@@ -42,6 +42,12 @@ public class PublicVersionedResultsResource {
             @PathParam("draw") int drawRevision,
             @PathParam("results") int resultsRevision,
             @PathParam("regatta_id") UUID regattaId) {
+
+        if (drawRevision < 0 || resultsRevision < 0) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest("draw and results revisions must be non-negative"))
+                .build();
+        }
         
         LOG.infof("Fetching results for regatta %s at version v%d-%d", 
             regattaId, drawRevision, resultsRevision);
@@ -55,10 +61,13 @@ public class PublicVersionedResultsResource {
                     .entity(ErrorResponse.notFound("Regatta not found"))
                     .build();
             }
-            
-            // Check if requested version matches current version
-            // In a full implementation, we'd serve version-specific data
-            // For now, we just verify the regatta exists and return a simple response
+
+            if (drawRevision != versionInfo.drawRevision()
+                    || resultsRevision != versionInfo.resultsRevision()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Requested version not found for regatta"))
+                    .build();
+            }
             
             ResultsResponse results = new ResultsResponse(
                 regattaId,

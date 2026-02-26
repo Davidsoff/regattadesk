@@ -160,6 +160,18 @@ class PublicVersionedRouteResolverTest {
         assertEquals(3, version.drawRevision());
         assertEquals(5, version.resultsRevision());
     }
+
+    @Test
+    void testExtractVersionFromPath_WithoutLeadingSlash() {
+        PublicVersionedRouteResolver resolver = new PublicVersionedRouteResolver();
+
+        String path = "public/v3-5/regattas/123/schedule";
+        PublicVersionedRouteResolver.VersionTuple version = resolver.extractVersionFromPath(path);
+
+        assertNotNull(version);
+        assertEquals(3, version.drawRevision());
+        assertEquals(5, version.resultsRevision());
+    }
     
     @Test
     void testExtractVersionFromPath_InvalidPath() {

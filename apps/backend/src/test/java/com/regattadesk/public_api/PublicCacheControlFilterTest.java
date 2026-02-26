@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 
 /**
  * Integration tests for PublicCacheControlFilter.
@@ -41,6 +42,16 @@ class PublicCacheControlFilterTest {
             .then()
             .header("Cache-Control", equalTo("no-store, must-revalidate"));
     }
+
+    @Test
+    void testVersionedErrorResponse_DoesNotGetImmutableCache() {
+        given()
+            .when()
+            .get("/public/v1-2/test/error")
+            .then()
+            .statusCode(500)
+            .header("Cache-Control", nullValue());
+    }
     
     /**
      * Mock resource for testing versioned route cache headers.
@@ -64,6 +75,16 @@ class PublicCacheControlFilterTest {
                 @PathParam("draw") int drawRevision,
                 @PathParam("results") int resultsRevision) {
             return Response.ok("test results")
+                .build();
+        }
+
+        @GET
+        @Path("/v{draw}-{results}/test/error")
+        public Response getError(
+                @PathParam("draw") int drawRevision,
+                @PathParam("results") int resultsRevision) {
+            return Response.serverError()
+                .entity("test error")
                 .build();
         }
     }

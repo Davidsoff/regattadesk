@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class PublicVersionedRouteResolver {
     
     private static final String PUBLIC_PREFIX = "/public/";
-    private static final Pattern VERSION_PATTERN = Pattern.compile("^/public/v(\\d+)-(\\d+)/");
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^/?public/v(\\d+)-(\\d+)/");
     
     /**
      * Builds a versioned public path.

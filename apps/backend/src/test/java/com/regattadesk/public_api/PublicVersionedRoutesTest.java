@@ -74,7 +74,7 @@ class PublicVersionedRoutesTest {
             .when()
             .get(versionedPath)
             .then()
-            .statusCode(anyOf(is(200), is(404))) // 404 is acceptable if endpoint not fully implemented yet
+            .statusCode(200)
             .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
     }
     
@@ -89,7 +89,7 @@ class PublicVersionedRoutesTest {
             .when()
             .get(versionedPath)
             .then()
-            .statusCode(anyOf(is(200), is(404))) // 404 is acceptable if endpoint not fully implemented yet
+            .statusCode(200)
             .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
     }
     
@@ -101,20 +101,42 @@ class PublicVersionedRoutesTest {
         
         assertNotEquals(path1, path2, "Different version tuples must generate different URLs");
         
-        // Both should have the same cache policy regardless of version
+        // Stale versions are not served as immutable content
         given()
             .cookie(validSessionCookie)
             .when()
             .get(path1)
             .then()
-            .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
+            .statusCode(404);
         
+        // Current version should be cacheable as immutable content
         given()
             .cookie(validSessionCookie)
             .when()
             .get(path2)
             .then()
+            .statusCode(200)
             .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
+    }
+
+    @Test
+    void testVersionedRoute_WithNegativeRevision_ReturnsBadRequest() {
+        String schedulePath = String.format("/public/v%d-%d/regattas/%s/schedule", -1, 3, testRegattaId);
+        String resultsPath = String.format("/public/v%d-%d/regattas/%s/results", 2, -1, testRegattaId);
+
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(schedulePath)
+            .then()
+            .statusCode(400);
+
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(resultsPath)
+            .then()
+            .statusCode(400);
     }
     
     @Test

@@ -41,7 +41,7 @@ public class PublicCacheControlFilter implements ContainerResponseFilter {
             return;
         }
         
-        String cacheControl = determineCacheControl(path);
+        String cacheControl = determineCacheControl(path, responseContext.getStatus());
         
         if (cacheControl != null) {
             responseContext.getHeaders().putSingle(CACHE_CONTROL_HEADER, cacheControl);
@@ -55,7 +55,7 @@ public class PublicCacheControlFilter implements ContainerResponseFilter {
      * @param path the request path (without leading slash in JAX-RS)
      * @return the cache control header value, or null if no policy applies
      */
-    private String determineCacheControl(String path) {
+    private String determineCacheControl(String path, int statusCode) {
         // Normalize path - handle both with and without leading slash
         String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
         
@@ -71,6 +71,9 @@ public class PublicCacheControlFilter implements ContainerResponseFilter {
         
         // Match public/v{draw}-{results}/...
         if (normalizedPath.matches("^public/v\\d+-\\d+/.*")) {
+            if (statusCode < 200 || statusCode >= 300) {
+                return null;
+            }
             return CACHE_IMMUTABLE;
         }
         
