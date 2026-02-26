@@ -82,7 +82,9 @@ while :; do
 done
 ```
 
-Collect all threads where `isResolved: false` and `isOutdated: false`. If there are none, report "No open review threads." and stop.
+Collect all threads where `isResolved: false` (including both current and outdated threads). If there are none, report "No open review threads." and stop.
+
+For implementation work in step 6, focus on non-outdated (`isOutdated: false`) threads. Still keep outdated thread IDs in the working list so they are explicitly resolved in step 12.
 
 Print a summary:
 
@@ -133,12 +135,13 @@ Also read:
 
 ### 6. Implement all fixes
 
-Work through each open thread comment systematically:
+Work through each non-outdated open thread comment systematically:
 
 - **Read the comment body carefully** to understand what change is required.
 - **Apply the minimal correct fix**; do not refactor unrelated code.
 - If a comment includes a `suggestion` code block, use that as the implementation unless there is a clear reason not to.
 - If two comments require changes to the same file, batch them into a single edit pass on that file.
+- Do not add code changes solely for outdated threads unless they still reflect a real issue in current code.
 - After all edits, verify each changed file reads correctly.
 
 ### 7. Commit the changes
@@ -307,7 +310,7 @@ All review threads resolved. ✓
 
 - Ensure your GitHub token/app has Repository `Contents: Read and Write` permission before using `resolveReviewThread` / `unresolveReviewThread`; pull-request-only scopes can fail with "Resource not accessible by integration".
 - **Never** edit files in the main worktree; always work inside `/tmp/pr-<PR>-fix`.
-- **Never** skip a comment because it looks minor; address every open, non-outdated thread.
+- **Never** skip a thread because it looks minor; fix all open non-outdated threads and resolve all open outdated threads.
 - **Prefer the reviewer's suggested code** over a different implementation when one is provided.
 - **Do not** add unrelated refactoring or cleanup beyond what the comments ask for.
 - **Do not** force-push unless a rebase actually happened; use regular push otherwise.
