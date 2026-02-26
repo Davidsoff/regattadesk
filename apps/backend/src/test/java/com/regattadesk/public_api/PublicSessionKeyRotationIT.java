@@ -32,7 +32,9 @@ class PublicSessionKeyRotationIT {
     private static final String SESSION_ENDPOINT = "/public/session";
     private static final String VERSIONS_ENDPOINT = "/public/regattas/{regattaId}/versions";
     private static final String COOKIE_NAME = "regattadesk_public_session";
-    private static final String TEST_REGATTA_ID = "test-regatta-rotation";
+    
+    // Use a valid UUID format for the test regatta ID (doesn't need to exist)
+    private static final UUID TEST_REGATTA_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
     
     @Test
     void testKeyRotation_OldTokenStillValidDuringOverlap() {

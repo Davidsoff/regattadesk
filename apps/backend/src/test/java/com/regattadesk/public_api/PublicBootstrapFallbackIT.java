@@ -31,7 +31,9 @@ class PublicBootstrapFallbackIT {
     private static final String SESSION_ENDPOINT = "/public/session";
     private static final String VERSIONS_ENDPOINT = "/public/regattas/{regattaId}/versions";
     private static final String COOKIE_NAME = "regattadesk_public_session";
-    private static final String TEST_REGATTA_ID = "test-regatta-1";
+    
+    // Use a valid UUID format for the test regatta ID (doesn't need to exist)
+    private static final UUID TEST_REGATTA_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     
     @Test
     void testBootstrapFlow_NoSession_Gets401ThenEstablishesSession() {
@@ -54,8 +56,8 @@ class PublicBootstrapFallbackIT {
         Cookie sessionCookie = sessionResponse.getDetailedCookie(COOKIE_NAME);
         assertNotNull(sessionCookie, "Session cookie must be set");
         
-        // Step 3: Retry /versions with new session cookie -> expect 200 (or 404 if regatta doesn't exist)
-        // For this test, we expect 401/404 based on whether regatta exists, but cookie should be accepted
+        // Step 3: Retry /versions with new session cookie
+        // Either 404 (regatta not found) or 200 (regatta exists) - but not 401 (auth failed)
         int statusCode = given()
             .cookie(COOKIE_NAME, sessionCookie.getValue())
             .pathParam("regattaId", TEST_REGATTA_ID)
@@ -64,8 +66,9 @@ class PublicBootstrapFallbackIT {
             .then()
             .extract().statusCode();
         
-        // Either 404 (regatta not found) or 200 (regatta exists) - but not 401 (auth failed)
-        assertNotEquals(401, statusCode, "Should not get 401 with valid session cookie");
+        // Authentication should succeed, status depends on regatta existence
+        assertTrue(statusCode == 404 || statusCode == 200, 
+            "Expected 404 (not found) or 200 (found), but got: " + statusCode);
     }
     
     @Test
@@ -95,7 +98,7 @@ class PublicBootstrapFallbackIT {
         assertNotNull(newCookie, "Should issue new cookie for expired token");
         assertNotEquals(expiredToken, newCookie.getValue(), "Should be a new token");
         
-        // Step 3: Retry versions with new cookie
+        // Step 3: Retry versions with new cookie - auth should succeed
         int statusCode = given()
             .cookie(COOKIE_NAME, newCookie.getValue())
             .pathParam("regattaId", TEST_REGATTA_ID)
@@ -104,7 +107,9 @@ class PublicBootstrapFallbackIT {
             .then()
             .extract().statusCode();
         
-        assertNotEquals(401, statusCode, "Should not get 401 after session refresh");
+        // Either 404 (regatta not found) or 200 (regatta exists) - but not 401 (auth failed)
+        assertTrue(statusCode == 404 || statusCode == 200,
+            "Expected 404 (not found) or 200 (found) after valid session, but got: " + statusCode);
     }
     
     @Test
@@ -132,7 +137,7 @@ class PublicBootstrapFallbackIT {
         Cookie newCookie = sessionResponse.getDetailedCookie(COOKIE_NAME);
         assertNotNull(newCookie, "Should issue new cookie for invalid token");
         
-        // Step 3: Retry versions with new cookie
+        // Step 3: Retry versions with new cookie - auth should succeed
         int statusCode = given()
             .cookie(COOKIE_NAME, newCookie.getValue())
             .pathParam("regattaId", TEST_REGATTA_ID)
@@ -141,7 +146,9 @@ class PublicBootstrapFallbackIT {
             .then()
             .extract().statusCode();
         
-        assertNotEquals(401, statusCode, "Should not get 401 after session refresh");
+        // Either 404 (regatta not found) or 200 (regatta exists) - but not 401 (auth failed)
+        assertTrue(statusCode == 404 || statusCode == 200,
+            "Expected 404 (not found) or 200 (found) after valid session, but got: " + statusCode);
     }
     
     @Test
@@ -157,7 +164,7 @@ class PublicBootstrapFallbackIT {
         Cookie validCookie = sessionResponse.getDetailedCookie(COOKIE_NAME);
         assertNotNull(validCookie);
         
-        // Step 2: Access versions with valid token -> should succeed (not 401)
+        // Step 2: Access versions with valid token - authentication should succeed
         int statusCode = given()
             .cookie(COOKIE_NAME, validCookie.getValue())
             .pathParam("regattaId", TEST_REGATTA_ID)
@@ -166,7 +173,9 @@ class PublicBootstrapFallbackIT {
             .then()
             .extract().statusCode();
         
-        assertNotEquals(401, statusCode, "Valid token should not result in 401");
+        // Either 404 (regatta not found) or 200 (regatta exists) - but not 401 (auth failed)
+        assertTrue(statusCode == 404 || statusCode == 200,
+            "Expected 404 (not found) or 200 (found) with valid token, but got: " + statusCode);
     }
     
     @Test
@@ -182,7 +191,8 @@ class PublicBootstrapFallbackIT {
         Cookie cookie = sessionResponse.getDetailedCookie(COOKIE_NAME);
         assertNotNull(cookie);
         
-        // Multiple retries should all work
+        // Multiple retries should all work (same result)
+        Integer firstStatus = null;
         for (int i = 0; i < 3; i++) {
             int statusCode = given()
                 .cookie(COOKIE_NAME, cookie.getValue())
@@ -192,7 +202,15 @@ class PublicBootstrapFallbackIT {
                 .then()
                 .extract().statusCode();
             
-            assertNotEquals(401, statusCode, "Retry " + i + " should not get 401");
+            assertTrue(statusCode == 404 || statusCode == 200,
+                "Retry " + i + " should get 404 or 200, but got: " + statusCode);
+            
+            if (firstStatus == null) {
+                firstStatus = statusCode;
+            } else {
+                assertEquals(firstStatus, statusCode, 
+                    "All retries should return the same status code");
+            }
         }
     }
     
