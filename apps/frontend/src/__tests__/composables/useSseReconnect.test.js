@@ -35,7 +35,7 @@ describe('useSseReconnect', () => {
       }
       
       // At least 40% of runs should show increasing pattern (lowered due to high jitter)
-      expect(increasingCount / runs).toBeGreaterThan(0.40)
+      expect(increasingCount / runs).toBeGreaterThan(0.4)
     })
     
     it('applies full jitter (returns different values)', () => {
@@ -90,7 +90,7 @@ describe('useSseReconnect', () => {
         readyState: 1
       }
       
-      global.EventSource = vi.fn(function() {
+      globalThis.EventSource = vi.fn(function() {
         // Immediately register event listeners
         setTimeout(() => {
           // Simulate async setup
@@ -114,7 +114,7 @@ describe('useSseReconnect', () => {
       const url = '/public/regattas/123/events'
       createSseConnection(url)
       
-      expect(global.EventSource).toHaveBeenCalledWith(
+      expect(globalThis.EventSource).toHaveBeenCalledWith(
         url,
         expect.objectContaining({ withCredentials: true })
       )
@@ -255,7 +255,7 @@ describe('useSseReconnect', () => {
       eventListeners['error']({})
       
       // Should not create new EventSource
-      expect(global.EventSource).toHaveBeenCalledTimes(1)
+      expect(globalThis.EventSource).toHaveBeenCalledTimes(1)
     })
     
     it('increments reconnect attempt on each reconnection', async () => {
@@ -265,7 +265,7 @@ describe('useSseReconnect', () => {
       await new Promise(resolve => setTimeout(resolve, 10))
       
       // Initial connection
-      expect(global.EventSource).toHaveBeenCalledTimes(1)
+      expect(globalThis.EventSource).toHaveBeenCalledTimes(1)
       
       // Simulate error
       eventListeners['error']({})
@@ -274,7 +274,7 @@ describe('useSseReconnect', () => {
       await new Promise(resolve => setTimeout(resolve, 200))
       
       // Should create new EventSource
-      expect(global.EventSource.mock.calls.length).toBeGreaterThanOrEqual(2)
+      expect(globalThis.EventSource.mock.calls.length).toBeGreaterThanOrEqual(2)
     })
 
     it('reuses lastEventId as query parameter on reconnect', async () => {
@@ -291,7 +291,7 @@ describe('useSseReconnect', () => {
 
       await new Promise(resolve => setTimeout(resolve, 700))
 
-      const reconnectCall = global.EventSource.mock.calls.find(([calledUrl]) =>
+      const reconnectCall = globalThis.EventSource.mock.calls.find(([calledUrl]) =>
         calledUrl === '/public/regattas/123/events?last_event_id=123%3A2%3A5%3A0'
       )
       expect(reconnectCall).toBeTruthy()

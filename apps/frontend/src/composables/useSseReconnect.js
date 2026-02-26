@@ -200,7 +200,8 @@ function buildReconnectUrl(baseUrl, lastEventId) {
     return baseUrl
   }
 
-  const urlObject = new URL(baseUrl, window.location.origin)
+  const origin = globalThis.location?.origin ?? 'http://localhost'
+  const urlObject = new URL(baseUrl, origin)
   urlObject.searchParams.set('last_event_id', lastEventId)
   return urlObject.pathname + urlObject.search
 }
