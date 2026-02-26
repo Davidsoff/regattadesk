@@ -1,6 +1,6 @@
 ---
 name: pr-address-comments
-description: Address all open review thread comments for a GitHub PR, commit and push the fixes, wait for all CI checks and CodeRabbit to finish, fix any new findings, then resolve the threads. Also handles SonarQube findings and rebases onto the base branch.
+description: Address all open review thread comments for a GitHub PR, commit and push the fixes, wait for all CI checks to finish, fix any new findings, then resolve the threads. Also handles SonarQube findings and rebases onto the base branch.
 license: MIT
 metadata:
   author: regattadesk
@@ -9,7 +9,7 @@ metadata:
 
 # pr-address-comments
 
-Address all open review comments on a GitHub PR, then commit, push, wait for all CI checks and CodeRabbit to pass, fix any new findings, and finally resolve the threads.
+Address all open review comments on a GitHub PR, then commit, push, wait for all CI checks to pass, fix any new findings, and finally resolve the threads.
 
 **Input**: A PR number. If not provided, ask for it.
 
@@ -205,70 +205,9 @@ Fix each finding, add a new commit, push, and return to step 8 to wait for check
 
 If Sonar is not available or did not post a comment, **skip this step** and note it for the user.
 
-### 10. Handle CodeRabbit review
+### 10. Confirm all checks pass
 
-Check whether CodeRabbit has posted or updated a review comment on the PR's latest commit:
-
-```bash
-gh api repos/$OWNER/$REPO/issues/<PR>/comments \
-  --jq '[.[] | select(.user.login == "coderabbitai[bot]")] | last | .body'
-```
-
-Also check for any new CodeRabbit review threads opened since the last push:
-
-```bash
-cursor=""
-while :; do
-  if [[ -n "$cursor" ]]; then
-    cursor_field=(-F cursor="$cursor")
-  else
-    cursor_field=(-F cursor=null)
-  fi
-
-  result=$(gh api graphql -f query='
-  query($owner:String!, $repo:String!, $pr:Int!, $cursor:String) {
-    repository(owner:$owner, name:$repo) {
-      pullRequest(number:$pr) {
-        reviewThreads(first:50, after:$cursor) {
-          pageInfo { hasNextPage endCursor }
-          nodes {
-            id
-            isResolved
-            isOutdated
-            comments(first:100) {
-              nodes { id body path line author { login } createdAt url }
-            }
-          }
-        }
-      }
-    }
-  }' -f owner="$OWNER" -f repo="$REPO" -F pr=<PR> "${cursor_field[@]}")
-
-  # Process this page's threads here.
-
-  has_next=$(printf '%s' "$result" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
-  cursor=$(printf '%s' "$result" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
-  [[ "$has_next" == "true" ]] || break
-done
-```
-
-Filter for threads where `isResolved: false`, `isOutdated: false`, and the author login is `coderabbitai[bot]`.
-
-**If CodeRabbit opened new review threads:**
-- Add these to the working list of open threads.
-- Implement the fixes the same way as in step 6.
-- Commit, push, and return to step 8 to wait for all checks again.
-- Repeat until CodeRabbit raises no new unresolved threads on the latest push, up to a maximum of 3 iterations. If new threads persist after 3 attempts, stop and report them.
-
-**If CodeRabbit's summary comment says "Review skipped" (bot user detected):**
-- This is normal for automated pushes; no action required.
-
-**If CodeRabbit's summary contains actionable issues but no thread:**
-- Treat each bullet point as a comment to address, implement the fixes, and re-push.
-
-### 11. Confirm all checks pass
-
-Once both Sonar and CodeRabbit are clean, confirm every required check is green:
+Once Sonar is clean, confirm every required check is green:
 
 ```bash
 gh pr checks <PR>
@@ -282,7 +221,7 @@ If any check has status `fail`:
 - If caused by our changes: fix the issue, commit, push, and return to step 8.
 - If pre-existing (existed before our first push): note it in the final report and proceed.
 
-### 12. Rebase onto the base branch (if needed)
+### 11. Rebase onto the base branch (if needed)
 
 Check whether the PR branch is already up-to-date with `<baseRefName>`:
 
@@ -313,9 +252,9 @@ Then return to step 8 and wait for CI checks on the rebased branch before procee
 
 If rebase was not needed, no extra push is required (already pushed in step 8).
 
-### 13. Resolve all review threads
+### 12. Resolve all review threads
 
-For **every** thread ID collected across steps 3 and 10 (original threads + any new CodeRabbit threads), run:
+For **every** thread ID collected in step 3, run:
 
 ```bash
 gh api graphql -f query='
@@ -328,7 +267,7 @@ mutation ResolveThread($threadId: ID!) {
 
 Confirm each returns `"isResolved": true`.
 
-### 14. Clean up
+### 13. Clean up
 
 Remove the temporary worktree:
 
@@ -336,7 +275,7 @@ Remove the temporary worktree:
 git worktree remove /tmp/pr-<PR>-fix
 ```
 
-### 15. Report
+### 14. Report
 
 Print a summary:
 
@@ -356,9 +295,6 @@ Print a summary:
 ### Sonar
 - <N> new issues fixed  (or "Quality gate passing — no new issues")
 
-### CodeRabbit
-- No new threads raised  (or "<N> new threads addressed and resolved")
-
 ### Rebase
 - Rebased onto <baseRefName>  (or "Already up-to-date with <baseRefName>")
 
@@ -377,6 +313,5 @@ All review threads resolved. ✓
 - **Do not** force-push unless a rebase actually happened; use regular push otherwise.
 - If a comment is ambiguous, implement the most conservative interpretation and note it in the commit message.
 - If a fix would break existing passing tests, flag it to the user before committing.
-- Resolve threads only **after** all CI checks pass and CodeRabbit raises no new issues.
-- Wait for CodeRabbit to finish before resolving; it may open new threads on the latest commit.
+- Resolve threads only **after** all CI checks pass.
 - If the workflow exits early, still run `git worktree remove --force /tmp/pr-<PR>-fix` so stale worktrees are not left behind.
