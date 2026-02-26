@@ -4,6 +4,7 @@ import com.regattadesk.aggregate.AggregateRoot;
 import com.regattadesk.eventstore.DomainEvent;
 import org.jboss.logging.Logger;
 
+import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -116,6 +117,8 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
             this.ageCalculationType = updated.getAgeCalculationType();
         } else if (event instanceof RulesetDrawPublishedEvent) {
             this.drawPublished = true;
+        } else if (event instanceof RulesetPromotedToGlobalEvent) {
+            this.isGlobal = true;
         } else {
             LOG.warnf(
                 "Ignoring unknown event type during ruleset replay: eventType=%s aggregateId=%s",
@@ -128,6 +131,26 @@ public class RulesetAggregate extends AggregateRoot<RulesetAggregate> {
     public void markDrawPublished() {
         if (!drawPublished) {
             raiseEvent(new RulesetDrawPublishedEvent(getId()));
+        }
+    }
+    
+    /**
+     * Promotes this ruleset to the global catalog.
+     * 
+     * This operation can only be performed by super_admin users and is auditable
+     * through the RulesetPromotedToGlobalEvent which captures the actor and timestamp.
+     * 
+     * @param promotedBy The username of the super_admin performing the promotion
+     * @throws IllegalArgumentException if promotedBy is null or blank
+     */
+    public void promoteToGlobal(String promotedBy) {
+        if (promotedBy == null || promotedBy.isBlank()) {
+            throw new IllegalArgumentException("promotedBy cannot be null or blank");
+        }
+        
+        // Idempotent: if already global, don't raise another event
+        if (!isGlobal) {
+            raiseEvent(new RulesetPromotedToGlobalEvent(getId(), promotedBy, Instant.now()));
         }
     }
     

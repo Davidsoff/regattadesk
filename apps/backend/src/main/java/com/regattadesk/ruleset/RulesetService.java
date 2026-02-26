@@ -165,11 +165,49 @@ public class RulesetService {
     }
     
     /**
+     * Promotes a ruleset to the global catalog.
+     * 
+     * This operation should only be called by super_admin users.
+     * The authorization enforcement is done at the REST layer.
+     * 
+     * @param id the ruleset ID to promote
+     * @param promotedBy the username of the super_admin performing the promotion
+     * @return the promoted ruleset aggregate
+     * @throws IllegalArgumentException if ruleset not found or promotedBy is invalid
+     */
+    public RulesetAggregate promoteToGlobal(UUID id, String promotedBy) {
+        Optional<RulesetAggregate> existing = loadAggregate(id);
+        if (existing.isEmpty()) {
+            throw new IllegalArgumentException("Ruleset not found: " + id);
+        }
+        
+        RulesetAggregate ruleset = existing.get();
+        ruleset.promoteToGlobal(promotedBy);
+        
+        // Only save if there are new events (idempotent - might already be global)
+        if (!ruleset.getUncommittedEvents().isEmpty()) {
+            saveAggregate(ruleset, null, null);
+        }
+        
+        return ruleset;
+    }
+    
+    /**
      * Lists all rulesets (simplified - in production would use projection/read model).
      * 
      * @return list of all rulesets
      */
     public List<RulesetAggregate> listRulesets() {
+        return listRulesets(null);
+    }
+    
+    /**
+     * Lists rulesets, optionally filtered by global status.
+     * 
+     * @param isGlobal filter for global rulesets (null = no filter)
+     * @return list of rulesets matching the filter
+     */
+    public List<RulesetAggregate> listRulesets(Boolean isGlobal) {
         List<EventEnvelope> events = eventStore.readGlobal(10_000, 0);
         LinkedHashSet<UUID> rulesetIds = events.stream()
             .filter(event -> "Ruleset".equals(event.getAggregateType()))
@@ -179,6 +217,7 @@ public class RulesetService {
         return rulesetIds.stream()
             .map(this::loadAggregate)
             .flatMap(Optional::stream)
+            .filter(ruleset -> isGlobal == null || ruleset.isGlobal() == isGlobal)
             .collect(Collectors.toList());
     }
     
@@ -228,6 +267,7 @@ public class RulesetService {
             case "RulesetDuplicated" -> RulesetDuplicatedEvent.class;
             case "RulesetUpdated" -> RulesetUpdatedEvent.class;
             case "RulesetDrawPublished" -> RulesetDrawPublishedEvent.class;
+            case "RulesetPromotedToGlobal" -> RulesetPromotedToGlobalEvent.class;
             default -> null;
         };
 
