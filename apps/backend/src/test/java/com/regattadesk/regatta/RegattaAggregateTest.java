@@ -29,7 +29,7 @@ class RegattaAggregateTest {
         String currency = "EUR";
         
         RegattaAggregate regatta = RegattaAggregate.create(
-                id, name, description, timeZone, entryFee, currency
+                id, name, description, timeZone, entryFee, currency, null, null
         );
         
         assertEquals(id, regatta.getId());
@@ -41,6 +41,8 @@ class RegattaAggregateTest {
         assertEquals("draft", regatta.getStatus());
         assertEquals(0, regatta.getDrawRevision());
         assertEquals(0, regatta.getResultsRevision());
+        assertEquals(60, regatta.getDefaultPenaltySeconds()); // Default
+        assertFalse(regatta.getAllowCustomPenaltySeconds()); // Default
         
         // Verify event was emitted
         List<DomainEvent> events = regatta.getUncommittedEvents();
@@ -62,7 +64,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, null, "Description", "Europe/Amsterdam", 
-                    new BigDecimal("25.00"), "EUR");
+                    new BigDecimal("25.00"), "EUR", null, null);
         });
     }
     
@@ -72,7 +74,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "  ", "Description", "Europe/Amsterdam", 
-                    new BigDecimal("25.00"), "EUR");
+                    new BigDecimal("25.00"), "EUR", null, null);
         });
     }
     
@@ -82,7 +84,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", null, 
-                    new BigDecimal("25.00"), "EUR");
+                    new BigDecimal("25.00"), "EUR", null, null);
         });
     }
     
@@ -92,7 +94,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", "Europe/Amsterdam", 
-                    null, "EUR");
+                    null, "EUR", null, null);
         });
     }
     
@@ -102,7 +104,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", "Europe/Amsterdam", 
-                    new BigDecimal("-10.00"), "EUR");
+                    new BigDecimal("-10.00"), "EUR", null, null);
         });
     }
     
@@ -112,7 +114,7 @@ class RegattaAggregateTest {
         
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", "Europe/Amsterdam", 
-                    new BigDecimal("25.00"), null);
+                    new BigDecimal("25.00"), null, null, null);
         });
     }
 
@@ -122,7 +124,7 @@ class RegattaAggregateTest {
 
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", "Europe/Amsterdam",
-                    new BigDecimal("25.00"), "NOT_A_CURRENCY");
+                    new BigDecimal("25.00"), "NOT_A_CURRENCY", null, null);
         });
     }
 
@@ -132,7 +134,7 @@ class RegattaAggregateTest {
 
         assertThrows(IllegalArgumentException.class, () -> {
             RegattaAggregate.create(id, "Test Regatta", "Description", "Invalid/Timezone",
-                    new BigDecimal("25.00"), "EUR");
+                    new BigDecimal("25.00"), "EUR", null, null);
         });
     }
     
@@ -146,7 +148,7 @@ class RegattaAggregateTest {
         String currency = "EUR";
         
         // Create event
-        RegattaCreatedEvent event = new RegattaCreatedEvent(id, name, description, timeZone, entryFee, currency);
+        RegattaCreatedEvent event = new RegattaCreatedEvent(id, name, description, timeZone, entryFee, currency, 30, true);
         
         // Load aggregate from event history
         RegattaAggregate regatta = new RegattaAggregate(id);

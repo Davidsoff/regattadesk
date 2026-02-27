@@ -27,7 +27,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         regatta.markEventsAsCommitted();
         
@@ -51,7 +51,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         regatta.markEventsAsCommitted();
         
@@ -76,7 +76,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         
         assertEquals(0, regatta.getDrawRevision());
@@ -97,7 +97,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         regatta.markEventsAsCommitted();
         
@@ -126,7 +126,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         regatta.markEventsAsCommitted();
         
@@ -151,7 +151,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         
         // Initial revision
@@ -184,7 +184,7 @@ class RegattaDrawPublicationTest {
             "Description",
             "Europe/Amsterdam",
             new BigDecimal("50.00"),
-            "EUR"
+            "EUR", null, null
         );
         regatta.markEventsAsCommitted();
         

@@ -44,7 +44,9 @@ class RegattaProjectionHandlerIntegrationTest {
                 "Description",
                 "Europe/Amsterdam",
                 new BigDecimal("50.00"),
-                "EUR"
+                "EUR",
+                60,
+                false
         );
         regattaProjectionHandler.handle(envelope(created));
 
