@@ -1,0 +1,40 @@
+{
+  "scenarios": [
+    {
+      "id": "public-read",
+      "name": "Public schedule and results reads",
+      "method": "GET",
+      "path": "/public/v1-1/schedule",
+      "users": 25,
+      "iterations": 12,
+      "trafficClass": "smoke"
+    },
+    {
+      "id": "public-sse",
+      "name": "Public SSE client fan-out",
+      "method": "GET",
+      "path": "/public/regattas/00000000-0000-0000-0000-000000000001/events",
+      "users": 15,
+      "iterations": 8,
+      "trafficClass": "smoke"
+    },
+    {
+      "id": "operator-ingest-burst",
+      "name": "Operator ingest burst writes",
+      "method": "POST",
+      "path": "/api/v1/regattas/00000000-0000-0000-0000-000000000001/operator/markers",
+      "users": 10,
+      "iterations": 20,
+      "trafficClass": "deep"
+    },
+    {
+      "id": "staff-api",
+      "name": "Staff management API usage",
+      "method": "GET",
+      "path": "/api/v1/regattas/00000000-0000-0000-0000-000000000001/entries",
+      "users": 12,
+      "iterations": 15,
+      "trafficClass": "smoke"
+    }
+  ]
+}

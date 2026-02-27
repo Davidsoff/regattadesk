@@ -1,0 +1,6 @@
+{
+  "maxP95LatencyMs": 600,
+  "maxErrorRatePct": 1.0,
+  "maxCpuUtilizationPct": 85.0,
+  "maxMemoryUtilizationPct": 85.0
+}
