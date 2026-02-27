@@ -147,6 +147,51 @@
     "regatta": {
       "title": "Regatta Details",
       "id": "Regatta ID"
+    },
+    "regatta_detail": {
+      "sections": {
+        "events": "Events",
+        "athletes": "Athletes",
+        "crews": "Crews",
+        "entries": "Entries"
+      },
+      "form": {
+        "eventGroup": "Event group",
+        "selectPlaceholder": "Select",
+        "groupA": "Group A",
+        "name": "Name",
+        "crewName": "Crew name",
+        "allStatuses": "All",
+        "athlete": "Athlete",
+        "saveEntry": "Save entry"
+      },
+      "events": {
+        "open2x": "Open 2x"
+      },
+      "athletes": {
+        "row1": "Athlete 1"
+      },
+      "crews": {
+        "row1": "Crew 1"
+      },
+      "withdraw": {
+        "open": "Withdraw entry",
+        "confirmTitle": "Confirm destructive action",
+        "reason": "Reason",
+        "auditActor": "actor: staff.user",
+        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
+        "conflict": "conflict: this entry changed since your last fetch",
+        "reload": "Reload",
+        "alreadyBeforeDraw": "Already withdrawn before draw",
+        "setEntered": "Set entered",
+        "invalidTransition": "Invalid transition"
+      }
+    }
+  },
+  "validation": {
+    "entry": {
+      "crewRequired": "Crew is required",
+      "athleteRequired": "Athlete is required"
     }
   },
   "operator": {

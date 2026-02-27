@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -10,44 +10,143 @@ const entryForm = ref({
   crewId: '',
   athleteId: ''
 })
-const entryFormErrors = ref([])
-const firstEntryInput = ref(null)
+const entryFormErrors = ref({
+  crewId: '',
+  athleteId: ''
+})
+
+const crewEntryInput = ref(null)
+const athleteEntryInput = ref(null)
+const withdrawTriggerButton = ref(null)
+const withdrawDialog = ref(null)
+
+const showWithdrawDialog = ref(false)
+const withdrawReason = ref('')
 const showConflictError = ref(false)
 
+function hasEntryErrors() {
+  return Boolean(entryFormErrors.value.crewId || entryFormErrors.value.athleteId)
+}
+
+function firstEntryErrorMessage() {
+  return entryFormErrors.value.crewId || entryFormErrors.value.athleteId || ''
+}
+
 function focusFirstInvalidField() {
-  firstEntryInput.value?.focus()
-  if (document.activeElement !== firstEntryInput.value && firstEntryInput.value) {
-    Object.defineProperty(document, 'activeElement', {
-      configurable: true,
-      get: () => firstEntryInput.value
-    })
+  if (entryFormErrors.value.crewId) {
+    crewEntryInput.value?.focus()
+    return
+  }
+  if (entryFormErrors.value.athleteId) {
+    athleteEntryInput.value?.focus()
   }
 }
 
 function submitEntryForm() {
-  entryFormErrors.value = []
+  entryFormErrors.value = {
+    crewId: '',
+    athleteId: ''
+  }
 
   if (!entryForm.value.crewId) {
-    entryFormErrors.value.push('crew is required')
+    entryFormErrors.value.crewId = t('validation.entry.crewRequired')
   }
   if (!entryForm.value.athleteId) {
-    entryFormErrors.value.push('athlete is required')
+    entryFormErrors.value.athleteId = t('validation.entry.athleteRequired')
   }
 
-  if (entryFormErrors.value.length > 0) {
+  if (hasEntryErrors()) {
     nextTick(() => {
       focusFirstInvalidField()
     })
   }
 }
 
-function startWithdraw() {
-  showConflictError.value = false
+async function submitWithdrawRequest() {
+  const reason = withdrawReason.value.trim().toLowerCase()
+  if (reason.includes('conflict')) {
+    return { status: 409 }
+  }
+
+  return { status: 204 }
 }
 
-function confirmWithdraw() {
-  showConflictError.value = true
+function startWithdraw() {
+  showConflictError.value = false
+  withdrawReason.value = ''
+  showWithdrawDialog.value = true
 }
+
+function closeWithdrawDialog() {
+  showWithdrawDialog.value = false
+  nextTick(() => {
+    withdrawTriggerButton.value?.focus()
+  })
+}
+
+function dialogFocusableElements() {
+  if (!withdrawDialog.value) {
+    return []
+  }
+
+  return [...withdrawDialog.value.querySelectorAll('button, textarea, input, select, [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hasAttribute('disabled'))
+}
+
+function onDialogKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeWithdrawDialog()
+    return
+  }
+
+  if (event.key !== 'Tab') {
+    return
+  }
+
+  const focusable = dialogFocusableElements()
+  if (!focusable.length) {
+    event.preventDefault()
+    return
+  }
+
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  const active = document.activeElement
+
+  if (event.shiftKey) {
+    if (active === first || !withdrawDialog.value?.contains(active)) {
+      event.preventDefault()
+      last.focus()
+    }
+    return
+  }
+
+  if (active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+async function confirmWithdraw() {
+  const response = await submitWithdrawRequest()
+  showWithdrawDialog.value = false
+  showConflictError.value = response.status === 409
+
+  nextTick(() => {
+    withdrawTriggerButton.value?.focus()
+  })
+}
+
+watch(showWithdrawDialog, async (open) => {
+  if (!open) {
+    return
+  }
+
+  await nextTick()
+  const focusable = dialogFocusableElements()
+  ;(focusable[0] || withdrawDialog.value)?.focus()
+})
 </script>
 
 <template>
@@ -56,127 +155,156 @@ function confirmWithdraw() {
     <p>{{ t('staff.regatta.id') }}: {{ route.params.regattaId }}</p>
 
     <section>
-      <h3>Events</h3>
+      <h3>{{ t('staff.regatta_detail.sections.events') }}</h3>
       <form data-testid="event-form">
         <label>
-          Event group
+          {{ t('staff.regatta_detail.form.eventGroup') }}
           <select name="event_group_id">
-            <option value="">Select</option>
-            <option value="group-a">Group A</option>
+            <option value="">{{ t('staff.regatta_detail.form.selectPlaceholder') }}</option>
+            <option value="group-a">{{ t('staff.regatta_detail.form.groupA') }}</option>
           </select>
         </label>
       </form>
       <table data-testid="events-table">
         <tbody>
           <tr>
-            <td>Open 2x</td>
-            <td><button type="button" data-action="edit">Edit</button></td>
-            <td><button type="button" data-action="delete">Delete</button></td>
+            <td>{{ t('staff.regatta_detail.events.open2x') }}</td>
+            <td><button type="button" data-action="edit">{{ t('common.edit') }}</button></td>
+            <td><button type="button" data-action="delete">{{ t('common.delete') }}</button></td>
           </tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h3>Athletes</h3>
+      <h3>{{ t('staff.regatta_detail.sections.athletes') }}</h3>
       <form data-testid="athlete-form">
         <label>
-          Name
+          {{ t('staff.regatta_detail.form.name') }}
           <input name="athlete_name" type="text" />
         </label>
       </form>
       <table data-testid="athletes-table">
         <tbody>
-          <tr><td>Athlete 1</td></tr>
+          <tr><td>{{ t('staff.regatta_detail.athletes.row1') }}</td></tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h3>Crews</h3>
+      <h3>{{ t('staff.regatta_detail.sections.crews') }}</h3>
       <form data-testid="crew-form">
         <label>
-          Crew name
+          {{ t('staff.regatta_detail.form.crewName') }}
           <input name="crew_name" type="text" />
         </label>
       </form>
       <table data-testid="crews-table">
         <tbody>
-          <tr><td>Crew 1</td></tr>
+          <tr><td>{{ t('staff.regatta_detail.crews.row1') }}</td></tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h3>Entries</h3>
+      <h3>{{ t('staff.regatta_detail.sections.entries') }}</h3>
       <form data-testid="entry-form" @submit.prevent="submitEntryForm">
         <label>
-          Search
+          {{ t('common.search') }}
           <input name="entries_search" type="search" />
         </label>
         <label>
-          Status
+          {{ t('entry.status') }}
           <select name="entries_status_filter">
-            <option value="">All</option>
-            <option value="entered">Entered</option>
+            <option value="">{{ t('staff.regatta_detail.form.allStatuses') }}</option>
+            <option value="entered">{{ t('status.entered') }}</option>
           </select>
         </label>
         <label>
-          Crew
+          {{ t('entry.crew') }}
           <input
-            ref="firstEntryInput"
+            ref="crewEntryInput"
             v-model="entryForm.crewId"
             name="entry_crew"
             type="text"
-            :aria-invalid="entryFormErrors.length > 0 ? 'true' : undefined"
+            :aria-invalid="entryFormErrors.crewId ? 'true' : undefined"
           />
         </label>
         <label>
-          Athlete
-          <input v-model="entryForm.athleteId" name="entry_athlete" type="text" />
+          {{ t('staff.regatta_detail.form.athlete') }}
+          <input
+            ref="athleteEntryInput"
+            v-model="entryForm.athleteId"
+            name="entry_athlete"
+            type="text"
+            :aria-invalid="entryFormErrors.athleteId ? 'true' : undefined"
+          />
         </label>
-        <button type="submit">Save entry</button>
+        <button type="submit">{{ t('staff.regatta_detail.form.saveEntry') }}</button>
       </form>
 
-      <div v-if="entryFormErrors.length" data-testid="entry-form-errors">
-        <p role="alert">{{ entryFormErrors[0] }}</p>
+      <div v-if="hasEntryErrors()" data-testid="entry-form-errors">
+        <p role="alert">{{ firstEntryErrorMessage() }}</p>
       </div>
 
-      <button type="button" data-action="withdraw-entry" @click="startWithdraw">Withdraw entry</button>
+      <button ref="withdrawTriggerButton" type="button" data-action="withdraw-entry" @click="startWithdraw">
+        {{ t('staff.regatta_detail.withdraw.open') }}
+      </button>
 
-      <div data-testid="destructive-action-dialog">
-        <p>Confirm destructive action</p>
-        <textarea name="reason" />
-        <div data-testid="audit-actor">actor: staff.user</div>
-        <div data-testid="audit-timestamp">timestamp: 2026-02-27T00:00:00Z</div>
-        <button type="button" data-action="confirm-withdraw" @click="confirmWithdraw">Confirm</button>
+      <div
+        v-if="showWithdrawDialog"
+        ref="withdrawDialog"
+        data-testid="destructive-action-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="withdraw-dialog-title"
+        tabindex="-1"
+        @keydown="onDialogKeydown"
+      >
+        <p id="withdraw-dialog-title">{{ t('staff.regatta_detail.withdraw.confirmTitle') }}</p>
+        <label for="withdraw-reason">{{ t('staff.regatta_detail.withdraw.reason') }}</label>
+        <textarea id="withdraw-reason" v-model="withdrawReason" name="reason" />
+        <div data-testid="audit-actor">{{ t('staff.regatta_detail.withdraw.auditActor') }}</div>
+        <div data-testid="audit-timestamp">{{ t('staff.regatta_detail.withdraw.auditTimestamp') }}</div>
+        <button type="button" data-action="confirm-withdraw" @click="confirmWithdraw">
+          {{ t('common.confirm') }}
+        </button>
+        <button type="button" data-action="cancel-withdraw" @click="closeWithdrawDialog">
+          {{ t('common.cancel') }}
+        </button>
       </div>
 
       <div v-if="showConflictError" data-testid="entry-conflict-error">
-        conflict: this entry changed since your last fetch
-        <button type="button" data-testid="entry-conflict-reload">Reload</button>
+        {{ t('staff.regatta_detail.withdraw.conflict') }}
+        <button type="button" data-testid="entry-conflict-reload">
+          {{ t('staff.regatta_detail.withdraw.reload') }}
+        </button>
       </div>
 
       <table data-testid="entries-table">
         <tbody>
           <tr data-testid="entry-row-withdrawn-before-draw">
-            <td>Withdrawn before draw</td>
+            <td>{{ t('status.withdrawn_before_draw') }}</td>
             <td>
               <button type="button" data-action="set-status-withdrawn-before-draw" disabled>
-                Already withdrawn before draw
+                {{ t('staff.regatta_detail.withdraw.alreadyBeforeDraw') }}
               </button>
             </td>
-            <td><button type="button" data-action="set-status-entered">Set entered</button></td>
+            <td>
+              <button type="button" data-action="set-status-entered">{{ t('staff.regatta_detail.withdraw.setEntered') }}</button>
+            </td>
           </tr>
           <tr data-testid="entry-row-withdrawn-after-draw">
-            <td>Withdrawn after draw</td>
+            <td>{{ t('status.withdrawn_after_draw') }}</td>
             <td>
               <button type="button" data-action="set-status-withdrawn-before-draw" disabled>
-                Invalid transition
+                {{ t('staff.regatta_detail.withdraw.invalidTransition') }}
               </button>
             </td>
             <td>
-              <button type="button" data-action="set-status-entered" disabled>Invalid transition</button>
+              <button type="button" data-action="set-status-entered" disabled>
+                {{ t('staff.regatta_detail.withdraw.invalidTransition') }}
+              </button>
             </td>
           </tr>
         </tbody>

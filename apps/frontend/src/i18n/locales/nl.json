@@ -147,6 +147,51 @@
     "regatta": {
       "title": "Regatta details",
       "id": "Regatta ID"
+    },
+    "regatta_detail": {
+      "sections": {
+        "events": "Nummers",
+        "athletes": "Atleten",
+        "crews": "Ploegen",
+        "entries": "Inschrijvingen"
+      },
+      "form": {
+        "eventGroup": "Nummergroep",
+        "selectPlaceholder": "Selecteer",
+        "groupA": "Groep A",
+        "name": "Naam",
+        "crewName": "Ploegnaam",
+        "allStatuses": "Alle",
+        "athlete": "Atleet",
+        "saveEntry": "Inschrijving opslaan"
+      },
+      "events": {
+        "open2x": "Open 2x"
+      },
+      "athletes": {
+        "row1": "Atleet 1"
+      },
+      "crews": {
+        "row1": "Ploeg 1"
+      },
+      "withdraw": {
+        "open": "Inschrijving afmelden",
+        "confirmTitle": "Bevestig destructieve actie",
+        "reason": "Reden",
+        "auditActor": "actor: staff.user",
+        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
+        "conflict": "conflict: deze inschrijving is gewijzigd sinds je laatste keer ophalen",
+        "reload": "Opnieuw laden",
+        "alreadyBeforeDraw": "Al afgemeld voor loting",
+        "setEntered": "Zet op ingeschreven",
+        "invalidTransition": "Ongeldige overgang"
+      }
+    }
+  },
+  "validation": {
+    "entry": {
+      "crewRequired": "Ploeg is verplicht",
+      "athleteRequired": "Atleet is verplicht"
     }
   },
   "operator": {

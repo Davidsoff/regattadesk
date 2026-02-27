@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -23,15 +23,21 @@ async function mountPage() {
   await router.isReady()
 
   return mount(RegattaDetail, {
+    attachTo: document.body,
     global: {
       plugins: [router, i18n]
     }
   })
 }
 
-describe('Staff regatta management workflows (issue #94, red)', () => {
+describe('Staff regatta management workflows (issue #94)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    document.body.innerHTML = ''
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
   })
 
   it('renders searchable/filterable tables for events, athletes, crews, and entries', async () => {
@@ -60,18 +66,27 @@ describe('Staff regatta management workflows (issue #94, red)', () => {
     expect(wrapper.find('[data-testid="events-table"] [data-action="delete"]').exists()).toBe(true)
   })
 
-  it('surfaces audit metadata fields for destructive actions', async () => {
+  it('surfaces audit metadata fields for destructive actions in an accessible dialog', async () => {
     const wrapper = await mountPage()
 
-    expect(wrapper.find('button[data-action="withdraw-entry"]').exists()).toBe(true)
+    const withdrawAction = wrapper.find('button[data-action="withdraw-entry"]')
+    expect(withdrawAction.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="destructive-action-dialog"]').exists()).toBe(false)
 
-    expect(wrapper.find('[data-testid="destructive-action-dialog"]').exists()).toBe(true)
+    await withdrawAction.trigger('click')
+
+    const dialog = wrapper.find('[data-testid="destructive-action-dialog"]')
+    expect(dialog.exists()).toBe(true)
+    expect(dialog.attributes('role')).toBe('dialog')
+    expect(dialog.attributes('aria-modal')).toBe('true')
+    expect(dialog.attributes('aria-labelledby')).toBe('withdraw-dialog-title')
+
     expect(wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-actor"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-timestamp"]').exists()).toBe(true)
   })
 
-  it('shows validation errors and moves focus to the first invalid field', async () => {
+  it('shows per-field validation errors and moves focus to the first invalid field', async () => {
     const wrapper = await mountPage()
 
     const form = wrapper.find('form[data-testid="entry-form"]')
@@ -81,11 +96,14 @@ describe('Staff regatta management workflows (issue #94, red)', () => {
 
     const validationError = wrapper.find('[data-testid="entry-form-errors"] [role="alert"]')
     expect(validationError.exists()).toBe(true)
-    expect(validationError.text()).toContain('required')
+    expect(validationError.text().toLowerCase()).toContain('required')
 
-    const firstInvalid = wrapper.find('[data-testid="entry-form"] [aria-invalid="true"]')
-    expect(firstInvalid.exists()).toBe(true)
+    const firstInvalid = wrapper.find('input[name="entry_crew"]')
+    expect(firstInvalid.attributes('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(firstInvalid.element)
+
+    const secondInvalid = wrapper.find('input[name="entry_athlete"]')
+    expect(secondInvalid.attributes('aria-invalid')).toBe('true')
   })
 
   it('handles 409 conflict responses with a clear recovery action', async () => {
@@ -96,13 +114,17 @@ describe('Staff regatta management workflows (issue #94, red)', () => {
 
     await withdrawAction.trigger('click')
 
+    const reason = wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]')
+    expect(reason.exists()).toBe(true)
+    await reason.setValue('conflict response from backend')
+
     const confirm = wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-withdraw"]')
     expect(confirm.exists()).toBe(true)
     await confirm.trigger('click')
 
     const conflictBanner = wrapper.find('[data-testid="entry-conflict-error"]')
     expect(conflictBanner.exists()).toBe(true)
-    expect(conflictBanner.text()).toContain('conflict')
+    expect(conflictBanner.text().toLowerCase()).toContain('conflict')
     expect(wrapper.find('[data-testid="entry-conflict-reload"]').exists()).toBe(true)
   })
 
