@@ -2,8 +2,16 @@ import { describe, expect, it, vi } from 'vitest'
 import { staffGuard, operatorGuard } from '../router/guards'
 
 describe('Route Guards', () => {
+  function clearAuthState() {
+    window.__REGATTADESK_AUTH__ = {}
+  }
+
+  clearAuthState()
+
   describe('staffGuard', () => {
     it('allows access when staff auth is present', () => {
+      clearAuthState()
+      window.__REGATTADESK_AUTH__.staffAuthenticated = true
       const to = { fullPath: '/staff/regattas' }
       const from = {}
       const next = vi.fn()
@@ -14,34 +22,39 @@ describe('Route Guards', () => {
       expect(next).toHaveBeenCalledTimes(1)
     })
 
-    it('allows access in v0.1 (placeholder for future auth check)', () => {
-      // This test documents the current v0.1 behavior
-      // In v0.1, the guard always allows access (placeholder implementation)
-      // TODO: Update when BC02 auth integration is complete
+    it('redirects to unauthorized when staff auth is missing', () => {
+      clearAuthState()
       const to = { fullPath: '/staff/regattas' }
       const from = {}
       const next = vi.fn()
 
       staffGuard(to, from, next)
 
-      // In v0.1, this always passes
-      expect(next).toHaveBeenCalledWith()
+      expect(next).toHaveBeenCalledWith({
+        name: 'unauthorized',
+        query: { redirect: '/staff/regattas' },
+      })
     })
 
     it('preserves redirect query parameter', () => {
+      clearAuthState()
       const to = { fullPath: '/staff/regattas/abc-123/finance' }
       const from = {}
       const next = vi.fn()
 
       staffGuard(to, from, next)
 
-      // In v0.1, this always passes
-      expect(next).toHaveBeenCalledWith()
+      expect(next).toHaveBeenCalledWith({
+        name: 'unauthorized',
+        query: { redirect: '/staff/regattas/abc-123/finance' },
+      })
     })
   })
 
   describe('operatorGuard', () => {
     it('allows access when operator token is present', () => {
+      clearAuthState()
+      window.__REGATTADESK_AUTH__.operatorToken = 'token-123'
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()
@@ -52,29 +65,44 @@ describe('Route Guards', () => {
       expect(next).toHaveBeenCalledTimes(1)
     })
 
-    it('allows access in v0.1 (placeholder for future token check)', () => {
-      // This test documents the current v0.1 behavior
-      // In v0.1, the guard always allows access (placeholder implementation)
-      // TODO: Update when BC02 token auth integration is complete
+    it('allows access and persists token from query parameter', () => {
+      clearAuthState()
+      const to = { fullPath: '/operator/regattas', query: { token: 'query-token' } }
+      const from = {}
+      const next = vi.fn()
+
+      operatorGuard(to, from, next)
+
+      expect(next).toHaveBeenCalledWith()
+      expect(window.__REGATTADESK_AUTH__.operatorToken).toBe('query-token')
+    })
+
+    it('redirects to unauthorized when operator token is missing', () => {
+      clearAuthState()
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()
 
       operatorGuard(to, from, next)
 
-      // In v0.1, this always passes
-      expect(next).toHaveBeenCalledWith()
+      expect(next).toHaveBeenCalledWith({
+        name: 'unauthorized',
+        query: { redirect: '/operator/regattas' },
+      })
     })
 
     it('preserves redirect query parameter', () => {
+      clearAuthState()
       const to = { fullPath: '/operator/regattas/xyz-789/line-scan' }
       const from = {}
       const next = vi.fn()
 
       operatorGuard(to, from, next)
 
-      // In v0.1, this always passes
-      expect(next).toHaveBeenCalledWith()
+      expect(next).toHaveBeenCalledWith({
+        name: 'unauthorized',
+        query: { redirect: '/operator/regattas/xyz-789/line-scan' },
+      })
     })
   })
 

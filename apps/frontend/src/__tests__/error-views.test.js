@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import Unauthorized from '../views/Unauthorized.vue'
@@ -126,7 +126,7 @@ describe('Error View Components', () => {
       const button = wrapper.find('button')
       const clickPromise = button.trigger('click')
       await clickPromise
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await flushPromises()
       
       expect(router.currentRoute.value.path).toBe('/')
     })
@@ -208,7 +208,7 @@ describe('Error View Components', () => {
       const button = wrapper.find('button')
       const clickPromise = button.trigger('click')
       await clickPromise
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await flushPromises()
       
       expect(router.currentRoute.value.path).toBe('/')
     })
