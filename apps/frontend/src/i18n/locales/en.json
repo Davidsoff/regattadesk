@@ -273,6 +273,26 @@
     "line_scan": {
       "title": "Line Scan",
       "description": "Capture line scan images and mark finish times"
+    },
+    "capture": {
+      "title": "Line Scan Capture",
+      "overview": "Overview",
+      "detail": "Detail View",
+      "markers": "Markers",
+      "unlinked_markers": "Unlinked Markers",
+      "linked_markers": "Linked Markers",
+      "create_marker": "Create Marker",
+      "delete_marker": "Delete",
+      "link_to_bib": "Link to Bib",
+      "unlink": "Unlink",
+      "approve": "Approve",
+      "locked": "Locked",
+      "bib_number": "Bib",
+      "frame_offset": "Frame",
+      "timestamp": "Time",
+      "no_markers": "No markers yet",
+      "marker_approved": "This marker is approved and cannot be edited",
+      "undo": "Undo"
     }
   },
   "public": {

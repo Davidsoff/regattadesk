@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
+import LineScanCapture from '../../components/operator/LineScanCapture.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -70,6 +71,8 @@ const operatorStation = computed(() => {
 const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
+const captureSessionId = ref(null) // Will be set after handoff is complete
+const showCaptureWorkspace = ref(false) // Toggle for showing capture workspace
 
 function applyAccessModeFromResponse(response) {
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
@@ -276,8 +279,23 @@ async function completeHandoff() {
       <button type="button" data-testid="line-scan-capture" :disabled="isCaptureDisabled">
         Capture frame
       </button>
+      <button
+        type="button"
+        data-testid="toggle-capture-workspace"
+        @click="showCaptureWorkspace = !showCaptureWorkspace"
+        :disabled="!operatorToken"
+      >
+        {{ showCaptureWorkspace ? 'Hide' : 'Show' }} Capture Workspace
+      </button>
       <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
     </div>
+
+    <!-- Capture Workspace -->
+    <LineScanCapture
+      v-if="showCaptureWorkspace && operatorToken"
+      :capture-session-id="captureSessionId || 'demo-session-id'"
+      :regatta-id="route.params.regattaId"
+    />
   </div>
 </template>
 
