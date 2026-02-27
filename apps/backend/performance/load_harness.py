@@ -42,7 +42,7 @@ def request_once(method, url, timeout):
     except urllib.error.HTTPError as err:
         latency_ms = (time.perf_counter() - start) * 1000
         return err.code < 500, latency_ms, err.code
-    except Exception:
+    except (urllib.error.URLError, TimeoutError):
         latency_ms = (time.perf_counter() - start) * 1000
         return False, latency_ms, 0
 
@@ -90,9 +90,10 @@ def summarize(results):
         total_requests += result["requests"]
         total_failures += result["failures"]
         by_scenario[result["scenario"]] = result["p95LatencyMs"]
-        all_latencies.append(result["p95LatencyMs"])
+        # Approximate combined distribution by weighting each scenario p95 by request count.
+        all_latencies.extend([result["p95LatencyMs"]] * result["requests"])
 
-    aggregate_p95 = max(all_latencies) if all_latencies else 0.0
+    aggregate_p95 = percentile(all_latencies, 0.95) if all_latencies else 0.0
     aggregate_error_rate = (total_failures / total_requests) * 100 if total_requests else 0.0
     return aggregate_p95, aggregate_error_rate, by_scenario
 

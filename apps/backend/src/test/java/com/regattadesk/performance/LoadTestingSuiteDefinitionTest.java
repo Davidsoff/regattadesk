@@ -46,6 +46,7 @@ class LoadTestingSuiteDefinitionTest {
 
         assertEquals(PerformanceGateStatus.FAIL, result.status());
         assertTrue(result.bottlenecks().contains("public-sse"));
+        assertTrue(result.bottlenecks().contains("staff-api"));
         assertTrue(result.regressionRiskSummary().contains("p95"));
     }
 }

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public record PerformanceThresholds(
     double maxP95LatencyMs,
@@ -14,7 +16,7 @@ public record PerformanceThresholds(
     double maxMemoryUtilizationPct
 ) {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final Path DEFAULT_CONFIG = Path.of("performance", "performance-thresholds.json");
+    private static final Path DEFAULT_CONFIG = resolveDefaultConfig();
 
     public static PerformanceThresholds fromDefaultConfig() {
         try {
@@ -40,5 +42,23 @@ public record PerformanceThresholds(
                 maxMemoryUtilizationPct
             );
         }
+    }
+
+    private static Path resolveDefaultConfig() {
+        List<Path> candidates = List.of(
+            Path.of("performance", "performance-thresholds.json"),
+            Path.of("apps", "backend", "performance", "performance-thresholds.json")
+        );
+        List<Path> attempted = new ArrayList<>();
+        for (Path candidate : candidates) {
+            Path normalized = candidate.toAbsolutePath().normalize();
+            attempted.add(normalized);
+            if (Files.isRegularFile(normalized)) {
+                return normalized;
+            }
+        }
+        throw new IllegalStateException(
+            "Unable to locate performance-thresholds.json in any known location: " + attempted
+        );
     }
 }

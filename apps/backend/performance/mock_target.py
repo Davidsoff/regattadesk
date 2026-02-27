@@ -13,7 +13,11 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b"{\"ok\":true}")
 
     def do_POST(self):  # noqa: N802
-        _ = self.rfile.read(int(self.headers.get("Content-Length", "0") or "0"))
+        try:
+            content_length = int(self.headers.get("Content-Length", "0") or "0")
+        except ValueError:
+            content_length = 0
+        _ = self.rfile.read(content_length)
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()

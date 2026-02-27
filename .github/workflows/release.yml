@@ -129,6 +129,17 @@ jobs:
           python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
           echo $! >/tmp/mock-server.pid
 
+      - name: Wait for mock target
+        run: |
+          for _ in {1..20}; do
+            if curl -fsS http://127.0.0.1:18080/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "mock target did not become ready in time" >&2
+          exit 1
+
       - name: Run performance smoke gate
         run: |
           python3 apps/backend/performance/load_harness.py \
