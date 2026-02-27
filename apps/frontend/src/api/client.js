@@ -53,6 +53,9 @@ async function readSuccessJson(response) {
   try {
     return await response.json()
   } catch (error) {
+    if (!(error instanceof Error)) {
+      throw error
+    }
     return null
   }
 }
@@ -61,8 +64,18 @@ async function readErrorJson(response) {
   try {
     return await response.json()
   } catch (error) {
-    const normalized = normalizeApiError(null)
-    throw new ApiError(normalized, response.status)
+    if (!(error instanceof Error)) {
+      throw error
+    }
+    throw new ApiError(
+      {
+        code: 'UNKNOWN_ERROR',
+        message: '',
+        details: { parseError: error.message },
+        requestId: undefined
+      },
+      response.status
+    )
   }
 }
 
