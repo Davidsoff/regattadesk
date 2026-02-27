@@ -15,6 +15,7 @@ const isDataStale = ref(false)
 const resultRows = ref([])
 
 let connection = null
+let latestResultsRequestId = 0
 const REGATTA_ID_STORAGE_KEY = 'regattadesk_public_regatta_id'
 
 const regattaId = computed(() => {
@@ -53,11 +54,17 @@ function fetchVersions() {
   })
 }
 
-async function fetchResults(drawRevisionOverride = drawRevision.value, resultsRevisionOverride = resultsRevision.value) {
+async function fetchResults(
+  drawRevisionOverride = drawRevision.value,
+  resultsRevisionOverride = resultsRevision.value,
+  expectedDrawRevision = drawRevisionOverride,
+  expectedResultsRevision = resultsRevisionOverride,
+) {
   if (!regattaId.value) {
     return
   }
 
+  const requestId = ++latestResultsRequestId
   const requestUrl = `/public/v${drawRevisionOverride}-${resultsRevisionOverride}/regattas/${regattaId.value}/results`
 
   try {
@@ -70,6 +77,12 @@ async function fetchResults(drawRevisionOverride = drawRevision.value, resultsRe
     }
 
     const data = await response.json()
+    if (drawRevision.value !== expectedDrawRevision || resultsRevision.value !== expectedResultsRevision) {
+      return
+    }
+    if (requestId !== latestResultsRequestId) {
+      return
+    }
     resultRows.value = Array.isArray(data?.data) ? data.data : []
   } catch (error) {
     console.warn('Failed to fetch public results', error)
@@ -80,6 +93,9 @@ async function bootstrapVersions() {
   if (!regattaId.value) {
     return
   }
+
+  const startDrawRevision = drawRevision.value
+  const startResultsRevision = resultsRevision.value
 
   try {
     let response = await fetchVersions()
@@ -101,6 +117,10 @@ async function bootstrapVersions() {
     const nextResultsRevision = data?.results_revision
 
     if (typeof nextDrawRevision !== 'number' || typeof nextResultsRevision !== 'number') {
+      return
+    }
+
+    if (drawRevision.value !== startDrawRevision || resultsRevision.value !== startResultsRevision) {
       return
     }
 

@@ -226,6 +226,80 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
     expect(globalThis.fetch.mock.calls.some(([url]) => String(url).includes('/public/v1-3/regattas/'))).toBe(true)
   })
 
+  it('ignores stale SSE fetch results when a newer revision fetch completes first', async () => {
+    const listeners = {}
+    const mockEventSource = {
+      addEventListener: vi.fn((event, handler) => {
+        listeners[event] = handler
+      }),
+      close: vi.fn(),
+    }
+    globalThis.EventSource.mockImplementation(function MockEventSource() {
+      return mockEventSource
+    })
+
+    let resolveSlowerResults
+    const slowerResultsPromise = new Promise((resolve) => {
+      resolveSlowerResults = resolve
+    })
+
+    globalThis.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2, data: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => slowerResultsPromise,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 4, data: [{ entry_id: 'e3', crew_name: 'Crew C', status: 'entered', rank: 1 }] }),
+      })
+
+    const wrapper = await mountResults('/public/v1-2/results?regatta_id=44444444-4444-4444-4444-444444444444')
+    await flushPromises()
+
+    listeners.results_revision?.({
+      data: JSON.stringify({
+        draw_revision: 1,
+        results_revision: 3,
+      }),
+      lastEventId: '44444444-4444-4444-4444-444444444444:1:3:9',
+    })
+    listeners.results_revision?.({
+      data: JSON.stringify({
+        draw_revision: 1,
+        results_revision: 4,
+      }),
+      lastEventId: '44444444-4444-4444-4444-444444444444:1:4:10',
+    })
+    await flushPromises()
+
+    resolveSlowerResults({
+      draw_revision: 1,
+      results_revision: 3,
+      data: [{ entry_id: 'e2', crew_name: 'Crew B', status: 'entered', rank: 1 }],
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Results Revision: 4')
+    expect(wrapper.text()).toContain('Crew C')
+    expect(wrapper.text()).not.toContain('Crew B')
+  })
+
   it('applies snapshot and draw_revision SSE events to refresh revisions', async () => {
     const listeners = {}
     const mockEventSource = {
