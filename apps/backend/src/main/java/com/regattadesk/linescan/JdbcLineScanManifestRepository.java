@@ -196,4 +196,49 @@ public class JdbcLineScanManifestRepository implements LineScanManifestRepositor
             .updatedAt(updatedAtTs != null ? updatedAtTs.toInstant() : null)
             .build();
     }
+    
+    @Override
+    public List<LineScanManifest> findByRetentionStateIn(List<LineScanManifest.RetentionState> states) {
+        if (states == null || states.isEmpty()) {
+            return List.of();
+        }
+        
+        // Note: The number of retention states is bounded (currently 4 states: 
+        // FULL_RETAINED, PENDING_DELAY, ELIGIBLE_WAITING_ARCHIVE_OR_APPROVALS, PRUNED)
+        // so dynamic SQL construction is safe here.
+        String placeholders = String.join(",", states.stream()
+            .map(s -> "?")
+            .toList());
+        
+        String sql = """
+            SELECT id, regatta_id, capture_session_id, tile_size_px, primary_format,
+                fallback_format, x_origin_timestamp_ms, ms_per_pixel, retention_days,
+                prune_window_seconds, retention_state, prune_eligible_at, pruned_at,
+                created_at, updated_at
+            FROM line_scan_manifests
+            WHERE retention_state IN (%s)
+            ORDER BY created_at ASC
+            """.formatted(placeholders);
+        
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            // Set parameters for IN clause
+            for (int i = 0; i < states.size(); i++) {
+                stmt.setString(i + 1, states.get(i).getValue());
+            }
+            
+            ResultSet rs = stmt.executeQuery();
+            List<LineScanManifest> manifests = new ArrayList<>();
+            
+            while (rs.next()) {
+                manifests.add(mapResultSetToManifest(rs, List.of()));
+            }
+            
+            return manifests;
+            
+        } catch (SQLException e) {
+            throw new RuntimeException("Database error finding manifests by retention states", e);
+        }
+    }
 }
