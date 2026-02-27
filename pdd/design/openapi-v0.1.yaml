@@ -4111,6 +4111,7 @@ components:
         entry_id: { type: string, format: uuid }
         event_id: { type: string, format: uuid }
         bib: { type: integer, nullable: true }
+        lane: { type: integer, nullable: true }
         scheduled_start_time:
           { type: string, format: date-time, nullable: true }
         crew_name: { type: string }

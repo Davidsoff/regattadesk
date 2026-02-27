@@ -1,6 +1,7 @@
 package com.regattadesk.public_api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -90,9 +91,9 @@ public class PublicVersionedResultsResource {
      * Response DTO for results endpoint.
      */
     public record ResultsResponse(
-        UUID regattaId,
-        int drawRevision,
-        int resultsRevision,
-        String resultsData
+        @JsonProperty("regatta_id") UUID regattaId,
+        @JsonProperty("draw_revision") int drawRevision,
+        @JsonProperty("results_revision") int resultsRevision,
+        @JsonProperty("results_data") String resultsData
     ) {}
 }

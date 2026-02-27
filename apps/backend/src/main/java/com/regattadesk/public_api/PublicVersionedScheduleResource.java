@@ -1,6 +1,7 @@
 package com.regattadesk.public_api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -8,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import jakarta.inject.Inject;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -27,6 +29,9 @@ public class PublicVersionedScheduleResource {
     
     @Inject
     RegattaVersionRepository versionRepository;
+
+    @Inject
+    PublicScheduleRepository scheduleRepository;
     
     /**
      * Get the schedule for a regatta at a specific version.
@@ -68,12 +73,25 @@ public class PublicVersionedScheduleResource {
                     .entity(ErrorResponse.notFound("Requested version not found for regatta"))
                     .build();
             }
+
+            List<ScheduleRowResponse> rows = scheduleRepository.fetchSchedule(regattaId, drawRevision)
+                .stream()
+                .map(row -> new ScheduleRowResponse(
+                    row.entryId(),
+                    row.eventId(),
+                    row.bib(),
+                    row.lane(),
+                    row.scheduledStartTime(),
+                    row.crewName(),
+                    row.clubName(),
+                    row.status()
+                ))
+                .toList();
             
             ScheduleResponse schedule = new ScheduleResponse(
-                regattaId,
                 drawRevision,
                 resultsRevision,
-                "Schedule data would appear here"
+                rows
             );
             
             return Response.ok(schedule).build();
@@ -90,9 +108,19 @@ public class PublicVersionedScheduleResource {
      * Response DTO for schedule endpoint.
      */
     public record ScheduleResponse(
-        UUID regattaId,
-        int drawRevision,
-        int resultsRevision,
-        String scheduleData
+        @JsonProperty("draw_revision") int drawRevision,
+        @JsonProperty("results_revision") int resultsRevision,
+        @JsonProperty("data") List<ScheduleRowResponse> data
+    ) {}
+
+    public record ScheduleRowResponse(
+        @JsonProperty("entry_id") UUID entryId,
+        @JsonProperty("event_id") UUID eventId,
+        @JsonProperty("bib") Integer bib,
+        @JsonProperty("lane") Integer lane,
+        @JsonProperty("scheduled_start_time") java.time.OffsetDateTime scheduledStartTime,
+        @JsonProperty("crew_name") String crewName,
+        @JsonProperty("club_name") String clubName,
+        @JsonProperty("status") String status
     ) {}
 }

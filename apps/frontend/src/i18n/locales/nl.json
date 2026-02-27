@@ -219,7 +219,17 @@
   "public": {
     "schedule": {
       "title": "Schema",
-      "description": "Bekijk het race schema"
+      "description": "Bekijk het race schema",
+      "empty": "Geen schema-items beschikbaar voor deze versie.",
+      "headers": {
+        "lane": "Baan",
+        "race": "Race",
+        "status": "Status"
+      },
+      "errors": {
+        "missing_regatta": "Regatta-id ontbreekt in de URL.",
+        "load_failed": "Kon schema-data niet laden."
+      }
     },
     "results": {
       "title": "Resultaten",

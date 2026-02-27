@@ -219,7 +219,17 @@
   "public": {
     "schedule": {
       "title": "Schedule",
-      "description": "View the race schedule"
+      "description": "View the race schedule",
+      "empty": "No schedule entries available for this revision.",
+      "headers": {
+        "lane": "Lane",
+        "race": "Race",
+        "status": "Status"
+      },
+      "errors": {
+        "missing_regatta": "Missing regatta id in URL.",
+        "load_failed": "Failed to load schedule data."
+      }
     },
     "results": {
       "title": "Results",

@@ -40,6 +40,8 @@ class PublicVersionedRoutesTest {
     @BeforeEach
     void setUp() throws Exception {
         testRegattaId = UUID.randomUUID();
+        UUID entryId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
         
         // Insert test regatta with known revisions
         try (Connection conn = dataSource.getConnection();
@@ -49,6 +51,17 @@ class PublicVersionedRoutesTest {
                  "VALUES (?, 'Test Regatta', 'Test Description', 'Europe/Amsterdam', 'published', 25.00, 'EUR', 2, 3, now(), now())"
              )) {
             stmt.setObject(1, testRegattaId);
+            stmt.executeUpdate();
+        }
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "INSERT INTO public_regatta_draw (regatta_id, draw_revision, entry_id, event_id, bib, lane, scheduled_start_time, crew_name, club_name, status, updated_at) " +
+                 "VALUES (?, 2, ?, ?, 14, 4, now(), 'Crew Alpha', 'Riverside RC', 'entered', now())"
+             )) {
+            stmt.setObject(1, testRegattaId);
+            stmt.setObject(2, entryId);
+            stmt.setObject(3, eventId);
             stmt.executeUpdate();
         }
         
@@ -273,5 +286,83 @@ class PublicVersionedRoutesTest {
             .get(versionedPath)
             .then()
             .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
+    }
+
+    @Test
+    void testSchedulePayload_MatchesPublicContractShape() {
+        String versionedPath = String.format("/public/v%d-%d/regattas/%s/schedule", 2, 3, testRegattaId);
+
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(versionedPath)
+            .then()
+            .statusCode(200)
+            .body("$", hasKey("draw_revision"))
+            .body("$", hasKey("results_revision"))
+            .body("$", hasKey("data"))
+            .body("data", isA(java.util.List.class))
+            .body("data.size()", greaterThan(0))
+            .body("data[0]", hasKey("entry_id"))
+            .body("data[0]", hasKey("event_id"))
+            .body("data[0]", hasKey("lane"))
+            .body("data[0]", hasKey("crew_name"))
+            .body("data[0].status", equalTo("entered"));
+    }
+
+    @Test
+    void testScheduleContent_RemainsConsistentAcrossResultsRevisionChanges() throws Exception {
+        final int drawRevision = 2;
+        final int initialResultsRevision = 3;
+        final int updatedResultsRevision = 4;
+        String beforePath = String.format(
+            "/public/v%d-%d/regattas/%s/schedule",
+            drawRevision,
+            initialResultsRevision,
+            testRegattaId
+        );
+
+        Response beforeResponse = given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(beforePath)
+            .then()
+            .statusCode(200)
+            .body("$", hasKey("data"))
+            .body("data", isA(java.util.List.class))
+            .extract().response();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE regattas SET results_revision = ?, updated_at = now() WHERE id = ?"
+             )) {
+            stmt.setInt(1, updatedResultsRevision);
+            stmt.setObject(2, testRegattaId);
+            stmt.executeUpdate();
+        }
+
+        String afterPath = String.format(
+            "/public/v%d-%d/regattas/%s/schedule",
+            drawRevision,
+            updatedResultsRevision,
+            testRegattaId
+        );
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(beforePath)
+            .then()
+            .statusCode(404);
+
+        Response after = given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(afterPath)
+            .then()
+            .statusCode(200)
+            .extract().response();
+
+        assertEquals(beforeResponse.jsonPath().getList("data"), after.jsonPath().getList("data"),
+            "Schedule payload content should remain unchanged when only results_revision changes");
     }
 }
