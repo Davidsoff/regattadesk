@@ -347,6 +347,16 @@
       "results": "Results Revision"
     }
   },
+  "export": {
+    "status": {
+      "preparing": "Preparing export...",
+      "generating": "Generating export...",
+      "ready": "Export ready",
+      "failed": "Export failed"
+    },
+    "retry": "Retry",
+    "expiration_notice": "Download available for 1 hour"
+  },
   "errors": {
     "unauthorized": {
       "title": "Unauthorized Access",

@@ -347,6 +347,16 @@
       "results": "Resultaten versie"
     }
   },
+  "export": {
+    "status": {
+      "preparing": "Export voorbereiden...",
+      "generating": "Export genereren...",
+      "ready": "Export klaar",
+      "failed": "Export mislukt"
+    },
+    "retry": "Opnieuw proberen",
+    "expiration_notice": "Download beschikbaar voor 1 uur"
+  },
   "errors": {
     "unauthorized": {
       "title": "Ongeautoriseerde toegang",
