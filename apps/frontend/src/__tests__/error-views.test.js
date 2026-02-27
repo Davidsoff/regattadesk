@@ -1,29 +1,18 @@
-import { describe, expect, it, beforeEach } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import Unauthorized from '../views/Unauthorized.vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import NotFound from '../views/NotFound.vue'
+import Unauthorized from '../views/Unauthorized.vue'
 
 function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
-      {
-        path: '/',
-        component: { template: '<div>Home</div>' }
-      },
-      {
-        path: '/unauthorized',
-        name: 'unauthorized',
-        component: Unauthorized
-      },
-      {
-        path: '/:pathMatch(.*)*',
-        name: 'not-found',
-        component: NotFound
-      }
-    ]
+      { path: '/', component: { template: '<div>Home</div>' } },
+      { path: '/unauthorized', name: 'unauthorized', component: Unauthorized },
+      { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFound },
+    ],
   })
 }
 
@@ -35,233 +24,87 @@ function createTestI18n() {
       en: {
         common: { go_home: 'Go to Home' },
         errors: {
-          unauthorized: {
-            title: 'Unauthorized',
-            description: 'You do not have permission.'
-          },
-          not_found: {
-            title: 'Not Found',
-            description: 'Page not found.'
-          }
-        }
-      }
-    }
+          unauthorized: { title: 'Unauthorized', description: 'You do not have permission.' },
+          not_found: { title: 'Not Found', description: 'Page not found.' },
+        },
+      },
+    },
+  })
+}
+
+async function mountAtRoute(router, route, component) {
+  await router.push(route)
+  await router.isReady()
+  return mount(component, {
+    global: {
+      plugins: [router, createTestI18n()],
+    },
   })
 }
 
 describe('Error View Components', () => {
-  describe('Unauthorized', () => {
-    let router
-    let i18n
+  let router
 
-    beforeEach(() => {
-      router = createTestRouter()
-      i18n = createTestI18n()
-    })
+  beforeEach(() => {
+    router = createTestRouter()
+  })
 
-    it('renders unauthorized page', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
+  const scenarios = [
+    {
+      name: 'Unauthorized',
+      component: Unauthorized,
+      route: '/unauthorized',
+      rootClass: '.unauthorized',
+      title: 'Unauthorized',
+      description: 'You do not have permission.',
+    },
+    {
+      name: 'NotFound',
+      component: NotFound,
+      route: '/missing-page',
+      rootClass: '.not-found',
+      title: 'Not Found',
+      description: 'Page not found.',
+    },
+  ]
 
-      const wrapper = mount(Unauthorized, {
-        global: {
-          plugins: [router, i18n]
-        }
+  scenarios.forEach(({ name, component, route, rootClass, title, description }) => {
+    describe(name, () => {
+      it('renders page shell and translated content', async () => {
+        const wrapper = await mountAtRoute(router, route, component)
+
+        expect(wrapper.find(rootClass).exists()).toBe(true)
+        expect(wrapper.find('h2').text()).toBe(title)
+        expect(wrapper.text()).toContain(description)
       })
 
-      expect(wrapper.find('.unauthorized').exists()).toBe(true)
-    })
+      it('shows go-home button', async () => {
+        const wrapper = await mountAtRoute(router, route, component)
 
-    it('displays unauthorized title', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
-
-      const wrapper = mount(Unauthorized, {
-        global: {
-          plugins: [router, i18n]
-        }
+        const button = wrapper.find('button')
+        expect(button.exists()).toBe(true)
+        expect(button.text()).toBe('Go to Home')
       })
 
-      expect(wrapper.find('h2').text()).toBe('Unauthorized')
-    })
+      it('navigates to home on go-home click', async () => {
+        const wrapper = await mountAtRoute(router, route, component)
 
-    it('displays unauthorized description', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
+        await wrapper.find('button').trigger('click')
+        await flushPromises()
 
-      const wrapper = mount(Unauthorized, {
-        global: {
-          plugins: [router, i18n]
-        }
+        expect(router.currentRoute.value.path).toBe('/')
       })
-
-      expect(wrapper.text()).toContain('You do not have permission.')
-    })
-
-    it('includes go home button', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
-
-      const wrapper = mount(Unauthorized, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      const button = wrapper.find('button')
-      expect(button.exists()).toBe(true)
-      expect(button.text()).toBe('Go to Home')
-    })
-
-    it('navigates to home when button is clicked', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
-
-      const wrapper = mount(Unauthorized, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      const button = wrapper.find('button')
-      const clickPromise = button.trigger('click')
-      await clickPromise
-      await flushPromises()
-      
-      expect(router.currentRoute.value.path).toBe('/')
     })
   })
 
-  describe('NotFound', () => {
-    let router
-    let i18n
+  it('keeps a consistent structure across error pages', async () => {
+    const unauthorizedWrapper = await mountAtRoute(router, '/unauthorized', Unauthorized)
+    const notFoundWrapper = await mountAtRoute(router, '/missing', NotFound)
 
-    beforeEach(() => {
-      router = createTestRouter()
-      i18n = createTestI18n()
-    })
-
-    it('renders not found page', async () => {
-      await router.push('/does-not-exist')
-      await router.isReady()
-
-      const wrapper = mount(NotFound, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      expect(wrapper.find('.not-found').exists()).toBe(true)
-    })
-
-    it('displays not found title', async () => {
-      await router.push('/invalid-path')
-      await router.isReady()
-
-      const wrapper = mount(NotFound, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      expect(wrapper.find('h2').text()).toBe('Not Found')
-    })
-
-    it('displays not found description', async () => {
-      await router.push('/missing')
-      await router.isReady()
-
-      const wrapper = mount(NotFound, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      expect(wrapper.text()).toContain('Page not found.')
-    })
-
-    it('includes go home button', async () => {
-      await router.push('/404')
-      await router.isReady()
-
-      const wrapper = mount(NotFound, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      const button = wrapper.find('button')
-      expect(button.exists()).toBe(true)
-      expect(button.text()).toBe('Go to Home')
-    })
-
-    it('navigates to home when button is clicked', async () => {
-      await router.push('/not-here')
-      await router.isReady()
-
-      const wrapper = mount(NotFound, {
-        global: {
-          plugins: [router, i18n]
-        }
-      })
-
-      const button = wrapper.find('button')
-      const clickPromise = button.trigger('click')
-      await clickPromise
-      await flushPromises()
-      
-      expect(router.currentRoute.value.path).toBe('/')
-    })
-  })
-
-  describe('Error page consistency', () => {
-    let router
-    let i18n
-
-    beforeEach(() => {
-      router = createTestRouter()
-      i18n = createTestI18n()
-    })
-
-    it('both error pages have similar structure', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
-      const unauthorizedWrapper = mount(Unauthorized, {
-        global: { plugins: [router, i18n] }
-      })
-
-      await router.push('/not-found')
-      await router.isReady()
-      const notFoundWrapper = mount(NotFound, {
-        global: { plugins: [router, i18n] }
-      })
-
-      expect(unauthorizedWrapper.find('h2').exists()).toBe(true)
-      expect(notFoundWrapper.find('h2').exists()).toBe(true)
-
-      expect(unauthorizedWrapper.find('p').exists()).toBe(true)
-      expect(notFoundWrapper.find('p').exists()).toBe(true)
-
-      expect(unauthorizedWrapper.find('button').exists()).toBe(true)
-      expect(notFoundWrapper.find('button').exists()).toBe(true)
-    })
-
-    it('both error pages center content', async () => {
-      await router.push('/unauthorized')
-      await router.isReady()
-      const unauthorizedWrapper = mount(Unauthorized, {
-        global: { plugins: [router, i18n] }
-      })
-
-      await router.push('/not-found')
-      await router.isReady()
-      const notFoundWrapper = mount(NotFound, {
-        global: { plugins: [router, i18n] }
-      })
-
-      // Both should have centered container classes
-      expect(unauthorizedWrapper.find('.unauthorized').exists()).toBe(true)
-      expect(notFoundWrapper.find('.not-found').exists()).toBe(true)
+    ;[unauthorizedWrapper, notFoundWrapper].forEach((wrapper) => {
+      expect(wrapper.find('h2').exists()).toBe(true)
+      expect(wrapper.find('p').exists()).toBe(true)
+      expect(wrapper.find('button').exists()).toBe(true)
     })
   })
 })
