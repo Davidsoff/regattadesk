@@ -2,7 +2,7 @@
 
 **BC09-002 Implementation**  
 **Target Audience:** On-call engineers, DevOps, SREs  
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-02-27
 
 ## Overview
 
@@ -44,18 +44,24 @@ This directory contains operational runbooks for RegattaDesk v0.1 incident respo
    - Configuration updates
    - Zero-downtime deployment strategies
 
-6. **Log Analysis and Troubleshooting (RB-006, planned)**
+6. **[Performance Gates](./performance-gates.md)**
+   - Smoke load profile for CI-adjacent regression signal
+   - Scheduled deep load profile and archived reports
+   - Release gate pass/fail threshold interpretation
+   - Follow-up tuning recommendation capture
+
+7. **Log Analysis and Troubleshooting (RB-006, planned)**
    - Accessing logs
    - Common log patterns
    - Correlation techniques
    - Using Grafana and Prometheus
 
-7. **Health Check Interpretation (RB-007, planned)**
+8. **Health Check Interpretation (RB-007, planned)**
    - Understanding health endpoint responses
    - Readiness vs liveness vs startup probes
    - When to escalate health check failures
 
-8. **Configuration Management (RB-008, planned)**
+9. **Configuration Management (RB-008, planned)**
    - Environment variable management
    - Secret rotation procedures
    - Traefik configuration updates

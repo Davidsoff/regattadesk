@@ -1,0 +1,115 @@
+name: Performance Load Validation
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Target base URL (defaults to local mock server)'
+        required: false
+        type: string
+
+jobs:
+  smoke-load:
+    name: Smoke Load Gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@ffe7d7290dfa715e48c2ccc924d068444c94bde2
+
+      - name: Start mock target
+        run: |
+          python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
+          echo $! >/tmp/mock-server.pid
+
+      - name: Wait for mock target
+        run: |
+          for _ in {1..20}; do
+            if curl -fsS http://127.0.0.1:18080/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "mock target did not become ready in time" >&2
+          exit 1
+
+      - name: Run smoke load profile
+        run: |
+          BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
+          mkdir -p apps/backend/performance/reports
+          PROFILE=smoke BASE_URL="$BASE_URL" OUTPUT_DIR=apps/backend/performance/reports \
+            k6 run apps/backend/performance/load_harness.js
+
+      - name: Upload smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-smoke-report
+          path: apps/backend/performance/reports/smoke-*
+
+      - name: Stop mock target
+        if: always()
+        run: |
+          if [[ -f /tmp/mock-server.pid ]]; then
+            kill "$(cat /tmp/mock-server.pid)" || true
+          fi
+
+  deep-load:
+    name: Scheduled Deep Load Run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@ffe7d7290dfa715e48c2ccc924d068444c94bde2
+
+      - name: Start mock target
+        run: |
+          python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
+          echo $! >/tmp/mock-server.pid
+
+      - name: Wait for mock target
+        run: |
+          for _ in {1..20}; do
+            if curl -fsS http://127.0.0.1:18080/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "mock target did not become ready in time" >&2
+          exit 1
+
+      - name: Run deep load profile
+        run: |
+          BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
+          mkdir -p apps/backend/performance/reports
+          PROFILE=deep BASE_URL="$BASE_URL" OUTPUT_DIR=apps/backend/performance/reports \
+            k6 run apps/backend/performance/load_harness.js
+
+      - name: Upload deep reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-deep-report
+          path: apps/backend/performance/reports/deep-*
+
+      - name: Stop mock target
+        if: always()
+        run: |
+          if [[ -f /tmp/mock-server.pid ]]; then
+            kill "$(cat /tmp/mock-server.pid)" || true
+          fi
