@@ -14,9 +14,10 @@ describe('Route Guards', () => {
       expect(next).toHaveBeenCalledTimes(1)
     })
 
-    it('redirects to unauthorized when staff auth is missing', () => {
-      // This test documents the future behavior when auth is integrated
-      // Currently, the guard always allows access in v0.1
+    it('allows access in v0.1 (placeholder for future auth check)', () => {
+      // This test documents the current v0.1 behavior
+      // In v0.1, the guard always allows access (placeholder implementation)
+      // TODO: Update when BC02 auth integration is complete
       const to = { fullPath: '/staff/regattas' }
       const from = {}
       const next = vi.fn()
@@ -51,9 +52,10 @@ describe('Route Guards', () => {
       expect(next).toHaveBeenCalledTimes(1)
     })
 
-    it('redirects to unauthorized when operator token is missing', () => {
-      // This test documents the future behavior when token auth is integrated
-      // Currently, the guard always allows access in v0.1
+    it('allows access in v0.1 (placeholder for future token check)', () => {
+      // This test documents the current v0.1 behavior
+      // In v0.1, the guard always allows access (placeholder implementation)
+      // TODO: Update when BC02 token auth integration is complete
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()

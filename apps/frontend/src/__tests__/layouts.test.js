@@ -132,7 +132,8 @@ describe('Layout Components', () => {
 
       const navLink = wrapper.find('.staff-layout__nav-item')
       expect(navLink.exists()).toBe(true)
-      expect(navLink.attributes('to')).toBe('/staff/regattas')
+      // router-link's :to prop is rendered as href
+      expect(navLink.attributes('href')).toBe('/staff/regattas')
     })
 
     it('renders router-view for content', async () => {
@@ -311,8 +312,9 @@ describe('Layout Components', () => {
 
       const navLinks = wrapper.findAll('.public-layout__nav-item')
       expect(navLinks.length).toBe(2)
-      expect(navLinks[0].attributes('to')).toBe('/public/v2-5/schedule')
-      expect(navLinks[1].attributes('to')).toBe('/public/v2-5/results')
+      // router-link's :to prop is rendered as href
+      expect(navLinks[0].attributes('href')).toBe('/public/v2-5/schedule')
+      expect(navLinks[1].attributes('href')).toBe('/public/v2-5/results')
     })
 
     it('displays footer with branding', async () => {
@@ -358,14 +360,20 @@ describe('Layout Components', () => {
       await router.push('/staff/regattas')
       await router.isReady()
       const staffWrapper = mount(StaffLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/operator/regattas')
       await router.isReady()
       const operatorWrapper = mount(OperatorLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/public/v1-0/schedule')
       await router.isReady()
       const publicWrapper = mount(PublicLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       expect(staffWrapper.find('.skip-link').exists()).toBe(true)
       expect(operatorWrapper.find('.skip-link').exists()).toBe(true)
@@ -376,14 +384,20 @@ describe('Layout Components', () => {
       await router.push('/staff/regattas')
       await router.isReady()
       const staffWrapper = mount(StaffLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/operator/regattas')
       await router.isReady()
       const operatorWrapper = mount(OperatorLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/public/v1-0/schedule')
       await router.isReady()
       const publicWrapper = mount(PublicLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       expect(staffWrapper.find('#main-content').exists()).toBe(true)
       expect(operatorWrapper.find('#main-content').exists()).toBe(true)
@@ -394,14 +408,20 @@ describe('Layout Components', () => {
       await router.push('/staff/regattas')
       await router.isReady()
       const staffWrapper = mount(StaffLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/operator/regattas')
       await router.isReady()
       const operatorWrapper = mount(OperatorLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       await router.push('/public/v1-0/schedule')
       await router.isReady()
       const publicWrapper = mount(PublicLayout, {
+        global: { plugins: [router, createTestI18n()] }
+      })
 
       expect(staffWrapper.text()).toContain('RegattaDesk')
       expect(operatorWrapper.text()).toContain('RegattaDesk')
