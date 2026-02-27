@@ -17,13 +17,19 @@ const route = useRoute()
       
       <nav class="public-layout__nav" aria-label="Primary navigation">
         <router-link 
-          :to="`/public/v${route.params.drawRevision}-${route.params.resultsRevision}/schedule`"
+          :to="{
+            path: `/public/v${route.params.drawRevision}-${route.params.resultsRevision}/schedule`,
+            query: route.query,
+          }"
           class="public-layout__nav-item"
         >
           {{ t('navigation.schedule') }}
         </router-link>
         <router-link 
-          :to="`/public/v${route.params.drawRevision}-${route.params.resultsRevision}/results`"
+          :to="{
+            path: `/public/v${route.params.drawRevision}-${route.params.resultsRevision}/results`,
+            query: route.query,
+          }"
           class="public-layout__nav-item"
         >
           {{ t('navigation.results') }}

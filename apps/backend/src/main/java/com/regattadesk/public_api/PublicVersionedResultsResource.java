@@ -1,14 +1,19 @@
 package com.regattadesk.public_api;
 
 import com.regattadesk.api.dto.ErrorResponse;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import jakarta.inject.Inject;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,6 +33,9 @@ public class PublicVersionedResultsResource {
     
     @Inject
     RegattaVersionRepository versionRepository;
+
+    @Inject
+    DataSource dataSource;
     
     /**
      * Get the results for a regatta at a specific version.
@@ -70,12 +78,8 @@ public class PublicVersionedResultsResource {
                     .build();
             }
             
-            ResultsResponse results = new ResultsResponse(
-                regattaId,
-                drawRevision,
-                resultsRevision,
-                "Results data would appear here"
-            );
+            List<ResultRow> rows = fetchRows(regattaId, drawRevision, resultsRevision);
+            ResultsResponse results = new ResultsResponse(drawRevision, resultsRevision, rows);
             
             return Response.ok(results).build();
             
@@ -90,10 +94,62 @@ public class PublicVersionedResultsResource {
     /**
      * Response DTO for results endpoint.
      */
-    public record ResultsResponse(
-        @JsonProperty("regatta_id") UUID regattaId,
-        @JsonProperty("draw_revision") int drawRevision,
-        @JsonProperty("results_revision") int resultsRevision,
-        @JsonProperty("results_data") String resultsData
+    private List<ResultRow> fetchRows(UUID regattaId, int drawRevision, int resultsRevision) throws SQLException {
+        String sql = """
+            SELECT entry_id, event_id, bib, crew_name, club_name, elapsed_time_ms, penalties_ms, rank,
+                   status, is_provisional, is_edited, is_official
+            FROM public_regatta_results
+            WHERE regatta_id = ?
+              AND draw_revision = ?
+              AND results_revision = ?
+              AND status <> 'withdrawn_before_draw'
+            ORDER BY rank NULLS LAST, bib NULLS LAST, crew_name
+            """;
+
+        List<ResultRow> rows = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setInt(2, drawRevision);
+            stmt.setInt(3, resultsRevision);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new ResultRow(
+                        rs.getObject("entry_id", UUID.class),
+                        rs.getObject("event_id", UUID.class),
+                        rs.getObject("bib", Integer.class),
+                        rs.getString("crew_name"),
+                        rs.getString("club_name"),
+                        rs.getObject("elapsed_time_ms", Integer.class),
+                        rs.getObject("penalties_ms", Integer.class),
+                        rs.getObject("rank", Integer.class),
+                        rs.getString("status"),
+                        rs.getBoolean("is_provisional"),
+                        rs.getBoolean("is_edited"),
+                        rs.getBoolean("is_official")
+                    ));
+                }
+            }
+        }
+
+        return rows;
+    }
+
+    public record ResultsResponse(int draw_revision, int results_revision, List<ResultRow> data) {}
+
+    public record ResultRow(
+        UUID entry_id,
+        UUID event_id,
+        Integer bib,
+        String crew_name,
+        String club_name,
+        Integer elapsed_time_ms,
+        Integer penalties_ms,
+        Integer rank,
+        String status,
+        boolean is_provisional,
+        boolean is_edited,
+        boolean is_official
     ) {}
 }
