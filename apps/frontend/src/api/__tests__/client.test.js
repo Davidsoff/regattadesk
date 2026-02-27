@@ -9,6 +9,16 @@ describe('client', () => {
     client = createApiClient({ baseUrl: '/api/v1' })
   })
 
+  function jsonResponse(payload, overrides = {}) {
+    return {
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => payload,
+      ...overrides
+    }
+  }
+
   describe('createApiClient', () => {
     it('creates a client with request method', () => {
       expect(client).toBeDefined()
@@ -24,10 +34,7 @@ describe('client', () => {
   describe('request', () => {
     it('makes GET request with correct URL', async () => {
       const mockResponse = { data: 'test' }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.request('GET', '/test')
@@ -36,21 +43,16 @@ describe('client', () => {
         '/api/v1/test',
         expect.objectContaining({
           method: 'GET',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          })
+          headers: {}
         })
       )
       expect(result).toEqual(mockResponse)
     })
 
-    it('makes POST request with body', async () => {
+    it('makes POST request with JSON body and default content type', async () => {
       const mockResponse = { success: true }
       const requestBody = { name: 'test' }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.request('POST', '/test', { body: requestBody })
@@ -59,36 +61,40 @@ describe('client', () => {
         '/api/v1/test',
         expect.objectContaining({
           method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json'
+          }),
           body: JSON.stringify(requestBody)
         })
       )
       expect(result).toEqual(mockResponse)
     })
 
-    it('includes idempotency key header when provided', async () => {
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({})
-      })
+    it('does not stringify non-JSON body payloads', async () => {
+      const bytes = new Uint8Array([1, 2, 3])
+      const fetchMock = vi.fn().mockResolvedValue(
+        jsonResponse({ ok: true }, { headers: { get: () => 'application/json' } })
+      )
       vi.stubGlobal('fetch', fetchMock)
 
-      await client.request('POST', '/test', { idempotencyKey: 'key-123' })
+      await client.request('PUT', '/tiles/1', {
+        body: bytes,
+        headers: { 'Content-Type': 'image/png' }
+      })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
+        '/api/v1/tiles/1',
         expect.objectContaining({
+          body: bytes,
           headers: expect.objectContaining({
-            'Idempotency-Key': 'key-123'
+            'Content-Type': 'image/png'
           })
         })
       )
     })
 
     it('merges custom headers with defaults', async () => {
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({})
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse({}))
       vi.stubGlobal('fetch', fetchMock)
 
       await client.request('GET', '/test', {
@@ -99,7 +105,6 @@ describe('client', () => {
         '/api/v1/test',
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Content-Type': 'application/json',
             'X-Custom': 'value'
           })
         })
@@ -113,11 +118,12 @@ describe('client', () => {
           message: 'Invalid input'
         }
       }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 400,
-        json: async () => errorResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(
+        jsonResponse(errorResponse, {
+          ok: false,
+          status: 400
+        })
+      )
       vi.stubGlobal('fetch', fetchMock)
 
       await expect(client.request('POST', '/test')).rejects.toThrow()
@@ -131,16 +137,17 @@ describe('client', () => {
     })
 
     it('includes status code in error', async () => {
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 404,
-        json: async () => ({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Resource not found'
-          }
-        })
-      })
+      const fetchMock = vi.fn().mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Resource not found'
+            }
+          },
+          { ok: false, status: 404 }
+        )
+      )
       vi.stubGlobal('fetch', fetchMock)
 
       try {
@@ -150,38 +157,60 @@ describe('client', () => {
       }
     })
 
-    it('handles network errors gracefully', async () => {
+    it('wraps network errors in ApiError shape', async () => {
       const fetchMock = vi.fn().mockRejectedValue(new Error('Network error'))
       vi.stubGlobal('fetch', fetchMock)
 
-      await expect(client.request('GET', '/test')).rejects.toThrow('Network error')
+      await expect(client.request('GET', '/test')).rejects.toMatchObject({
+        code: 'NETWORK_ERROR',
+        status: 0,
+        message: 'Network error'
+      })
     })
 
-    it('handles non-JSON responses', async () => {
+    it('handles non-JSON error responses', async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
-        json: async () => {
-          throw new Error('Not JSON')
-        }
+        headers: { get: () => 'text/plain' }
       })
       vi.stubGlobal('fetch', fetchMock)
 
-      try {
-        await client.request('GET', '/test')
-      } catch (error) {
-        expect(error.code).toBe('UNKNOWN_ERROR')
+      await expect(client.request('GET', '/test')).rejects.toMatchObject({
+        code: 'UNKNOWN_ERROR'
+      })
+    })
+
+    it('returns null for successful no-content responses', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 204,
+        headers: { get: () => '' }
+      })
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await client.request('DELETE', '/test')
+      expect(result).toBeNull()
+    })
+
+    it('returns raw response for successful non-JSON payloads', async () => {
+      const rawResponse = {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/pdf' }
       }
+      const fetchMock = vi.fn().mockResolvedValue(rawResponse)
+      vi.stubGlobal('fetch', fetchMock)
+
+      const result = await client.request('GET', '/export')
+      expect(result).toBe(rawResponse)
     })
   })
 
   describe('convenience methods', () => {
     it('provides get method', async () => {
       const mockResponse = { data: 'test' }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.get('/test')
@@ -195,10 +224,7 @@ describe('client', () => {
 
     it('provides post method', async () => {
       const mockResponse = { success: true }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.post('/test', { name: 'test' })
@@ -215,10 +241,7 @@ describe('client', () => {
 
     it('provides patch method', async () => {
       const mockResponse = { success: true }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.patch('/test', { name: 'updated' })
@@ -235,10 +258,7 @@ describe('client', () => {
 
     it('provides delete method', async () => {
       const mockResponse = { success: true }
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse
-      })
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.delete('/test')

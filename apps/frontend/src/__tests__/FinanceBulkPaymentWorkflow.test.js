@@ -39,6 +39,8 @@ describe('FinanceBulkPaymentWorkflow', () => {
     }
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
       json: async () => mockResponse
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -67,6 +69,8 @@ describe('FinanceBulkPaymentWorkflow', () => {
   it('only sends non-empty entry_ids/club_ids in the request body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
       json: async () => ({
         success: true,
         message: 'Bulk payment update completed',
@@ -105,6 +109,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
       vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
+        headers: { get: () => 'application/json' },
         json: async () => ({
           error: { 
             code: 'VALIDATION_ERROR',
@@ -134,6 +139,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
       vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
+        headers: { get: () => 'application/json' },
         json: async () => ({ 
           error: { 
             code: 'INTERNAL_ERROR'
@@ -152,7 +158,6 @@ describe('FinanceBulkPaymentWorkflow', () => {
     await wrapper.get('.confirm-actions .primary').trigger('click')
     await flushPromises()
 
-    // Falls back to normalized "Unknown error" when API provides no message
-    expect(wrapper.text()).toContain('Unknown error')
+    expect(wrapper.text()).toContain(i18n.global.t('finance.bulk.error'))
   })
 })

@@ -5,7 +5,7 @@ Shared frontend API client for all RegattaDesk surfaces (staff, operator, public
 ## Features
 
 - **OpenAPI-aligned error handling**: Consistent normalization of `error_response` schema
-- **Idempotency support**: Built-in header management for retry-safe operations
+- **Idempotency support**: Pass-through support for OpenAPI `idempotency_key` request field
 - **Type-safe domain modules**: Organized by bounded context (Finance, Staff, Operator, Public)
 - **Request/response consistency**: Centralized fetch logic with error normalization
 
@@ -71,16 +71,13 @@ For retry-safe operations, include an `idempotency_key` in your payload:
 const payload = {
   entry_ids: ['uuid-1'],
   payment_status: 'paid',
-  idempotency_key: 'my-unique-key'  // Extracted automatically
+  idempotency_key: 'my-unique-key'  // Sent as part of the request payload
 }
 
 await financeApi.markBulkPayment(regattaId, payload)
 ```
 
-The client automatically:
-1. Extracts `idempotency_key` from the payload
-2. Sends it as the `Idempotency-Key` HTTP header
-3. Handles idempotent replay detection
+The finance domain helper passes `idempotency_key` through in the request payload as defined by OpenAPI.
 
 ## API Modules
 
@@ -192,7 +189,7 @@ This client is designed to match the contracts in `pdd/design/openapi-v0.1.yaml`
 
 - **Error responses**: Conforms to `error_response` schema
 - **Auth modes**: Supports Staff (proxy auth), Operator (token), and Public (anonymous)
-- **Idempotency**: Uses `Idempotency-Key` header as specified
+- **Idempotency**: Handles the `idempotency_key` request field as defined in the spec
 
 ## References
 

@@ -84,8 +84,14 @@ async function confirmSubmit() {
     result.value = responseData
     pendingPayload.value = null
   } catch (error) {
-    // API errors have normalized code and message
-    submitError.value = error.message || t('finance.bulk.error')
+    const isObjectError = error && typeof error === 'object'
+    const isUnknownError = isObjectError && 'code' in error && error.code === 'UNKNOWN_ERROR'
+    const hasMessage =
+      isObjectError &&
+      'message' in error &&
+      typeof error.message === 'string' &&
+      error.message.trim().length > 0
+    submitError.value = !hasMessage || isUnknownError ? t('finance.bulk.error') : error.message
   } finally {
     isSubmitting.value = false
   }

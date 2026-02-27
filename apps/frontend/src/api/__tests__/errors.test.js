@@ -61,21 +61,21 @@ describe('errors', () => {
       const normalized = normalizeApiError(response)
 
       expect(normalized.code).toBe('UNKNOWN_ERROR')
-      expect(normalized.message).toContain('Unknown error')
+      expect(normalized.message).toBe('')
     })
 
     it('returns generic error for null response', () => {
       const normalized = normalizeApiError(null)
 
       expect(normalized.code).toBe('UNKNOWN_ERROR')
-      expect(normalized.message).toContain('Unknown error')
+      expect(normalized.message).toBe('')
     })
 
     it('returns generic error for non-object response', () => {
       const normalized = normalizeApiError('error string')
 
       expect(normalized.code).toBe('UNKNOWN_ERROR')
-      expect(normalized.message).toContain('Unknown error')
+      expect(normalized.message).toBe('')
     })
 
     it('handles missing message field gracefully', () => {
@@ -88,7 +88,7 @@ describe('errors', () => {
       const normalized = normalizeApiError(response)
 
       expect(normalized.code).toBe('VALIDATION_ERROR')
-      expect(normalized.message).toBe('Unknown error')
+      expect(normalized.message).toBe('')
     })
 
     it('handles missing code field gracefully', () => {

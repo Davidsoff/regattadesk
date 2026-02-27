@@ -39,7 +39,7 @@ export function normalizeApiError(response) {
   if (!isApiError(response)) {
     return {
       code: 'UNKNOWN_ERROR',
-      message: 'Unknown error occurred',
+      message: '',
       details: undefined,
       requestId: undefined
     }
@@ -47,7 +47,7 @@ export function normalizeApiError(response) {
 
   const { error } = response
   const code = typeof error.code === 'string' ? error.code : 'UNKNOWN_ERROR'
-  const message = typeof error.message === 'string' ? error.message : 'Unknown error'
+  const message = typeof error.message === 'string' ? error.message : ''
   const details = error.details
   const requestId = response.request_id
 

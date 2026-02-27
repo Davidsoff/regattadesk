@@ -37,8 +37,7 @@ describe('finance', () => {
 
       expect(mockClient.post).toHaveBeenCalledWith(
         `/regattas/${regattaId}/payments/mark_bulk`,
-        payload,
-        undefined
+        payload
       )
       expect(result).toEqual(mockResponse)
     })
@@ -69,12 +68,11 @@ describe('finance', () => {
 
       expect(mockClient.post).toHaveBeenCalledWith(
         `/regattas/${regattaId}/payments/mark_bulk`,
-        payload,
-        { idempotencyKey: 'key-123' }
+        payload
       )
     })
 
-    it('extracts idempotency key from payload', async () => {
+    it('keeps idempotency key in payload per OpenAPI contract', async () => {
       const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
       const payload = {
         entry_ids: ['7f7af3d8-9090-49d5-b21c-9cc12d35a0e6'],
@@ -95,9 +93,8 @@ describe('finance', () => {
 
       await api.markBulkPayment(regattaId, payload)
 
-      // Verify that idempotency_key is passed as header option
       const callArgs = mockClient.post.mock.calls[0]
-      expect(callArgs[2]).toEqual({ idempotencyKey: 'key-456' })
+      expect(callArgs).toEqual([`/regattas/${regattaId}/payments/mark_bulk`, payload])
     })
 
     it('handles API errors', async () => {

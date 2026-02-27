@@ -26,12 +26,7 @@ export function createFinanceApi(client) {
      * @returns {Promise<object>} Bulk operation result
      */
     async markBulkPayment(regattaId, payload) {
-      // Extract idempotency_key from payload if present
-      const options = payload.idempotency_key 
-        ? { idempotencyKey: payload.idempotency_key }
-        : undefined
-
-      return client.post(`/regattas/${regattaId}/payments/mark_bulk`, payload, options)
+      return client.post(`/regattas/${regattaId}/payments/mark_bulk`, payload)
     }
   }
 }

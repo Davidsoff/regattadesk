@@ -4,18 +4,17 @@
  * Provides:
  * - Consistent request/response handling
  * - OpenAPI error normalization
- * - Idempotency key support
- * - Auth token handling
+ * - Flexible request body handling
  */
 
-import { normalizeApiError, isApiError } from './errors.js'
+import { normalizeApiError } from './errors.js'
 
 /**
  * Custom error class for API errors with normalized fields.
  */
 export class ApiError extends Error {
   constructor(normalizedError, status) {
-    super(normalizedError.message)
+    super(typeof normalizedError.message === 'string' ? normalizedError.message : '')
     this.name = 'ApiError'
     this.code = normalizedError.code
     this.details = normalizedError.details
@@ -33,29 +32,33 @@ export class ApiError extends Error {
 export function createApiClient(options = {}) {
   const { baseUrl = '/api/v1' } = options
 
+  function isJsonSerializableBody(body) {
+    return (
+      body !== null &&
+      typeof body === 'object' &&
+      !(body instanceof ArrayBuffer) &&
+      !ArrayBuffer.isView(body) &&
+      !(typeof Blob !== 'undefined' && body instanceof Blob) &&
+      !(typeof FormData !== 'undefined' && body instanceof FormData) &&
+      !(typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams)
+    )
+  }
+
   /**
    * Make an HTTP request to the API.
    * @param {string} method - HTTP method
    * @param {string} path - Request path (relative to baseUrl)
    * @param {object} options - Request options
-   * @param {object} options.body - Request body (will be JSON-stringified)
+   * @param {any} options.body - Request body
    * @param {object} options.headers - Additional headers
-   * @param {string} options.idempotencyKey - Idempotency key for safe retries
-   * @returns {Promise<object>} Response data
+   * @returns {Promise<any>} Response data
    * @throws {ApiError} When response is not ok
    */
   async function request(method, path, options = {}) {
-    const { body, headers = {}, idempotencyKey } = options
+    const { body, headers = {} } = options
 
     const url = `${baseUrl}${path}`
-    const requestHeaders = {
-      'Content-Type': 'application/json',
-      ...headers
-    }
-
-    if (idempotencyKey) {
-      requestHeaders['Idempotency-Key'] = idempotencyKey
-    }
+    const requestHeaders = { ...headers }
 
     const requestInit = {
       method,
@@ -63,36 +66,64 @@ export function createApiClient(options = {}) {
     }
 
     if (body !== undefined) {
-      requestInit.body = JSON.stringify(body)
+      if (isJsonSerializableBody(body)) {
+        if (!('Content-Type' in requestHeaders) && !('content-type' in requestHeaders)) {
+          requestHeaders['Content-Type'] = 'application/json'
+        }
+        requestInit.body = JSON.stringify(body)
+      } else {
+        requestInit.body = body
+      }
     }
 
-    let response
     try {
-      response = await fetch(url, requestInit)
-    } catch (error) {
-      // Network error or other fetch failure
-      throw error
-    }
+      const response = await fetch(url, requestInit)
+      const contentType = response.headers?.get?.('content-type') || ''
+      const isJsonResponse = contentType.includes('application/json')
+      const isNoContentStatus = response.status === 204 || response.status === 205
 
-    let data
-    try {
-      data = await response.json()
-    } catch (error) {
-      // Response is not JSON or malformed
+      let data = null
+      if (!isNoContentStatus && isJsonResponse) {
+        try {
+          data = await response.json()
+        } catch (error) {
+          if (!response.ok) {
+            const normalized = normalizeApiError(null)
+            throw new ApiError(normalized, response.status)
+          }
+          data = null
+        }
+      }
+
       if (!response.ok) {
-        // Non-JSON error response
-        const normalized = normalizeApiError(null)
+        const normalized = normalizeApiError(data)
         throw new ApiError(normalized, response.status)
       }
-      throw error
-    }
 
-    if (!response.ok) {
-      const normalized = normalizeApiError(data)
-      throw new ApiError(normalized, response.status)
-    }
+      if (isNoContentStatus) {
+        return null
+      }
 
-    return data
+      if (isJsonResponse) {
+        return data
+      }
+
+      return response
+    } catch (error) {
+      // Network error or other fetch failure
+      if (error instanceof ApiError) {
+        throw error
+      }
+      throw new ApiError(
+        {
+          code: 'NETWORK_ERROR',
+          message: error instanceof Error ? error.message : '',
+          details: undefined,
+          requestId: undefined
+        },
+        0
+      )
+    }
   }
 
   return {
