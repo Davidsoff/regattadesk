@@ -155,11 +155,13 @@ Public clients follow this bootstrap flow:
 When draw or results are published:
 1. Regatta's `draw_revision` or `results_revision` is incremented
 2. New version tuple produces new immutable URL
-3. Old versioned URLs remain valid and cacheable
+3. Conceptually, old versioned URLs remain valid and cacheable as long as their referenced data is retained
 4. Clients poll `/public/regattas/{id}/versions` to detect changes
 5. On version change, clients switch to new versioned URLs
 
-**Example:**
+> **Note:** In the current implementation, only the current `{draw_revision, results_revision}` tuple is accessible. Requests for older versioned URLs (where either revision does not match the current value) return `404 Not Found`. Historical version storage and serving are planned for future implementation.
+
+**Example (intended behavior):**
 - Initial version: `/public/v2-3/regattas/{id}/schedule`
 - After results publication: `/public/v2-4/regattas/{id}/schedule`
 - Both URLs are valid and immutable
