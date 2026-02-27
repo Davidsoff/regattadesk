@@ -32,7 +32,7 @@ function resolveOperatorDeviceId() {
   const generated =
     typeof globalThis.crypto?.randomUUID === 'function'
       ? globalThis.crypto.randomUUID()
-      : `operator-device-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      : 'operator-device'
   storage.setItem(DEVICE_ID_STORAGE_KEY, generated)
   return generated
 }
