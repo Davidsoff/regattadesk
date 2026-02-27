@@ -1,6 +1,7 @@
 package com.regattadesk.public_api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -8,6 +9,7 @@ import org.jboss.logging.Logger;
 
 import jakarta.inject.Inject;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -20,7 +22,7 @@ import java.util.UUID;
  * The cache control filter automatically applies:
  * Cache-Control: public, max-age=31536000, immutable
  */
-@Path("/public/v{draw}-{results}/regattas/{regatta_id}/schedule")
+@Path("/public/v{draw:-?\\d+}-{results:-?\\d+}/regattas/{regatta_id}/schedule")
 public class PublicVersionedScheduleResource {
     
     private static final Logger LOG = Logger.getLogger(PublicVersionedScheduleResource.class);
@@ -62,18 +64,16 @@ public class PublicVersionedScheduleResource {
                     .build();
             }
 
-            if (drawRevision != versionInfo.drawRevision()
-                    || resultsRevision != versionInfo.resultsRevision()) {
+            if (drawRevision != versionInfo.drawRevision()) {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity(ErrorResponse.notFound("Requested version not found for regatta"))
                     .build();
             }
             
             ScheduleResponse schedule = new ScheduleResponse(
-                regattaId,
                 drawRevision,
                 resultsRevision,
-                "Schedule data would appear here"
+                List.of()
             );
             
             return Response.ok(schedule).build();
@@ -90,9 +90,8 @@ public class PublicVersionedScheduleResource {
      * Response DTO for schedule endpoint.
      */
     public record ScheduleResponse(
-        UUID regattaId,
-        int drawRevision,
-        int resultsRevision,
-        String scheduleData
+        @JsonProperty("draw_revision") int drawRevision,
+        @JsonProperty("results_revision") int resultsRevision,
+        @JsonProperty("data") List<Object> data
     ) {}
 }

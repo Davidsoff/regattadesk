@@ -274,4 +274,76 @@ class PublicVersionedRoutesTest {
             .then()
             .header("Cache-Control", equalTo(EXPECTED_CACHE_CONTROL));
     }
+
+    @Test
+    void testSchedulePayload_MatchesPublicContractShape() {
+        String versionedPath = String.format("/public/v%d-%d/regattas/%s/schedule", 2, 3, testRegattaId);
+
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(versionedPath)
+            .then()
+            .statusCode(200)
+            .body("$", hasKey("draw_revision"))
+            .body("$", hasKey("results_revision"))
+            .body("$", hasKey("data"))
+            .body("data", isA(java.util.List.class));
+    }
+
+    @Test
+    void testScheduleContent_RemainsAvailableAcrossResultsRevisionChanges() throws Exception {
+        final int drawRevision = 2;
+        final int initialResultsRevision = 3;
+        final int updatedResultsRevision = 4;
+        String beforePath = String.format(
+            "/public/v%d-%d/regattas/%s/schedule",
+            drawRevision,
+            initialResultsRevision,
+            testRegattaId
+        );
+
+        given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(beforePath)
+            .then()
+            .statusCode(200)
+            .body("$", hasKey("data"))
+            .body("data", isA(java.util.List.class));
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE regattas SET results_revision = ?, updated_at = now() WHERE id = ?"
+             )) {
+            stmt.setInt(1, updatedResultsRevision);
+            stmt.setObject(2, testRegattaId);
+            stmt.executeUpdate();
+        }
+
+        String afterPath = String.format(
+            "/public/v%d-%d/regattas/%s/schedule",
+            drawRevision,
+            updatedResultsRevision,
+            testRegattaId
+        );
+        Response beforeResponse = given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(beforePath)
+            .then()
+            .statusCode(200)
+            .extract().response();
+
+        Response after = given()
+            .cookie(validSessionCookie)
+            .when()
+            .get(afterPath)
+            .then()
+            .statusCode(200)
+            .extract().response();
+
+        assertEquals(beforeResponse.jsonPath().getList("data"), after.jsonPath().getList("data"),
+            "Schedule payload content should remain unchanged when only results_revision changes");
+    }
 }

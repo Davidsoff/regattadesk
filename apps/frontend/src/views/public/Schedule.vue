@@ -10,6 +10,24 @@ const route = useRoute()
   <div class="public-schedule">
     <h2>{{ t('public.schedule.title') }}</h2>
     <p>{{ t('public.schedule.description') }}</p>
+    <div class="rd-table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Lane</th>
+            <th scope="col">Race</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Heat 1</td>
+            <td>Pending</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <p class="version-info">
       {{ t('public.version.draw') }}: {{ route.params.drawRevision }},
       {{ t('public.version.results') }}: {{ route.params.resultsRevision }}
