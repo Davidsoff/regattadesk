@@ -22,13 +22,16 @@ import java.util.UUID;
  * The cache control filter automatically applies:
  * Cache-Control: public, max-age=31536000, immutable
  */
-@Path("/public/v{draw:-?\\d+}-{results:-?\\d+}/regattas/{regatta_id}/schedule")
+@Path("/public/v{draw}-{results}/regattas/{regatta_id}/schedule")
 public class PublicVersionedScheduleResource {
     
     private static final Logger LOG = Logger.getLogger(PublicVersionedScheduleResource.class);
     
     @Inject
     RegattaVersionRepository versionRepository;
+
+    @Inject
+    PublicScheduleRepository scheduleRepository;
     
     /**
      * Get the schedule for a regatta at a specific version.
@@ -64,16 +67,31 @@ public class PublicVersionedScheduleResource {
                     .build();
             }
 
-            if (drawRevision != versionInfo.drawRevision()) {
+            if (drawRevision != versionInfo.drawRevision()
+                    || resultsRevision != versionInfo.resultsRevision()) {
                 return Response.status(Response.Status.NOT_FOUND)
                     .entity(ErrorResponse.notFound("Requested version not found for regatta"))
                     .build();
             }
+
+            List<ScheduleRowResponse> rows = scheduleRepository.fetchSchedule(regattaId, drawRevision)
+                .stream()
+                .map(row -> new ScheduleRowResponse(
+                    row.entryId(),
+                    row.eventId(),
+                    row.bib(),
+                    row.lane(),
+                    row.scheduledStartTime(),
+                    row.crewName(),
+                    row.clubName(),
+                    row.status()
+                ))
+                .toList();
             
             ScheduleResponse schedule = new ScheduleResponse(
                 drawRevision,
                 resultsRevision,
-                List.of()
+                rows
             );
             
             return Response.ok(schedule).build();
@@ -92,6 +110,17 @@ public class PublicVersionedScheduleResource {
     public record ScheduleResponse(
         @JsonProperty("draw_revision") int drawRevision,
         @JsonProperty("results_revision") int resultsRevision,
-        @JsonProperty("data") List<Object> data
+        @JsonProperty("data") List<ScheduleRowResponse> data
+    ) {}
+
+    public record ScheduleRowResponse(
+        @JsonProperty("entry_id") UUID entryId,
+        @JsonProperty("event_id") UUID eventId,
+        @JsonProperty("bib") Integer bib,
+        @JsonProperty("lane") Integer lane,
+        @JsonProperty("scheduled_start_time") java.time.OffsetDateTime scheduledStartTime,
+        @JsonProperty("crew_name") String crewName,
+        @JsonProperty("club_name") String clubName,
+        @JsonProperty("status") String status
     ) {}
 }
