@@ -51,7 +51,7 @@ async function loadSchedule() {
       `/public/v${drawRevision.value}-${resultsRevision.value}/regattas/${regattaId.value}/schedule`
     )
     rows.value = Array.isArray(response?.data) ? response.data : []
-  } catch (error) {
+  } catch {
     rows.value = []
     errorMessage.value = t('public.schedule.errors.load_failed')
   } finally {
