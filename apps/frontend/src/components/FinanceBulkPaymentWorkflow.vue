@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { createApiClient, createFinanceApi } from '../api'
 
 const props = defineProps({
   regattaId: {
@@ -9,6 +10,10 @@ const props = defineProps({
   }
 })
 const { t } = useI18n()
+
+// Initialize API client
+const apiClient = createApiClient()
+const financeApi = createFinanceApi(apiClient)
 
 const entryIdsText = ref('')
 const clubIdsText = ref('')
@@ -75,25 +80,12 @@ async function confirmSubmit() {
   submitError.value = ''
 
   try {
-    const response = await fetch(`/api/v1/regattas/${props.regattaId}/payments/mark_bulk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(pendingPayload.value)
-    })
-
-    const payload = await response.json()
-
-    if (!response.ok) {
-      const message = payload?.error?.message || t('finance.bulk.error')
-      throw new Error(message)
-    }
-
-    result.value = payload
+    const responseData = await financeApi.markBulkPayment(props.regattaId, pendingPayload.value)
+    result.value = responseData
     pendingPayload.value = null
   } catch (error) {
-    submitError.value = error instanceof Error ? error.message : t('finance.bulk.error')
+    // API errors have normalized code and message
+    submitError.value = error.message || t('finance.bulk.error')
   } finally {
     isSubmitting.value = false
   }
