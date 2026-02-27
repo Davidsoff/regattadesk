@@ -1,5 +1,5 @@
 function getBrowserWindow() {
-  if (typeof globalThis.window === 'undefined') {
+  if (globalThis.window === undefined) {
     return null
   }
 
