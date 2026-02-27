@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import FinanceBulkPaymentWorkflow from '../components/FinanceBulkPaymentWorkflow.vue'
 import i18n from '../i18n'
 
@@ -39,6 +39,8 @@ describe('FinanceBulkPaymentWorkflow', () => {
     }
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
       json: async () => mockResponse
     })
     vi.stubGlobal('fetch', fetchMock)
@@ -55,6 +57,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
     expect(wrapper.text()).toContain(i18n.global.t('finance.bulk.confirm'))
 
     await wrapper.get('.confirm-actions .primary').trigger('click')
+    await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/payments/mark_bulk')
@@ -66,6 +69,8 @@ describe('FinanceBulkPaymentWorkflow', () => {
   it('only sends non-empty entry_ids/club_ids in the request body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
       json: async () => ({
         success: true,
         message: 'Bulk payment update completed',
@@ -90,6 +95,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
     await wrapper.get('textarea[name="entry_ids"]').setValue('7f7af3d8-9090-49d5-b21c-9cc12d35a0e6')
     await wrapper.get('form').trigger('submit.prevent')
     await wrapper.get('.confirm-actions .primary').trigger('click')
+    await flushPromises()
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body).toHaveProperty('entry_ids')
@@ -102,8 +108,13 @@ describe('FinanceBulkPaymentWorkflow', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
+        status: 400,
+        headers: { get: () => 'application/json' },
         json: async () => ({
-          error: { message: apiErrorMessage }
+          error: { 
+            code: 'VALIDATION_ERROR',
+            message: apiErrorMessage 
+          }
         })
       })
     )
@@ -116,6 +127,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
     await wrapper.get('textarea[name="entry_ids"]').setValue('7f7af3d8-9090-49d5-b21c-9cc12d35a0e6')
     await wrapper.get('form').trigger('submit.prevent')
     await wrapper.get('.confirm-actions .primary').trigger('click')
+    await flushPromises()
 
     // Component shows payload.error.message when present
     expect(wrapper.text()).toContain(apiErrorMessage)
@@ -126,7 +138,13 @@ describe('FinanceBulkPaymentWorkflow', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        json: async () => ({ error: {} })
+        status: 500,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ 
+          error: { 
+            code: 'INTERNAL_ERROR'
+          } 
+        })
       })
     )
 
@@ -138,8 +156,8 @@ describe('FinanceBulkPaymentWorkflow', () => {
     await wrapper.get('textarea[name="entry_ids"]').setValue('7f7af3d8-9090-49d5-b21c-9cc12d35a0e6')
     await wrapper.get('form').trigger('submit.prevent')
     await wrapper.get('.confirm-actions .primary').trigger('click')
+    await flushPromises()
 
-    // Falls back to i18n error key when API provides no message
     expect(wrapper.text()).toContain(i18n.global.t('finance.bulk.error'))
   })
 })
