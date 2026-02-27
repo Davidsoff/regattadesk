@@ -31,6 +31,26 @@ const router = createRouter({
           path: 'regattas/:regattaId/finance',
           name: 'staff-regatta-finance',
           component: () => import('../views/staff/RegattaFinance.vue')
+        },
+        {
+          path: 'regattas/:regattaId/finance/entries/:entryId',
+          name: 'staff-regatta-finance-entry',
+          component: () => import('../views/staff/EntryPaymentStatus.vue')
+        },
+        {
+          path: 'regattas/:regattaId/finance/clubs/:clubId',
+          name: 'staff-regatta-finance-club',
+          component: () => import('../views/staff/ClubPaymentStatus.vue')
+        },
+        {
+          path: 'regattas/:regattaId/finance/invoices',
+          name: 'staff-regatta-finance-invoices',
+          component: () => import('../views/staff/InvoiceList.vue')
+        },
+        {
+          path: 'regattas/:regattaId/finance/invoices/:invoiceId',
+          name: 'staff-regatta-finance-invoice',
+          component: () => import('../views/staff/InvoiceDetail.vue')
         }
       ]
     },

@@ -133,7 +133,64 @@
       "regatta_id_label": "Regatta ID (UUID)",
       "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     },
-    "title": "Financiën"
+    "title": "Financiën",
+    "entry": {
+      "title": "Inschrijving Betalingsstatus",
+      "entry_id": "Inschrijving ID",
+      "payment_status": "Betalingsstatus",
+      "paid_at": "Betaald Op",
+      "paid_by": "Betaald Door",
+      "payment_reference": "Betalingsreferentie",
+      "update_status": "Status Bijwerken",
+      "update_success": "Betalingsstatus succesvol bijgewerkt",
+      "update_error": "Kan betalingsstatus niet bijwerken",
+      "loading": "Laden betalingsstatus...",
+      "not_found": "Inschrijving niet gevonden"
+    },
+    "club": {
+      "title": "Club Betalingsstatus",
+      "club_id": "Club ID",
+      "total_entries": "Totaal Inschrijvingen",
+      "paid_entries": "Betaalde Inschrijvingen",
+      "unpaid_entries": "Onbetaalde Inschrijvingen",
+      "update_all": "Alle Inschrijvingen Bijwerken",
+      "update_success": "Club betalingsstatus bijgewerkt voor {count} inschrijvingen",
+      "update_error": "Kan club betalingsstatus niet bijwerken",
+      "loading": "Laden club betalingsstatus...",
+      "not_found": "Club niet gevonden",
+      "entries_list": "Inschrijvingen"
+    },
+    "invoice": {
+      "title": "Facturen",
+      "list_title": "Facturenlijst",
+      "detail_title": "Factuurdetails",
+      "invoice_id": "Factuur ID",
+      "club_name": "Club",
+      "amount": "Bedrag",
+      "status": "Status",
+      "status_paid": "Betaald",
+      "status_unpaid": "Onbetaald",
+      "created_at": "Aangemaakt",
+      "paid_at": "Betaald Op",
+      "payment_reference": "Betalingsreferentie",
+      "generate": "Facturen Genereren",
+      "generate_success": "Factuur generatie opdracht geaccepteerd",
+      "generate_error": "Kan facturen niet genereren",
+      "mark_paid": "Markeren als Betaald",
+      "mark_paid_success": "Factuur gemarkeerd als betaald",
+      "mark_paid_error": "Kan factuur niet markeren als betaald",
+      "loading": "Laden facturen...",
+      "no_invoices": "Geen facturen gevonden",
+      "view_details": "Details Bekijken",
+      "entries": "Factuurregels"
+    },
+    "navigation": {
+      "overview": "Overzicht",
+      "bulk_payments": "Bulkbetalingen",
+      "entries": "Inschrijvingsbetalingen",
+      "clubs": "Clubbetalingen",
+      "invoices": "Facturen"
+    }
   },
   "navigation": {
     "regattas": "Regatta's",

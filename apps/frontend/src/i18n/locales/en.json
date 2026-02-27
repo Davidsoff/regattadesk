@@ -133,7 +133,64 @@
       "regatta_id_label": "Regatta ID (UUID)",
       "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     },
-    "title": "Finance"
+    "title": "Finance",
+    "entry": {
+      "title": "Entry Payment Status",
+      "entry_id": "Entry ID",
+      "payment_status": "Payment Status",
+      "paid_at": "Paid At",
+      "paid_by": "Paid By",
+      "payment_reference": "Payment Reference",
+      "update_status": "Update Status",
+      "update_success": "Payment status updated successfully",
+      "update_error": "Failed to update payment status",
+      "loading": "Loading entry payment status...",
+      "not_found": "Entry not found"
+    },
+    "club": {
+      "title": "Club Payment Status",
+      "club_id": "Club ID",
+      "total_entries": "Total Entries",
+      "paid_entries": "Paid Entries",
+      "unpaid_entries": "Unpaid Entries",
+      "update_all": "Update All Entries",
+      "update_success": "Club payment status updated for {count} entries",
+      "update_error": "Failed to update club payment status",
+      "loading": "Loading club payment status...",
+      "not_found": "Club not found",
+      "entries_list": "Entries"
+    },
+    "invoice": {
+      "title": "Invoices",
+      "list_title": "Invoice List",
+      "detail_title": "Invoice Details",
+      "invoice_id": "Invoice ID",
+      "club_name": "Club",
+      "amount": "Amount",
+      "status": "Status",
+      "status_paid": "Paid",
+      "status_unpaid": "Unpaid",
+      "created_at": "Created",
+      "paid_at": "Paid At",
+      "payment_reference": "Payment Reference",
+      "generate": "Generate Invoices",
+      "generate_success": "Invoice generation job accepted",
+      "generate_error": "Failed to generate invoices",
+      "mark_paid": "Mark as Paid",
+      "mark_paid_success": "Invoice marked as paid",
+      "mark_paid_error": "Failed to mark invoice as paid",
+      "loading": "Loading invoices...",
+      "no_invoices": "No invoices found",
+      "view_details": "View Details",
+      "entries": "Invoice Entries"
+    },
+    "navigation": {
+      "overview": "Overview",
+      "bulk_payments": "Bulk Payments",
+      "entries": "Entry Payments",
+      "clubs": "Club Payments",
+      "invoices": "Invoices"
+    }
   },
   "navigation": {
     "regattas": "Regattas",
