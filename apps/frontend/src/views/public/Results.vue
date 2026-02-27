@@ -7,8 +7,13 @@ import { createSseConnection } from '../../composables/useSseReconnect'
 const { t, te } = useI18n()
 const route = useRoute()
 
-const drawRevision = ref(Number(route.params.drawRevision))
-const resultsRevision = ref(Number(route.params.resultsRevision))
+function toRevisionNumber(value) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0
+}
+
+const drawRevision = ref(toRevisionNumber(route.params.drawRevision))
+const resultsRevision = ref(toRevisionNumber(route.params.resultsRevision))
 const isLive = ref(false)
 const hasConnected = ref(false)
 const isDataStale = ref(false)
@@ -166,6 +171,9 @@ function setupLiveEvents() {
 }
 
 function translateStatus(status) {
+  if (typeof status !== 'string' || status.length === 0) {
+    return '-'
+  }
   const statusKey = `status.${status}`
   return te(statusKey) ? t(statusKey) : status
 }

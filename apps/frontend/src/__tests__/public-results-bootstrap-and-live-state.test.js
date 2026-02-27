@@ -335,4 +335,50 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
     expect(wrapper.text()).toContain('Draw Revision: 5')
     expect(wrapper.text()).toContain('Results Revision: 4')
   })
+
+  it('defaults invalid route revisions to 0 instead of NaN', async () => {
+    globalThis.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2, data: [] }),
+      })
+
+    const wrapper = await mountResults('/public/vfoo-bar/results?regatta_id=44444444-4444-4444-4444-444444444444')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Draw Revision: 1')
+    expect(wrapper.text()).toContain('Results Revision: 2')
+    expect(globalThis.fetch.mock.calls.some(([url]) => String(url).includes('/public/v1-2/regattas/'))).toBe(true)
+    expect(globalThis.fetch.mock.calls.some(([url]) => String(url).includes('NaN'))).toBe(false)
+  })
+
+  it('renders a safe fallback when result status is null', async () => {
+    globalThis.fetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2 }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ draw_revision: 1, results_revision: 2, data: [{ entry_id: 'e3', crew_name: 'Crew C', status: null, rank: 7 }] }),
+      })
+
+    const wrapper = await mountResults('/public/v1-2/results?regatta_id=55555555-5555-5555-5555-555555555555')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('7. Crew C (-)')
+    expect(wrapper.text()).not.toContain('status.null')
+  })
 })
