@@ -15,6 +15,27 @@ const conflictError = ref(false)
 const handoffErrorMessage = ref('')
 const operatorAccessMode = ref('active')
 const isSubmitting = ref(false)
+const DEVICE_ID_STORAGE_KEY = 'rd_operator_device_id'
+const STATION_STORAGE_KEY = 'rd_operator_station'
+
+function resolveOperatorDeviceId() {
+  const storage = globalThis.window?.localStorage
+  if (typeof storage?.getItem !== 'function' || typeof storage?.setItem !== 'function') {
+    return 'operator-device'
+  }
+
+  const existing = (storage.getItem(DEVICE_ID_STORAGE_KEY) || '').trim()
+  if (existing) {
+    return existing
+  }
+
+  const generated =
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `operator-device-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  storage.setItem(DEVICE_ID_STORAGE_KEY, generated)
+  return generated
+}
 
 const operatorToken = computed(() => {
   const contextToken =
@@ -32,12 +53,29 @@ const operatorToken = computed(() => {
 const operatorApi = createOperatorApi(createApiClient(), {
   getOperatorToken: () => operatorToken.value
 })
+const currentDeviceId = ref(resolveOperatorDeviceId())
+const operatorStation = computed(() => {
+  const contextStation =
+    typeof globalThis.__REGATTADESK_AUTH__?.operatorStation === 'string'
+      ? globalThis.__REGATTADESK_AUTH__.operatorStation.trim()
+      : ''
+  const storageStation =
+    typeof globalThis.window?.localStorage?.getItem === 'function'
+      ? (globalThis.window.localStorage.getItem(STATION_STORAGE_KEY) || '').trim()
+      : ''
+
+  return contextStation || storageStation || 'finish-line'
+})
 
 const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
 
 async function requestHandoff() {
+  if (isSubmitting.value) {
+    return
+  }
+
   const regattaId = route.params.regattaId
 
   if (!operatorToken.value) {
@@ -46,19 +84,22 @@ async function requestHandoff() {
   }
 
   handoffErrorMessage.value = ''
+  isSubmitting.value = true
 
   try {
     handoff.value = await operatorApi.requestStationHandoff(regattaId, {
-      station: 'finish-line',
-      requesting_device_id: 'secondary-device'
+      station: operatorStation.value,
+      requesting_device_id: currentDeviceId.value
     })
   } catch (error) {
     handoffErrorMessage.value = error instanceof Error ? error.message : 'Failed to request handoff'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 async function revealPin() {
-  if (!handoff.value) {
+  if (!handoff.value || isSubmitting.value) {
     return
   }
 
@@ -68,17 +109,20 @@ async function revealPin() {
   }
 
   handoffErrorMessage.value = ''
+  isSubmitting.value = true
 
   try {
     const response = await operatorApi.revealStationHandoffPin(route.params.regattaId, handoff.value.id)
     revealedPin.value = response?.pin || ''
   } catch (error) {
     handoffErrorMessage.value = error instanceof Error ? error.message : 'Failed to reveal PIN'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 async function getHandoffStatus() {
-  if (!handoff.value) {
+  if (!handoff.value || isSubmitting.value) {
     return
   }
 
@@ -88,16 +132,19 @@ async function getHandoffStatus() {
   }
 
   handoffErrorMessage.value = ''
+  isSubmitting.value = true
 
   try {
     handoff.value = await operatorApi.getStationHandoffStatus(route.params.regattaId, handoff.value.id)
   } catch (error) {
     handoffErrorMessage.value = error instanceof Error ? error.message : 'Failed to refresh handoff status'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 async function cancelHandoff() {
-  if (!handoff.value) {
+  if (!handoff.value || isSubmitting.value) {
     return
   }
 
@@ -107,11 +154,14 @@ async function cancelHandoff() {
   }
 
   handoffErrorMessage.value = ''
+  isSubmitting.value = true
 
   try {
     handoff.value = await operatorApi.cancelStationHandoff(route.params.regattaId, handoff.value.id)
   } catch (error) {
     handoffErrorMessage.value = error instanceof Error ? error.message : 'Failed to cancel handoff'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -133,10 +183,17 @@ async function completeHandoff() {
 
     const response = await operatorApi.completeStationHandoff(route.params.regattaId, handoff.value.id, {
       pin: handoffPin.value,
-      completing_device_id: 'primary-device'
+      completing_device_id: currentDeviceId.value
     })
     handoff.value = response
-    operatorAccessMode.value = response?.previous_device_mode === 'read_only' ? 'read_only' : 'active'
+    if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
+      operatorAccessMode.value = response.new_device_mode
+    } else {
+      operatorAccessMode.value =
+        response?.active_device_id && response.active_device_id !== currentDeviceId.value
+          ? 'read_only'
+          : 'active'
+    }
   } catch (error) {
     if (error instanceof ApiError && error.status === 400 && error.code === 'INVALID_PIN') {
       invalidPinError.value = true

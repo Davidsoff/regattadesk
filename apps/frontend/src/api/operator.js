@@ -2,10 +2,13 @@
  * Operator API module for BC06 operator capture and line-scan handoff flows.
  */
 function withOperatorToken(operatorToken) {
+  const headers = {}
+  if (operatorToken) {
+    headers.x_operator_token = operatorToken
+  }
+
   return {
-    headers: {
-      x_operator_token: operatorToken
-    }
+    headers
   }
 }
 

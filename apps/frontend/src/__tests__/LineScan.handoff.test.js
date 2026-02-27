@@ -29,8 +29,8 @@ function buildHandoff(id = 'handoff-97', overrides = {}) {
     id,
     regatta_id: 'regatta-97',
     station: 'finish-line',
-    requesting_device_id: 'secondary-device',
-    active_device_id: 'primary-device',
+    requesting_device_id: 'operator-device',
+    active_device_id: 'operator-device',
     status: 'pending',
     previous_device_mode: 'active',
     new_device_mode: 'read_only',
@@ -79,14 +79,17 @@ async function mountLineScan() {
 describe('Operator line-scan handoff UX (issue #97)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', { operatorToken: 'token-97' })
+    vi.stubGlobal('__REGATTADESK_AUTH__', {
+      operatorToken: 'token-97',
+      operatorStation: 'finish-line'
+    })
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('sends operator token and contract path when completing handoff, then demotes previous device to read-only', async () => {
+  it('sends operator token/device metadata and uses new_device_mode to set local access', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-1')))
@@ -95,8 +98,8 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
           200,
           buildHandoff('handoff-1', {
             status: 'completed',
-            previous_device_mode: 'read_only',
-            new_device_mode: 'active'
+            previous_device_mode: 'active',
+            new_device_mode: 'read_only'
           })
         )
       )
@@ -112,6 +115,10 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     expect(createCall[0]).toBe('/api/v1/regattas/regatta-97/operator/station_handoffs')
     expect(createCall[1].method).toBe('POST')
     expect(createCall[1].headers.x_operator_token).toBe('token-97')
+    expect(JSON.parse(createCall[1].body)).toEqual({
+      station: 'finish-line',
+      requesting_device_id: 'operator-device'
+    })
 
     await wrapper.find('[data-testid="handoff-pin-input"]').setValue('123456')
     await wrapper.find('[data-testid="handoff-complete-submit"]').trigger('click')
@@ -123,11 +130,40 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     expect(completeCall[1].headers.x_operator_token).toBe('token-97')
     expect(JSON.parse(completeCall[1].body)).toEqual({
       pin: '123456',
-      completing_device_id: 'primary-device'
+      completing_device_id: 'operator-device'
     })
 
     expect(wrapper.find('[data-testid="operator-readonly-banner"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="line-scan-capture"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('prevents concurrent reveal requests while one reveal is in flight', async () => {
+    let resolveReveal
+    const revealPromise = new Promise((resolve) => {
+      resolveReveal = resolve
+    })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-reveal')))
+      .mockReturnValueOnce(revealPromise)
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = await mountLineScan()
+    await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button')
+    const revealButton = buttons.find((button) => button.text() === 'Show PIN')
+    expect(revealButton).toBeDefined()
+
+    await revealButton?.trigger('click')
+    await revealButton?.trigger('click')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+
+    resolveReveal(jsonResponse(200, { pin: '123456' }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="handoff-revealed-pin"]').text()).toContain('123456')
   })
 
   it('renders INVALID_PIN feedback from API 400 response', async () => {
