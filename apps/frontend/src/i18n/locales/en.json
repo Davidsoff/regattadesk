@@ -25,7 +25,12 @@
     "import": "Import",
     "print": "Print",
     "download": "Download",
-    "open": "Open"
+    "open": "Open",
+    "skip_to_content": "Skip to main content",
+    "staff": "Staff",
+    "operator": "Operator",
+    "go_home": "Go to Home",
+    "powered_by_regattadesk": "Powered by RegattaDesk"
   },
   "status": {
     "entered": "Entered",
@@ -126,6 +131,60 @@
       "density_compact": "Compact",
       "regatta_id_label": "Regatta ID (UUID)",
       "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    },
+    "title": "Finance"
+  },
+  "navigation": {
+    "regattas": "Regattas",
+    "schedule": "Schedule",
+    "results": "Results"
+  },
+  "staff": {
+    "regattas": {
+      "title": "Regattas",
+      "description": "Manage your regattas"
+    },
+    "regatta": {
+      "title": "Regatta Details",
+      "id": "Regatta ID"
+    }
+  },
+  "operator": {
+    "regattas": {
+      "title": "Regattas",
+      "description": "Select a regatta to work with"
+    },
+    "regatta": {
+      "title": "Regatta",
+      "id": "Regatta ID"
+    },
+    "line_scan": {
+      "title": "Line Scan",
+      "description": "Capture line scan images and mark finish times"
+    }
+  },
+  "public": {
+    "schedule": {
+      "title": "Schedule",
+      "description": "View the race schedule"
+    },
+    "results": {
+      "title": "Results",
+      "description": "View race results"
+    },
+    "version": {
+      "draw": "Draw Revision",
+      "results": "Results Revision"
+    }
+  },
+  "errors": {
+    "unauthorized": {
+      "title": "Unauthorized Access",
+      "description": "You do not have permission to access this page."
+    },
+    "not_found": {
+      "title": "Page Not Found",
+      "description": "The page you are looking for does not exist."
     }
   }
 }
