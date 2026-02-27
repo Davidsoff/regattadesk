@@ -35,3 +35,10 @@ Runtime operability, observability, security hardening, and end-to-end quality e
 - Step 25
 - Step quality gates (global enforcement)
 - Dependency governance (shared ownership with BC01)
+
+## BC09-003 Implementation Artifacts
+- Load profile definitions are version controlled in `apps/backend/performance/load-scenarios.json`.
+- Objective pass/fail thresholds are version controlled in `apps/backend/performance/performance-thresholds.json`.
+- Repeatable execution harness is implemented in `apps/backend/performance/load_harness.py`.
+- CI-adjacent smoke validation and scheduled deep load runs are automated in `.github/workflows/performance-load.yml`.
+- Operational procedure and gate interpretation are documented in `docs/runbooks/performance-gates.md`.

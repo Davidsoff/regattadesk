@@ -1,0 +1,89 @@
+name: Performance Load Validation
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Target base URL (defaults to local mock server)'
+        required: false
+        type: string
+
+jobs:
+  smoke-load:
+    name: Smoke Load Gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start mock target
+        run: |
+          python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
+          echo $! >/tmp/mock-server.pid
+
+      - name: Run smoke load profile
+        run: |
+          BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
+          python3 apps/backend/performance/load_harness.py \
+            --base-url "$BASE_URL" \
+            --profile smoke \
+            --output-dir apps/backend/performance/reports
+
+      - name: Upload smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-smoke-report
+          path: apps/backend/performance/reports/smoke-*
+
+      - name: Stop mock target
+        if: always()
+        run: |
+          if [[ -f /tmp/mock-server.pid ]]; then
+            kill "$(cat /tmp/mock-server.pid)" || true
+          fi
+
+  deep-load:
+    name: Scheduled Deep Load Run
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start mock target
+        run: |
+          python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
+          echo $! >/tmp/mock-server.pid
+
+      - name: Run deep load profile
+        run: |
+          BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
+          python3 apps/backend/performance/load_harness.py \
+            --base-url "$BASE_URL" \
+            --profile deep \
+            --output-dir apps/backend/performance/reports
+
+      - name: Upload deep reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-deep-report
+          path: apps/backend/performance/reports/deep-*
+
+      - name: Stop mock target
+        if: always()
+        run: |
+          if [[ -f /tmp/mock-server.pid ]]; then
+            kill "$(cat /tmp/mock-server.pid)" || true
+          fi
