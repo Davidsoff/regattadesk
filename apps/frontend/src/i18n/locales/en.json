@@ -288,10 +288,49 @@
       "ageAsOfJan1": "Age as of January 1"
     }
   },
+  "ruleset": {
+    "title": "Ruleset",
+    "name": "Name",
+    "version": "Version",
+    "description": "Description",
+    "age_calculation_type": "Age Calculation Type",
+    "is_global": "Global Ruleset",
+    "age_calculation": {
+      "actual_at_start": "Actual Age at Start",
+      "age_as_of_jan_1": "Age as of January 1"
+    },
+    "actions": {
+      "duplicate": "Duplicate",
+      "promote": "Promote to Global",
+      "promote_confirm": "Are you sure you want to promote this ruleset to global? This action cannot be undone.",
+      "duplicate_dialog_title": "Duplicate Ruleset",
+      "new_name": "New Name",
+      "new_version": "New Version"
+    },
+    "status": {
+      "global": "Global",
+      "regatta_owned": "Regatta-Owned"
+    },
+    "messages": {
+      "save_success": "Ruleset saved successfully",
+      "save_error": "Failed to save ruleset",
+      "duplicate_success": "Ruleset duplicated successfully",
+      "duplicate_error": "Failed to duplicate ruleset",
+      "promote_success": "Ruleset promoted to global successfully",
+      "promote_error": "Failed to promote ruleset",
+      "promote_forbidden": "You do not have permission to promote rulesets. Only super administrators can perform this action.",
+      "load_error": "Failed to load ruleset"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Crew is required",
       "athleteRequired": "Athlete is required"
+    },
+    "ruleset": {
+      "nameRequired": "Name is required",
+      "versionRequired": "Version is required",
+      "ageCalculationTypeRequired": "Age calculation type is required"
     }
   },
   "operator": {

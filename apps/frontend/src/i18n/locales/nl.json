@@ -288,10 +288,49 @@
       "ageAsOfJan1": "Leeftijd per 1 januari"
     }
   },
+  "ruleset": {
+    "title": "Regelset",
+    "name": "Naam",
+    "version": "Versie",
+    "description": "Beschrijving",
+    "age_calculation_type": "Leeftijdsberekeningstype",
+    "is_global": "Globale regelset",
+    "age_calculation": {
+      "actual_at_start": "Werkelijke leeftijd bij start",
+      "age_as_of_jan_1": "Leeftijd per 1 januari"
+    },
+    "actions": {
+      "duplicate": "Dupliceren",
+      "promote": "Promoveren naar globaal",
+      "promote_confirm": "Weet je zeker dat je deze regelset wilt promoveren naar globaal? Deze actie kan niet ongedaan worden gemaakt.",
+      "duplicate_dialog_title": "Regelset dupliceren",
+      "new_name": "Nieuwe naam",
+      "new_version": "Nieuwe versie"
+    },
+    "status": {
+      "global": "Globaal",
+      "regatta_owned": "Regatta-eigendom"
+    },
+    "messages": {
+      "save_success": "Regelset succesvol opgeslagen",
+      "save_error": "Regelset opslaan mislukt",
+      "duplicate_success": "Regelset succesvol gedupliceerd",
+      "duplicate_error": "Regelset dupliceren mislukt",
+      "promote_success": "Regelset succesvol gepromoveerd naar globaal",
+      "promote_error": "Regelset promoveren mislukt",
+      "promote_forbidden": "Je hebt geen toestemming om regelsets te promoveren. Alleen super administrators kunnen deze actie uitvoeren.",
+      "load_error": "Regelset laden mislukt"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Ploeg is verplicht",
       "athleteRequired": "Atleet is verplicht"
+    },
+    "ruleset": {
+      "nameRequired": "Naam is verplicht",
+      "versionRequired": "Versie is verplicht",
+      "ageCalculationTypeRequired": "Leeftijdsberekeningstype is verplicht"
     }
   },
   "operator": {
