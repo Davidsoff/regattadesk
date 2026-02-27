@@ -26,18 +26,15 @@ public class LineScanPruningService {
     private final LineScanManifestRepository manifestRepository;
     private final LineScanTileRepository tileRepository;
     private final MinioStorageAdapter storageAdapter;
-    private final MinioConfiguration minioConfiguration;
     
     public LineScanPruningService(
         LineScanManifestRepository manifestRepository,
         LineScanTileRepository tileRepository,
-        MinioStorageAdapter storageAdapter,
-        MinioConfiguration minioConfiguration
+        MinioStorageAdapter storageAdapter
     ) {
         this.manifestRepository = manifestRepository;
         this.tileRepository = tileRepository;
         this.storageAdapter = storageAdapter;
-        this.minioConfiguration = minioConfiguration;
     }
     
     /**
@@ -112,7 +109,7 @@ public class LineScanPruningService {
                     );
                     LOG.debugf("Deleted tile %s from MinIO",
                         tile.getTileId());
-                } catch (Exception e) {
+                } catch (MinioStorageAdapter.MinioStorageException e) {
                     LOG.warnf(e, "Failed to delete tile %s from MinIO, continuing with metadata deletion",
                         tile.getTileId());
                 }
