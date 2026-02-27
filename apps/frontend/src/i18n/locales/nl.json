@@ -255,6 +255,33 @@
       }
     }
   },
+  "rulesets": {
+    "title": "Regelsets",
+    "createButton": "Regelset aanmaken",
+    "tableCaption": "Lijst van regelsets",
+    "emptyState": "Geen regelsets gevonden",
+    "loadError": "Kan regelsets niet laden. Probeer het opnieuw.",
+    "filter": {
+      "all": "Alle regelsets",
+      "global": "Alleen globaal",
+      "regattaOwned": "Alleen regatta-eigendom"
+    },
+    "columns": {
+      "name": "Naam",
+      "version": "Versie",
+      "ageCalculation": "Leeftijdsberekening",
+      "scope": "Bereik",
+      "description": "Beschrijving"
+    },
+    "scope": {
+      "global": "Globaal",
+      "regattaOwned": "Regatta-eigendom"
+    },
+    "ageCalculation": {
+      "actualAtStart": "Werkelijke leeftijd bij start",
+      "ageAsOfJan1": "Leeftijd per 1 januari"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Ploeg is verplicht",
