@@ -37,9 +37,6 @@ class LineScanPruningServiceTest {
     @Mock
     private MinioStorageAdapter storageAdapter;
     
-    @Mock
-    private MinioConfiguration minioConfiguration;
-    
     private LineScanPruningService pruningService;
     
     @BeforeEach
@@ -47,8 +44,7 @@ class LineScanPruningServiceTest {
         pruningService = new LineScanPruningService(
             manifestRepository,
             tileRepository,
-            storageAdapter,
-            minioConfiguration
+            storageAdapter
         );
     }
     
