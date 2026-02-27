@@ -77,7 +77,7 @@ describe('Staff regatta management workflows (issue #94)', () => {
 
     const dialog = wrapper.find('[data-testid="destructive-action-dialog"]')
     expect(dialog.exists()).toBe(true)
-    expect(dialog.attributes('role')).toBe('dialog')
+    expect(dialog.element.tagName).toBe('DIALOG')
     expect(dialog.attributes('aria-modal')).toBe('true')
     expect(dialog.attributes('aria-labelledby')).toBe('withdraw-dialog-title')
 

@@ -185,6 +185,14 @@
         "alreadyBeforeDraw": "Al afgemeld voor loting",
         "setEntered": "Zet op ingeschreven",
         "invalidTransition": "Ongeldige overgang"
+      },
+      "table": {
+        "event": "Nummer",
+        "action": "Actie",
+        "athlete": "Atleet",
+        "crew": "Ploeg",
+        "currentAction": "Huidige actie",
+        "nextAction": "Volgende actie"
       }
     }
   },

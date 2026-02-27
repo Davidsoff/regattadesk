@@ -185,6 +185,14 @@
         "alreadyBeforeDraw": "Already withdrawn before draw",
         "setEntered": "Set entered",
         "invalidTransition": "Invalid transition"
+      },
+      "table": {
+        "event": "Event",
+        "action": "Action",
+        "athlete": "Athlete",
+        "crew": "Crew",
+        "currentAction": "Current action",
+        "nextAction": "Next action"
       }
     }
   },

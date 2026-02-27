@@ -166,6 +166,13 @@ watch(showWithdrawDialog, async (open) => {
         </label>
       </form>
       <table data-testid="events-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('staff.regatta_detail.table.event') }}</th>
+            <th scope="col">{{ t('staff.regatta_detail.table.action') }}</th>
+            <th scope="col">{{ t('staff.regatta_detail.table.action') }}</th>
+          </tr>
+        </thead>
         <tbody>
           <tr>
             <td>{{ t('staff.regatta_detail.events.open2x') }}</td>
@@ -185,6 +192,11 @@ watch(showWithdrawDialog, async (open) => {
         </label>
       </form>
       <table data-testid="athletes-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('staff.regatta_detail.table.athlete') }}</th>
+          </tr>
+        </thead>
         <tbody>
           <tr><td>{{ t('staff.regatta_detail.athletes.row1') }}</td></tr>
         </tbody>
@@ -200,6 +212,11 @@ watch(showWithdrawDialog, async (open) => {
         </label>
       </form>
       <table data-testid="crews-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('staff.regatta_detail.table.crew') }}</th>
+          </tr>
+        </thead>
         <tbody>
           <tr><td>{{ t('staff.regatta_detail.crews.row1') }}</td></tr>
         </tbody>
@@ -251,11 +268,11 @@ watch(showWithdrawDialog, async (open) => {
         {{ t('staff.regatta_detail.withdraw.open') }}
       </button>
 
-      <div
+      <dialog
         v-if="showWithdrawDialog"
         ref="withdrawDialog"
+        open
         data-testid="destructive-action-dialog"
-        role="dialog"
         aria-modal="true"
         aria-labelledby="withdraw-dialog-title"
         tabindex="-1"
@@ -272,7 +289,7 @@ watch(showWithdrawDialog, async (open) => {
         <button type="button" data-action="cancel-withdraw" @click="closeWithdrawDialog">
           {{ t('common.cancel') }}
         </button>
-      </div>
+      </dialog>
 
       <div v-if="showConflictError" data-testid="entry-conflict-error">
         {{ t('staff.regatta_detail.withdraw.conflict') }}
@@ -282,6 +299,13 @@ watch(showWithdrawDialog, async (open) => {
       </div>
 
       <table data-testid="entries-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('entry.status') }}</th>
+            <th scope="col">{{ t('staff.regatta_detail.table.currentAction') }}</th>
+            <th scope="col">{{ t('staff.regatta_detail.table.nextAction') }}</th>
+          </tr>
+        </thead>
         <tbody>
           <tr data-testid="entry-row-withdrawn-before-draw">
             <td>{{ t('status.withdrawn_before_draw') }}</td>
