@@ -89,6 +89,7 @@
   "live": {
     "live": "Live",
     "offline": "Offline",
+    "stale_data_message": "Gecachte resultaten worden getoond. Opnieuw verbinden voor de nieuwste updates.",
     "update_available": "Nieuwe resultaten beschikbaar",
     "view_latest": "Bekijk laatste versie"
   },

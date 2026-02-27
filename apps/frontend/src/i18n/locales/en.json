@@ -89,6 +89,7 @@
   "live": {
     "live": "Live",
     "offline": "Offline",
+    "stale_data_message": "Showing cached results. Reconnecting for latest updates.",
     "update_available": "New results available",
     "view_latest": "View latest"
   },

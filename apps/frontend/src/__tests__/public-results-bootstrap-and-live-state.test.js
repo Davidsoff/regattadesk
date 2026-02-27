@@ -11,6 +11,14 @@ function createTestI18n() {
     locale: 'en',
     messages: {
       en: {
+        live: {
+          live: 'Live',
+          offline: 'Offline',
+          stale_data_message: 'Showing cached results. Reconnecting for latest updates.',
+        },
+        status: {
+          entered: 'Entered',
+        },
         public: {
           results: {
             title: 'Results',

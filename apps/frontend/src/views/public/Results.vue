@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { createSseConnection } from '../../composables/useSseReconnect'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const route = useRoute()
 
 const drawRevision = ref(Number(route.params.drawRevision))
@@ -30,9 +30,6 @@ const regattaId = computed(() => {
 })
 const versionsUrl = computed(() => `/public/regattas/${regattaId.value}/versions`)
 const eventsUrl = computed(() => `/public/regattas/${regattaId.value}/events`)
-const resultsUrl = computed(
-  () => `/public/v${drawRevision.value}-${resultsRevision.value}/regattas/${regattaId.value}/results`,
-)
 
 function isJsonResponse(response) {
   const contentType = response.headers?.get?.('content-type') ?? ''
@@ -42,18 +39,6 @@ function isJsonResponse(response) {
 function applyRevisions(data) {
   drawRevision.value = data.draw_revision
   resultsRevision.value = data.results_revision
-}
-
-function parseRevisionEventData(event) {
-  if (!event?.data) {
-    return null
-  }
-
-  try {
-    return JSON.parse(event.data)
-  } catch {
-    return null
-  }
 }
 
 watchEffect(() => {
@@ -68,13 +53,15 @@ function fetchVersions() {
   })
 }
 
-async function fetchResults() {
+async function fetchResults(drawRevisionOverride = drawRevision.value, resultsRevisionOverride = resultsRevision.value) {
   if (!regattaId.value) {
     return
   }
 
+  const requestUrl = `/public/v${drawRevisionOverride}-${resultsRevisionOverride}/regattas/${regattaId.value}/results`
+
   try {
-    const response = await fetch(resultsUrl.value, {
+    const response = await fetch(requestUrl, {
       credentials: 'include',
     })
 
@@ -84,7 +71,9 @@ async function fetchResults() {
 
     const data = await response.json()
     resultRows.value = Array.isArray(data?.data) ? data.data : []
-  } catch {}
+  } catch (error) {
+    console.warn('Failed to fetch public results', error)
+  }
 }
 
 async function bootstrapVersions() {
@@ -108,9 +97,18 @@ async function bootstrapVersions() {
     }
 
     const data = await response.json()
+    const nextDrawRevision = data?.draw_revision
+    const nextResultsRevision = data?.results_revision
+
+    if (typeof nextDrawRevision !== 'number' || typeof nextResultsRevision !== 'number') {
+      return
+    }
+
     applyRevisions(data)
-    await fetchResults()
-  } catch {}
+    await fetchResults(nextDrawRevision, nextResultsRevision)
+  } catch (error) {
+    console.warn('Failed to bootstrap public result versions', error)
+  }
 }
 
 function setupLiveEvents() {
@@ -142,15 +140,14 @@ function setupLiveEvents() {
       void fetchResults()
     },
     onError: (event) => {
-      const data = parseRevisionEventData(event)
-      if (!data) {
-        return
-      }
-
-      applyRevisions(data)
-      void fetchResults()
+      console.warn('Public results SSE connection error', event)
     },
   })
+}
+
+function translateStatus(status) {
+  const statusKey = `status.${status}`
+  return te(statusKey) ? t(statusKey) : status
 }
 
 onMounted(async () => {
@@ -170,11 +167,16 @@ onUnmounted(() => {
   <div class="public-results">
     <h2>{{ t('public.results.title') }}</h2>
     <p>{{ t('public.results.description') }}</p>
-    <p data-testid="public-live-indicator" class="live-indicator">
-      {{ isLive ? 'Live' : 'Offline' }}
+    <p data-testid="public-live-indicator" class="live-indicator" aria-live="polite">
+      {{ isLive ? t('live.live') : t('live.offline') }}
     </p>
-    <p v-if="isDataStale" data-testid="public-stale-data-banner" class="stale-data-banner">
-      Showing cached results. Reconnecting for latest updates.
+    <p
+      v-if="isDataStale"
+      data-testid="public-stale-data-banner"
+      class="stale-data-banner"
+      aria-live="polite"
+    >
+      {{ t('live.stale_data_message') }}
     </p>
     <p class="version-info">
       {{ t('public.version.draw') }}: {{ drawRevision }},
@@ -182,7 +184,7 @@ onUnmounted(() => {
     </p>
     <ul data-testid="public-results-list" class="results-list">
       <li v-for="row in resultRows" :key="row.entry_id">
-        {{ row.rank ?? '-' }}. {{ row.crew_name }} ({{ row.status }})
+        {{ row.rank ?? '-' }}. {{ row.crew_name }} ({{ translateStatus(row.status) }})
       </li>
     </ul>
   </div>

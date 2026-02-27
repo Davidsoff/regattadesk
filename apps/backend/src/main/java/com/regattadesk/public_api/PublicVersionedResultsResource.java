@@ -1,6 +1,7 @@
 package com.regattadesk.public_api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -102,6 +103,7 @@ public class PublicVersionedResultsResource {
             WHERE regatta_id = ?
               AND draw_revision = ?
               AND results_revision = ?
+              -- Public projections exclude only withdrawn_before_draw; withdrawn_after_draw remains visible.
               AND status <> 'withdrawn_before_draw'
             ORDER BY rank NULLS LAST, bib NULLS LAST, crew_name
             """;
@@ -136,20 +138,35 @@ public class PublicVersionedResultsResource {
         return rows;
     }
 
-    public record ResultsResponse(int draw_revision, int results_revision, List<ResultRow> data) {}
+    public record ResultsResponse(
+        @JsonProperty("draw_revision")
+        int drawRevision,
+        @JsonProperty("results_revision")
+        int resultsRevision,
+        List<ResultRow> data
+    ) {}
 
     public record ResultRow(
-        UUID entry_id,
-        UUID event_id,
+        @JsonProperty("entry_id")
+        UUID entryId,
+        @JsonProperty("event_id")
+        UUID eventId,
         Integer bib,
-        String crew_name,
-        String club_name,
-        Integer elapsed_time_ms,
-        Integer penalties_ms,
+        @JsonProperty("crew_name")
+        String crewName,
+        @JsonProperty("club_name")
+        String clubName,
+        @JsonProperty("elapsed_time_ms")
+        Integer elapsedTimeMs,
+        @JsonProperty("penalties_ms")
+        Integer penaltiesMs,
         Integer rank,
         String status,
-        boolean is_provisional,
-        boolean is_edited,
-        boolean is_official
+        @JsonProperty("is_provisional")
+        boolean isProvisional,
+        @JsonProperty("is_edited")
+        boolean isEdited,
+        @JsonProperty("is_official")
+        boolean isOfficial
     ) {}
 }

@@ -30,6 +30,7 @@ class PublicVersionedResultsResourceTest {
     private UUID entry1;
     private UUID entry2;
     private UUID entryWithdrawn;
+    private UUID entryWithdrawnAfterDraw;
     private UUID eventId;
     private Cookie sessionCookie;
 
@@ -39,6 +40,7 @@ class PublicVersionedResultsResourceTest {
         entry1 = UUID.randomUUID();
         entry2 = UUID.randomUUID();
         entryWithdrawn = UUID.randomUUID();
+        entryWithdrawnAfterDraw = UUID.randomUUID();
         eventId = UUID.randomUUID();
 
         try (Connection conn = dataSource.getConnection();
@@ -59,6 +61,7 @@ class PublicVersionedResultsResourceTest {
             insertRow(resultsStmt, entry1, 11, "Crew One", "Club A", 321000, 0, 1, "entered", false, false, true);
             insertRow(resultsStmt, entry2, 12, "Crew Two", "Club B", 330000, 5000, 2, "entered", true, true, false);
             insertRow(resultsStmt, entryWithdrawn, 13, "Withdrawn Crew", "Club C", null, 0, null, "withdrawn_before_draw", true, false, false);
+            insertRow(resultsStmt, entryWithdrawnAfterDraw, 14, "Late Withdrawn Crew", "Club D", null, 0, null, "withdrawn_after_draw", false, false, false);
         }
 
         Response sessionResponse = given()
@@ -72,7 +75,7 @@ class PublicVersionedResultsResourceTest {
     }
 
     @Test
-    void getResults_returnsVersionedRowsAndExcludesWithdrawnBeforeDraw() {
+    void getResults_returnsVersionedRowsAndExcludesOnlyWithdrawnBeforeDraw() {
         String path = String.format("/public/v2-3/regattas/%s/results", testRegattaId);
 
         given()
@@ -83,14 +86,16 @@ class PublicVersionedResultsResourceTest {
             .statusCode(200)
             .body("draw_revision", equalTo(2))
             .body("results_revision", equalTo(3))
-            .body("data", hasSize(2))
+            .body("data", hasSize(3))
             .body("data[0].entry_id", equalTo(entry1.toString()))
             .body("data[0].event_id", equalTo(eventId.toString()))
             .body("data[0].rank", equalTo(1))
             .body("data[0].is_official", equalTo(true))
             .body("data[1].entry_id", equalTo(entry2.toString()))
             .body("data[1].penalties_ms", equalTo(5000))
-            .body("data[1].is_provisional", equalTo(true));
+            .body("data[1].is_provisional", equalTo(true))
+            .body("data[2].entry_id", equalTo(entryWithdrawnAfterDraw.toString()))
+            .body("data[2].status", equalTo("withdrawn_after_draw"));
     }
 
     private void insertRow(
