@@ -9,6 +9,8 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
+const SUCCESS_MESSAGE_DURATION_MS = 3000
+
 const regattaId = route.params.regattaId
 const invoiceId = route.params.invoiceId
 
@@ -46,7 +48,7 @@ async function markAsPaid() {
     markSuccess.value = true
     setTimeout(() => {
       markSuccess.value = false
-    }, 3000)
+    }, SUCCESS_MESSAGE_DURATION_MS)
   } catch (err) {
     markError.value = err.message || t('finance.invoice.mark_paid_error')
   } finally {

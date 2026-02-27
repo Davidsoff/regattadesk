@@ -9,6 +9,8 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
+const SUCCESS_MESSAGE_DURATION_MS = 3000
+
 const regattaId = route.params.regattaId
 const clubId = route.params.clubId
 
@@ -43,12 +45,12 @@ async function updateStatus() {
       payment_status: paymentStatus.value,
       payment_reference: paymentReference.value.trim() || undefined
     }
-    const result = await financeApi.updateClubPaymentStatus(regattaId, clubId, payload)
+    await financeApi.updateClubPaymentStatus(regattaId, clubId, payload)
     updateSuccess.value = true
     await loadClub()
     setTimeout(() => {
       updateSuccess.value = false
-    }, 3000)
+    }, SUCCESS_MESSAGE_DURATION_MS)
   } catch (err) {
     updateError.value = err.message || t('finance.club.update_error')
   } finally {

@@ -10,6 +10,9 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
+const SUCCESS_MESSAGE_DURATION_MS = 3000
+const INVOICE_GENERATION_RELOAD_DELAY_MS = 2000
+
 const regattaId = route.params.regattaId
 
 const invoices = ref([])
@@ -42,7 +45,7 @@ async function generateInvoices() {
     setTimeout(async () => {
       generateSuccess.value = false
       await loadInvoices()
-    }, 2000)
+    }, INVOICE_GENERATION_RELOAD_DELAY_MS)
   } catch (err) {
     generateError.value = err.message || t('finance.invoice.generate_error')
   } finally {

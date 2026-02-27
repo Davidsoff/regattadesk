@@ -9,6 +9,8 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
+const SUCCESS_MESSAGE_DURATION_MS = 3000
+
 const regattaId = route.params.regattaId
 const entryId = route.params.entryId
 
@@ -49,7 +51,7 @@ async function updateStatus() {
     updateSuccess.value = true
     setTimeout(() => {
       updateSuccess.value = false
-    }, 3000)
+    }, SUCCESS_MESSAGE_DURATION_MS)
   } catch (err) {
     updateError.value = err.message || t('finance.entry.update_error')
   } finally {
