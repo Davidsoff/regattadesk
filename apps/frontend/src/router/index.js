@@ -31,6 +31,11 @@ const router = createRouter({
           path: 'regattas/:regattaId/finance',
           name: 'staff-regatta-finance',
           component: () => import('../views/staff/RegattaFinance.vue')
+        },
+        {
+          path: 'regattas/:regattaId/blocks',
+          name: 'staff-blocks-management',
+          component: () => import('../views/staff/BlocksManagement.vue')
         }
       ]
     },
