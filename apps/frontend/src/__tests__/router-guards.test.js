@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
 import { staffGuard, operatorGuard } from '../router/guards'
 
-describe('Route Guards', () => {
-  function clearAuthState() {
-    window.__REGATTADESK_AUTH__ = {}
-  }
+function clearAuthState() {
+  globalThis.__REGATTADESK_AUTH__ = {}
+}
 
+describe('Route Guards', () => {
   clearAuthState()
 
   describe('staffGuard', () => {
     it('allows access when staff auth is present', () => {
       clearAuthState()
-      window.__REGATTADESK_AUTH__.staffAuthenticated = true
+      globalThis.__REGATTADESK_AUTH__.staffAuthenticated = true
       const to = { fullPath: '/staff/regattas' }
       const from = {}
       const next = vi.fn()
@@ -54,7 +54,7 @@ describe('Route Guards', () => {
   describe('operatorGuard', () => {
     it('allows access when operator token is present', () => {
       clearAuthState()
-      window.__REGATTADESK_AUTH__.operatorToken = 'token-123'
+      globalThis.__REGATTADESK_AUTH__.operatorToken = 'token-123'
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()
@@ -74,7 +74,7 @@ describe('Route Guards', () => {
       operatorGuard(to, from, next)
 
       expect(next).toHaveBeenCalledWith()
-      expect(window.__REGATTADESK_AUTH__.operatorToken).toBe('query-token')
+      expect(globalThis.__REGATTADESK_AUTH__.operatorToken).toBe('query-token')
     })
 
     it('redirects to unauthorized when operator token is missing', () => {

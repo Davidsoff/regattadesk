@@ -1,25 +1,26 @@
-function isBrowser() {
-  return typeof window !== 'undefined'
-}
-
-function getAuthContext() {
-  if (!isBrowser()) {
-    return {}
-  }
-
-  if (!window.__REGATTADESK_AUTH__) {
-    window.__REGATTADESK_AUTH__ = {}
-  }
-
-  return window.__REGATTADESK_AUTH__
-}
-
-function getLocalStorageValue(key) {
-  if (!isBrowser() || typeof window.localStorage?.getItem !== 'function') {
+function getBrowserWindow() {
+  if (typeof globalThis.window === 'undefined') {
     return null
   }
 
-  return window.localStorage.getItem(key)
+  return globalThis.window
+}
+
+function getAuthContext() {
+  if (!globalThis.__REGATTADESK_AUTH__) {
+    globalThis.__REGATTADESK_AUTH__ = {}
+  }
+
+  return globalThis.__REGATTADESK_AUTH__
+}
+
+function getLocalStorageValue(key) {
+  const browserWindow = getBrowserWindow()
+  if (!browserWindow || typeof browserWindow.localStorage?.getItem !== 'function') {
+    return null
+  }
+
+  return browserWindow.localStorage.getItem(key)
 }
 
 function hasStaffAuth() {
@@ -37,12 +38,13 @@ function hasOperatorToken(to) {
   const contextToken = typeof context.operatorToken === 'string' ? context.operatorToken.trim() : ''
   const queryToken = typeof to.query?.token === 'string' ? to.query.token.trim() : ''
   const storedToken = getLocalStorageValue('rd_operator_token')?.trim() ?? ''
+  const browserWindow = getBrowserWindow()
 
-  if (queryToken && isBrowser()) {
+  if (queryToken) {
     context.operatorToken = queryToken
 
-    if (typeof window.localStorage?.setItem === 'function') {
-      window.localStorage.setItem('rd_operator_token', queryToken)
+    if (browserWindow && typeof browserWindow.localStorage?.setItem === 'function') {
+      browserWindow.localStorage.setItem('rd_operator_token', queryToken)
     }
 
     return true

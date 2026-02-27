@@ -104,7 +104,7 @@ describe('Router Configuration', () => {
   let router
 
   beforeEach(() => {
-    window.__REGATTADESK_AUTH__ = {
+    globalThis.__REGATTADESK_AUTH__ = {
       staffAuthenticated: true,
       operatorToken: 'operator-token',
     }
