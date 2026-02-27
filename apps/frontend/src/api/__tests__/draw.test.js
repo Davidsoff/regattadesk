@@ -467,7 +467,7 @@ describe('draw', () => {
 
         const result = await api.generateDraw(regattaId)
 
-        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/generate`)
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/generate`, undefined)
         expect(result).toEqual(mockResponse)
       })
 

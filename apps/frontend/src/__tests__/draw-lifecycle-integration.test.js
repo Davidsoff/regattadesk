@@ -99,7 +99,7 @@ describe('Draw Lifecycle Integration', () => {
       expect(mockClient.post).toHaveBeenNthCalledWith(1, '/rulesets', rulesetPayload)
       expect(mockClient.post).toHaveBeenNthCalledWith(2, `/regattas/${regattaId}/blocks`, blockPayload)
       expect(mockClient.post).toHaveBeenNthCalledWith(3, `/regattas/${regattaId}/bib_pools`, bibPoolPayload)
-      expect(mockClient.post).toHaveBeenNthCalledWith(4, `/regattas/${regattaId}/draw/generate`)
+      expect(mockClient.post).toHaveBeenNthCalledWith(4, `/regattas/${regattaId}/draw/generate`, undefined)
       expect(mockClient.post).toHaveBeenNthCalledWith(5, `/regattas/${regattaId}/draw/publish`)
     })
 

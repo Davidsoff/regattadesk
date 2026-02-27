@@ -46,13 +46,13 @@ function createNewRuleset() {
   router.push({ name: 'staff-ruleset-create' })
 }
 
+const AGE_CALCULATION_LABELS = {
+  actual_at_start: 'rulesets.ageCalculation.actualAtStart',
+  age_as_of_jan_1: 'rulesets.ageCalculation.ageAsOfJan1'
+}
+
 function ageCalculationLabel(type) {
-  if (type === 'actual_at_start') {
-    return t('rulesets.ageCalculation.actualAtStart')
-  } else if (type === 'age_as_of_jan_1') {
-    return t('rulesets.ageCalculation.ageAsOfJan1')
-  }
-  return type
+  return t(AGE_CALCULATION_LABELS[type] || type)
 }
 
 onMounted(() => {

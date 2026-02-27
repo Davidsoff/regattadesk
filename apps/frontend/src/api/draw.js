@@ -217,10 +217,7 @@ export function createDrawApi(client) {
      * @param {string} payload.seed - Custom seed for reproducibility
      * @returns {Promise<object>} Revision response with seed
      */
-    async generateDraw(regattaId, payload = undefined) {
-      if (payload === undefined) {
-        return client.post(`/regattas/${regattaId}/draw/generate`)
-      }
+    async generateDraw(regattaId, payload) {
       return client.post(`/regattas/${regattaId}/draw/generate`, payload)
     },
 
