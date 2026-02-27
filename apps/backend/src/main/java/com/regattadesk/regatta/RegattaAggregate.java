@@ -134,6 +134,24 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         ));
     }
     
+    /**
+     * Increments the results revision (BC07-002).
+     * 
+     * Results revision changes affect public results pages and require cache invalidation.
+     * Should be called when any result-affecting change occurs (DSQ, exclusion, penalties, etc.)
+     * 
+     * @param reason reason for incrementing the results revision
+     * @throws IllegalArgumentException if reason is null or blank
+     */
+    public void incrementResultsRevision(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason cannot be null or blank");
+        }
+        
+        int newRevision = this.resultsRevision + 1;
+        raiseEvent(new ResultsRevisionIncrementedEvent(getId(), newRevision, reason));
+    }
+    
     @Override
     protected void applyEventToState(DomainEvent event) {
         if (event instanceof RegattaCreatedEvent created) {
@@ -157,6 +175,8 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         } else if (event instanceof RegattaPenaltyConfigurationUpdatedEvent penaltyUpdated) {
             this.defaultPenaltySeconds = penaltyUpdated.getDefaultPenaltySeconds();
             this.allowCustomPenaltySeconds = penaltyUpdated.getAllowCustomPenaltySeconds();
+        } else if (event instanceof ResultsRevisionIncrementedEvent resultsIncremented) {
+            this.resultsRevision = resultsIncremented.getNewResultsRevision();
         }
         // Additional event handlers will be added as more events are defined
     }
