@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = HTTPServer(("127.0.0.1", 18080), Handler)
+    server = ThreadingHTTPServer(("127.0.0.1", 18080), Handler)
     try:
         server.serve_forever()
     finally:

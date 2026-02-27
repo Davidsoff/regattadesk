@@ -24,6 +24,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
       - name: Start mock target
         run: |
           python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
@@ -43,10 +46,9 @@ jobs:
       - name: Run smoke load profile
         run: |
           BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
-          python3 apps/backend/performance/load_harness.py \
-            --base-url "$BASE_URL" \
-            --profile smoke \
-            --output-dir apps/backend/performance/reports
+          mkdir -p apps/backend/performance/reports
+          PROFILE=smoke BASE_URL="$BASE_URL" OUTPUT_DIR=apps/backend/performance/reports \
+            k6 run apps/backend/performance/load_harness.js
 
       - name: Upload smoke reports
         if: always()
@@ -72,6 +74,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
       - name: Start mock target
         run: |
           python3 apps/backend/performance/mock_target.py >/tmp/mock-server.log 2>&1 &
@@ -91,10 +96,9 @@ jobs:
       - name: Run deep load profile
         run: |
           BASE_URL="${{ inputs.base_url || 'http://127.0.0.1:18080' }}"
-          python3 apps/backend/performance/load_harness.py \
-            --base-url "$BASE_URL" \
-            --profile deep \
-            --output-dir apps/backend/performance/reports
+          mkdir -p apps/backend/performance/reports
+          PROFILE=deep BASE_URL="$BASE_URL" OUTPUT_DIR=apps/backend/performance/reports \
+            k6 run apps/backend/performance/load_harness.js
 
       - name: Upload deep reports
         if: always()

@@ -1,6 +1,6 @@
 # Load Testing Suite (BC09-003)
 
-This directory contains version-controlled load profiles, objective gate thresholds, and a repeatable execution harness.
+This directory contains version-controlled load profiles, objective gate thresholds, and a repeatable k6 execution harness.
 
 ## Scenarios
 - `public-read`: public schedule/results read traffic.
@@ -22,18 +22,13 @@ Gate failure conditions:
 ## Run
 ```bash
 # smoke profile (CI-adjacent)
-python3 apps/backend/performance/load_harness.py \
-  --base-url http://localhost:8080 \
-  --profile smoke \
-  --output-dir apps/backend/performance/reports
+PROFILE=smoke BASE_URL=http://localhost:8080 OUTPUT_DIR=apps/backend/performance/reports \
+  k6 run apps/backend/performance/load_harness.js
 
 # deep profile (scheduled)
-python3 apps/backend/performance/load_harness.py \
-  --base-url http://localhost:8080 \
-  --profile deep \
-  --output-dir apps/backend/performance/reports \
-  --cpu-utilization-pct 70 \
-  --memory-utilization-pct 68
+PROFILE=deep BASE_URL=http://localhost:8080 OUTPUT_DIR=apps/backend/performance/reports \
+  CPU_UTILIZATION_PCT=70 MEMORY_UTILIZATION_PCT=68 \
+  k6 run apps/backend/performance/load_harness.js
 ```
 
 ## Reports

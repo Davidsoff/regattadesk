@@ -11,12 +11,14 @@ Define release-readiness performance checks for BC09-003 and provide a repeatabl
 1. Ensure a target environment is reachable.
 2. Run the harness:
    ```bash
-   python3 apps/backend/performance/load_harness.py --base-url <TARGET> --profile smoke
+   PROFILE=smoke BASE_URL=<TARGET> OUTPUT_DIR=apps/backend/performance/reports \
+     k6 run apps/backend/performance/load_harness.js
    ```
 3. Review `apps/backend/performance/reports/smoke-summary.json` and `smoke-report.md`.
 4. For deeper validation:
    ```bash
-   python3 apps/backend/performance/load_harness.py --base-url <TARGET> --profile deep
+   PROFILE=deep BASE_URL=<TARGET> OUTPUT_DIR=apps/backend/performance/reports \
+     k6 run apps/backend/performance/load_harness.js
    ```
 
 ## Gate Decision
