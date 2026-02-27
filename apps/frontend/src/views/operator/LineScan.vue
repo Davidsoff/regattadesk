@@ -71,6 +71,32 @@ const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
 
+function applyAccessModeFromResponse(response) {
+  if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
+    operatorAccessMode.value = response.new_device_mode
+    return
+  }
+
+  operatorAccessMode.value =
+    response?.active_device_id && response.active_device_id !== currentDeviceId.value
+      ? 'read_only'
+      : 'active'
+}
+
+function handleCompleteHandoffError(error) {
+  if (error instanceof ApiError && error.status === 400 && error.code === 'INVALID_PIN') {
+    invalidPinError.value = true
+    return
+  }
+
+  if (error instanceof ApiError && error.status === 409) {
+    conflictError.value = true
+    return
+  }
+
+  handoffErrorMessage.value = error instanceof Error ? error.message : 'Handoff failed'
+}
+
 async function requestHandoff() {
   if (isSubmitting.value) {
     return
@@ -186,22 +212,9 @@ async function completeHandoff() {
       completing_device_id: currentDeviceId.value
     })
     handoff.value = response
-    if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
-      operatorAccessMode.value = response.new_device_mode
-    } else {
-      operatorAccessMode.value =
-        response?.active_device_id && response.active_device_id !== currentDeviceId.value
-          ? 'read_only'
-          : 'active'
-    }
+    applyAccessModeFromResponse(response)
   } catch (error) {
-    if (error instanceof ApiError && error.status === 400 && error.code === 'INVALID_PIN') {
-      invalidPinError.value = true
-    } else if (error instanceof ApiError && error.status === 409) {
-      conflictError.value = true
-    } else {
-      handoffErrorMessage.value = error instanceof Error ? error.message : 'Handoff failed'
-    }
+    handleCompleteHandoffError(error)
   } finally {
     isSubmitting.value = false
   }
@@ -239,7 +252,7 @@ async function completeHandoff() {
         data-testid="handoff-pin-input"
         v-model="handoffPin"
         inputmode="numeric"
-        autocomplete="one-time-code"
+        autocomplete="off"
       />
       <button
         type="button"
