@@ -25,7 +25,12 @@
     "import": "Importeren",
     "print": "Afdrukken",
     "download": "Downloaden",
-    "open": "Openen"
+    "open": "Openen",
+    "skip_to_content": "Spring naar hoofdinhoud",
+    "staff": "Staff",
+    "operator": "Operator",
+    "go_home": "Ga naar home",
+    "powered_by_regattadesk": "Mogelijk gemaakt door RegattaDesk"
   },
   "status": {
     "entered": "Ingeschreven",
@@ -125,7 +130,61 @@
       "density_comfortable": "Comfortabel",
       "density_compact": "Compact",
       "regatta_id_label": "Regatta ID (UUID)",
-      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "title": "Financiën"
+    }
+  },
+  "navigation": {
+    "regattas": "Regatta's",
+    "schedule": "Schema",
+    "results": "Resultaten"
+  },
+  "staff": {
+    "regattas": {
+      "title": "Regatta's",
+      "description": "Beheer je regatta's"
+    },
+    "regatta": {
+      "title": "Regatta details",
+      "id": "Regatta ID"
+    }
+  },
+  "operator": {
+    "regattas": {
+      "title": "Regatta's",
+      "description": "Selecteer een regatta om mee te werken"
+    },
+    "regatta": {
+      "title": "Regatta",
+      "id": "Regatta ID"
+    },
+    "line_scan": {
+      "title": "Line Scan",
+      "description": "Vastleggen van line scan foto's en finishtijden"
+    }
+  },
+  "public": {
+    "schedule": {
+      "title": "Schema",
+      "description": "Bekijk het race schema"
+    },
+    "results": {
+      "title": "Resultaten",
+      "description": "Bekijk race resultaten"
+    },
+    "version": {
+      "draw": "Loting versie",
+      "results": "Resultaten versie"
+    }
+  },
+  "errors": {
+    "unauthorized": {
+      "title": "Ongeautoriseerde toegang",
+      "description": "Je hebt geen toegang tot deze pagina."
+    },
+    "not_found": {
+      "title": "Pagina niet gevonden",
+      "description": "De pagina die je zoekt bestaat niet."
     }
   }
 }
