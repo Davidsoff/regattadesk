@@ -56,6 +56,48 @@ async function mountResults(routePath = '/public/v1-2/results?regatta_id=1111111
   })
 }
 
+function jsonResponse(body, { status = 200, contentType = 'application/json' } = {}) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: { get: () => contentType },
+    json: async () => body,
+  }
+}
+
+function queueBootstrapSequence(fetchMock, {
+  drawRevision = 1,
+  resultsRevision = 2,
+  resultData = [],
+  requiresSessionBootstrap = false,
+} = {}) {
+  if (requiresSessionBootstrap) {
+    fetchMock.mockResolvedValueOnce(jsonResponse(
+      { error: { code: 'UNAUTHORIZED', message: 'Missing or invalid public session' } },
+      { status: 401 },
+    ))
+    fetchMock.mockResolvedValueOnce(jsonResponse({}, { status: 204, contentType: '' }))
+  }
+
+  fetchMock.mockResolvedValueOnce(jsonResponse({ draw_revision: drawRevision, results_revision: resultsRevision }))
+  fetchMock.mockResolvedValueOnce(jsonResponse({
+    draw_revision: drawRevision,
+    results_revision: resultsRevision,
+    data: resultData,
+  }))
+}
+
+function createSseHarness() {
+  const listeners = {}
+  const mockEventSource = {
+    addEventListener: vi.fn((event, handler) => {
+      listeners[event] = handler
+    }),
+    close: vi.fn(),
+  }
+  return { listeners, mockEventSource }
+}
+
 describe('Public Results bootstrap and live state (Issue #19)', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn())
@@ -73,30 +115,7 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('executes bootstrap fallback sequence: /versions -> /public/session -> /versions', async () => {
-    globalThis.fetch
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ error: { code: 'UNAUTHORIZED', message: 'Missing or invalid public session' } }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 204,
-        headers: { get: () => '' },
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2, data: [] }),
-      })
+    queueBootstrapSequence(globalThis.fetch, { requiresSessionBootstrap: true })
 
     await mountResults()
     await flushPromises()
@@ -109,19 +128,7 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('does not call /public/session when /versions succeeds on first attempt', async () => {
-    globalThis.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 4, results_revision: 9 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 4, results_revision: 9, data: [] }),
-      })
+    queueBootstrapSequence(globalThis.fetch, { drawRevision: 4, resultsRevision: 9 })
 
     await mountResults()
     await flushPromises()
@@ -132,13 +139,7 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('renders a live/offline indicator driven by SSE connectivity', async () => {
-    const listeners = {}
-    const mockEventSource = {
-      addEventListener: vi.fn((event, handler) => {
-        listeners[event] = handler
-      }),
-      close: vi.fn(),
-    }
+    const { listeners, mockEventSource } = createSseHarness()
     globalThis.EventSource.mockImplementation(function MockEventSource() {
       return mockEventSource
     })
@@ -165,48 +166,26 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('updates visible revision and refetches results when a results_revision SSE event is received', async () => {
-    const listeners = {}
-    const mockEventSource = {
-      addEventListener: vi.fn((event, handler) => {
-        listeners[event] = handler
-      }),
-      close: vi.fn(),
-    }
+    const { listeners, mockEventSource } = createSseHarness()
     globalThis.EventSource.mockImplementation(function MockEventSource() {
       return mockEventSource
     })
 
-    globalThis.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2, data: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2, data: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 3, data: [{ entry_id: 'e2', crew_name: 'Crew B', status: 'entered', rank: 1 }] }),
-      })
+    queueBootstrapSequence(globalThis.fetch, {
+      drawRevision: 1,
+      resultsRevision: 2,
+      resultData: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }],
+    })
+    queueBootstrapSequence(globalThis.fetch, {
+      drawRevision: 1,
+      resultsRevision: 2,
+      resultData: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }],
+    })
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({
+      draw_revision: 1,
+      results_revision: 3,
+      data: [{ entry_id: 'e2', crew_name: 'Crew B', status: 'entered', rank: 1 }],
+    }))
 
     const wrapper = await mountResults('/public/v1-2/results?regatta_id=22222222-2222-2222-2222-222222222222')
     await nextTick()
@@ -301,13 +280,7 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('applies snapshot and draw_revision SSE events to refresh revisions', async () => {
-    const listeners = {}
-    const mockEventSource = {
-      addEventListener: vi.fn((event, handler) => {
-        listeners[event] = handler
-      }),
-      close: vi.fn(),
-    }
+    const { listeners, mockEventSource } = createSseHarness()
     globalThis.EventSource.mockImplementation(function MockEventSource() {
       return mockEventSource
     })
@@ -337,19 +310,7 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('defaults invalid route revisions to 0 instead of NaN', async () => {
-    globalThis.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2, data: [] }),
-      })
+    queueBootstrapSequence(globalThis.fetch)
 
     const wrapper = await mountResults('/public/vfoo-bar/results?regatta_id=44444444-4444-4444-4444-444444444444')
     await flushPromises()
@@ -361,19 +322,9 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
   })
 
   it('renders a safe fallback when result status is null', async () => {
-    globalThis.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2 }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: { get: () => 'application/json' },
-        json: async () => ({ draw_revision: 1, results_revision: 2, data: [{ entry_id: 'e3', crew_name: 'Crew C', status: null, rank: 7 }] }),
-      })
+    queueBootstrapSequence(globalThis.fetch, {
+      resultData: [{ entry_id: 'e3', crew_name: 'Crew C', status: null, rank: 7 }],
+    })
 
     const wrapper = await mountResults('/public/v1-2/results?regatta_id=55555555-5555-5555-5555-555555555555')
     await flushPromises()
