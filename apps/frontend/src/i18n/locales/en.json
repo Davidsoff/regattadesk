@@ -197,6 +197,62 @@
       }
     }
   },
+  "blocks": {
+    "title": "Blocks & Bib Pools",
+    "subtitle": "Configure timing blocks and bib pool allocations",
+    "blocks_section": "Scheduling Blocks",
+    "bib_pools_section": "Bib Pools",
+    "overflow_pool_section": "Overflow Pool",
+    "add_block": "Add Block",
+    "add_bib_pool": "Add Bib Pool",
+    "edit_block": "Edit Block",
+    "edit_bib_pool": "Edit Bib Pool",
+    "delete_block_confirm": "Are you sure you want to delete this block?",
+    "delete_bib_pool_confirm": "Are you sure you want to delete this bib pool?",
+    "block": {
+      "name": "Block Name",
+      "start_time": "Start Time",
+      "event_interval": "Event Interval (seconds)",
+      "crew_interval": "Crew Interval (seconds)",
+      "display_order": "Display Order"
+    },
+    "bib_pool": {
+      "name": "Pool Name",
+      "allocation_mode": "Allocation Mode",
+      "allocation_mode_range": "Range",
+      "allocation_mode_explicit": "Explicit List",
+      "start_bib": "Start Bib",
+      "end_bib": "End Bib",
+      "bib_numbers": "Bib Numbers (comma-separated)",
+      "bib_numbers_placeholder": "1, 5, 10, 15",
+      "is_overflow": "Overflow Pool",
+      "priority": "Priority",
+      "block_assignment": "Assigned to Block"
+    },
+    "no_blocks": "No blocks configured yet",
+    "no_bib_pools": "No bib pools configured yet",
+    "no_overflow_pool": "No overflow pool configured",
+    "validation": {
+      "block_name_required": "Block name is required",
+      "start_time_required": "Start time is required",
+      "start_time_format": "Start time must be in HH:MM:SS format",
+      "event_interval_required": "Event interval is required",
+      "event_interval_positive": "Event interval must be positive",
+      "crew_interval_required": "Crew interval is required",
+      "crew_interval_positive": "Crew interval must be positive",
+      "pool_name_required": "Pool name is required",
+      "allocation_mode_required": "Allocation mode is required",
+      "start_bib_required": "Start bib is required",
+      "start_bib_positive": "Start bib must be positive",
+      "end_bib_required": "End bib is required",
+      "end_bib_positive": "End bib must be positive",
+      "end_bib_greater": "End bib must be greater than start bib",
+      "bib_numbers_required": "Bib numbers are required",
+      "bib_numbers_format": "Bib numbers must be comma-separated integers",
+      "bib_overlap": "Bib pool overlap detected",
+      "bib_overlap_details": "Bibs {bibs} overlap with pool: {poolName}"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Crew is required",

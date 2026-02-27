@@ -197,6 +197,62 @@
       }
     }
   },
+  "blocks": {
+    "title": "Blokken & Startnummerpools",
+    "subtitle": "Configureer timing blokken en startnummer toewijzingen",
+    "blocks_section": "Planningsblokken",
+    "bib_pools_section": "Startnummerpools",
+    "overflow_pool_section": "Overlooppool",
+    "add_block": "Blok toevoegen",
+    "add_bib_pool": "Pool toevoegen",
+    "edit_block": "Blok bewerken",
+    "edit_bib_pool": "Pool bewerken",
+    "delete_block_confirm": "Weet je zeker dat je dit blok wilt verwijderen?",
+    "delete_bib_pool_confirm": "Weet je zeker dat je deze pool wilt verwijderen?",
+    "block": {
+      "name": "Bloknaam",
+      "start_time": "Starttijd",
+      "event_interval": "Interval tussen nummers (seconden)",
+      "crew_interval": "Interval tussen ploegen (seconden)",
+      "display_order": "Weergavevolgorde"
+    },
+    "bib_pool": {
+      "name": "Poolnaam",
+      "allocation_mode": "Toewijzingsmodus",
+      "allocation_mode_range": "Bereik",
+      "allocation_mode_explicit": "Expliciete lijst",
+      "start_bib": "Begin startnummer",
+      "end_bib": "Eind startnummer",
+      "bib_numbers": "Startnummers (kommagescheiden)",
+      "bib_numbers_placeholder": "1, 5, 10, 15",
+      "is_overflow": "Overlooppool",
+      "priority": "Prioriteit",
+      "block_assignment": "Toegewezen aan blok"
+    },
+    "no_blocks": "Nog geen blokken geconfigureerd",
+    "no_bib_pools": "Nog geen startnummerpools geconfigureerd",
+    "no_overflow_pool": "Geen overlooppool geconfigureerd",
+    "validation": {
+      "block_name_required": "Bloknaam is verplicht",
+      "start_time_required": "Starttijd is verplicht",
+      "start_time_format": "Starttijd moet in UU:MM:SS formaat zijn",
+      "event_interval_required": "Interval tussen nummers is verplicht",
+      "event_interval_positive": "Interval tussen nummers moet positief zijn",
+      "crew_interval_required": "Interval tussen ploegen is verplicht",
+      "crew_interval_positive": "Interval tussen ploegen moet positief zijn",
+      "pool_name_required": "Poolnaam is verplicht",
+      "allocation_mode_required": "Toewijzingsmodus is verplicht",
+      "start_bib_required": "Begin startnummer is verplicht",
+      "start_bib_positive": "Begin startnummer moet positief zijn",
+      "end_bib_required": "Eind startnummer is verplicht",
+      "end_bib_positive": "Eind startnummer moet positief zijn",
+      "end_bib_greater": "Eind startnummer moet groter zijn dan begin startnummer",
+      "bib_numbers_required": "Startnummers zijn verplicht",
+      "bib_numbers_format": "Startnummers moeten kommagescheiden gehele getallen zijn",
+      "bib_overlap": "Overlapping van startnummers gedetecteerd",
+      "bib_overlap_details": "Startnummers {bibs} overlappen met pool: {poolName}"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Ploeg is verplicht",
