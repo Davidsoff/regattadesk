@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createApiClient } from '../client'
 
+function jsonResponse(payload, overrides = {}) {
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => 'application/json' },
+    json: async () => payload,
+    ...overrides
+  }
+}
+
 describe('client', () => {
   let client
 
@@ -8,16 +18,6 @@ describe('client', () => {
     vi.restoreAllMocks()
     client = createApiClient({ baseUrl: '/api/v1' })
   })
-
-  function jsonResponse(payload, overrides = {}) {
-    return {
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => payload,
-      ...overrides
-    }
-  }
 
   describe('createApiClient', () => {
     it('creates a client with request method', () => {

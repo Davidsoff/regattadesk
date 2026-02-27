@@ -9,6 +9,79 @@
 
 import { normalizeApiError } from './errors.js'
 
+function isJsonSerializableBody(body) {
+  return (
+    body !== null &&
+    typeof body === 'object' &&
+    !(body instanceof ArrayBuffer) &&
+    !ArrayBuffer.isView(body) &&
+    !(typeof Blob !== 'undefined' && body instanceof Blob) &&
+    !(typeof FormData !== 'undefined' && body instanceof FormData) &&
+    !(typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams)
+  )
+}
+
+function createRequestInit(method, body, headers = {}) {
+  const requestHeaders = { ...headers }
+  const requestInit = {
+    method,
+    headers: requestHeaders
+  }
+
+  if (body !== undefined) {
+    if (isJsonSerializableBody(body)) {
+      if (!('Content-Type' in requestHeaders) && !('content-type' in requestHeaders)) {
+        requestHeaders['Content-Type'] = 'application/json'
+      }
+      requestInit.body = JSON.stringify(body)
+    } else {
+      requestInit.body = body
+    }
+  }
+
+  return requestInit
+}
+
+function getResponseType(response) {
+  const contentType = response.headers?.get?.('content-type') || ''
+  const isJsonResponse = contentType.includes('application/json')
+  const isNoContentStatus = response.status === 204 || response.status === 205
+  return { isJsonResponse, isNoContentStatus }
+}
+
+async function readSuccessJson(response) {
+  try {
+    return await response.json()
+  } catch (error) {
+    return null
+  }
+}
+
+async function readErrorJson(response) {
+  try {
+    return await response.json()
+  } catch (error) {
+    const normalized = normalizeApiError(null)
+    throw new ApiError(normalized, response.status)
+  }
+}
+
+function normalizeNetworkError(error) {
+  if (error instanceof ApiError) {
+    return error
+  }
+
+  return new ApiError(
+    {
+      code: 'NETWORK_ERROR',
+      message: error instanceof Error ? error.message : '',
+      details: undefined,
+      requestId: undefined
+    },
+    0
+  )
+}
+
 /**
  * Custom error class for API errors with normalized fields.
  */
@@ -32,18 +105,6 @@ export class ApiError extends Error {
 export function createApiClient(options = {}) {
   const { baseUrl = '/api/v1' } = options
 
-  function isJsonSerializableBody(body) {
-    return (
-      body !== null &&
-      typeof body === 'object' &&
-      !(body instanceof ArrayBuffer) &&
-      !ArrayBuffer.isView(body) &&
-      !(typeof Blob !== 'undefined' && body instanceof Blob) &&
-      !(typeof FormData !== 'undefined' && body instanceof FormData) &&
-      !(typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams)
-    )
-  }
-
   /**
    * Make an HTTP request to the API.
    * @param {string} method - HTTP method
@@ -58,71 +119,30 @@ export function createApiClient(options = {}) {
     const { body, headers = {} } = options
 
     const url = `${baseUrl}${path}`
-    const requestHeaders = { ...headers }
-
-    const requestInit = {
-      method,
-      headers: requestHeaders
-    }
-
-    if (body !== undefined) {
-      if (isJsonSerializableBody(body)) {
-        if (!('Content-Type' in requestHeaders) && !('content-type' in requestHeaders)) {
-          requestHeaders['Content-Type'] = 'application/json'
-        }
-        requestInit.body = JSON.stringify(body)
-      } else {
-        requestInit.body = body
-      }
-    }
+    const requestInit = createRequestInit(method, body, headers)
 
     try {
       const response = await fetch(url, requestInit)
-      const contentType = response.headers?.get?.('content-type') || ''
-      const isJsonResponse = contentType.includes('application/json')
-      const isNoContentStatus = response.status === 204 || response.status === 205
-
-      let data = null
-      if (!isNoContentStatus && isJsonResponse) {
-        try {
-          data = await response.json()
-        } catch (error) {
-          if (!response.ok) {
-            const normalized = normalizeApiError(null)
-            throw new ApiError(normalized, response.status)
-          }
-          data = null
-        }
-      }
-
-      if (!response.ok) {
-        const normalized = normalizeApiError(data)
-        throw new ApiError(normalized, response.status)
-      }
+      const { isJsonResponse, isNoContentStatus } = getResponseType(response)
 
       if (isNoContentStatus) {
         return null
       }
 
+      if (!response.ok) {
+        const data = isJsonResponse ? await readErrorJson(response) : null
+        const normalized = normalizeApiError(data)
+        throw new ApiError(normalized, response.status)
+      }
+
       if (isJsonResponse) {
-        return data
+        return readSuccessJson(response)
       }
 
       return response
     } catch (error) {
       // Network error or other fetch failure
-      if (error instanceof ApiError) {
-        throw error
-      }
-      throw new ApiError(
-        {
-          code: 'NETWORK_ERROR',
-          message: error instanceof Error ? error.message : '',
-          details: undefined,
-          requestId: undefined
-        },
-        0
-      )
+      throw normalizeNetworkError(error)
     }
   }
 
