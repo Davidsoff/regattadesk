@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Entry aggregate root (BC03-004, BC08-001).
+ * Entry aggregate root (BC03-004, BC08-001, BC07-002).
  * 
  * Represents an entry in a regatta event. Manages entry lifecycle including
- * payment status, withdrawals, and status changes.
+ * payment status, withdrawals, status changes, and adjudication outcomes.
  * 
- * Payment status transitions are auditable through event sourcing.
+ * Payment status transitions and adjudication actions are auditable through event sourcing.
  */
 public class EntryAggregate extends AggregateRoot<EntryAggregate> {
     private UUID regattaId;
@@ -26,6 +26,7 @@ public class EntryAggregate extends AggregateRoot<EntryAggregate> {
     private Instant paidAt;
     private String paidBy;
     private String paymentReference;
+    private String priorStatusBeforeDsq; // Stored for DSQ revert
 
     private static final List<String> VALID_PAYMENT_STATUSES = List.of("unpaid", "paid");
 
@@ -91,6 +92,67 @@ public class EntryAggregate extends AggregateRoot<EntryAggregate> {
         ));
     }
 
+    /**
+     * Disqualifies the entry (BC07-002).
+     * 
+     * Captures the current status before DSQ to enable revert.
+     * 
+     * @param reason reason for disqualification
+     * @throws IllegalArgumentException if reason is null or blank
+     * @throws IllegalStateException if entry is already disqualified
+     */
+    public void disqualify(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason cannot be null or blank");
+        }
+        if ("dsq".equals(this.status)) {
+            throw new IllegalStateException("Entry is already disqualified");
+        }
+        
+        raiseEvent(new EntryDisqualifiedEvent(getId(), this.status, reason));
+    }
+
+    /**
+     * Excludes the entry from the race (BC07-002).
+     * 
+     * Captures the current status before exclusion.
+     * 
+     * @param reason reason for exclusion
+     * @throws IllegalArgumentException if reason is null or blank
+     * @throws IllegalStateException if entry is already excluded
+     */
+    public void exclude(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason cannot be null or blank");
+        }
+        if ("excluded".equals(this.status)) {
+            throw new IllegalStateException("Entry is already excluded");
+        }
+        
+        raiseEvent(new EntryExcludedEvent(getId(), this.status, reason));
+    }
+
+    /**
+     * Reverts a DSQ, restoring the entry to its prior status (BC07-002).
+     * 
+     * @param reason reason for reverting the DSQ
+     * @throws IllegalArgumentException if reason is null or blank
+     * @throws IllegalStateException if entry is not currently disqualified
+     */
+    public void revertDsq(String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason cannot be null or blank");
+        }
+        if (!"dsq".equals(this.status)) {
+            throw new IllegalStateException("Cannot revert DSQ: entry is not disqualified");
+        }
+        if (this.priorStatusBeforeDsq == null) {
+            throw new IllegalStateException("Cannot revert DSQ: no prior status recorded");
+        }
+        
+        raiseEvent(new EntryDsqRevertedEvent(getId(), this.priorStatusBeforeDsq, reason));
+    }
+
     private static void validateCreate(UUID regattaId, UUID eventId, UUID blockId, UUID crewId) {
         if (regattaId == null) {
             throw new IllegalArgumentException("Regatta ID is required");
@@ -134,6 +196,14 @@ public class EntryAggregate extends AggregateRoot<EntryAggregate> {
             this.paidAt = e.getPaidAt();
             this.paidBy = e.getPaidBy();
             this.paymentReference = e.getPaymentReference();
+        } else if (event instanceof EntryDisqualifiedEvent e) {
+            this.priorStatusBeforeDsq = e.getPriorStatus();
+            this.status = "dsq";
+        } else if (event instanceof EntryExcludedEvent e) {
+            this.status = "excluded";
+        } else if (event instanceof EntryDsqRevertedEvent e) {
+            this.status = e.getRestoredStatus();
+            this.priorStatusBeforeDsq = null; // Clear prior status after revert
         }
     }
     
