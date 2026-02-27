@@ -17,7 +17,7 @@ function hasNavigator() {
 }
 
 function hasWindow() {
-  return typeof globalThis.window !== 'undefined';
+  return globalThis.window !== undefined;
 }
 
 function detectPlatformValue() {

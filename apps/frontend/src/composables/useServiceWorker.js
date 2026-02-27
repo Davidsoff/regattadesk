@@ -19,6 +19,23 @@ function createMessageEventHandler(callback) {
   };
 }
 
+function onMessage(callback) {
+  const handler = createMessageEventHandler(callback);
+
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', handler);
+    messageListeners.push({ callback, handler });
+  }
+
+  // Return cleanup function
+  return () => {
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.removeEventListener('message', handler);
+      messageListeners = messageListeners.filter((listener) => listener.callback !== callback);
+    }
+  };
+}
+
 export function useServiceWorker() {
   // Initialize singleton state
   if (!registrationState) {
@@ -137,23 +154,6 @@ export function useServiceWorker() {
     }
 
     registration.value.active.postMessage(message);
-  }
-
-  function onMessage(callback) {
-    const handler = createMessageEventHandler(callback);
-
-    if (navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', handler);
-      messageListeners.push({ callback, handler });
-    }
-
-    // Return cleanup function
-    return () => {
-      if (navigator.serviceWorker) {
-        navigator.serviceWorker.removeEventListener('message', handler);
-        messageListeners = messageListeners.filter((listener) => listener.callback !== callback);
-      }
-    };
   }
 
   function cleanup() {

@@ -16,7 +16,7 @@ const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD'
 const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH']);
 
 function hasWindow() {
-  return typeof globalThis.window !== 'undefined';
+  return globalThis.window !== undefined;
 }
 
 function getCsrfToken() {
@@ -210,56 +210,56 @@ async function syncOperation(operation, options = {}) {
   }
 }
 
-export function useOfflineSync() {
-  const isSyncing = ref(false);
+async function handleConflict(operation, conflictResult) {
+  const strategy = operation.conflictStrategy || 'manual';
 
-  async function handleConflict(operation, conflictResult, options = {}) {
-    const strategy = operation.conflictStrategy || 'manual';
+  switch (strategy) {
+    case 'last-write-wins': {
+      // Compare timestamps to determine winner
+      const clientTime = operation.timestamp;
+      const serverTime = conflictResult.serverTimestamp;
 
-    switch (strategy) {
-      case 'last-write-wins': {
-        // Compare timestamps to determine winner
-        const clientTime = operation.timestamp;
-        const serverTime = conflictResult.serverTimestamp;
-
-        if (clientTime > serverTime) {
-          // Client is newer, force update
-          return forceUpdateOperation(operation);
-        } else {
-          // Server is newer, discard client changes
-          return {
-            success: false,
-            discarded: true,
-            reason: 'server-newer',
-          };
-        }
-      }
-
-      case 'client-wins': {
+      if (clientTime > serverTime) {
+        // Client is newer, force update
         return forceUpdateOperation(operation);
       }
 
-      case 'server-wins': {
-        return {
-          success: false,
-          discarded: true,
-          reason: 'server-wins',
-        };
-      }
+      // Server is newer, discard client changes
+      return {
+        success: false,
+        discarded: true,
+        reason: 'server-newer',
+      };
+    }
 
-      case 'manual':
-      default: {
-        return {
-          success: false,
-          conflict: true,
-          requiresManualResolution: true,
-          clientData: conflictResult.clientData,
-          serverData: conflictResult.serverData,
-          operation: conflictResult.operation,
-        };
-      }
+    case 'client-wins': {
+      return forceUpdateOperation(operation);
+    }
+
+    case 'server-wins': {
+      return {
+        success: false,
+        discarded: true,
+        reason: 'server-wins',
+      };
+    }
+
+    case 'manual':
+    default: {
+      return {
+        success: false,
+        conflict: true,
+        requiresManualResolution: true,
+        clientData: conflictResult.clientData,
+        serverData: conflictResult.serverData,
+        operation: conflictResult.operation,
+      };
     }
   }
+}
+
+export function useOfflineSync() {
+  const isSyncing = ref(false);
 
   async function syncQueue(queue, options = {}) {
     isSyncing.value = true;
@@ -283,7 +283,7 @@ export function useOfflineSync() {
           });
         } else if (syncResult.conflict) {
           // Try to resolve conflict
-          const resolutionResult = await handleConflict(item, syncResult, options);
+          const resolutionResult = await handleConflict(item, syncResult);
 
           if (resolutionResult.success) {
             result.synced.push({

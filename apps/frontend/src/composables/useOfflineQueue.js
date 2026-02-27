@@ -206,10 +206,6 @@ export function useOfflineQueue() {
     });
   }
 
-  async function getQueue() {
-    return getQueueInternal();
-  }
-
   async function clearQueue() {
     const db = await ensureDatabase();
     
@@ -233,19 +229,15 @@ export function useOfflineQueue() {
     });
   }
 
-  async function updateQueueItem(queueId, updates) {
-    return updateQueueItemInternal(queueId, updates);
-  }
-
   return {
     isReady,
     error,
     queueSize,
     enqueue,
     dequeue,
-    getQueue,
+    getQueue: getQueueInternal,
     clearQueue,
-    updateQueueItem,
+    updateQueueItem: updateQueueItemInternal,
   };
 }
 
