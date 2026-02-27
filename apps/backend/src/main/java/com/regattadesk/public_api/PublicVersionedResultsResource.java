@@ -8,7 +8,13 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import jakarta.inject.Inject;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,6 +34,9 @@ public class PublicVersionedResultsResource {
     
     @Inject
     RegattaVersionRepository versionRepository;
+
+    @Inject
+    DataSource dataSource;
     
     /**
      * Get the results for a regatta at a specific version.
@@ -70,12 +79,8 @@ public class PublicVersionedResultsResource {
                     .build();
             }
             
-            ResultsResponse results = new ResultsResponse(
-                regattaId,
-                drawRevision,
-                resultsRevision,
-                "Results data would appear here"
-            );
+            List<ResultRow> rows = fetchRows(regattaId, drawRevision, resultsRevision);
+            ResultsResponse results = new ResultsResponse(drawRevision, resultsRevision, rows);
             
             return Response.ok(results).build();
             
@@ -90,10 +95,78 @@ public class PublicVersionedResultsResource {
     /**
      * Response DTO for results endpoint.
      */
+    private List<ResultRow> fetchRows(UUID regattaId, int drawRevision, int resultsRevision) throws SQLException {
+        String sql = """
+            SELECT entry_id, event_id, bib, crew_name, club_name, elapsed_time_ms, penalties_ms, rank,
+                   status, is_provisional, is_edited, is_official
+            FROM public_regatta_results
+            WHERE regatta_id = ?
+              AND draw_revision = ?
+              AND results_revision = ?
+              -- Public projections exclude only withdrawn_before_draw; withdrawn_after_draw remains visible.
+              AND status <> 'withdrawn_before_draw'
+            ORDER BY rank NULLS LAST, bib NULLS LAST, crew_name
+            """;
+
+        List<ResultRow> rows = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setInt(2, drawRevision);
+            stmt.setInt(3, resultsRevision);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    rows.add(new ResultRow(
+                        rs.getObject("entry_id", UUID.class),
+                        rs.getObject("event_id", UUID.class),
+                        rs.getObject("bib", Integer.class),
+                        rs.getString("crew_name"),
+                        rs.getString("club_name"),
+                        rs.getObject("elapsed_time_ms", Integer.class),
+                        rs.getObject("penalties_ms", Integer.class),
+                        rs.getObject("rank", Integer.class),
+                        rs.getString("status"),
+                        rs.getBoolean("is_provisional"),
+                        rs.getBoolean("is_edited"),
+                        rs.getBoolean("is_official")
+                    ));
+                }
+            }
+        }
+
+        return rows;
+    }
+
     public record ResultsResponse(
-        @JsonProperty("regatta_id") UUID regattaId,
-        @JsonProperty("draw_revision") int drawRevision,
-        @JsonProperty("results_revision") int resultsRevision,
-        @JsonProperty("results_data") String resultsData
+        @JsonProperty("draw_revision")
+        int drawRevision,
+        @JsonProperty("results_revision")
+        int resultsRevision,
+        List<ResultRow> data
+    ) {}
+
+    public record ResultRow(
+        @JsonProperty("entry_id")
+        UUID entryId,
+        @JsonProperty("event_id")
+        UUID eventId,
+        Integer bib,
+        @JsonProperty("crew_name")
+        String crewName,
+        @JsonProperty("club_name")
+        String clubName,
+        @JsonProperty("elapsed_time_ms")
+        Integer elapsedTimeMs,
+        @JsonProperty("penalties_ms")
+        Integer penaltiesMs,
+        Integer rank,
+        String status,
+        @JsonProperty("is_provisional")
+        boolean isProvisional,
+        @JsonProperty("is_edited")
+        boolean isEdited,
+        @JsonProperty("is_official")
+        boolean isOfficial
     ) {}
 }
