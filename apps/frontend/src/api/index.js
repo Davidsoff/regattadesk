@@ -24,3 +24,4 @@
 export { createApiClient, ApiError } from './client.js'
 export { normalizeApiError, isApiError } from './errors.js'
 export { createFinanceApi } from './finance.js'
+export { createOperatorApi } from './operator.js'
