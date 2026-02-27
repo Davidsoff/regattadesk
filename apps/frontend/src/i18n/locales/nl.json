@@ -226,7 +226,8 @@
         "saveEntry": "Inschrijving opslaan"
       },
       "export": {
-        "export_printables": "Printbare bestanden exporteren"
+        "export_printables": "Printbare bestanden exporteren",
+        "export_printables_aria": "Start asynchrone exporttaak voor printbare documenten"
       },
       "events": {
         "open2x": "Open 2x"

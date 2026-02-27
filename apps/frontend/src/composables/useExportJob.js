@@ -94,8 +94,8 @@ export function useExportJob(exportApi, regattaId) {
     resetState()
 
     try {
-      const regattaIdValue = unref(regattaId)
-      const response = await exportApi.requestPrintableExport(regattaIdValue)
+      const resolvedId = unref(regattaId)
+      const response = await exportApi.requestPrintableExport(resolvedId)
 
       jobId.value = response.job_id
 

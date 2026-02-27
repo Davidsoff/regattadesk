@@ -226,7 +226,8 @@
         "saveEntry": "Save entry"
       },
       "export": {
-        "export_printables": "Export Printables"
+        "export_printables": "Export Printables",
+        "export_printables_aria": "Start asynchronous export job for printable documents"
       },
       "events": {
         "open2x": "Open 2x"

@@ -172,6 +172,7 @@ watch(showWithdrawDialog, async (open) => {
         v-if="exportStatus === 'idle'"
         type="button"
         data-testid="export-printables-button"
+        :aria-label="t('staff.regatta_detail.export.export_printables_aria')"
         @click="startExport"
       >
         {{ t('staff.regatta_detail.export.export_printables') }}
