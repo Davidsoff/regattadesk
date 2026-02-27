@@ -291,6 +291,8 @@ async function completeHandoff() {
     </div>
 
     <!-- Capture Workspace -->
+    <!-- Note: captureSessionId should be created via API after handoff -->
+    <!-- Using demo-session-id as temporary fallback until session management is implemented -->
     <LineScanCapture
       v-if="showCaptureWorkspace && operatorToken"
       :capture-session-id="captureSessionId || 'demo-session-id'"

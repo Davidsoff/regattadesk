@@ -28,7 +28,8 @@ function createTestI18n() {
             frame_offset: 'Frame',
             timestamp: 'Time',
             no_markers: 'No markers yet',
-            marker_approved: 'This marker is approved and cannot be edited'
+            marker_approved: 'This marker is approved and cannot be edited',
+            undo: 'Undo'
           }
         }
       }

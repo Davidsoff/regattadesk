@@ -25,6 +25,8 @@ const linkingMarkerId = ref(null)
 const linkingEntryId = ref('')
 const undoStack = ref([])
 
+// TODO: Extract operator token retrieval into useOperatorToken() composable
+// to avoid duplication with LineScan.vue and ensure consistency
 const operatorToken = computed(() => {
   const contextToken =
     typeof globalThis.__REGATTADESK_AUTH__?.operatorToken === 'string'
@@ -83,7 +85,8 @@ async function createMarker() {
   isLoading.value = true
 
   try {
-    // Create marker at current position (simplified for now)
+    // TODO: Replace with actual frame position from line-scan camera
+    // Current implementation uses timestamp as placeholder
     const newMarker = await operatorApi.createMarker(props.regattaId, {
       capture_session_id: props.captureSessionId,
       frame_offset: Date.now() % 100000, // Simplified: use timestamp mod as frame
@@ -147,11 +150,7 @@ async function updateMarker(markerId) {
     return
   }
 
-  // Save state for undo
-  undoStack.value.push({
-    markerId,
-    oldFrameOffset: marker.frame_offset
-  })
+  const oldFrameOffset = marker.frame_offset // Save for undo
 
   errorMessage.value = ''
   isLoading.value = true
@@ -165,6 +164,12 @@ async function updateMarker(markerId) {
     if (index !== -1) {
       markers.value[index] = updated
     }
+    
+    // Save state for undo only after successful update
+    undoStack.value.push({
+      markerId,
+      oldFrameOffset
+    })
     
     editingMarkerId.value = null
     editingFrameOffset.value = ''
@@ -290,7 +295,7 @@ defineExpose({
         @click="undoLastChange"
         :disabled="isLoading"
       >
-        Undo
+        {{ t('operator.capture.undo') }}
       </button>
     </div>
 
