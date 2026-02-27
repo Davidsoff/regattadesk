@@ -212,7 +212,8 @@
         "events": "Events",
         "athletes": "Athletes",
         "crews": "Crews",
-        "entries": "Entries"
+        "entries": "Entries",
+        "export": "Export"
       },
       "form": {
         "eventGroup": "Event group",
@@ -223,6 +224,9 @@
         "allStatuses": "All",
         "athlete": "Athlete",
         "saveEntry": "Save entry"
+      },
+      "export": {
+        "export_printables": "Export Printables"
       },
       "events": {
         "open2x": "Open 2x"

@@ -2,9 +2,20 @@
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { createApiClient, createExportApi } from '../../api'
+import { useExportJob } from '../../composables/useExportJob'
+import ExportJobStatus from '../../components/export/ExportJobStatus.vue'
 
 const { t } = useI18n()
 const route = useRoute()
+
+// Export functionality
+const apiClient = createApiClient()
+const exportApi = createExportApi(apiClient)
+const { status: exportStatus, jobId, downloadUrl, error: exportError, startExport } = useExportJob(
+  exportApi,
+  () => route.params.regattaId
+)
 
 const entryForm = ref({
   crewId: '',
@@ -153,6 +164,26 @@ watch(showWithdrawDialog, async (open) => {
   <div class="regatta-detail">
     <h2>{{ t('staff.regatta.title') }}</h2>
     <p>{{ t('staff.regatta.id') }}: {{ route.params.regattaId }}</p>
+
+    <!-- Export Section -->
+    <section data-testid="export-section">
+      <h3>{{ t('staff.regatta_detail.sections.export') }}</h3>
+      <button
+        v-if="exportStatus === 'idle'"
+        type="button"
+        data-testid="export-printables-button"
+        @click="startExport"
+      >
+        {{ t('staff.regatta_detail.export.export_printables') }}
+      </button>
+      <ExportJobStatus
+        :status="exportStatus"
+        :job-id="jobId"
+        :download-url="downloadUrl"
+        :error="exportError"
+        :on-start="startExport"
+      />
+    </section>
 
     <section>
       <h3>{{ t('staff.regatta_detail.sections.events') }}</h3>

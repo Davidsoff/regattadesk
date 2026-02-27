@@ -212,7 +212,8 @@
         "events": "Nummers",
         "athletes": "Atleten",
         "crews": "Ploegen",
-        "entries": "Inschrijvingen"
+        "entries": "Inschrijvingen",
+        "export": "Export"
       },
       "form": {
         "eventGroup": "Nummergroep",
@@ -223,6 +224,9 @@
         "allStatuses": "Alle",
         "athlete": "Atleet",
         "saveEntry": "Inschrijving opslaan"
+      },
+      "export": {
+        "export_printables": "Printbare bestanden exporteren"
       },
       "events": {
         "open2x": "Open 2x"
