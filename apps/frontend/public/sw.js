@@ -15,7 +15,7 @@ const DB_NAME = 'regattadesk-operator';
 const DB_VERSION = 1;
 const STORE_NAME = 'offline-queue';
 const OFFLINE_PAGE = '/offline.html';
-const DEBUG_LOGS = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const DEBUG_LOGS = globalThis.location.hostname === 'localhost' || globalThis.location.hostname === '127.0.0.1';
 
 function log(...args) {
   if (DEBUG_LOGS) {
@@ -47,7 +47,7 @@ const NETWORK_FIRST_PATTERNS = [
 /**
  * Install event - cache static assets
  */
-self.addEventListener('install', (event) => {
+globalThis.addEventListener('install', (event) => {
   log('[SW] Installing service worker');
 
   event.waitUntil((async () => {
@@ -56,7 +56,7 @@ self.addEventListener('install', (event) => {
       log('[SW] Caching static assets');
       await cache.addAll(STATIC_ASSETS);
       log('[SW] Static assets cached successfully');
-      await self.skipWaiting();
+      await globalThis.skipWaiting();
     } catch (error) {
       console.error('[SW] Failed to cache static assets:', error);
       throw error;
@@ -67,7 +67,7 @@ self.addEventListener('install', (event) => {
 /**
  * Activate event - clean up old caches
  */
-self.addEventListener('activate', (event) => {
+globalThis.addEventListener('activate', (event) => {
   log('[SW] Activating service worker');
 
   event.waitUntil(
@@ -84,7 +84,7 @@ self.addEventListener('activate', (event) => {
       })
       .then(() => {
         log('[SW] Service worker activated');
-        return self.clients.claim();
+        return globalThis.clients.claim();
       })
   );
 });
@@ -92,7 +92,7 @@ self.addEventListener('activate', (event) => {
 /**
  * Fetch event - handle requests with appropriate strategy
  */
-self.addEventListener('fetch', (event) => {
+globalThis.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
@@ -104,7 +104,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.origin !== self.location.origin) {
+  if (url.origin !== globalThis.location.origin) {
     return;
   }
 
@@ -120,10 +120,10 @@ self.addEventListener('fetch', (event) => {
 /**
  * Message event - handle messages from clients
  */
-self.addEventListener('message', (event) => {
+globalThis.addEventListener('message', (event) => {
   const { type } = event.data || {};
 
-  if (event.origin && event.origin !== self.location.origin) {
+  if (event.origin && event.origin !== globalThis.location.origin) {
     console.warn('[SW] Ignoring cross-origin message');
     return;
   }
@@ -132,12 +132,12 @@ self.addEventListener('message', (event) => {
 
   if (sourceUrl) {
     try {
-      if (new URL(sourceUrl).origin !== self.location.origin) {
+      if (new URL(sourceUrl).origin !== globalThis.location.origin) {
         console.warn('[SW] Ignoring cross-origin message source');
         return;
       }
     } catch (error) {
-      console.warn('[SW] Ignoring message with invalid source URL');
+      console.warn('[SW] Ignoring message with invalid source URL:', error);
       return;
     }
   }
@@ -145,8 +145,8 @@ self.addEventListener('message', (event) => {
   switch (type) {
     case 'SYNC_QUEUE':
       log('[SW] Sync queue requested');
-      if ('sync' in self.registration) {
-        self.registration.sync.register('sync-queue')
+      if ('sync' in globalThis.registration) {
+        globalThis.registration.sync.register('sync-queue')
           .then(() => {
             log('[SW] Background sync registered');
           })
@@ -158,12 +158,12 @@ self.addEventListener('message', (event) => {
 
     case 'SKIP_WAITING':
       log('[SW] Skip waiting requested');
-      self.skipWaiting();
+      globalThis.skipWaiting();
       break;
 
     case 'CLAIM_CLIENTS':
       log('[SW] Claim clients requested');
-      self.clients.claim();
+      globalThis.clients.claim();
       break;
 
     default:
@@ -174,7 +174,7 @@ self.addEventListener('message', (event) => {
 /**
  * Background sync event - sync queued operations
  */
-self.addEventListener('sync', (event) => {
+globalThis.addEventListener('sync', (event) => {
   if (event.tag === 'sync-queue') {
     log('[SW] Background sync triggered');
     event.waitUntil(syncQueuedOperations());
@@ -355,7 +355,7 @@ async function syncQueuedOperations() {
       db.close();
     }
 
-    const clients = await self.clients.matchAll();
+    const clients = await globalThis.clients.matchAll();
     clients.forEach((client) => {
       client.postMessage({
         type: 'SYNC_COMPLETE',

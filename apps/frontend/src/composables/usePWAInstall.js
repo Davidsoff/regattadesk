@@ -17,7 +17,7 @@ function hasNavigator() {
 }
 
 function hasWindow() {
-  return typeof window !== 'undefined';
+  return typeof globalThis.window !== 'undefined';
 }
 
 function detectPlatformValue() {
@@ -26,9 +26,9 @@ function detectPlatformValue() {
   }
 
   const ua = navigator.userAgent || '';
-  const p = navigator.platform || '';
+  const platformHint = navigator.userAgentData?.platform || '';
 
-  if (/iPhone|iPad|iPod/.test(ua) || /iPhone|iPad|iPod/.test(p)) {
+  if (/iPhone|iPad|iPod/.test(ua) || /iPhone|iPad|iPod/.test(platformHint)) {
     return 'ios';
   }
 
@@ -44,9 +44,24 @@ function setupListeners(handleBeforeInstallPrompt, handleAppInstalled) {
     return;
   }
 
-  window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  window.addEventListener('appinstalled', handleAppInstalled);
+  globalThis.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  globalThis.addEventListener('appinstalled', handleAppInstalled);
   listenersRegistered = true;
+}
+
+async function showInstallPrompt(event) {
+  if (!event) {
+    return null;
+  }
+
+  try {
+    await event.prompt();
+    const choiceResult = await event.userChoice;
+    return choiceResult.outcome;
+  } catch (error) {
+    console.error('Error showing install prompt:', error);
+    return null;
+  }
 }
 
 export function usePWAInstall() {
@@ -63,7 +78,11 @@ export function usePWAInstall() {
 
   // Detect if already installed
   const isInstalled = computed(() => {
-    if (hasWindow() && typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) {
+    if (
+      hasWindow()
+      && typeof globalThis.matchMedia === 'function'
+      && globalThis.matchMedia('(display-mode: standalone)').matches
+    ) {
       return true;
     }
 
@@ -101,29 +120,10 @@ export function usePWAInstall() {
     isInstallable.value = false;
   }
 
-  async function showInstallPrompt() {
-    if (!installPromptEvent) {
-      return null;
-    }
-
-    try {
-      // Show the install prompt
-      await installPromptEvent.prompt();
-      
-      // Wait for the user's response
-      const choiceResult = await installPromptEvent.userChoice;
-      
-      return choiceResult.outcome;
-    } catch (error) {
-      console.error('Error showing install prompt:', error);
-      return null;
-    }
-  }
-
   function cleanup() {
     if (hasWindow()) {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      globalThis.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      globalThis.removeEventListener('appinstalled', handleAppInstalled);
       listenersRegistered = false;
     }
   }
@@ -137,7 +137,7 @@ export function usePWAInstall() {
     canInstall,
     platform,
     needsManualInstructions,
-    showInstallPrompt,
+    showInstallPrompt: () => showInstallPrompt(installPromptEvent),
     cleanup,
   };
 }

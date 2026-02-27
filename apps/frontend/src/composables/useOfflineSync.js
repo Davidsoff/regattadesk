@@ -15,6 +15,10 @@ const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff in ms
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 const METHODS_WITH_BODY = new Set(['POST', 'PUT', 'PATCH']);
 
+function hasWindow() {
+  return typeof globalThis.window !== 'undefined';
+}
+
 function getCsrfToken() {
   if (typeof document === 'undefined') {
     return null;
@@ -35,11 +39,12 @@ function normalizeAndValidateOperation(operation) {
 
   let endpointUrl;
   try {
-    endpointUrl = typeof window !== 'undefined'
-      ? new URL(operation.endpoint, window.location.origin)
-      : new URL(operation.endpoint, 'https://example.invalid');
+    endpointUrl = new URL(
+      operation.endpoint,
+      hasWindow() ? globalThis.window.location.origin : 'https://example.invalid'
+    );
   } catch (err) {
-    throw new Error('Operation endpoint is not a valid URL');
+    throw new Error('Operation endpoint is not a valid URL', { cause: err });
   }
 
   if (!endpointUrl.pathname.startsWith('/api/')) {
@@ -55,7 +60,7 @@ function normalizeAndValidateOperation(operation) {
     try {
       JSON.stringify(operation.data);
     } catch (err) {
-      throw new Error('Operation data must be JSON-serializable');
+      throw new Error('Operation data must be JSON-serializable', { cause: err });
     }
   }
 
@@ -84,7 +89,10 @@ async function parseResponseBody(response) {
   try {
     return JSON.parse(text);
   } catch (err) {
-    return text;
+    if (err instanceof SyntaxError) {
+      return text;
+    }
+    throw err;
   }
 }
 
@@ -107,72 +115,103 @@ function buildRequestHeaders(operation) {
   return headers;
 }
 
-export function useOfflineSync() {
-  const isSyncing = ref(false);
+async function forceUpdateOperation(operation) {
+  try {
+    const validatedOperation = normalizeAndValidateOperation(operation);
+    const response = await fetch(validatedOperation.endpoint, {
+      method: validatedOperation.method,
+      headers: {
+        ...buildRequestHeaders(validatedOperation),
+        'X-Force-Update': 'true',
+      },
+      body: METHODS_WITH_BODY.has(validatedOperation.method)
+        ? JSON.stringify(validatedOperation.data ?? null)
+        : undefined,
+    });
 
-  async function syncOperation(operation, options = {}) {
-    const { enableRetry = false } = options;
-    let validatedOperation;
+    if (response.ok) {
+      const result = await parseResponseBody(response);
+      return { success: true, data: result, forced: true };
+    }
+
+    return {
+      success: false,
+      error: `Force update failed: ${response.status}`,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message,
+    };
+  }
+}
+
+async function syncOperation(operation, options = {}) {
+  const { enableRetry = false } = options;
+  let validatedOperation;
+  try {
+    validatedOperation = normalizeAndValidateOperation(operation);
+  } catch (err) {
+    return {
+      success: false,
+      error: err.message,
+    };
+  }
+  const maxRetries = validatedOperation.maxRetries ?? DEFAULT_MAX_RETRIES;
+  let retryAttempt = options.retryAttempt ?? 0;
+
+  while (true) {
     try {
-      validatedOperation = normalizeAndValidateOperation(operation);
+      const response = await fetch(validatedOperation.endpoint, {
+        method: validatedOperation.method,
+        headers: buildRequestHeaders(validatedOperation),
+        body: METHODS_WITH_BODY.has(validatedOperation.method)
+          ? JSON.stringify(validatedOperation.data ?? null)
+          : undefined,
+      });
+
+      if (response.ok) {
+        const result = await parseResponseBody(response);
+        return { success: true, data: result };
+      }
+
+      if (response.status === 409) {
+        const conflictData = await parseResponseBody(response);
+        return {
+          success: false,
+          conflict: true,
+          status: 409,
+          serverVersion: conflictData?.serverVersion,
+          serverData: conflictData?.serverData,
+          serverTimestamp: conflictData?.serverTimestamp,
+          clientData: validatedOperation.data,
+          operation: validatedOperation,
+        };
+      }
+
+      return {
+        success: false,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+        status: response.status,
+      };
     } catch (err) {
+      if (enableRetry && retryAttempt < maxRetries) {
+        const delay = RETRY_DELAYS[retryAttempt] || RETRY_DELAYS.at(-1);
+        retryAttempt += 1;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
       return {
         success: false,
         error: err.message,
       };
     }
-    const maxRetries = validatedOperation.maxRetries ?? DEFAULT_MAX_RETRIES;
-    let retryAttempt = options.retryAttempt ?? 0;
-
-    while (true) {
-      try {
-        const response = await fetch(validatedOperation.endpoint, {
-          method: validatedOperation.method,
-          headers: buildRequestHeaders(validatedOperation),
-          body: METHODS_WITH_BODY.has(validatedOperation.method)
-            ? JSON.stringify(validatedOperation.data ?? null)
-            : undefined,
-        });
-
-        if (response.ok) {
-          const result = await parseResponseBody(response);
-          return { success: true, data: result };
-        }
-
-        if (response.status === 409) {
-          const conflictData = await parseResponseBody(response);
-          return {
-            success: false,
-            conflict: true,
-            status: 409,
-            serverVersion: conflictData?.serverVersion,
-            serverData: conflictData?.serverData,
-            serverTimestamp: conflictData?.serverTimestamp,
-            clientData: validatedOperation.data,
-            operation: validatedOperation,
-          };
-        }
-
-        return {
-          success: false,
-          error: `HTTP ${response.status}: ${response.statusText}`,
-          status: response.status,
-        };
-      } catch (err) {
-        if (enableRetry && retryAttempt < maxRetries) {
-          const delay = RETRY_DELAYS[retryAttempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1];
-          retryAttempt += 1;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-
-        return {
-          success: false,
-          error: err.message,
-        };
-      }
-    }
   }
+}
+
+export function useOfflineSync() {
+  const isSyncing = ref(false);
 
   async function handleConflict(operation, conflictResult, options = {}) {
     const strategy = operation.conflictStrategy || 'manual';
@@ -185,7 +224,7 @@ export function useOfflineSync() {
 
         if (clientTime > serverTime) {
           // Client is newer, force update
-          return await forceUpdate(operation);
+          return forceUpdateOperation(operation);
         } else {
           // Server is newer, discard client changes
           return {
@@ -197,7 +236,7 @@ export function useOfflineSync() {
       }
 
       case 'client-wins': {
-        return await forceUpdate(operation);
+        return forceUpdateOperation(operation);
       }
 
       case 'server-wins': {
@@ -219,37 +258,6 @@ export function useOfflineSync() {
           operation: conflictResult.operation,
         };
       }
-    }
-  }
-
-  async function forceUpdate(operation) {
-    try {
-      const validatedOperation = normalizeAndValidateOperation(operation);
-      const response = await fetch(validatedOperation.endpoint, {
-        method: validatedOperation.method,
-        headers: {
-          ...buildRequestHeaders(validatedOperation),
-          'X-Force-Update': 'true',
-        },
-        body: METHODS_WITH_BODY.has(validatedOperation.method)
-          ? JSON.stringify(validatedOperation.data ?? null)
-          : undefined,
-      });
-
-      if (response.ok) {
-        const result = await parseResponseBody(response);
-        return { success: true, data: result, forced: true };
-      }
-
-      return {
-        success: false,
-        error: `Force update failed: ${response.status}`,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err.message,
-      };
     }
   }
 

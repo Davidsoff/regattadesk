@@ -5,7 +5,7 @@
  * Supports conflict metadata tracking for sync protocol.
  */
 
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 const DB_NAME = 'regattadesk-operator';
 const DB_VERSION = 1;
@@ -93,6 +93,41 @@ async function ensureDatabase() {
   }
 }
 
+function requestToPromise(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = () => {
+      reject(request.error);
+    };
+  });
+}
+
+async function getQueueInternal() {
+  const db = await ensureDatabase();
+  const transaction = db.transaction([STORE_NAME], 'readonly');
+  const store = transaction.objectStore(STORE_NAME);
+  const result = await requestToPromise(store.getAll());
+  return result || [];
+}
+
+async function updateQueueItemInternal(queueId, updates) {
+  const db = await ensureDatabase();
+  const transaction = db.transaction([STORE_NAME], 'readwrite');
+  const store = transaction.objectStore(STORE_NAME);
+
+  const item = await requestToPromise(store.get(queueId));
+  if (!item) {
+    throw new Error('Queue item not found');
+  }
+
+  const updatedItem = { ...item, ...updates };
+  await requestToPromise(store.put(updatedItem));
+  return updatedItem;
+}
+
 export function useOfflineQueue() {
   // Initialize singleton state
   if (!isReadyState) {
@@ -123,24 +158,6 @@ export function useOfflineQueue() {
     queueSizeState.value = queue.length;
   }
 
-  async function getQueueInternal() {
-    const db = await ensureDatabase();
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        resolve(request.result || []);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
-  }
-
   async function enqueue(operation) {
     const db = await ensureDatabase();
     const item = sanitizeOperation(operation);
@@ -151,10 +168,13 @@ export function useOfflineQueue() {
 
       const request = store.add(item);
 
-      request.onsuccess = () => {
-        refreshQueueSize()
-          .then(() => resolve(request.result))
-          .catch(reject);
+      request.onsuccess = async () => {
+        try {
+          await refreshQueueSize();
+          resolve(request.result);
+        } catch (err) {
+          reject(err);
+        }
       };
 
       request.onerror = () => {
@@ -171,10 +191,13 @@ export function useOfflineQueue() {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.delete(queueId);
 
-      request.onsuccess = () => {
-        refreshQueueSize()
-          .then(() => resolve())
-          .catch(reject);
+      request.onsuccess = async () => {
+        try {
+          await refreshQueueSize();
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
       };
 
       request.onerror = () => {
@@ -184,7 +207,7 @@ export function useOfflineQueue() {
   }
 
   async function getQueue() {
-    return await getQueueInternal();
+    return getQueueInternal();
   }
 
   async function clearQueue() {
@@ -195,10 +218,13 @@ export function useOfflineQueue() {
       const store = transaction.objectStore(STORE_NAME);
       const request = store.clear();
 
-      request.onsuccess = () => {
-        refreshQueueSize()
-          .then(() => resolve())
-          .catch(reject);
+      request.onsuccess = async () => {
+        try {
+          await refreshQueueSize();
+          resolve();
+        } catch (err) {
+          reject(err);
+        }
       };
 
       request.onerror = () => {
@@ -208,41 +234,7 @@ export function useOfflineQueue() {
   }
 
   async function updateQueueItem(queueId, updates) {
-    const db = await ensureDatabase();
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      
-      // Get the existing item
-      const getRequest = store.get(queueId);
-      
-      getRequest.onsuccess = () => {
-        const item = getRequest.result;
-        if (!item) {
-          reject(new Error('Queue item not found'));
-          return;
-        }
-        
-        // Merge updates
-        const updatedItem = { ...item, ...updates };
-        
-        // Put the updated item back
-        const putRequest = store.put(updatedItem);
-        
-        putRequest.onsuccess = () => {
-          resolve(updatedItem);
-        };
-        
-        putRequest.onerror = () => {
-          reject(putRequest.error);
-        };
-      };
-      
-      getRequest.onerror = () => {
-        reject(getRequest.error);
-      };
-    });
+    return updateQueueItemInternal(queueId, updates);
   }
 
   return {

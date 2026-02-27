@@ -76,11 +76,7 @@ describe('useServiceWorker registration', () => {
     const { useServiceWorker } = await importFreshUseServiceWorker();
     const { register, isRegistered, error } = useServiceWorker();
 
-    try {
-      await register('/sw.js');
-    } catch (err) {
-      // Expected to throw
-    }
+    await expect(register('/sw.js')).rejects.toThrow('Registration failed');
     await nextTick();
 
     expect(isRegistered.value).toBe(false);
@@ -200,7 +196,7 @@ describe('useServiceWorker message handling', () => {
     const { register, sendMessage } = useServiceWorker();
 
     await register('/sw.js');
-    await sendMessage({ type: 'SYNC_QUEUE' });
+    sendMessage({ type: 'SYNC_QUEUE' });
 
     expect(mockSW.postMessage).toHaveBeenCalledWith({ type: 'SYNC_QUEUE' });
   });

@@ -27,8 +27,8 @@ function stubStorage(storedContrast = null, storedDensity = null) {
 describe('useOperatorTheme initialization', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-contrast');
-    document.documentElement.removeAttribute('data-density');
+    delete document.documentElement.dataset.contrast;
+    delete document.documentElement.dataset.density;
   });
 
   it('defaults to high-contrast mode for operators', async () => {
@@ -38,7 +38,7 @@ describe('useOperatorTheme initialization', () => {
     const { contrast } = useOperatorTheme();
 
     expect(contrast.value).toBe('high');
-    expect(document.documentElement.getAttribute('data-contrast')).toBe('high');
+    expect(document.documentElement.dataset.contrast).toBe('high');
   });
 
   it('restores persisted contrast mode', async () => {
@@ -48,7 +48,7 @@ describe('useOperatorTheme initialization', () => {
     const { contrast } = useOperatorTheme();
 
     expect(contrast.value).toBe('standard');
-    expect(document.documentElement.getAttribute('data-contrast')).toBe('standard');
+    expect(document.documentElement.dataset.contrast).toBe('standard');
   });
 
   it('defaults to comfortable density', async () => {
@@ -58,7 +58,7 @@ describe('useOperatorTheme initialization', () => {
     const { density } = useOperatorTheme();
 
     expect(density.value).toBe('comfortable');
-    expect(document.documentElement.getAttribute('data-density')).toBe('comfortable');
+    expect(document.documentElement.dataset.density).toBe('comfortable');
   });
 
   it('restores persisted density mode', async () => {
@@ -68,7 +68,7 @@ describe('useOperatorTheme initialization', () => {
     const { density } = useOperatorTheme();
 
     expect(density.value).toBe('compact');
-    expect(document.documentElement.getAttribute('data-density')).toBe('compact');
+    expect(document.documentElement.dataset.density).toBe('compact');
   });
 
   it('handles storage access errors gracefully', async () => {
@@ -90,7 +90,7 @@ describe('useOperatorTheme initialization', () => {
 describe('useOperatorTheme setContrast', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-contrast');
+    delete document.documentElement.dataset.contrast;
   });
 
   it('updates contrast mode and persists to storage', async () => {
@@ -103,7 +103,7 @@ describe('useOperatorTheme setContrast', () => {
     await nextTick();
 
     expect(contrast.value).toBe('standard');
-    expect(document.documentElement.getAttribute('data-contrast')).toBe('standard');
+    expect(document.documentElement.dataset.contrast).toBe('standard');
     expect(storage.get('regattadesk-operator-contrast')).toBe('standard');
   });
 
@@ -116,7 +116,7 @@ describe('useOperatorTheme setContrast', () => {
     setContrast('high');
     
     // Should be synchronous DOM update
-    expect(document.documentElement.getAttribute('data-contrast')).toBe('high');
+    expect(document.documentElement.dataset.contrast).toBe('high');
   });
 
   it('validates contrast values', async () => {
@@ -152,14 +152,14 @@ describe('useOperatorTheme setContrast', () => {
 
     // Should still update runtime state even if persistence fails
     expect(contrast.value).toBe('standard');
-    expect(document.documentElement.getAttribute('data-contrast')).toBe('standard');
+    expect(document.documentElement.dataset.contrast).toBe('standard');
   });
 });
 
 describe('useOperatorTheme setDensity', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-density');
+    delete document.documentElement.dataset.density;
   });
 
   it('updates density mode and persists to storage', async () => {
@@ -172,7 +172,7 @@ describe('useOperatorTheme setDensity', () => {
     await nextTick();
 
     expect(density.value).toBe('compact');
-    expect(document.documentElement.getAttribute('data-density')).toBe('compact');
+    expect(document.documentElement.dataset.density).toBe('compact');
     expect(storage.get('regattadesk-operator-density')).toBe('compact');
   });
 
@@ -187,7 +187,7 @@ describe('useOperatorTheme setDensity', () => {
       await nextTick();
       
       expect(density.value).toBe(value);
-      expect(document.documentElement.getAttribute('data-density')).toBe(value);
+      expect(document.documentElement.dataset.density).toBe(value);
       expect(storage.get('regattadesk-operator-density')).toBe(value);
     }
   });
@@ -213,7 +213,7 @@ describe('useOperatorTheme setDensity', () => {
 describe('useOperatorTheme toggleContrast', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-contrast');
+    delete document.documentElement.dataset.contrast;
   });
 
   it('toggles between high and standard contrast', async () => {
@@ -240,7 +240,7 @@ describe('useOperatorTheme toggleContrast', () => {
 describe('useOperatorTheme isHighContrast computed', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-contrast');
+    delete document.documentElement.dataset.contrast;
   });
 
   it('returns true when contrast is high', async () => {
@@ -282,8 +282,8 @@ describe('useOperatorTheme isHighContrast computed', () => {
 describe('useOperatorTheme per-device persistence', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
-    document.documentElement.removeAttribute('data-contrast');
-    document.documentElement.removeAttribute('data-density');
+    delete document.documentElement.dataset.contrast;
+    delete document.documentElement.dataset.density;
   });
 
   it('uses separate storage keys for operator theme', async () => {

@@ -43,7 +43,7 @@ function initializeContrast() {
   contrastState = ref(initial);
   
   if (canUseDocument()) {
-    document.documentElement.setAttribute('data-contrast', initial);
+    document.documentElement.dataset.contrast = initial;
   }
 
   return contrastState;
@@ -68,7 +68,7 @@ function initializeDensity() {
   densityState = ref(initial);
   
   if (canUseDocument()) {
-    document.documentElement.setAttribute('data-density', initial);
+    document.documentElement.dataset.density = initial;
   }
 
   return densityState;
@@ -88,7 +88,7 @@ export function useOperatorTheme() {
 
     contrast.value = value;
     if (canUseDocument()) {
-      document.documentElement.setAttribute('data-contrast', value);
+      document.documentElement.dataset.contrast = value;
     }
 
     try {
@@ -108,7 +108,7 @@ export function useOperatorTheme() {
 
     density.value = value;
     if (canUseDocument()) {
-      document.documentElement.setAttribute('data-density', value);
+      document.documentElement.dataset.density = value;
     }
 
     try {

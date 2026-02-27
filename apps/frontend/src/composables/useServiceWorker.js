@@ -13,6 +13,12 @@ let stateRef = null;
 let errorState = null;
 let messageListeners = [];
 
+function createMessageEventHandler(callback) {
+  return (event) => {
+    callback(event.data);
+  };
+}
+
 export function useServiceWorker() {
   // Initialize singleton state
   if (!registrationState) {
@@ -134,9 +140,7 @@ export function useServiceWorker() {
   }
 
   function onMessage(callback) {
-    const handler = (event) => {
-      callback(event.data);
-    };
+    const handler = createMessageEventHandler(callback);
 
     if (navigator.serviceWorker) {
       navigator.serviceWorker.addEventListener('message', handler);
@@ -147,7 +151,7 @@ export function useServiceWorker() {
     return () => {
       if (navigator.serviceWorker) {
         navigator.serviceWorker.removeEventListener('message', handler);
-        messageListeners = messageListeners.filter(l => l.callback !== callback);
+        messageListeners = messageListeners.filter((listener) => listener.callback !== callback);
       }
     };
   }

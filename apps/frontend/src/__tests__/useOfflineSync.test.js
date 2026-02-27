@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
 
 // Mock fetch for sync operations
 function createMockFetch(responses = []) {
@@ -292,7 +291,7 @@ describe('useOfflineSync conflict resolution', () => {
       },
     ];
 
-    const result = await syncQueue(queue);
+    await syncQueue(queue);
 
     // Should force update with client data
     expect(mockFetch).toHaveBeenCalledTimes(2);
