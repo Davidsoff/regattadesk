@@ -4,7 +4,7 @@ import { Counter, Trend } from "k6/metrics";
 
 const profile = __ENV.PROFILE || "smoke";
 const outputDir = __ENV.OUTPUT_DIR || "apps/backend/performance/reports";
-const baseUrl = (__ENV.BASE_URL || "").replace(/\/$/, "");
+const baseUrl = (__ENV.BASE_URL || "").replaceAll(/\/$/g, "");
 const cpuUtilizationPct = Number(__ENV.CPU_UTILIZATION_PCT || "0");
 const memoryUtilizationPct = Number(__ENV.MEMORY_UTILIZATION_PCT || "0");
 
@@ -24,7 +24,7 @@ if (selectedScenarios.length === 0) {
 
 const scenarioById = Object.fromEntries(selectedScenarios.map((scenario) => [scenario.id, scenario]));
 const metricKeyByScenario = Object.fromEntries(
-  selectedScenarios.map((scenario) => [scenario.id, scenario.id.replace(/[^a-zA-Z0-9_]/g, "_")]),
+  selectedScenarios.map((scenario) => [scenario.id, scenario.id.replaceAll(/\W/g, "_")]),
 );
 
 const latencyMetrics = {};
@@ -96,7 +96,7 @@ export function runScenario() {
 
 function readMetricNumber(data, metricName, metricField) {
   const metric = data.metrics[metricName];
-  if (!metric || !metric.values || metric.values[metricField] === undefined) {
+  if (metric?.values?.[metricField] === undefined) {
     return 0;
   }
   return Number(metric.values[metricField]) || 0;
@@ -130,8 +130,7 @@ function buildMarkdown(summary, breaches, thresholds) {
     );
   }
 
-  lines.push("");
-  lines.push("## Regression Risk");
+  lines.push("", "## Regression Risk");
   if (breaches.length > 0) {
     lines.push(`- Threshold breaches: ${breaches.join(", ")}`);
   } else {
