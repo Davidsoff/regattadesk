@@ -1,126 +1,95 @@
-# Frontend Accessibility Testing Examples
+# Frontend Accessibility Testing
 
-This directory contains examples and guidance for accessibility testing in RegattaDesk.
+This directory contains automated accessibility tests for RegattaDesk components and pages.
 
-## Setup
+## Overview
 
-To enable accessibility testing, add these dependencies to `package.json`:
+RegattaDesk uses **axe-core** to enforce WCAG 2.2 AA compliance for public pages and critical staff/operator flows.
 
-```json
-{
-  "devDependencies": {
-    "vitest": "2.1.8",
-    "@vitest/ui": "2.1.8",
-    "axe-core": "4.10.2",
-    "@axe-core/playwright": "4.10.2",
-    "playwright": "1.49.2"
-  }
-}
+## Running Tests
+
+```bash
+# Run accessibility tests once
+npm run test:a11y
+
+# Run in watch mode
+npm run test:a11y:watch
 ```
 
-## Automated Accessibility Tests with axe-core
+## Test Coverage
 
-### Example: Page-level Accessibility Scan
+### Primitive Components
+- **RdTable**: Table structure, captions, empty states, loading states
+- **RdChip**: Color contrast, all variants, dismissible buttons
 
-```typescript
+### Public Pages (WCAG 2.2 AA Required)
+- **Schedule**: Heading hierarchy, error messages, critical/serious violations
+- **Results**: Live status indicators, SSE connection state
+
+### Critical Flows
+- **Public Bootstrap**: `/versions` 401 → `/public/session` → retry flow
+- **SSE Connection**: Connection state management, reconnection backoff
+- **Operator Offline**: Action queuing, sync protocol, conflict resolution (LWW)
+- **Versioned URLs**: Correct construction of `/public/v{draw}-{results}/` paths
+
+## CI Integration
+
+Accessibility tests are **required** to pass in CI. The tests run on every PR and gate merges if critical or serious WCAG violations are detected.
+
+See `.github/workflows/ci.yml` for the CI configuration.
+
+## Test Reports
+
+Test results are saved to `a11y-reports/test-results.json` and uploaded as artifacts in CI.
+
+## Writing New Tests
+
+### Component Accessibility Test Example
+
+```javascript
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { axe } from 'axe-core';
-import HomePage from '../HomePage.vue';
+import { run as axeRun } from 'axe-core';
+import MyComponent from '../../src/components/MyComponent.vue';
 
-describe('HomePage Accessibility', () => {
+describe('MyComponent Accessibility', () => {
   it('should have no accessibility violations', async () => {
-    const wrapper = mount(HomePage);
-    
-    // Get the root DOM element rendered by Vue Test Utils
-    const rootNode = wrapper.element;
-    
-    // Run axe accessibility scan
-    const results = await axe.run(rootNode);
-    
-    // Assert no violations
+    const wrapper = mount(MyComponent, {
+      props: { /* props */ },
+      attachTo: document.body  // Required for axe-core
+    });
+
+    const results = await axeRun(wrapper.element, {
+      rules: {
+        'color-contrast': { enabled: true },
+        'button-name': { enabled: true }
+      }
+    });
+
     expect(results.violations).toHaveLength(0);
     
-    // If violations exist, log them for debugging
-    if (results.violations.length > 0) {
-      console.error('Accessibility violations:', 
-        results.violations.map(v => ({
-          id: v.id,
-          impact: v.impact,
-          description: v.description,
-          nodes: v.nodes.length
-        }))
-      );
-    }
+    wrapper.unmount();  // Clean up
   });
 });
 ```
 
-### Example: Component-level Accessibility Test
+### Public Page Test Example
 
-```typescript
-import { describe, it, expect } from 'vitest';
-import { mount } from '@vue/test-utils';
-import { axe } from 'axe-core';
-import ResultsTable from '../components/ResultsTable.vue';
+For public pages, filter to only block on **critical** and **serious** violations:
 
-describe('ResultsTable Accessibility', () => {
-  const mockData = [
-    { position: 1, bib: '101', crew: 'Crew A', time: '05:23.45' },
-    { position: 2, bib: '102', crew: 'Crew B', time: '05:25.12' }
-  ];
+```javascript
+const results = await axeRun(wrapper.element);
 
-  it('should have accessible table structure', async () => {
-    const wrapper = mount(ResultsTable, {
-      props: { results: mockData }
-    });
-    
-    const results = await axe.run(wrapper.element, {
-      rules: {
-        // Focus on table-specific rules
-        'table-duplicate-name': { enabled: true },
-        'table-fake-caption': { enabled: true },
-        'td-headers-attr': { enabled: true },
-        'th-has-data-cells': { enabled: true }
-      }
-    });
-    
-    expect(results.violations).toHaveLength(0);
-  });
+const blockingViolations = results.violations.filter(
+  v => v.impact === 'critical' || v.impact === 'serious'
+);
 
-  it('should have proper heading hierarchy', async () => {
-    const wrapper = mount(ResultsTable, {
-      props: { results: mockData }
-    });
-    
-    const results = await axe.run(wrapper.element, {
-      rules: {
-        'heading-order': { enabled: true }
-      }
-    });
-    
-    expect(results.violations).toHaveLength(0);
-  });
-
-  it('should meet color contrast requirements (WCAG AA)', async () => {
-    const wrapper = mount(ResultsTable, {
-      props: { results: mockData }
-    });
-    
-    const results = await axe.run(wrapper.element, {
-      rules: {
-        'color-contrast': { enabled: true }
-      }
-    });
-    
-    expect(results.violations).toHaveLength(0);
-  });
-});
+expect(blockingViolations).toHaveLength(0);
 ```
 
-## Manual Accessibility Checklist
+## Manual Testing Checklist
 
-For critical flows (public results, operator capture, staff workflows), complete this checklist:
+For critical flows (public results, operator capture, staff workflows), complete this checklist before release:
 
 ### Keyboard Navigation
 - [ ] All interactive elements reachable via Tab key
@@ -178,42 +147,12 @@ For critical flows (public results, operator capture, staff workflows), complete
 - **WAVE** - Visual accessibility checker
 - **Accessibility Insights** - Comprehensive testing
 
-## CI Integration
-
-Add to `package.json`:
-
-```json
-{
-  "scripts": {
-    "test:a11y": "vitest run --config vitest.a11y.config.ts",
-    "test:a11y:watch": "vitest --config vitest.a11y.config.ts"
-  }
-}
-```
-
-Create `vitest.a11y.config.ts`:
-
-```typescript
-import { defineConfig } from 'vitest/config';
-import vue from '@vitejs/plugin-vue';
-
-export default defineConfig({
-  plugins: [vue()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./tests/setup.ts'],
-    include: ['**/*.a11y.test.ts']
-  }
-});
-```
-
 ## References
 
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - [axe-core Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
 - [Vue Accessibility Guide](https://vuejs.org/guide/best-practices/accessibility.html)
-- [Testing Strategy](../../../../docs/TESTING_STRATEGY.md)
+- [RegattaDesk Style Guide](../../pdd/design/style-guide.md)
 
 ## Reporting Issues
 
@@ -223,3 +162,4 @@ When an accessibility issue is found:
 3. Suggest remediation
 4. Link to WCAG success criterion
 5. Assign priority based on impact (critical, serious, moderate, minor)
+
