@@ -13,7 +13,7 @@ Run from repo root:
 (cd apps/backend && ./mvnw verify -Pcontract || true)
 
 # Frontend required
-(cd apps/frontend && npm ci)
+(cd apps/frontend && npm_config_cache="$PWD/.npm-cache" npm ci)
 (cd apps/frontend && npm run lint)
 (cd apps/frontend && npm run build)
 
