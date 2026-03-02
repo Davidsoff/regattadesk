@@ -634,15 +634,19 @@ function onKeyboardReorderMove(event, blockId, currentIndex) {
 
 async function commitKeyboardReorder(sourceIndex) {
   const targetIndex = keyboardReorderTargetIndex.value
-  const wasInReorderMode = keyboardReorderMode.value
   
+  // Check if we're in reorder mode and if the position actually changed
+  if (!keyboardReorderMode.value || sourceIndex === targetIndex) {
+    keyboardReorderMode.value = false
+    keyboardReorderBlockId.value = null
+    keyboardReorderTargetIndex.value = -1
+    return
+  }
+
+  // Clear reorder mode state
   keyboardReorderMode.value = false
   keyboardReorderBlockId.value = null
   keyboardReorderTargetIndex.value = -1
-
-  if (!wasInReorderMode || sourceIndex === targetIndex) {
-    return
-  }
 
   const currentBlocks = [...blocks.value]
   const reorderedBlocks = [...currentBlocks]
@@ -666,6 +670,14 @@ async function commitKeyboardReorder(sourceIndex) {
     reorderError.value = t('blocks.reorder_error')
     blocks.value = currentBlocks
     console.error('Failed to reorder blocks:', err)
+  }
+}
+
+function handleDragHandleKeydown(event, blockId, index) {
+  if (keyboardReorderMode.value && keyboardReorderBlockId.value === blockId) {
+    onKeyboardReorderMove(event, blockId, index)
+  } else {
+    onKeyboardReorderStart(event, blockId, index)
   }
 }
 
@@ -742,7 +754,7 @@ onMounted(() => {
                   draggable="true"
                   @dragstart="onDragStart($event, block.id)"
                   @dragend="onDragEnd"
-                  @keydown="keyboardReorderMode && keyboardReorderBlockId === block.id ? onKeyboardReorderMove($event, block.id, index) : onKeyboardReorderStart($event, block.id, index)"
+                  @keydown="handleDragHandleKeydown($event, block.id, index)"
                 >
                   <span aria-hidden="true">⋮⋮</span>
                 </button>
