@@ -112,31 +112,27 @@ describe('BlocksManagementExample - Immutability Guards', () => {
       global.alert = vi.fn()
     })
 
-    it('shows alert when trying to edit', async () => {
+    it('prevents edit action via disabled state', () => {
       const editButton = wrapper.find('.btn-edit')
-      await editButton.trigger('click')
       
-      expect(global.alert).toHaveBeenCalledWith(
-        expect.stringContaining('Cannot edit')
-      )
+      // Disabled buttons in the DOM don't trigger click events
+      // This is correct behavior - the button itself prevents the action
+      expect(editButton.attributes('disabled')).toBe('')
+      expect(editButton.attributes('title')).toContain('Cannot edit')
     })
 
-    it('shows alert when trying to delete', async () => {
+    it('prevents delete action via disabled state', () => {
       const deleteButton = wrapper.find('.btn-delete')
-      await deleteButton.trigger('click')
       
-      expect(global.alert).toHaveBeenCalledWith(
-        expect.stringContaining('Cannot edit')
-      )
+      expect(deleteButton.attributes('disabled')).toBe('')
+      expect(deleteButton.attributes('title')).toContain('Cannot edit')
     })
 
-    it('shows alert when trying to add', async () => {
+    it('prevents add action via disabled state', () => {
       const addButton = wrapper.find('.btn-add')
-      await addButton.trigger('click')
       
-      expect(global.alert).toHaveBeenCalledWith(
-        expect.stringContaining('Cannot edit')
-      )
+      expect(addButton.attributes('disabled')).toBe('')
+      expect(addButton.attributes('title')).toContain('Cannot edit')
     })
   })
 
