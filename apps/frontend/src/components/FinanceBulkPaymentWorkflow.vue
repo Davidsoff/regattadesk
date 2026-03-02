@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../api'
 
@@ -25,8 +25,6 @@ const submitError = ref('')
 const result = ref(null)
 const pendingPayload = ref(null)
 const density = ref('comfortable')
-const sseStatus = ref('offline')
-let eventSource = null
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -100,35 +98,11 @@ async function confirmSubmit() {
 function cancelConfirmation() {
   pendingPayload.value = null
 }
-
-onMounted(() => {
-  if (typeof EventSource === 'undefined') {
-    return
-  }
-  eventSource = new EventSource(`/public/regattas/${props.regattaId}/events`)
-  eventSource.onopen = () => {
-    sseStatus.value = 'live'
-  }
-  eventSource.onerror = () => {
-    sseStatus.value = 'offline'
-  }
-})
-
-onUnmounted(() => {
-  if (eventSource) {
-    eventSource.close()
-  }
-})
 </script>
 
 <template>
   <section class="finance-bulk" aria-labelledby="finance-bulk-title">
-    <div class="top-row">
-      <h1 id="finance-bulk-title">{{ t('finance.bulk.title') }}</h1>
-      <span class="sse-pill" :class="`sse-pill--${sseStatus}`">
-        {{ sseStatus === 'live' ? t('live.live') : t('live.offline') }}
-      </span>
-    </div>
+    <h1 id="finance-bulk-title">{{ t('finance.bulk.title') }}</h1>
     <p class="lead">{{ t('finance.bulk.subtitle') }}</p>
 
     <form class="form-grid" @submit.prevent="startConfirmation">
@@ -261,30 +235,6 @@ h1,
 h2 {
   margin: 0;
   color: #1d3557;
-}
-
-.top-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sse-pill {
-  border-radius: 99px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.sse-pill--live {
-  color: #0a6d35;
-  background: #dff5e6;
-}
-
-.sse-pill--offline {
-  color: #8b2531;
-  background: #fce4e8;
 }
 
 .lead {

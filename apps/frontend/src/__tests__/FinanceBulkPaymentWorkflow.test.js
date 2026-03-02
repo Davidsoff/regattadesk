@@ -160,4 +160,16 @@ describe('FinanceBulkPaymentWorkflow', () => {
 
     expect(wrapper.text()).toContain(i18n.global.t('finance.bulk.error'))
   })
+
+  it('does not show SSE status indicator', () => {
+    const wrapper = mount(FinanceBulkPaymentWorkflow, {
+      props: { regattaId: 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc' },
+      global: { plugins: [i18n] }
+    })
+
+    // Component should not contain live/offline indicator
+    expect(wrapper.text()).not.toContain(i18n.global.t('live.live'))
+    expect(wrapper.text()).not.toContain(i18n.global.t('live.offline'))
+    expect(wrapper.find('.sse-pill').exists()).toBe(false)
+  })
 })
