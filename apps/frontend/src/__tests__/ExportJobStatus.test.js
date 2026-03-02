@@ -58,43 +58,29 @@ describe('ExportJobStatus', () => {
   })
 
   describe('pending state', () => {
-    it('shows pending indicator', () => {
+    it('shows pending indicator and spinner', () => {
       const wrapper = mountStatus({
         status: 'pending',
         jobId: '123'
       })
 
-      expect(wrapper.find('[data-testid="export-status-pending"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="export-status-pending"]').text()).toContain('Preparing export')
-    })
-
-    it('shows spinner for pending', () => {
-      const wrapper = mountStatus({
-        status: 'pending',
-        jobId: '123'
-      })
-
+      const indicator = wrapper.find('[data-testid="export-status-pending"]')
+      expect(indicator.exists()).toBe(true)
+      expect(indicator.text()).toContain('Preparing export')
       expect(wrapper.find('[data-testid="export-spinner"]').exists()).toBe(true)
     })
   })
 
   describe('processing state', () => {
-    it('shows processing indicator', () => {
+    it('shows processing indicator and spinner', () => {
       const wrapper = mountStatus({
         status: 'processing',
         jobId: '123'
       })
 
-      expect(wrapper.find('[data-testid="export-status-processing"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="export-status-processing"]').text()).toContain('Generating export')
-    })
-
-    it('shows spinner for processing', () => {
-      const wrapper = mountStatus({
-        status: 'processing',
-        jobId: '123'
-      })
-
+      const indicator = wrapper.find('[data-testid="export-status-processing"]')
+      expect(indicator.exists()).toBe(true)
+      expect(indicator.text()).toContain('Generating export')
       expect(wrapper.find('[data-testid="export-spinner"]').exists()).toBe(true)
     })
   })
@@ -114,26 +100,20 @@ describe('ExportJobStatus', () => {
       expect(downloadLink.text()).toContain('Download')
     })
 
-    it('shows success message', () => {
+    it('shows success message and expiration notice', () => {
       const wrapper = mountStatus({
         status: 'completed',
         jobId: '123',
         downloadUrl: '/api/v1/jobs/123/download'
       })
 
-      expect(wrapper.find('[data-testid="export-status-completed"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="export-status-completed"]').text()).toContain('Export ready')
-    })
+      const success = wrapper.find('[data-testid="export-status-completed"]')
+      expect(success.exists()).toBe(true)
+      expect(success.text()).toContain('Export ready')
 
-    it('shows expiration notice', () => {
-      const wrapper = mountStatus({
-        status: 'completed',
-        jobId: '123',
-        downloadUrl: '/api/v1/jobs/123/download'
-      })
-
-      expect(wrapper.find('[data-testid="export-expiration-notice"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="export-expiration-notice"]').text()).toContain('available for 1 hour')
+      const expiration = wrapper.find('[data-testid="export-expiration-notice"]')
+      expect(expiration.exists()).toBe(true)
+      expect(expiration.text()).toContain('available for 1 hour')
     })
   })
 
@@ -150,7 +130,7 @@ describe('ExportJobStatus', () => {
       expect(wrapper.find('[data-testid="export-error-message"]').text()).toBe(errorMessage)
     })
 
-    it('shows retry button', () => {
+    it('shows retry button and retries on click', async () => {
       const wrapper = mountStatus({
         status: 'failed',
         jobId: '123',
@@ -160,16 +140,8 @@ describe('ExportJobStatus', () => {
       const retryButton = wrapper.find('[data-testid="export-retry-button"]')
       expect(retryButton.exists()).toBe(true)
       expect(retryButton.text()).toContain('Retry')
-    })
 
-    it('calls onStart when retry is clicked', async () => {
-      const wrapper = mountStatus({
-        status: 'failed',
-        jobId: '123',
-        error: 'Error'
-      })
-
-      await wrapper.find('[data-testid="export-retry-button"]').trigger('click')
+      await retryButton.trigger('click')
       expect(mockStartExport).toHaveBeenCalledTimes(1)
     })
   })
