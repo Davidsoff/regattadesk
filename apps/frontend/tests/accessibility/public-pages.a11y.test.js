@@ -291,7 +291,11 @@ describe('Public Results Page Accessibility', () => {
   it('should have accessible live status indicator', async () => {
     global.sessionStorage = {
       getItem: vi.fn(() => 'test-regatta-123'),
-      setItem: vi.fn()
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      length: 0,
+      key: vi.fn()
     };
 
     global.fetch = vi.fn(() =>
