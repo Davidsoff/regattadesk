@@ -494,4 +494,365 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       expect(errorMessage.text()).toContain('Existing Pool')
     })
   })
+
+  describe('Block reordering via drag-and-drop (FEGAP-008-B1)', () => {
+    it('displays drag handles for blocks when multiple blocks exist', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            },
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 150,
+              crew_interval_seconds: 45,
+              display_order: 2
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandles = wrapper.findAll('[data-testid^="drag-handle-"]')
+      expect(dragHandles).toHaveLength(2)
+      expect(dragHandles[0].attributes('draggable')).toBe('true')
+      expect(dragHandles[0].attributes('aria-label')).toContain('Drag to reorder')
+    })
+
+    it('does not display drag handles when only one block exists', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandles = wrapper.findAll('[data-testid^="drag-handle-"]')
+      expect(dragHandles).toHaveLength(0)
+    })
+
+    it('successfully reorders blocks via drag-and-drop', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn()
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'block-1',
+                name: 'Morning Session',
+                start_time: '2026-03-02T09:00:00Z',
+                event_interval_seconds: 120,
+                crew_interval_seconds: 30,
+                display_order: 1
+              },
+              {
+                id: 'block-2',
+                name: 'Afternoon Session',
+                start_time: '2026-03-02T14:00:00Z',
+                event_interval_seconds: 150,
+                crew_interval_seconds: 45,
+                display_order: 2
+              }
+            ]
+          })
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'block-2',
+                name: 'Afternoon Session',
+                start_time: '2026-03-02T14:00:00Z',
+                event_interval_seconds: 150,
+                crew_interval_seconds: 45,
+                display_order: 1
+              },
+              {
+                id: 'block-1',
+                name: 'Morning Session',
+                start_time: '2026-03-02T09:00:00Z',
+                event_interval_seconds: 120,
+                crew_interval_seconds: 30,
+                display_order: 2
+              }
+            ]
+          }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
+        reorderBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 150,
+              crew_interval_seconds: 45,
+              display_order: 1
+            },
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 2
+            }
+          ]
+        })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstBlock = wrapper.find('[data-testid="block-item-block-1"]')
+      const secondBlock = wrapper.find('[data-testid="block-item-block-2"]')
+
+      await firstBlock.trigger('dragstart', {
+        dataTransfer: {
+          effectAllowed: 'move',
+          setData: vi.fn(),
+          getData: vi.fn(() => 'block-1')
+        }
+      })
+
+      await secondBlock.trigger('drop', {
+        dataTransfer: {
+          getData: vi.fn(() => 'block-1')
+        },
+        preventDefault: vi.fn()
+      })
+
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalledWith(REGATTA_ID, {
+        items: [
+          { block_id: 'block-2', display_order: 1 },
+          { block_id: 'block-1', display_order: 2 }
+        ]
+      })
+
+      expect(mockDrawApi.listBlocks).toHaveBeenCalledTimes(2)
+    })
+
+    it('restores original order on reorder API failure', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            },
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 150,
+              crew_interval_seconds: 45,
+              display_order: 2
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
+        reorderBlocks: vi.fn().mockRejectedValue(new Error('Network error'))
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstBlock = wrapper.find('[data-testid="block-item-block-1"]')
+      const secondBlock = wrapper.find('[data-testid="block-item-block-2"]')
+
+      await firstBlock.trigger('dragstart', {
+        dataTransfer: {
+          effectAllowed: 'move',
+          setData: vi.fn(),
+          getData: vi.fn(() => 'block-1')
+        }
+      })
+
+      await secondBlock.trigger('drop', {
+        dataTransfer: {
+          getData: vi.fn(() => 'block-1')
+        },
+        preventDefault: vi.fn()
+      })
+
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalled()
+
+      const errorBanner = wrapper.find('[role="alert"]')
+      expect(errorBanner.exists()).toBe(true)
+      expect(errorBanner.text()).toContain('Failed to save new block order')
+
+      const blockItems = wrapper.findAll('[data-testid^="block-item-"]')
+      expect(blockItems[0].attributes('data-testid')).toBe('block-item-block-1')
+      expect(blockItems[1].attributes('data-testid')).toBe('block-item-block-2')
+    })
+
+    it('supports keyboard navigation for reordering blocks', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn()
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'block-1',
+                name: 'Morning Session',
+                start_time: '2026-03-02T09:00:00Z',
+                event_interval_seconds: 120,
+                crew_interval_seconds: 30,
+                display_order: 1
+              },
+              {
+                id: 'block-2',
+                name: 'Afternoon Session',
+                start_time: '2026-03-02T14:00:00Z',
+                event_interval_seconds: 150,
+                crew_interval_seconds: 45,
+                display_order: 2
+              }
+            ]
+          })
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'block-2',
+                name: 'Afternoon Session',
+                start_time: '2026-03-02T14:00:00Z',
+                event_interval_seconds: 150,
+                crew_interval_seconds: 45,
+                display_order: 1
+              },
+              {
+                id: 'block-1',
+                name: 'Morning Session',
+                start_time: '2026-03-02T09:00:00Z',
+                event_interval_seconds: 120,
+                crew_interval_seconds: 30,
+                display_order: 2
+              }
+            ]
+          }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
+        reorderBlocks: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstDragHandle = wrapper.find('[data-testid="drag-handle-block-1"]')
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('true')
+
+      await firstDragHandle.trigger('keydown', { key: 'ArrowDown' })
+
+      expect(mockDrawApi.reorderBlocks).not.toHaveBeenCalled()
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalledWith(REGATTA_ID, {
+        items: [
+          { block_id: 'block-2', display_order: 1 },
+          { block_id: 'block-1', display_order: 2 }
+        ]
+      })
+    })
+
+    it('cancels keyboard reordering on Escape key', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            },
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 150,
+              crew_interval_seconds: 45,
+              display_order: 2
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
+        reorderBlocks: vi.fn()
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstDragHandle = wrapper.find('[data-testid="drag-handle-block-1"]')
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('true')
+
+      await firstDragHandle.trigger('keydown', { key: 'ArrowDown' })
+
+      await firstDragHandle.trigger('keydown', { key: 'Escape' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('false')
+
+      expect(mockDrawApi.reorderBlocks).not.toHaveBeenCalled()
+    })
+
+    it('displays reorder instructions for accessibility', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            },
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 150,
+              crew_interval_seconds: 45,
+              display_order: 2
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const instructions = wrapper.find('[data-testid="reorder-instructions"]')
+      expect(instructions.exists()).toBe(true)
+      expect(instructions.text()).toContain('drag and drop')
+      expect(instructions.text()).toContain('arrow keys')
+    })
+  })
 })
