@@ -315,7 +315,7 @@
       "save_success": "Regelset succesvol opgeslagen",
       "save_error": "Regelset opslaan mislukt",
       "duplicate_success": "Regelset succesvol gedupliceerd",
-      "duplicate_error": "Regelset dupliceren mislukt",
+      "duplicate_error": "Duplicatiefout: Regelset dupliceren mislukt",
       "promote_success": "Regelset succesvol gepromoveerd naar globaal",
       "promote_error": "Regelset promoveren mislukt",
       "promote_forbidden": "Je hebt geen toestemming om regelsets te promoveren. Alleen super administrators kunnen deze actie uitvoeren.",

@@ -315,7 +315,7 @@
       "save_success": "Ruleset saved successfully",
       "save_error": "Failed to save ruleset",
       "duplicate_success": "Ruleset duplicated successfully",
-      "duplicate_error": "Failed to duplicate ruleset",
+      "duplicate_error": "Duplication error: Failed to duplicate ruleset",
       "promote_success": "Ruleset promoted to global successfully",
       "promote_error": "Failed to promote ruleset",
       "promote_forbidden": "You do not have permission to promote rulesets. Only super administrators can perform this action.",

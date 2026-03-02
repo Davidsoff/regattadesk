@@ -102,8 +102,8 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
       const options = ageCalcSelect.findAll('option')
       
       // Check that options have human-readable labels from i18n
-      expect(options.length).toBeGreaterThan(0)
-      expect(options[0].text()).toMatch(/Actual Age at Start|Werkelijke leeftijd bij start/)
+      expect(options.length).toBeGreaterThan(1)
+      expect(options[1].text()).toMatch(/Actual Age at Start|Werkelijke leeftijd bij start/)
     })
 
     it('displays is_global status clearly', async () => {
