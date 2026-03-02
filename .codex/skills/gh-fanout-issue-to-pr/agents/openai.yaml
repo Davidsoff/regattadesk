@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bulk Issue to PR"
+  short_description: "Fan out unblocked issues to issue-to-PR workers"
+  default_prompt: "Use $gh-fanout-issue-to-pr to find open unassigned unblocked GitHub issues and run $gh-issue-to-pr-tdd for each issue in parallel (max 5)."
+

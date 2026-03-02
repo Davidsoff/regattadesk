@@ -4,7 +4,7 @@ description: Address all open review thread comments for a GitHub PR, commit and
 license: MIT
 metadata:
   author: regattadesk
-  version: "1.1"
+  version: "1.2"
 ---
 
 # pr-address-comments
@@ -82,7 +82,7 @@ while :; do
 done
 ```
 
-Collect all threads where `isResolved: false` (including both current and outdated threads). If there are none, report "No open review threads." and stop.
+Collect all threads where `isResolved: false` (including both current and outdated threads). If there are none, report "No open review threads." and continue.
 
 For implementation work in step 6, focus on non-outdated (`isOutdated: false`) threads. Still keep outdated thread IDs in the working list so they are explicitly resolved in step 12.
 
@@ -93,6 +93,10 @@ Found N open review threads across these files:
   • <file> (line X) — <short description of issue>
   ...
 ```
+
+If open threads count is zero, **do not stop the workflow**. Continue so Sonar/CI status can still be checked and remediated when needed.
+
+If the user asks for author-specific verification (for example login contains `kilocode`), query PR review comments and thread comments, then explicitly report whether any unresolved/open comments match.
 
 ### 4. Check out the PR branch
 
@@ -133,7 +137,7 @@ Also read:
 - Any config files referenced in the comments
 - Related files that the comments reference by name
 
-### 6. Implement all fixes
+### 6. Implement all thread fixes (when present)
 
 Work through each non-outdated open thread comment systematically:
 
@@ -144,7 +148,9 @@ Work through each non-outdated open thread comment systematically:
 - Do not add code changes solely for outdated threads unless they still reflect a real issue in current code.
 - After all edits, verify each changed file reads correctly.
 
-### 7. Commit the changes
+If there are no actionable open threads, skip this step.
+
+### 7. Commit changes (only if files changed)
 
 ```bash
 cd /tmp/pr-<PR>-fix
@@ -163,6 +169,8 @@ git commit -m "fix: address PR review comments
 
 Use a bullet for each distinct issue addressed.
 
+If `git status --short` is empty after step 6, skip commit/push and continue with Sonar/CI checks.
+
 ### 8. Push and wait for all checks
 
 Push the branch:
@@ -171,6 +179,8 @@ Push the branch:
 cd /tmp/pr-<PR>-fix
 git push origin <headRefName>
 ```
+
+If no commit was created in step 7, skip push.
 
 Then poll until every CI check has a final status (not `pending` or `in_progress`). Poll every 30 seconds, with a configurable timeout (use a conservative default such as 30 minutes):
 
@@ -257,15 +267,25 @@ If rebase was not needed, no extra push is required (already pushed in step 8).
 
 ### 12. Resolve all review threads
 
-For **every** thread ID collected in step 3, run:
+For **every** thread ID collected in step 3, resolve with a line-safe loop (avoid shell word-splitting issues):
 
 ```bash
-gh api graphql -f query='
+THREAD_ID_FILE="/tmp/pr-<PR>-fix/.thread_ids.txt"
+# One thread ID per line.
+cat > "$THREAD_ID_FILE" <<'EOF'
+<threadId-1>
+<threadId-2>
+EOF
+
+while IFS= read -r thread_id; do
+  [[ -n "$thread_id" ]] || continue
+  gh api graphql -f query='
 mutation ResolveThread($threadId: ID!) {
   resolveReviewThread(input: {threadId: $threadId}) {
     thread { id isResolved }
   }
-}' -f threadId="<threadId>"
+}' -f threadId="$thread_id"
+done < "$THREAD_ID_FILE"
 ```
 
 Confirm each returns `"isResolved": true`.
