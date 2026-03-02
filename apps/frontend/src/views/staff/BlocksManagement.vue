@@ -686,7 +686,7 @@ function cancelKeyboardReorder() {
 function onPoolDragStart(pool, event) {
   draggedPoolId.value = pool.id
   event.dataTransfer.effectAllowed = 'move'
-  event.dataTransfer.setData('text/plain', pool.id)
+  event.dataTransfer.setData('application/x-regattadesk-pool-id', pool.id)
 }
 
 function onPoolDragOver(pool, event) {
@@ -704,7 +704,7 @@ function onPoolDragLeave() {
 function onPoolDrop(targetPool, event) {
   event.preventDefault()
   
-  const sourcePoolId = event.dataTransfer.getData('text/plain')
+  const sourcePoolId = event.dataTransfer.getData('application/x-regattadesk-pool-id')
   if (!sourcePoolId || sourcePoolId === targetPool.id || targetPool.is_overflow) {
     dragOverPoolId.value = null
     draggedPoolId.value = null
@@ -824,11 +824,21 @@ async function performPoolReorder(sourcePoolId, targetPoolId) {
   try {
     reorderError.value = null
     await drawApi.reorderBibPools(regattaId, { items })
+    // Refresh from server to ensure consistency with backend state
     await loadBibPools()
   } catch (err) {
     // Revert to original order on error
     bibPools.value = originalPools
-    reorderError.value = t('blocks.reorder_error')
+    
+    // Provide contextual error message
+    if (err.message?.includes('network') || err.message?.includes('Network')) {
+      reorderError.value = t('blocks.reorder_error') + ' Network issue.'
+    } else if (err.code) {
+      reorderError.value = t('blocks.reorder_error') + ` (${err.code})`
+    } else {
+      reorderError.value = t('blocks.reorder_error')
+    }
+    
     console.error('Failed to reorder bib pools:', err)
   }
 }
