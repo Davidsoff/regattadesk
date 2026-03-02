@@ -459,27 +459,25 @@ describe('draw', () => {
       it('generates draw without custom seed', async () => {
         const regattaId = 'regatta-123'
         const mockResponse = {
-          draw_revision: 1,
-          results_revision: 0,
-          seed: 'auto-generated-seed-123'
+          seed: 12345,
+          generated_entry_count: 42
         }
         mockClient.post.mockResolvedValue(mockResponse)
 
         const result = await api.generateDraw(regattaId)
 
-        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/generate`, undefined)
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/generate`, {})
         expect(result).toEqual(mockResponse)
       })
 
       it('generates draw with custom seed', async () => {
         const regattaId = 'regatta-123'
         const payload = {
-          seed: 'custom-seed-456'
+          seed: 456
         }
         const mockResponse = {
-          draw_revision: 1,
-          results_revision: 0,
-          seed: 'custom-seed-456'
+          seed: 456,
+          generated_entry_count: 10
         }
         mockClient.post.mockResolvedValue(mockResponse)
 
@@ -487,9 +485,34 @@ describe('draw', () => {
 
         expect(mockClient.post).toHaveBeenCalledWith(
           `/regattas/${regattaId}/draw/generate`,
-          payload
+          { seed: 456 }
         )
         expect(result).toEqual(mockResponse)
+      })
+
+      it('coerces integer-like seed values', async () => {
+        const regattaId = 'regatta-123'
+        const mockResponse = {
+          seed: 789,
+          generated_entry_count: 12
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.generateDraw(regattaId, { seed: '789' })
+
+        expect(mockClient.post).toHaveBeenCalledWith(
+          `/regattas/${regattaId}/draw/generate`,
+          { seed: 789 }
+        )
+        expect(result).toEqual(mockResponse)
+      })
+
+      it('throws for non-integer seeds', async () => {
+        const regattaId = 'regatta-123'
+        await expect(api.generateDraw(regattaId, { seed: 'abc' })).rejects.toThrow(
+          'payload.seed must be an integer or integer-like value'
+        )
+        expect(mockClient.post).not.toHaveBeenCalled()
       })
     })
 
@@ -498,7 +521,7 @@ describe('draw', () => {
         const regattaId = 'regatta-123'
         const mockResponse = {
           draw_revision: 2,
-          results_revision: 0
+          results_revision: 1
         }
         mockClient.post.mockResolvedValue(mockResponse)
 
@@ -514,7 +537,7 @@ describe('draw', () => {
         const regattaId = 'regatta-123'
         const mockResponse = {
           draw_revision: 1,
-          results_revision: 0
+          results_revision: 1
         }
         mockClient.post.mockResolvedValue(mockResponse)
 

@@ -214,12 +214,22 @@ export function createDrawApi(client) {
     /**
      * Generate draw with optional custom seed.
      * @param {string} regattaId - Regatta UUID
-     * @param {object} payload - Optional generation parameters
-     * @param {string} payload.seed - Custom seed for reproducibility
-     * @returns {Promise<object>} Revision response with seed
+     * @param {object} [payload] - Optional generation parameters
+     * @param {number} [payload.seed] - Custom integer seed for reproducibility (OpenAPI: int64)
+     * @returns {Promise<object>} Draw generation response
      */
-    async generateDraw(regattaId, payload) {
-      return client.post(`/regattas/${regattaId}/draw/generate`, payload || undefined)
+    async generateDraw(regattaId, payload = {}) {
+      const body = { ...payload }
+
+      if (body.seed !== undefined && body.seed !== null) {
+        const seedNumber = typeof body.seed === 'number' ? body.seed : Number(body.seed)
+        if (!Number.isInteger(seedNumber)) {
+          throw new TypeError('payload.seed must be an integer or integer-like value')
+        }
+        body.seed = seedNumber
+      }
+
+      return client.post(`/regattas/${regattaId}/draw/generate`, body)
     },
 
     /**
