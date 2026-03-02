@@ -1,6 +1,45 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { staffGuard, operatorGuard } from './guards'
 
+function route(path, name, component) {
+  return { path, name, component }
+}
+
+function redirectRoute(path, redirect) {
+  return { path, redirect }
+}
+
+const staffRoutes = [
+  redirectRoute('', '/staff/regattas'),
+  route('regattas', 'staff-regattas', () => import('../views/staff/RegattasList.vue')),
+  route('regattas/:regattaId', 'staff-regatta-detail', () => import('../views/staff/RegattaDetail.vue')),
+  route('regattas/:regattaId/finance', 'staff-regatta-finance', () => import('../views/staff/RegattaFinance.vue')),
+  route('regattas/:regattaId/blocks', 'staff-blocks-management', () => import('../views/staff/BlocksManagement.vue')),
+  route('regattas/:regattaId/finance/entries/:entryId', 'staff-regatta-finance-entry', () => import('../views/staff/EntryPaymentStatus.vue')),
+  route('regattas/:regattaId/finance/clubs/:clubId', 'staff-regatta-finance-club', () => import('../views/staff/ClubPaymentStatus.vue')),
+  route('regattas/:regattaId/finance/invoices', 'staff-regatta-finance-invoices', () => import('../views/staff/InvoiceList.vue')),
+  route('regattas/:regattaId/finance/invoices/:invoiceId', 'staff-regatta-finance-invoice', () => import('../views/staff/InvoiceDetail.vue')),
+  route('rulesets', 'staff-rulesets', () => import('../views/staff/RulesetsList.vue')),
+  route('rulesets/new', 'staff-ruleset-create', () => import('../views/staff/RulesetDetail.vue')),
+  route('rulesets/:rulesetId', 'staff-ruleset-detail', () => import('../views/staff/RulesetDetail.vue'))
+]
+
+const operatorRoutes = [
+  redirectRoute('', '/operator/regattas'),
+  route('regattas', 'operator-regattas', () => import('../views/operator/RegattasList.vue')),
+  route('regattas/:regattaId', 'operator-regatta-detail', () => import('../views/operator/RegattaDetail.vue')),
+  route('regattas/:regattaId/line-scan', 'operator-line-scan', () => import('../views/operator/LineScan.vue'))
+]
+
+const publicRoutes = [
+  {
+    path: '',
+    redirect: (to) => `/public/v${to.params.drawRevision}-${to.params.resultsRevision}/schedule`
+  },
+  route('schedule', 'public-schedule', () => import('../views/public/Schedule.vue')),
+  route('results', 'public-results', () => import('../views/public/Results.vue'))
+]
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -12,113 +51,18 @@ const router = createRouter({
       path: '/staff',
       component: () => import('../layouts/StaffLayout.vue'),
       beforeEnter: staffGuard,
-      children: [
-        {
-          path: '',
-          redirect: '/staff/regattas'
-        },
-        {
-          path: 'regattas',
-          name: 'staff-regattas',
-          component: () => import('../views/staff/RegattasList.vue')
-        },
-        {
-          path: 'regattas/:regattaId',
-          name: 'staff-regatta-detail',
-          component: () => import('../views/staff/RegattaDetail.vue')
-        },
-        {
-          path: 'regattas/:regattaId/finance',
-          name: 'staff-regatta-finance',
-          component: () => import('../views/staff/RegattaFinance.vue')
-        },
-        {
-          path: 'regattas/:regattaId/blocks',
-          name: 'staff-blocks-management',
-          component: () => import('../views/staff/BlocksManagement.vue')
-        },
-        {
-          path: 'regattas/:regattaId/finance/entries/:entryId',
-          name: 'staff-regatta-finance-entry',
-          component: () => import('../views/staff/EntryPaymentStatus.vue')
-        },
-        {
-          path: 'regattas/:regattaId/finance/clubs/:clubId',
-          name: 'staff-regatta-finance-club',
-          component: () => import('../views/staff/ClubPaymentStatus.vue')
-        },
-        {
-          path: 'regattas/:regattaId/finance/invoices',
-          name: 'staff-regatta-finance-invoices',
-          component: () => import('../views/staff/InvoiceList.vue')
-        },
-        {
-          path: 'regattas/:regattaId/finance/invoices/:invoiceId',
-          name: 'staff-regatta-finance-invoice',
-          component: () => import('../views/staff/InvoiceDetail.vue')
-        },
-        {
-          path: 'rulesets',
-          name: 'staff-rulesets',
-          component: () => import('../views/staff/RulesetsList.vue')
-        },
-        {
-          path: 'rulesets/new',
-          name: 'staff-ruleset-create',
-          component: () => import('../views/staff/RulesetDetail.vue')
-        },
-        {
-          path: 'rulesets/:rulesetId',
-          name: 'staff-ruleset-detail',
-          component: () => import('../views/staff/RulesetDetail.vue')
-        }
-      ]
+      children: staffRoutes
     },
     {
       path: '/operator',
       component: () => import('../layouts/OperatorLayout.vue'),
       beforeEnter: operatorGuard,
-      children: [
-        {
-          path: '',
-          redirect: '/operator/regattas'
-        },
-        {
-          path: 'regattas',
-          name: 'operator-regattas',
-          component: () => import('../views/operator/RegattasList.vue')
-        },
-        {
-          path: 'regattas/:regattaId',
-          name: 'operator-regatta-detail',
-          component: () => import('../views/operator/RegattaDetail.vue')
-        },
-        {
-          path: 'regattas/:regattaId/line-scan',
-          name: 'operator-line-scan',
-          component: () => import('../views/operator/LineScan.vue')
-        }
-      ]
+      children: operatorRoutes
     },
     {
       path: '/public/v:drawRevision-:resultsRevision',
       component: () => import('../layouts/PublicLayout.vue'),
-      children: [
-        {
-          path: '',
-          redirect: (to) => `/public/v${to.params.drawRevision}-${to.params.resultsRevision}/schedule`
-        },
-        {
-          path: 'schedule',
-          name: 'public-schedule',
-          component: () => import('../views/public/Schedule.vue')
-        },
-        {
-          path: 'results',
-          name: 'public-results',
-          component: () => import('../views/public/Results.vue')
-        }
-      ]
+      children: publicRoutes
     },
     {
       path: '/unauthorized',
