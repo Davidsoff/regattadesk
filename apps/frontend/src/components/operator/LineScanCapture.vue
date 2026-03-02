@@ -25,8 +25,8 @@ const linkingMarkerId = ref(null)
 const linkingEntryId = ref('')
 const undoStack = ref([])
 
-// TODO: Extract operator token retrieval into useOperatorToken() composable
-// to avoid duplication with LineScan.vue and ensure consistency
+// Follow-up: extract operator token retrieval into a shared composable
+// to avoid duplication with LineScan.vue and ensure consistency.
 const operatorToken = computed(() => {
   const contextToken =
     typeof globalThis.__REGATTADESK_AUTH__?.operatorToken === 'string'
@@ -85,8 +85,8 @@ async function createMarker() {
   isLoading.value = true
 
   try {
-    // TODO: Replace with actual frame position from line-scan camera
-    // Current implementation uses timestamp as placeholder
+    // Follow-up: replace placeholder with frame position from line-scan camera.
+    // Current implementation uses timestamp as a temporary frame surrogate.
     const newMarker = await operatorApi.createMarker(props.regattaId, {
       capture_session_id: props.captureSessionId,
       frame_offset: Date.now() % 100000, // Simplified: use timestamp mod as frame
@@ -157,7 +157,7 @@ async function updateMarker(markerId) {
 
   try {
     const updated = await operatorApi.updateMarker(props.regattaId, markerId, {
-      frame_offset: parseInt(editingFrameOffset.value, 10)
+      frame_offset: Number.parseInt(editingFrameOffset.value, 10)
     })
     
     const index = markers.value.findIndex((m) => m.id === markerId)

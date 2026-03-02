@@ -393,11 +393,7 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
     await flushPromises()
 
     // Try to delete via API call (shouldn't be possible in UI, but testing error handling)
-    try {
-      await wrapper.vm.deleteMarker('marker-approved')
-    } catch (error) {
-      // Expected to fail
-    }
+    await wrapper.vm.deleteMarker('marker-approved')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="error-message"]').exists()).toBe(true)

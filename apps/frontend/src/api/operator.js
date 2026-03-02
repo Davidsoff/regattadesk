@@ -66,7 +66,10 @@ export function createOperatorApi(client, options = {}) {
       if (filters.session_type) params.append('session_type', filters.session_type)
       
       const query = params.toString()
-      const path = `/regattas/${regattaId}/operator/capture_sessions${query ? `?${query}` : ''}`
+      let path = `/regattas/${regattaId}/operator/capture_sessions`
+      if (query) {
+        path += `?${query}`
+      }
       return client.get(path, authOptions())
     },
 
@@ -112,7 +115,10 @@ export function createOperatorApi(client, options = {}) {
       if (filters.capture_session_id) params.append('capture_session_id', filters.capture_session_id)
       
       const query = params.toString()
-      const path = `/regattas/${regattaId}/operator/markers${query ? `?${query}` : ''}`
+      let path = `/regattas/${regattaId}/operator/markers`
+      if (query) {
+        path += `?${query}`
+      }
       return client.get(path, authOptions())
     }
   }
