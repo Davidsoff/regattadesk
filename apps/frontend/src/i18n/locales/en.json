@@ -255,6 +255,34 @@
       }
     }
   },
+  "rulesets": {
+    "title": "Rulesets",
+    "createButton": "Create Ruleset",
+    "tableCaption": "List of rulesets",
+    "emptyState": "No rulesets found",
+    "loadError": "Failed to load rulesets. Please try again.",
+    "retryButton": "Retry",
+    "filter": {
+      "all": "All rulesets",
+      "global": "Global only",
+      "regattaOwned": "Regatta-owned only"
+    },
+    "columns": {
+      "name": "Name",
+      "version": "Version",
+      "ageCalculation": "Age Calculation",
+      "scope": "Scope",
+      "description": "Description"
+    },
+    "scope": {
+      "global": "Global",
+      "regattaOwned": "Regatta-owned"
+    },
+    "ageCalculation": {
+      "actualAtStart": "Actual age at start",
+      "ageAsOfJan1": "Age as of January 1"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Crew is required",

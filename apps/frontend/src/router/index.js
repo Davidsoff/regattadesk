@@ -51,6 +51,21 @@ const router = createRouter({
           path: 'regattas/:regattaId/finance/invoices/:invoiceId',
           name: 'staff-regatta-finance-invoice',
           component: () => import('../views/staff/InvoiceDetail.vue')
+        },
+        {
+          path: 'rulesets',
+          name: 'staff-rulesets',
+          component: () => import('../views/staff/RulesetsList.vue')
+        },
+        {
+          path: 'rulesets/new',
+          name: 'staff-ruleset-create',
+          component: () => import('../views/staff/RulesetDetail.vue')
+        },
+        {
+          path: 'rulesets/:rulesetId',
+          name: 'staff-ruleset-detail',
+          component: () => import('../views/staff/RulesetDetail.vue')
         }
       ]
     },
