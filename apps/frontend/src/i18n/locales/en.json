@@ -261,6 +261,7 @@
     "tableCaption": "List of rulesets",
     "emptyState": "No rulesets found",
     "loadError": "Failed to load rulesets. Please try again.",
+    "retryButton": "Retry",
     "filter": {
       "all": "All rulesets",
       "global": "Global only",

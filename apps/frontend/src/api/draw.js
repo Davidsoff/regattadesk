@@ -218,7 +218,7 @@ export function createDrawApi(client) {
      * @returns {Promise<object>} Revision response with seed
      */
     async generateDraw(regattaId, payload) {
-      return client.post(`/regattas/${regattaId}/draw/generate`, payload)
+      return client.post(`/regattas/${regattaId}/draw/generate`, payload || undefined)
     },
 
     /**

@@ -261,6 +261,7 @@
     "tableCaption": "Lijst van regelsets",
     "emptyState": "Geen regelsets gevonden",
     "loadError": "Kan regelsets niet laden. Probeer het opnieuw.",
+    "retryButton": "Opnieuw proberen",
     "filter": {
       "all": "Alle regelsets",
       "global": "Alleen globaal",

@@ -100,7 +100,10 @@ onMounted(() => {
     </div>
 
     <div v-if="error" class="error-message" role="alert">
-      {{ t('rulesets.loadError') }}
+      <span>{{ t('rulesets.loadError') }}</span>
+      <button class="btn-retry" @click="loadRulesets" :disabled="loading">
+        {{ t('rulesets.retryButton') }}
+      </button>
     </div>
 
     <RdTable
@@ -214,11 +217,31 @@ onMounted(() => {
 }
 
 .error-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rd-space-3);
   padding: var(--rd-space-3);
   background: var(--rd-danger);
   color: white;
   border-radius: 4px;
   margin-bottom: var(--rd-space-3);
+}
+
+.btn-retry {
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  border-radius: 4px;
+  padding: var(--rd-space-1) var(--rd-space-3);
+  font-weight: var(--rd-weight-medium);
+  cursor: pointer;
+  min-height: var(--rd-hit-sm);
+}
+
+.btn-retry:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .clickable-row {
