@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
+import { ref } from 'vue'
 import { 
   isDrawPublished, 
   canEditAfterDraw,
-  getImmutabilityMessage 
+  getImmutabilityMessage,
+  useDrawImmutability
 } from '../../composables/useDrawImmutability'
 
 describe('useDrawImmutability', () => {
@@ -98,6 +100,23 @@ describe('useDrawImmutability', () => {
       
       expect(message).toBeTruthy()
       expect(typeof message).toBe('string')
+    })
+  })
+
+  describe('useDrawImmutability', () => {
+    it('returns reactive state that updates with regattaRef changes', () => {
+      const regattaRef = ref({ draw_revision: 0 })
+      const { isPublished, canEdit, getMessage } = useDrawImmutability(regattaRef)
+
+      expect(isPublished.value).toBe(false)
+      expect(canEdit.value).toBe(true)
+      expect(getMessage('ruleset')).toBeNull()
+
+      regattaRef.value.draw_revision = 1
+
+      expect(isPublished.value).toBe(true)
+      expect(canEdit.value).toBe(false)
+      expect(getMessage('ruleset')).toContain('Cannot edit ruleset after draw publication')
     })
   })
 })

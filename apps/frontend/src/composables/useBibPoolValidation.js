@@ -70,7 +70,7 @@ export function formatOverlappingBibs(bibs) {
 
   // Remove duplicates using Set, sort numerically, and join
   const uniqueBibs = [...new Set(bibs)]
-  const sortedBibs = uniqueBibs.sort((a, b) => a - b)
+  const sortedBibs = [...uniqueBibs].sort((a, b) => a - b)
   
   return sortedBibs.join(', ')
 }

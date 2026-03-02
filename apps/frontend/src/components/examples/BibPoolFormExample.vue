@@ -99,7 +99,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { isDrawPublished as checkDrawPublished, canEditAfterDraw, getImmutabilityMessage } from '../../composables/useDrawImmutability'
 import { 
   parseBibPoolValidationError, 
@@ -209,16 +209,6 @@ function handleCancel() {
   validationError.value = null
   emit('cancel')
 }
-
-// Clear validation error when form changes
-function clearValidationError() {
-  validationError.value = null
-}
-
-onMounted(() => {
-  // Watch form changes to clear validation error
-  // In real implementation, use watch() from Vue
-})
 </script>
 
 <style scoped>

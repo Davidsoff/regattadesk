@@ -4,6 +4,10 @@ import BibPoolFormExample from '../../components/examples/BibPoolFormExample.vue
 
 describe('BibPoolFormExample - Validation Error Display', () => {
   let wrapper
+
+  beforeEach(() => {
+    globalThis.alert = vi.fn()
+  })
   
   function createWrapper(regattaOverrides = {}, poolData = null) {
     const regatta = {
@@ -194,9 +198,17 @@ describe('BibPoolFormExample - Validation Error Display', () => {
       await wrapper.find('#end-bib').setValue(150)
       await wrapper.find('form').trigger('submit.prevent')
       await wrapper.vm.$nextTick()
-      
-      // In real scenario, would emit save event
-      // For stub with startBib !== 50, no validation error should occur
+
+      const saveEvents = wrapper.emitted('save')
+      expect(saveEvents).toBeTruthy()
+      expect(saveEvents.length).toBe(1)
+      const payload = saveEvents[0][0]
+      expect(payload).toMatchObject({
+        name: 'Block B Pool',
+        startBib: 100,
+        endBib: 150
+      })
+
       const error = wrapper.find('.validation-error')
       expect(error.exists()).toBe(false)
     })
@@ -253,6 +265,7 @@ describe('BibPoolFormExample - Validation Error Display', () => {
       await wrapper.vm.$nextTick()
       
       expect(wrapper.emitted('cancel')).toBeTruthy()
+      expect(wrapper.find('.validation-error').exists()).toBe(false)
     })
   })
 

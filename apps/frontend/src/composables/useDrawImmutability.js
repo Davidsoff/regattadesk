@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+
 /**
  * Draw immutability utilities for RegattaDesk
  * 
@@ -75,8 +77,6 @@ export function getImmutabilityMessage(regatta, resourceType = 'this resource') 
  * @returns {Object} Immutability state helpers
  */
 export function useDrawImmutability(regattaRef) {
-  const { computed } = require('vue')
-  
   const isPublished = computed(() => isDrawPublished(regattaRef.value))
   const canEdit = computed(() => canEditAfterDraw(regattaRef.value))
   

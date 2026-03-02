@@ -101,7 +101,7 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'duplicate', 'promote'])
 
 // Role management
-const { role, isSuperAdmin, loadRole } = useUserRole()
+const { isSuperAdmin, loadRole } = useUserRole()
 const promoteError = ref(null)
 
 onMounted(async () => {
@@ -166,15 +166,6 @@ async function promoteToGlobal() {
   try {
     // In real implementation, call API
     // await api.promoteRuleset(props.ruleset.id)
-    
-    // Simulate 403 error for demonstration
-    if (!isSuperAdmin.value) {
-      throw {
-        status: 403,
-        code: 'FORBIDDEN',
-        message: 'Insufficient permissions'
-      }
-    }
 
     emit('promote', props.ruleset)
   } catch (error) {
