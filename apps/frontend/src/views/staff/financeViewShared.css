@@ -24,6 +24,7 @@ h3 {
 }
 
 .success {
+  display: block;
   background: #dff5e6;
   color: #0a6d35;
   margin-bottom: 1rem;

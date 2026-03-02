@@ -132,7 +132,7 @@ onUnmounted(() => {
         </label>
 
         <div v-if="markError" class="error" role="alert">{{ markError }}</div>
-        <div v-if="markSuccess" class="success" role="status">{{ t('finance.invoice.mark_paid_success') }}</div>
+        <output v-if="markSuccess" class="success" aria-live="polite">{{ t('finance.invoice.mark_paid_success') }}</output>
 
         <button type="submit" class="primary" :disabled="marking">
           {{ marking ? t('finance.bulk.submitting') : t('finance.invoice.mark_paid') }}

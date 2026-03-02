@@ -126,7 +126,7 @@ onUnmounted(() => {
     </div>
 
     <div v-if="generateError" class="error" role="alert">{{ generateError }}</div>
-    <div v-if="generateSuccess" class="success" role="status">{{ t('finance.invoice.generate_success') }}</div>
+    <output v-if="generateSuccess" class="success" aria-live="polite">{{ t('finance.invoice.generate_success') }}</output>
 
     <div v-if="loading" class="loading">{{ t('finance.invoice.loading') }}</div>
     <div v-else-if="error" class="error" role="alert">{{ error }}</div>

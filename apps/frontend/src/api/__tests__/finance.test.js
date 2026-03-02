@@ -259,7 +259,7 @@ describe('finance', () => {
         invoice_id: invoiceId,
         club_id: '81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd',
         status: 'unpaid',
-        amount: 150.00
+        amount: 150
       }
 
       mockClient.get.mockResolvedValue(mockResponse)

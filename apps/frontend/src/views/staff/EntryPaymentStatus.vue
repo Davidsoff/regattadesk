@@ -139,7 +139,7 @@ onUnmounted(() => {
         </label>
 
         <div v-if="updateError" class="error" role="alert">{{ updateError }}</div>
-        <div v-if="updateSuccess" class="success" role="status">{{ t('finance.entry.update_success') }}</div>
+        <output v-if="updateSuccess" class="success" aria-live="polite">{{ t('finance.entry.update_success') }}</output>
 
         <button type="submit" class="primary" :disabled="updating">
           {{ updating ? t('finance.bulk.submitting') : t('common.submit') }}
