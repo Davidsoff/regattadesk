@@ -3,7 +3,7 @@
 ## BlocksManagement View - Complete Implementation
 
 ### Overview
-Fully implemented BlocksManagement view for configuring timing blocks and bib pool allocations within a regatta context. All acceptance criteria met with comprehensive test coverage.
+Implemented BlocksManagement view for configuring timing blocks and bib pool allocations within a regatta context, with comprehensive test coverage for delivered scope. Drag-and-drop reordering is deferred.
 
 ---
 

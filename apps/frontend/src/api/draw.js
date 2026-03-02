@@ -12,7 +12,7 @@
  * const blocks = await drawApi.listBlocks(regattaId)
  * await drawApi.createBlock(regattaId, {
  *   name: 'Morning Session',
- *   start_time: '09:00:00',
+ *   start_time: '2026-03-02T09:00:00Z',
  *   event_interval_seconds: 120,
  *   crew_interval_seconds: 30
  * })
@@ -30,7 +30,7 @@ export function createDrawApi(client) {
     /**
      * List all blocks for a regatta
      * @param {string} regattaId - Regatta ID
-     * @returns {Promise<Object>} Response with blocks array
+     * @returns {Promise<Object>} OpenAPI list response ({ data: [...] })
      */
     async listBlocks(regattaId) {
       return client.get(`/regattas/${regattaId}/blocks`)
@@ -70,11 +70,21 @@ export function createDrawApi(client) {
     /**
      * Reorder blocks by display_order
      * @param {string} regattaId - Regatta ID
-     * @param {Object} payload - Object with block_ids array in desired order
+     * @param {Object} payload - Either { items } or { block_ids }
      * @returns {Promise<void>}
      */
     async reorderBlocks(regattaId, payload) {
-      return client.post(`/regattas/${regattaId}/blocks/reorder`, payload)
+      if (payload?.items) {
+        return client.post(`/regattas/${regattaId}/blocks/reorder`, payload)
+      }
+
+      const blockIds = Array.isArray(payload?.block_ids) ? payload.block_ids : []
+      const items = blockIds.map((blockId, index) => ({
+        block_id: blockId,
+        display_order: index + 1
+      }))
+
+      return client.post(`/regattas/${regattaId}/blocks/reorder`, { items })
     },
 
     // Bib Pool management methods
@@ -82,7 +92,7 @@ export function createDrawApi(client) {
     /**
      * List all bib pools for a regatta
      * @param {string} regattaId - Regatta ID
-     * @returns {Promise<Object>} Response with bib_pools array
+     * @returns {Promise<Object>} OpenAPI list response ({ data: [...] })
      */
     async listBibPools(regattaId) {
       return client.get(`/regattas/${regattaId}/bib_pools`)
@@ -122,11 +132,21 @@ export function createDrawApi(client) {
     /**
      * Reorder bib pools by priority
      * @param {string} regattaId - Regatta ID
-     * @param {Object} payload - Object with bib_pool_ids array in desired priority order
+     * @param {Object} payload - Either { items } or { bib_pool_ids }
      * @returns {Promise<void>}
      */
     async reorderBibPools(regattaId, payload) {
-      return client.post(`/regattas/${regattaId}/bib_pools/reorder`, payload)
+      if (payload?.items) {
+        return client.post(`/regattas/${regattaId}/bib_pools/reorder`, payload)
+      }
+
+      const bibPoolIds = Array.isArray(payload?.bib_pool_ids) ? payload.bib_pool_ids : []
+      const items = bibPoolIds.map((bibPoolId, index) => ({
+        bib_pool_id: bibPoolId,
+        priority: index + 1
+      }))
+
+      return client.post(`/regattas/${regattaId}/bib_pools/reorder`, { items })
     }
   }
 }

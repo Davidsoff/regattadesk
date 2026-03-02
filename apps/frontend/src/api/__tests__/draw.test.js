@@ -22,8 +22,8 @@ describe('createDrawApi', () => {
     describe('listBlocks', () => {
       it('calls GET /regattas/:regattaId/blocks', async () => {
         const mockResponse = {
-          blocks: [
-            { id: 'block-1', name: 'Morning Session', start_time: '09:00:00' }
+          data: [
+            { id: 'block-1', name: 'Morning Session', start_time: '2026-03-02T09:00:00Z' }
           ]
         }
         mockClient.get.mockResolvedValue(mockResponse)
@@ -85,7 +85,7 @@ describe('createDrawApi', () => {
     })
 
     describe('reorderBlocks', () => {
-      it('calls POST /regattas/:regattaId/blocks/reorder with block IDs', async () => {
+      it('calls POST /regattas/:regattaId/blocks/reorder with OpenAPI items payload', async () => {
         const payload = { block_ids: ['block-1', 'block-2', 'block-3'] }
         mockClient.post.mockResolvedValue(undefined)
 
@@ -93,7 +93,13 @@ describe('createDrawApi', () => {
 
         expect(mockClient.post).toHaveBeenCalledWith(
           `/regattas/${regattaId}/blocks/reorder`,
-          payload
+          {
+            items: [
+              { block_id: 'block-1', display_order: 1 },
+              { block_id: 'block-2', display_order: 2 },
+              { block_id: 'block-3', display_order: 3 }
+            ]
+          }
         )
       })
     })
@@ -106,7 +112,7 @@ describe('createDrawApi', () => {
     describe('listBibPools', () => {
       it('calls GET /regattas/:regattaId/bib_pools', async () => {
         const mockResponse = {
-          bib_pools: [
+          data: [
             { id: 'pool-1', name: 'Main Pool', allocation_mode: 'range', start_bib: 1, end_bib: 100 }
           ]
         }
@@ -211,7 +217,7 @@ describe('createDrawApi', () => {
     })
 
     describe('reorderBibPools', () => {
-      it('calls POST /regattas/:regattaId/bib_pools/reorder with pool IDs', async () => {
+      it('calls POST /regattas/:regattaId/bib_pools/reorder with OpenAPI items payload', async () => {
         const payload = { bib_pool_ids: ['pool-1', 'pool-2', 'pool-3'] }
         mockClient.post.mockResolvedValue(undefined)
 
@@ -219,7 +225,13 @@ describe('createDrawApi', () => {
 
         expect(mockClient.post).toHaveBeenCalledWith(
           `/regattas/${regattaId}/bib_pools/reorder`,
-          payload
+          {
+            items: [
+              { bib_pool_id: 'pool-1', priority: 1 },
+              { bib_pool_id: 'pool-2', priority: 2 },
+              { bib_pool_id: 'pool-3', priority: 3 }
+            ]
+          }
         )
       })
     })

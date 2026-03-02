@@ -274,7 +274,7 @@
       "crew_interval": "Interval tussen ploegen (seconden)",
       "display_order": "Weergavevolgorde"
     },
-    "bib_pool": {
+  "bib_pool": {
       "name": "Poolnaam",
       "allocation_mode": "Toewijzingsmodus",
       "allocation_mode_range": "Bereik",
@@ -284,16 +284,17 @@
       "bib_numbers": "Startnummers (kommagescheiden)",
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overlooppool",
-      "priority": "Prioriteit",
-      "block_assignment": "Toegewezen aan blok"
-    },
+    "priority": "Prioriteit",
+    "block_assignment": "Toegewezen aan blok",
+    "unassigned_option": "Selecteer een blok"
+  },
     "no_blocks": "Nog geen blokken geconfigureerd",
     "no_bib_pools": "Nog geen startnummerpools geconfigureerd",
     "no_overflow_pool": "Geen overlooppool geconfigureerd",
     "validation": {
       "block_name_required": "Bloknaam is verplicht",
       "start_time_required": "Starttijd is verplicht",
-      "start_time_format": "Starttijd moet in UU:MM:SS formaat zijn",
+    "start_time_format": "Starttijd moet een geldige datum en tijd zijn",
       "event_interval_required": "Interval tussen nummers is verplicht",
       "event_interval_positive": "Interval tussen nummers moet positief zijn",
       "crew_interval_required": "Interval tussen ploegen is verplicht",
@@ -304,9 +305,10 @@
       "start_bib_positive": "Begin startnummer moet positief zijn",
       "end_bib_required": "Eind startnummer is verplicht",
       "end_bib_positive": "Eind startnummer moet positief zijn",
-      "end_bib_greater": "Eind startnummer moet groter zijn dan begin startnummer",
+    "end_bib_greater": "Eind startnummer moet groter dan of gelijk aan begin startnummer zijn",
+    "block_assignment_required": "Bloktoewijzing is verplicht voor niet-overlooppools",
       "bib_numbers_required": "Startnummers zijn verplicht",
-      "bib_numbers_format": "Startnummers moeten kommagescheiden gehele getallen zijn",
+    "bib_numbers_format": "Startnummers moeten unieke, kommagescheiden gehele getallen zijn (minimum 1)",
       "bib_overlap": "Overlapping van startnummers gedetecteerd",
       "bib_overlap_details": "Startnummers {bibs} overlappen met pool: {poolName}"
     }
