@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { ref } from 'vue'
 import ExportJobStatus from '../components/export/ExportJobStatus.vue'
 
 const i18n = createI18n({
@@ -34,20 +33,25 @@ describe('ExportJobStatus', () => {
     mockStartExport = vi.fn()
   })
 
+  function mountStatus(overrides = {}) {
+    return mount(ExportJobStatus, {
+      global: {
+        plugins: [i18n]
+      },
+      props: {
+        status: 'idle',
+        jobId: null,
+        downloadUrl: null,
+        error: null,
+        onStart: mockStartExport,
+        ...overrides
+      }
+    })
+  }
+
   describe('idle state', () => {
     it('renders nothing when idle', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'idle',
-          jobId: null,
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
-      })
+      const wrapper = mountStatus()
 
       expect(wrapper.html()).toBe('<!--v-if-->')
     })
@@ -55,17 +59,9 @@ describe('ExportJobStatus', () => {
 
   describe('pending state', () => {
     it('shows pending indicator', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'pending',
-          jobId: '123',
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'pending',
+        jobId: '123'
       })
 
       expect(wrapper.find('[data-testid="export-status-pending"]').exists()).toBe(true)
@@ -73,17 +69,9 @@ describe('ExportJobStatus', () => {
     })
 
     it('shows spinner for pending', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'pending',
-          jobId: '123',
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'pending',
+        jobId: '123'
       })
 
       expect(wrapper.find('[data-testid="export-spinner"]').exists()).toBe(true)
@@ -92,17 +80,9 @@ describe('ExportJobStatus', () => {
 
   describe('processing state', () => {
     it('shows processing indicator', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'processing',
-          jobId: '123',
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'processing',
+        jobId: '123'
       })
 
       expect(wrapper.find('[data-testid="export-status-processing"]').exists()).toBe(true)
@@ -110,17 +90,9 @@ describe('ExportJobStatus', () => {
     })
 
     it('shows spinner for processing', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'processing',
-          jobId: '123',
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'processing',
+        jobId: '123'
       })
 
       expect(wrapper.find('[data-testid="export-spinner"]').exists()).toBe(true)
@@ -130,17 +102,10 @@ describe('ExportJobStatus', () => {
   describe('completed state', () => {
     it('shows download link', () => {
       const downloadUrl = '/api/v1/jobs/123/download'
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'completed',
-          jobId: '123',
-          downloadUrl,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'completed',
+        jobId: '123',
+        downloadUrl
       })
 
       const downloadLink = wrapper.find('[data-testid="export-download-link"]')
@@ -150,17 +115,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('shows success message', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'completed',
-          jobId: '123',
-          downloadUrl: '/api/v1/jobs/123/download',
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'completed',
+        jobId: '123',
+        downloadUrl: '/api/v1/jobs/123/download'
       })
 
       expect(wrapper.find('[data-testid="export-status-completed"]').exists()).toBe(true)
@@ -168,17 +126,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('shows expiration notice', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'completed',
-          jobId: '123',
-          downloadUrl: '/api/v1/jobs/123/download',
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'completed',
+        jobId: '123',
+        downloadUrl: '/api/v1/jobs/123/download'
       })
 
       expect(wrapper.find('[data-testid="export-expiration-notice"]').exists()).toBe(true)
@@ -189,17 +140,10 @@ describe('ExportJobStatus', () => {
   describe('failed state', () => {
     it('shows error message', () => {
       const errorMessage = 'Failed to generate PDF'
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'failed',
-          jobId: '123',
-          downloadUrl: null,
-          error: errorMessage,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'failed',
+        jobId: '123',
+        error: errorMessage
       })
 
       expect(wrapper.find('[data-testid="export-status-failed"]').exists()).toBe(true)
@@ -207,17 +151,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('shows retry button', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'failed',
-          jobId: '123',
-          downloadUrl: null,
-          error: 'Error',
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'failed',
+        jobId: '123',
+        error: 'Error'
       })
 
       const retryButton = wrapper.find('[data-testid="export-retry-button"]')
@@ -226,17 +163,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('calls onStart when retry is clicked', async () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'failed',
-          jobId: '123',
-          downloadUrl: null,
-          error: 'Error',
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'failed',
+        jobId: '123',
+        error: 'Error'
       })
 
       await wrapper.find('[data-testid="export-retry-button"]').trigger('click')
@@ -246,17 +176,9 @@ describe('ExportJobStatus', () => {
 
   describe('accessibility', () => {
     it('has aria-live region for status updates', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'processing',
-          jobId: '123',
-          downloadUrl: null,
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'processing',
+        jobId: '123'
       })
 
       const liveRegion = wrapper.find('[aria-live]')
@@ -265,17 +187,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('download link has appropriate accessibility attributes', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'completed',
-          jobId: '123',
-          downloadUrl: '/api/v1/jobs/123/download',
-          error: null,
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'completed',
+        jobId: '123',
+        downloadUrl: '/api/v1/jobs/123/download'
       })
 
       const downloadLink = wrapper.find('[data-testid="export-download-link"]')
@@ -283,17 +198,10 @@ describe('ExportJobStatus', () => {
     })
 
     it('error message has role="alert"', () => {
-      const wrapper = mount(ExportJobStatus, {
-        global: {
-          plugins: [i18n]
-        },
-        props: {
-          status: 'failed',
-          jobId: '123',
-          downloadUrl: null,
-          error: 'Error',
-          onStart: mockStartExport
-        }
+      const wrapper = mountStatus({
+        status: 'failed',
+        jobId: '123',
+        error: 'Error'
       })
 
       const errorContainer = wrapper.find('[data-testid="export-status-failed"]')
