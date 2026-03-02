@@ -2,22 +2,22 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BlocksManagementExample from '../../components/examples/BlocksManagementExample.vue'
 
+function createWrapper(regattaOverrides = {}) {
+  const regatta = {
+    id: 'regatta-1',
+    name: 'Test Regatta',
+    draw_revision: 0,
+    results_revision: 0,
+    ...regattaOverrides
+  }
+
+  return mount(BlocksManagementExample, {
+    props: { regatta }
+  })
+}
+
 describe('BlocksManagementExample - Immutability Guards', () => {
   let wrapper
-  
-  function createWrapper(regattaOverrides = {}) {
-    const regatta = {
-      id: 'regatta-1',
-      name: 'Test Regatta',
-      draw_revision: 0,
-      results_revision: 0,
-      ...regattaOverrides
-    }
-    
-    return mount(BlocksManagementExample, {
-      props: { regatta }
-    })
-  }
 
   describe('when draw is not published', () => {
     beforeEach(() => {
@@ -109,7 +109,7 @@ describe('BlocksManagementExample - Immutability Guards', () => {
       wrapper = createWrapper({ draw_revision: 1 })
       
       // Mock window.alert
-      global.alert = vi.fn()
+      globalThis.alert = vi.fn()
     })
 
     it('prevents edit action via disabled state', () => {

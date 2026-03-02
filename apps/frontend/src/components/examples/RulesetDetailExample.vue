@@ -283,8 +283,8 @@ button:disabled {
 }
 
 .btn-edit {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: #0056b3;
+  border-color: #0056b3;
   color: white;
 }
 
@@ -305,8 +305,8 @@ button:disabled {
 }
 
 .btn-promote {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #1e7e34;
+  border-color: #1e7e34;
   color: white;
 }
 

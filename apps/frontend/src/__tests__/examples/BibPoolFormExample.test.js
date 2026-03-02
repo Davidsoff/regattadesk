@@ -2,29 +2,29 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BibPoolFormExample from '../../components/examples/BibPoolFormExample.vue'
 
+function createWrapper(regattaOverrides = {}, poolData = null) {
+  const regatta = {
+    id: 'regatta-1',
+    name: 'Test Regatta',
+    draw_revision: 0,
+    results_revision: 0,
+    ...regattaOverrides
+  }
+
+  return mount(BibPoolFormExample, {
+    props: {
+      regatta,
+      pool: poolData
+    }
+  })
+}
+
 describe('BibPoolFormExample - Validation Error Display', () => {
   let wrapper
 
   beforeEach(() => {
     globalThis.alert = vi.fn()
   })
-  
-  function createWrapper(regattaOverrides = {}, poolData = null) {
-    const regatta = {
-      id: 'regatta-1',
-      name: 'Test Regatta',
-      draw_revision: 0,
-      results_revision: 0,
-      ...regattaOverrides
-    }
-    
-    return mount(BibPoolFormExample, {
-      props: { 
-        regatta,
-        pool: poolData
-      }
-    })
-  }
 
   describe('form display', () => {
     it('renders add form when pool prop is null', () => {

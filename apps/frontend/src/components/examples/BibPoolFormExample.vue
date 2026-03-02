@@ -180,15 +180,14 @@ async function handleSubmit() {
     // Simulate validation error for demonstration
     // Remove this in real implementation
     if (formData.value.startBib === 50) {
-      throw {
-        code: 'BIB_POOL_VALIDATION_ERROR',
-        message: 'Bib range overlaps with existing pool',
-        details: {
-          overlapping_bibs: [50, 51, 52, 100],
-          conflicting_pool_id: 'pool-123',
-          conflicting_pool_name: 'Block A Pool'
-        }
+      const validationErr = new Error('Bib range overlaps with existing pool')
+      validationErr.code = 'BIB_POOL_VALIDATION_ERROR'
+      validationErr.details = {
+        overlapping_bibs: [50, 51, 52, 100],
+        conflicting_pool_id: 'pool-123',
+        conflicting_pool_name: 'Block A Pool'
       }
+      throw validationErr
     }
 
     emit('save', formData.value)
@@ -365,8 +364,8 @@ button:disabled {
 }
 
 .btn-submit {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #1e7e34;
+  border-color: #1e7e34;
   color: white;
 }
 

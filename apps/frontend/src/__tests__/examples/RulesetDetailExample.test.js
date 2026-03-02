@@ -2,33 +2,33 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RulesetDetailExample from '../../components/examples/RulesetDetailExample.vue'
 
+function createWrapper(rulesetOverrides = {}, regattaOverrides = {}) {
+  const ruleset = {
+    id: 'ruleset-1',
+    name: 'Test Ruleset',
+    is_global: false,
+    ageCalculation: 'Actual age at start',
+    genderValidation: true,
+    minAge: 12,
+    maxAge: 18,
+    ...rulesetOverrides
+  }
+
+  const regatta = {
+    id: 'regatta-1',
+    name: 'Test Regatta',
+    draw_revision: 0,
+    results_revision: 0,
+    ...regattaOverrides
+  }
+
+  return mount(RulesetDetailExample, {
+    props: { ruleset, regatta }
+  })
+}
+
 describe('RulesetDetailExample - Role-Based Visibility', () => {
   let wrapper
-  
-  function createWrapper(rulesetOverrides = {}, regattaOverrides = {}) {
-    const ruleset = {
-      id: 'ruleset-1',
-      name: 'Test Ruleset',
-      is_global: false,
-      ageCalculation: 'Actual age at start',
-      genderValidation: true,
-      minAge: 12,
-      maxAge: 18,
-      ...rulesetOverrides
-    }
-    
-    const regatta = {
-      id: 'regatta-1',
-      name: 'Test Regatta',
-      draw_revision: 0,
-      results_revision: 0,
-      ...regattaOverrides
-    }
-    
-    return mount(RulesetDetailExample, {
-      props: { ruleset, regatta }
-    })
-  }
 
   describe('when user is super_admin', () => {
     beforeEach(() => {

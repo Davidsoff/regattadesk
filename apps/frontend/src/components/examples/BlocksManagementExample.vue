@@ -190,7 +190,7 @@ function addBlock() {
   border: 1px solid #dee2e6;
   border-radius: 4px;
   font-size: 0.875rem;
-  color: #6c757d;
+  color: #495057;
 }
 
 .block-details {
@@ -223,8 +223,8 @@ button:disabled {
 }
 
 .btn-edit {
-  background-color: #007bff;
-  border-color: #007bff;
+  background-color: #0056b3;
+  border-color: #0056b3;
   color: white;
 }
 
@@ -245,8 +245,8 @@ button:disabled {
 }
 
 .btn-add {
-  background-color: #28a745;
-  border-color: #28a745;
+  background-color: #1e7e34;
+  border-color: #1e7e34;
   color: white;
 }
 
