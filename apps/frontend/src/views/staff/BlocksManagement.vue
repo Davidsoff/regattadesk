@@ -63,6 +63,44 @@ function getBibPoolsForBlock(blockId) {
   return regularBibPools.value.filter(pool => pool.block_id === blockId)
 }
 
+function parseInteger(value) {
+  return Number.parseInt(value, 10)
+}
+
+function validateRangeAllocation(errors) {
+  const startBib = parseInteger(bibPoolForm.value.start_bib)
+  const endBib = parseInteger(bibPoolForm.value.end_bib)
+
+  if (!bibPoolForm.value.start_bib) {
+    errors.start_bib = t('blocks.validation.start_bib_required')
+  } else if (Number.isNaN(startBib) || startBib <= 0) {
+    errors.start_bib = t('blocks.validation.start_bib_positive')
+  }
+
+  if (!bibPoolForm.value.end_bib) {
+    errors.end_bib = t('blocks.validation.end_bib_required')
+  } else if (Number.isNaN(endBib) || endBib <= 0) {
+    errors.end_bib = t('blocks.validation.end_bib_positive')
+  } else if (endBib <= startBib) {
+    errors.end_bib = t('blocks.validation.end_bib_greater')
+  }
+}
+
+function validateExplicitListAllocation(errors) {
+  const bibNumbers = bibPoolForm.value.bib_numbers?.trim()
+
+  if (bibNumbers) {
+    const numbers = bibNumbers.split(',').map(n => n.trim())
+    const allValid = numbers.every(n => /^\d+$/.test(n))
+    if (!allValid) {
+      errors.bib_numbers = t('blocks.validation.bib_numbers_format')
+    }
+    return
+  }
+
+  errors.bib_numbers = t('blocks.validation.bib_numbers_required')
+}
+
 // API functions
 async function loadBlocks() {
   try {
@@ -129,17 +167,17 @@ function validateBlockForm() {
     errors.start_time = t('blocks.validation.start_time_format')
   }
 
-  const eventInterval = parseInt(blockForm.value.event_interval_seconds)
+  const eventInterval = parseInteger(blockForm.value.event_interval_seconds)
   if (!blockForm.value.event_interval_seconds) {
     errors.event_interval_seconds = t('blocks.validation.event_interval_required')
-  } else if (isNaN(eventInterval) || eventInterval <= 0) {
+  } else if (Number.isNaN(eventInterval) || eventInterval <= 0) {
     errors.event_interval_seconds = t('blocks.validation.event_interval_positive')
   }
 
-  const crewInterval = parseInt(blockForm.value.crew_interval_seconds)
+  const crewInterval = parseInteger(blockForm.value.crew_interval_seconds)
   if (!blockForm.value.crew_interval_seconds) {
     errors.crew_interval_seconds = t('blocks.validation.crew_interval_required')
-  } else if (isNaN(crewInterval) || crewInterval <= 0) {
+  } else if (Number.isNaN(crewInterval) || crewInterval <= 0) {
     errors.crew_interval_seconds = t('blocks.validation.crew_interval_positive')
   }
 
@@ -156,8 +194,8 @@ async function saveBlock() {
     const payload = {
       name: blockForm.value.name,
       start_time: blockForm.value.start_time,
-      event_interval_seconds: parseInt(blockForm.value.event_interval_seconds),
-      crew_interval_seconds: parseInt(blockForm.value.crew_interval_seconds)
+      event_interval_seconds: parseInteger(blockForm.value.event_interval_seconds),
+      crew_interval_seconds: parseInteger(blockForm.value.crew_interval_seconds)
     }
 
     if (blockForm.value.id) {
@@ -244,32 +282,9 @@ function validateBibPoolForm() {
   }
 
   if (bibPoolForm.value.allocation_mode === 'range') {
-    const startBib = parseInt(bibPoolForm.value.start_bib)
-    const endBib = parseInt(bibPoolForm.value.end_bib)
-
-    if (!bibPoolForm.value.start_bib) {
-      errors.start_bib = t('blocks.validation.start_bib_required')
-    } else if (isNaN(startBib) || startBib <= 0) {
-      errors.start_bib = t('blocks.validation.start_bib_positive')
-    }
-
-    if (!bibPoolForm.value.end_bib) {
-      errors.end_bib = t('blocks.validation.end_bib_required')
-    } else if (isNaN(endBib) || endBib <= 0) {
-      errors.end_bib = t('blocks.validation.end_bib_positive')
-    } else if (endBib <= startBib) {
-      errors.end_bib = t('blocks.validation.end_bib_greater')
-    }
+    validateRangeAllocation(errors)
   } else if (bibPoolForm.value.allocation_mode === 'explicit_list') {
-    if (!bibPoolForm.value.bib_numbers?.trim()) {
-      errors.bib_numbers = t('blocks.validation.bib_numbers_required')
-    } else {
-      const numbers = bibPoolForm.value.bib_numbers.split(',').map(n => n.trim())
-      const allValid = numbers.every(n => /^\d+$/.test(n))
-      if (!allValid) {
-        errors.bib_numbers = t('blocks.validation.bib_numbers_format')
-      }
-    }
+    validateExplicitListAllocation(errors)
   }
 
   bibPoolValidationErrors.value = errors
@@ -295,13 +310,13 @@ async function saveBibPool() {
     }
 
     if (bibPoolForm.value.allocation_mode === 'range') {
-      payload.start_bib = parseInt(bibPoolForm.value.start_bib)
-      payload.end_bib = parseInt(bibPoolForm.value.end_bib)
+      payload.start_bib = parseInteger(bibPoolForm.value.start_bib)
+      payload.end_bib = parseInteger(bibPoolForm.value.end_bib)
     } else {
       payload.bib_numbers = bibPoolForm.value.bib_numbers
         .split(',')
-        .map(n => parseInt(n.trim()))
-        .filter(n => !isNaN(n))
+        .map(n => parseInteger(n.trim()))
+        .filter(n => !Number.isNaN(n))
     }
 
     if (bibPoolForm.value.id) {
