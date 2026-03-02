@@ -31,7 +31,8 @@ export function createDrawApi(client) {
         params.append('is_global', options.is_global)
       }
       const query = params.toString()
-      return client.get(`/rulesets${query ? `?${query}` : ''}`)
+      const url = query ? `/rulesets?${query}` : '/rulesets'
+      return client.get(url)
     },
 
     /**
