@@ -288,12 +288,19 @@
       "bib_numbers": "Bib Numbers (comma-separated)",
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overflow Pool",
+      "priority": "Priority",
       "block_assignment": "Assigned to Block",
-      "unassigned_option": "Select a block"
+      "unassigned_option": "Select a block",
+      "drag_handle": "Drag to reorder",
+      "keyboard_reorder_instructions": "Use arrow keys to reorder, Space or Enter to start moving, Escape to cancel",
+      "keyboard_move_active": "Move mode active. Current target position: {position}."
     },
     "no_blocks": "No blocks configured yet",
     "no_bib_pools": "No bib pools configured yet",
     "no_overflow_pool": "No overflow pool configured",
+    "reorder_success": "Bib pools reordered successfully",
+    "reorder_error": "Failed to reorder bib pools. Changes reverted.",
+    "network_issue_suffix": "Network issue.",
     "validation": {
       "block_name_required": "Block name is required",
       "start_time_required": "Start time is required",
