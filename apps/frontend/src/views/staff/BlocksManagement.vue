@@ -727,42 +727,30 @@ function onPoolDragEnd() {
   dragOverPoolId.value = null
 }
 
-function onPoolKeyDown(pool, event) {
-  if (event.key === ' ' || event.key === 'Enter') {
-    event.preventDefault()
-    if (!keyboardMoveMode.value) {
-      // Start keyboard move mode
-      keyboardMoveMode.value = true
-      keyboardMovingPoolId.value = pool.id
-      const blockPools = getBibPoolsForBlock(pool.block_id)
-      keyboardTargetIndex.value = blockPools.findIndex(p => p.id === pool.id)
-    } else if (keyboardMovingPoolId.value === pool.id) {
-      // Confirm move
-      const blockPools = getBibPoolsForBlock(pool.block_id)
-      const originalIndex = blockPools.findIndex(p => p.id === pool.id)
-      if (keyboardTargetIndex.value !== originalIndex) {
-        const targetPoolId = blockPools[keyboardTargetIndex.value].id
-        performPoolReorder(pool.id, targetPoolId)
-      }
-      keyboardMoveMode.value = false
-      keyboardMovingPoolId.value = null
-      keyboardTargetIndex.value = null
-    }
-    return
-  }
+function resetKeyboardMoveMode() {
+  keyboardMoveMode.value = false
+  keyboardMovingPoolId.value = null
+  keyboardTargetIndex.value = null
+}
 
-  if (event.key === 'Escape' && keyboardMoveMode.value) {
-    event.preventDefault()
-    keyboardMoveMode.value = false
-    keyboardMovingPoolId.value = null
-    keyboardTargetIndex.value = null
-    return
-  }
+function startKeyboardMove(pool) {
+  keyboardMoveMode.value = true
+  keyboardMovingPoolId.value = pool.id
+  const blockPools = getBibPoolsForBlock(pool.block_id)
+  keyboardTargetIndex.value = blockPools.findIndex(p => p.id === pool.id)
+}
 
-  if (!keyboardMoveMode.value || keyboardMovingPoolId.value !== pool.id) {
-    return
+function confirmKeyboardMove(pool) {
+  const blockPools = getBibPoolsForBlock(pool.block_id)
+  const originalIndex = blockPools.findIndex(p => p.id === pool.id)
+  if (keyboardTargetIndex.value !== originalIndex) {
+    const targetPoolId = blockPools[keyboardTargetIndex.value].id
+    performPoolReorder(pool.id, targetPoolId)
   }
+  resetKeyboardMoveMode()
+}
 
+function updateKeyboardTargetIndex(pool, event) {
   const blockPools = getBibPoolsForBlock(pool.block_id)
   const currentIndex = keyboardTargetIndex.value
 
@@ -777,6 +765,30 @@ function onPoolKeyDown(pool, event) {
       keyboardTargetIndex.value = currentIndex + 1
     }
   }
+}
+
+function onPoolKeyDown(pool, event) {
+  if (event.key === ' ' || event.key === 'Enter') {
+    event.preventDefault()
+    if (!keyboardMoveMode.value) {
+      startKeyboardMove(pool)
+    } else if (keyboardMovingPoolId.value === pool.id) {
+      confirmKeyboardMove(pool)
+    }
+    return
+  }
+
+  if (event.key === 'Escape' && keyboardMoveMode.value) {
+    event.preventDefault()
+    resetKeyboardMoveMode()
+    return
+  }
+
+  if (!keyboardMoveMode.value || keyboardMovingPoolId.value !== pool.id) {
+    return
+  }
+
+  updateKeyboardTargetIndex(pool, event)
 }
 
 async function performPoolReorder(sourcePoolId, targetPoolId) {
@@ -967,8 +979,9 @@ onMounted(() => {
                 @drop="onPoolDrop(pool, $event)"
               >
                 <div class="pool-header">
-                  <span
+                  <button
                     v-if="!pool.is_overflow"
+                    type="button"
                     :data-testid="`drag-handle-${pool.id}`"
                     class="drag-handle"
                     draggable="true"
@@ -976,15 +989,13 @@ onMounted(() => {
                     :title="t('blocks.bib_pool.keyboard_reorder_instructions')"
                     :aria-pressed="keyboardMoveMode && keyboardMovingPoolId === pool.id ? 'true' : 'false'"
                     :aria-describedby="keyboardMoveMode && keyboardMovingPoolId === pool.id ? `move-mode-status-${pool.id}` : null"
-                    tabindex="0"
-                    role="button"
                     :class="{ 'keyboard-move-active': keyboardMoveMode && keyboardMovingPoolId === pool.id }"
                     @dragstart="onPoolDragStart(pool, $event)"
                     @dragend="onPoolDragEnd"
                     @keydown="onPoolKeyDown(pool, $event)"
                   >
                     ☰
-                  </span>
+                  </button>
                   <span
                     v-if="keyboardMoveMode && keyboardMovingPoolId === pool.id"
                     :id="`move-mode-status-${pool.id}`"
@@ -1467,6 +1478,8 @@ onMounted(() => {
 }
 
 .drag-handle {
+  border: 0;
+  background: transparent;
   cursor: move;
   padding: var(--rd-space-1) var(--rd-space-2);
   color: var(--rd-text-secondary, #666);
