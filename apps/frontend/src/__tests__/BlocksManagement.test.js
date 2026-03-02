@@ -877,6 +877,9 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       // Activate keyboard mode with Space
       await dragHandle1.trigger('keydown', { key: ' ' })
       await flushPromises()
+      expect(dragHandle1.attributes('aria-pressed')).toBe('true')
+      expect(dragHandle1.classes()).toContain('keyboard-move-active')
+      expect(wrapper.find('#move-mode-status-pool-1').exists()).toBe(true)
 
       // Move down with ArrowDown
       await dragHandle1.trigger('keydown', { key: 'ArrowDown' })
@@ -956,6 +959,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     })
 
     it('reverts optimistic update on reorder failure', async () => {
+      let rejectReorderRequest
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
           data: [
@@ -993,7 +997,9 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
             }
           ]
         }),
-        reorderBibPools: vi.fn().mockRejectedValue(new Error('Network error'))
+        reorderBibPools: vi.fn().mockImplementation(() => new Promise((_, reject) => {
+          rejectReorderRequest = reject
+        }))
       }
 
       const wrapper = await mountPage(mockDrawApi)
@@ -1011,6 +1017,14 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
         dataTransfer: { getData: vi.fn(() => 'pool-1') }
       })
 
+      await wrapper.vm.$nextTick()
+
+      // Verify optimistic reorder changed rendered order before API error rollback
+      let poolsList = wrapper.findAll('[data-testid^="bib-pool-item-pool-"]')
+      expect(poolsList[0].attributes('data-testid')).toBe('bib-pool-item-pool-2')
+      expect(poolsList[1].attributes('data-testid')).toBe('bib-pool-item-pool-1')
+
+      rejectReorderRequest(new Error('Network error'))
       await flushPromises()
 
       // Check error message displayed
@@ -1019,7 +1033,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       expect(errorBanner.text()).toContain('Failed to reorder')
 
       // Verify that the order is reverted (original order maintained)
-      const poolsList = wrapper.findAll('[data-testid^="bib-pool-item-pool-"]')
+      poolsList = wrapper.findAll('[data-testid^="bib-pool-item-pool-"]')
       expect(poolsList[0].attributes('data-testid')).toBe('bib-pool-item-pool-1')
       expect(poolsList[1].attributes('data-testid')).toBe('bib-pool-item-pool-2')
     })
@@ -1196,6 +1210,12 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       await dragHandle1.trigger('dragstart', {
         dataTransfer: { setData: vi.fn(), effectAllowed: '' }
       })
+
+      // Drag-over on a different block should not be treated as a valid drop target
+      const crossBlockDragOverEvent = { preventDefault: vi.fn() }
+      const poolItem3 = wrapper.find('[data-testid="bib-pool-item-pool-3"]')
+      await poolItem3.trigger('dragover', crossBlockDragOverEvent)
+      expect(crossBlockDragOverEvent.preventDefault).not.toHaveBeenCalled()
 
       // Drop on pool-2 in block-1
       const poolItem2 = wrapper.find('[data-testid="bib-pool-item-pool-2"]')
