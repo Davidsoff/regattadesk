@@ -117,12 +117,30 @@ def _issue_preference(issue: dict[str, Any]) -> tuple[int, int]:
     return (1 if state == "OPEN" else 0, number)
 
 
+def _gh_list_limit() -> str:
+    # Allow callers to tune list size for larger repositories.
+    raw_value = os.getenv("GH_LIST_LIMIT", "5000")
+    if not raw_value.isdigit() or int(raw_value) <= 0:
+        raise SystemExit("GH_LIST_LIMIT must be a positive integer")
+    return raw_value
+
+
 def build_existing_ticket_issue_index(
     *,
     repo: str | None,
     verbose: bool,
 ) -> dict[str, dict[str, Any]]:
-    cmd = ["gh", "issue", "list", "--state", "all", "--limit", "1000", "--json", "id,number,title,body,state,url"]
+    cmd = [
+        "gh",
+        "issue",
+        "list",
+        "--state",
+        "all",
+        "--limit",
+        _gh_list_limit(),
+        "--json",
+        "id,number,title,body,state,url",
+    ]
     if repo:
         cmd.extend(["--repo", repo])
 
@@ -190,7 +208,7 @@ def ensure_labels_exist(
             print("DRY RUN:", shlex.join(cmd))
         return
 
-    list_cmd = ["gh", "label", "list", "--limit", "1000", "--json", "name"]
+    list_cmd = ["gh", "label", "list", "--limit", _gh_list_limit(), "--json", "name"]
     if repo:
         list_cmd.extend(["--repo", repo])
     result = _run_checked(list_cmd, verbose=verbose)
