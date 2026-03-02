@@ -1,8 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { createApiClient, createDrawApi } from '../../api'
+import { validateRouteParam } from './financeViewShared'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -48,8 +49,13 @@ const bibPoolError = ref(null)
 const deleteTarget = ref(null)
 const deleteType = ref(null)
 
-// Computed
-const regattaId = computed(() => route.params.regattaId)
+// Route state
+const regattaId = validateRouteParam(route.params.regattaId, 'regattaId')
+const hasValidRouteParams = Boolean(regattaId)
+const blockDialog = ref(null)
+const bibPoolDialog = ref(null)
+const deleteDialog = ref(null)
+const lastFocusedElement = ref(null)
 
 const overflowPool = computed(() => {
   return bibPools.value.find(pool => pool.is_overflow)
@@ -81,7 +87,7 @@ function validateRangeAllocation(errors) {
     errors.end_bib = t('blocks.validation.end_bib_required')
   } else if (Number.isNaN(endBib) || endBib <= 0) {
     errors.end_bib = t('blocks.validation.end_bib_positive')
-  } else if (endBib <= startBib) {
+  } else if (endBib < startBib) {
     errors.end_bib = t('blocks.validation.end_bib_greater')
   }
 }
@@ -90,9 +96,14 @@ function validateExplicitListAllocation(errors) {
   const bibNumbers = bibPoolForm.value.bib_numbers?.trim()
 
   if (bibNumbers) {
-    const numbers = bibNumbers.split(',').map(n => n.trim())
-    const allValid = numbers.every(n => /^\d+$/.test(n))
-    if (!allValid) {
+    const numbers = bibNumbers
+      .split(',')
+      .map(n => n.trim())
+      .filter(Boolean)
+    const parsedNumbers = numbers.map(Number)
+    const allValid = parsedNumbers.every(n => Number.isInteger(n) && n >= 1)
+    const hasDuplicates = new Set(parsedNumbers).size !== parsedNumbers.length
+    if (!allValid || hasDuplicates) {
       errors.bib_numbers = t('blocks.validation.bib_numbers_format')
     }
     return
@@ -104,8 +115,8 @@ function validateExplicitListAllocation(errors) {
 // API functions
 async function loadBlocks() {
   try {
-    const response = await drawApi.listBlocks(regattaId.value)
-    blocks.value = response.blocks || []
+    const response = await drawApi.listBlocks(regattaId)
+    blocks.value = response.data || []
   } catch (err) {
     error.value = t('common.error')
     console.error('Failed to load blocks:', err)
@@ -114,8 +125,8 @@ async function loadBlocks() {
 
 async function loadBibPools() {
   try {
-    const response = await drawApi.listBibPools(regattaId.value)
-    bibPools.value = response.bib_pools || []
+    const response = await drawApi.listBibPools(regattaId)
+    bibPools.value = response.data || []
   } catch (err) {
     error.value = t('common.error')
     console.error('Failed to load bib pools:', err)
@@ -123,6 +134,12 @@ async function loadBibPools() {
 }
 
 async function loadData() {
+  if (!hasValidRouteParams) {
+    error.value = t('finance.invalid_route_params')
+    loading.value = false
+    return
+  }
+
   loading.value = true
   error.value = null
   await Promise.all([loadBlocks(), loadBibPools()])
@@ -131,6 +148,7 @@ async function loadData() {
 
 // Block operations
 function openAddBlockDialog() {
+  lastFocusedElement.value = document.activeElement
   blockForm.value = {
     id: null,
     name: '',
@@ -143,10 +161,11 @@ function openAddBlockDialog() {
 }
 
 function openEditBlockDialog(block) {
+  lastFocusedElement.value = document.activeElement
   blockForm.value = {
     id: block.id,
     name: block.name,
-    start_time: block.start_time,
+    start_time: apiDateTimeToLocalInput(block.start_time),
     event_interval_seconds: block.event_interval_seconds,
     crew_interval_seconds: block.crew_interval_seconds
   }
@@ -163,7 +182,7 @@ function validateBlockForm() {
 
   if (!blockForm.value.start_time?.trim()) {
     errors.start_time = t('blocks.validation.start_time_required')
-  } else if (!/^\d{2}:\d{2}:\d{2}$/.test(blockForm.value.start_time)) {
+  } else if (!localDateTimeToIso(blockForm.value.start_time)) {
     errors.start_time = t('blocks.validation.start_time_format')
   }
 
@@ -193,18 +212,18 @@ async function saveBlock() {
   try {
     const payload = {
       name: blockForm.value.name,
-      start_time: blockForm.value.start_time,
+      start_time: localDateTimeToIso(blockForm.value.start_time),
       event_interval_seconds: parseInteger(blockForm.value.event_interval_seconds),
       crew_interval_seconds: parseInteger(blockForm.value.crew_interval_seconds)
     }
 
     if (blockForm.value.id) {
-      await drawApi.updateBlock(regattaId.value, blockForm.value.id, payload)
+      await drawApi.updateBlock(regattaId, blockForm.value.id, payload)
     } else {
-      await drawApi.createBlock(regattaId.value, payload)
+      await drawApi.createBlock(regattaId, payload)
     }
 
-    showBlockDialog.value = false
+    closeBlockDialog()
     await loadBlocks()
   } catch (err) {
     error.value = t('common.error')
@@ -213,6 +232,7 @@ async function saveBlock() {
 }
 
 function openDeleteBlockDialog(block) {
+  lastFocusedElement.value = document.activeElement
   deleteTarget.value = block
   deleteType.value = 'block'
   showDeleteDialog.value = true
@@ -221,16 +241,14 @@ function openDeleteBlockDialog(block) {
 async function confirmDelete() {
   try {
     if (deleteType.value === 'block') {
-      await drawApi.deleteBlock(regattaId.value, deleteTarget.value.id)
+      await drawApi.deleteBlock(regattaId, deleteTarget.value.id)
       await loadBlocks()
     } else if (deleteType.value === 'bib_pool') {
-      await drawApi.deleteBibPool(regattaId.value, deleteTarget.value.id)
+      await drawApi.deleteBibPool(regattaId, deleteTarget.value.id)
       await loadBibPools()
     }
 
-    showDeleteDialog.value = false
-    deleteTarget.value = null
-    deleteType.value = null
+    closeDeleteDialog()
   } catch (err) {
     error.value = t('common.error')
     console.error('Failed to delete:', err)
@@ -239,6 +257,7 @@ async function confirmDelete() {
 
 // Bib Pool operations
 function openAddBibPoolDialog() {
+  lastFocusedElement.value = document.activeElement
   bibPoolForm.value = {
     id: null,
     name: '',
@@ -255,6 +274,7 @@ function openAddBibPoolDialog() {
 }
 
 function openEditBibPoolDialog(pool) {
+  lastFocusedElement.value = document.activeElement
   bibPoolForm.value = {
     id: pool.id,
     name: pool.name,
@@ -279,6 +299,10 @@ function validateBibPoolForm() {
 
   if (!bibPoolForm.value.allocation_mode) {
     errors.allocation_mode = t('blocks.validation.allocation_mode_required')
+  }
+
+  if (!bibPoolForm.value.is_overflow && !bibPoolForm.value.block_id) {
+    errors.block_id = t('blocks.validation.block_assignment_required')
   }
 
   if (bibPoolForm.value.allocation_mode === 'range') {
@@ -320,12 +344,12 @@ async function saveBibPool() {
     }
 
     if (bibPoolForm.value.id) {
-      await drawApi.updateBibPool(regattaId.value, bibPoolForm.value.id, payload)
+      await drawApi.updateBibPool(regattaId, bibPoolForm.value.id, payload)
     } else {
-      await drawApi.createBibPool(regattaId.value, payload)
+      await drawApi.createBibPool(regattaId, payload)
     }
 
-    showBibPoolDialog.value = false
+    closeBibPoolDialog()
     await loadBibPools()
   } catch (err) {
     if (err.code === 'BIB_POOL_VALIDATION_ERROR') {
@@ -342,6 +366,7 @@ async function saveBibPool() {
 }
 
 function openDeleteBibPoolDialog(pool) {
+  lastFocusedElement.value = document.activeElement
   deleteTarget.value = pool
   deleteType.value = 'bib_pool'
   showDeleteDialog.value = true
@@ -354,6 +379,150 @@ function formatBibPoolDisplay(pool) {
     return pool.bib_numbers.join(', ')
   }
 }
+
+function apiDateTimeToLocalInput(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const year = String(date.getFullYear())
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function localDateTimeToIso(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toISOString()
+}
+
+function formatStartTimeDisplay(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString()
+}
+
+function closeBlockDialog() {
+  showBlockDialog.value = false
+}
+
+function closeBibPoolDialog() {
+  showBibPoolDialog.value = false
+}
+
+function closeDeleteDialog() {
+  showDeleteDialog.value = false
+  deleteTarget.value = null
+  deleteType.value = null
+}
+
+function getActiveDialog() {
+  if (showBlockDialog.value) {
+    return blockDialog.value
+  }
+  if (showBibPoolDialog.value) {
+    return bibPoolDialog.value
+  }
+  if (showDeleteDialog.value) {
+    return deleteDialog.value
+  }
+  return null
+}
+
+function dialogFocusableElements(dialog) {
+  if (!dialog) {
+    return []
+  }
+
+  return [...dialog.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(element => !element.hasAttribute('disabled'))
+}
+
+function onDialogKeydown(event) {
+  const activeDialog = getActiveDialog()
+  if (!activeDialog) {
+    return
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    if (showBlockDialog.value) {
+      closeBlockDialog()
+    } else if (showBibPoolDialog.value) {
+      closeBibPoolDialog()
+    } else if (showDeleteDialog.value) {
+      closeDeleteDialog()
+    }
+    return
+  }
+
+  if (event.key !== 'Tab') {
+    return
+  }
+
+  const focusable = dialogFocusableElements(activeDialog)
+  if (!focusable.length) {
+    event.preventDefault()
+    return
+  }
+
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  const active = document.activeElement
+
+  if (event.shiftKey) {
+    if (active === first || !activeDialog.contains(active)) {
+      event.preventDefault()
+      last.focus()
+    }
+    return
+  }
+
+  if (active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+watch(() => bibPoolForm.value.is_overflow, (isOverflow) => {
+  if (isOverflow) {
+    bibPoolForm.value.block_id = ''
+  }
+})
+
+watch(
+  () => showBlockDialog.value || showBibPoolDialog.value || showDeleteDialog.value,
+  async (isOpen) => {
+    if (isOpen) {
+      await nextTick()
+      const activeDialog = getActiveDialog()
+      const focusable = dialogFocusableElements(activeDialog)
+      ;(focusable[0] || activeDialog)?.focus()
+      return
+    }
+
+    await nextTick()
+    lastFocusedElement.value?.focus?.()
+  }
+)
 
 // Lifecycle
 onMounted(() => {
@@ -417,7 +586,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="block-details">
-              <div><strong>{{ t('blocks.block.start_time') }}:</strong> {{ block.start_time }}</div>
+              <div><strong>{{ t('blocks.block.start_time') }}:</strong> {{ formatStartTimeDisplay(block.start_time) }}</div>
               <div><strong>{{ t('blocks.block.event_interval') }}:</strong> {{ block.event_interval_seconds }}s</div>
               <div><strong>{{ t('blocks.block.crew_interval') }}:</strong> {{ block.crew_interval_seconds }}s</div>
             </div>
@@ -510,9 +679,11 @@ onMounted(() => {
     <dialog
       v-if="showBlockDialog"
       open
+      ref="blockDialog"
       data-testid="block-dialog"
       aria-modal="true"
       class="modal-dialog"
+      @keydown="onDialogKeydown"
     >
       <h3>{{ blockForm.id ? t('blocks.edit_block') : t('blocks.add_block') }}</h3>
 
@@ -534,8 +705,7 @@ onMounted(() => {
             id="start_time"
             v-model="blockForm.start_time"
             name="start_time"
-            type="text"
-            placeholder="09:00:00"
+            type="datetime-local"
           />
           <span v-if="blockValidationErrors.start_time" class="error">{{ blockValidationErrors.start_time }}</span>
         </div>
@@ -568,7 +738,7 @@ onMounted(() => {
 
         <div class="dialog-actions">
           <button type="submit" data-testid="save-block-button">{{ t('common.save') }}</button>
-          <button type="button" @click="showBlockDialog = false">{{ t('common.cancel') }}</button>
+          <button type="button" @click="closeBlockDialog">{{ t('common.cancel') }}</button>
         </div>
       </form>
     </dialog>
@@ -577,9 +747,11 @@ onMounted(() => {
     <dialog
       v-if="showBibPoolDialog"
       open
+      ref="bibPoolDialog"
       data-testid="bib-pool-dialog"
       aria-modal="true"
       class="modal-dialog"
+      @keydown="onDialogKeydown"
     >
       <h3>{{ bibPoolForm.id ? t('blocks.edit_bib_pool') : t('blocks.add_bib_pool') }}</h3>
 
@@ -603,11 +775,22 @@ onMounted(() => {
             name="block_id"
             :disabled="bibPoolForm.is_overflow"
           >
-            <option value="">{{ t('blocks.no_overflow_pool') }}</option>
+            <option value="">{{ t('blocks.bib_pool.unassigned_option') }}</option>
             <option v-for="block in blocks" :key="block.id" :value="block.id">
               {{ block.name }}
             </option>
           </select>
+          <span v-if="bibPoolValidationErrors.block_id" class="error">{{ bibPoolValidationErrors.block_id }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="is_overflow">{{ t('blocks.bib_pool.is_overflow') }}</label>
+          <input
+            id="is_overflow"
+            v-model="bibPoolForm.is_overflow"
+            name="is_overflow"
+            type="checkbox"
+          />
         </div>
 
         <div class="form-group">
@@ -670,7 +853,7 @@ onMounted(() => {
 
         <div class="dialog-actions">
           <button type="submit" data-testid="save-bib-pool-button">{{ t('common.save') }}</button>
-          <button type="button" @click="showBibPoolDialog = false">{{ t('common.cancel') }}</button>
+          <button type="button" @click="closeBibPoolDialog">{{ t('common.cancel') }}</button>
         </div>
       </form>
     </dialog>
@@ -679,9 +862,11 @@ onMounted(() => {
     <dialog
       v-if="showDeleteDialog"
       open
+      ref="deleteDialog"
       data-testid="confirm-delete-dialog"
       aria-modal="true"
       class="modal-dialog"
+      @keydown="onDialogKeydown"
     >
       <h3>{{ t('common.confirm') }}</h3>
       <p>
@@ -691,7 +876,7 @@ onMounted(() => {
         <button type="button" data-testid="confirm-delete-button" @click="confirmDelete">
           {{ t('common.delete') }}
         </button>
-        <button type="button" @click="showDeleteDialog = false">{{ t('common.cancel') }}</button>
+        <button type="button" @click="closeDeleteDialog">{{ t('common.cancel') }}</button>
       </div>
     </dialog>
   </div>

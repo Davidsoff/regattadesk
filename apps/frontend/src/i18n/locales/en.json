@@ -279,7 +279,7 @@
       "crew_interval": "Crew Interval (seconds)",
       "display_order": "Display Order"
     },
-    "bib_pool": {
+  "bib_pool": {
       "name": "Pool Name",
       "allocation_mode": "Allocation Mode",
       "allocation_mode_range": "Range",
@@ -289,16 +289,17 @@
       "bib_numbers": "Bib Numbers (comma-separated)",
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overflow Pool",
-      "priority": "Priority",
-      "block_assignment": "Assigned to Block"
-    },
+    "priority": "Priority",
+    "block_assignment": "Assigned to Block",
+    "unassigned_option": "Select a block"
+  },
     "no_blocks": "No blocks configured yet",
     "no_bib_pools": "No bib pools configured yet",
     "no_overflow_pool": "No overflow pool configured",
     "validation": {
       "block_name_required": "Block name is required",
       "start_time_required": "Start time is required",
-      "start_time_format": "Start time must be in HH:MM:SS format",
+    "start_time_format": "Start time must be a valid date and time",
       "event_interval_required": "Event interval is required",
       "event_interval_positive": "Event interval must be positive",
       "crew_interval_required": "Crew interval is required",
@@ -309,9 +310,10 @@
       "start_bib_positive": "Start bib must be positive",
       "end_bib_required": "End bib is required",
       "end_bib_positive": "End bib must be positive",
-      "end_bib_greater": "End bib must be greater than start bib",
+    "end_bib_greater": "End bib must be greater than or equal to start bib",
+    "block_assignment_required": "Block assignment is required for non-overflow pools",
       "bib_numbers_required": "Bib numbers are required",
-      "bib_numbers_format": "Bib numbers must be comma-separated integers",
+    "bib_numbers_format": "Bib numbers must be unique comma-separated integers (minimum 1)",
       "bib_overlap": "Bib pool overlap detected",
       "bib_overlap_details": "Bibs {bibs} overlap with pool: {poolName}"
     }

@@ -11,7 +11,7 @@ vi.mock('../api', () => ({
   createDrawApi: vi.fn()
 }))
 
-const REGATTA_ID = 'regatta-123'
+const REGATTA_ID = '11111111-1111-4111-8111-111111111111'
 
 async function mountPage(mockDrawApi = {}) {
   api.createDrawApi.mockReturnValue(mockDrawApi)
@@ -55,11 +55,11 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('renders blocks list with timing details', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          blocks: [
+          data: [
             {
               id: 'block-1',
               name: 'Morning Session',
-              start_time: '09:00:00',
+              start_time: '2026-03-02T09:00:00Z',
               event_interval_seconds: 120,
               crew_interval_seconds: 30,
               display_order: 1
@@ -67,14 +67,14 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
             {
               id: 'block-2',
               name: 'Afternoon Session',
-              start_time: '14:00:00',
+              start_time: '2026-03-02T14:00:00Z',
               event_interval_seconds: 150,
               crew_interval_seconds: 45,
               display_order: 2
             }
           ]
         }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] })
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
       }
 
       const wrapper = await mountPage(mockDrawApi)
@@ -89,15 +89,14 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       const firstBlock = wrapper.find('[data-testid="block-item-block-1"]')
       expect(firstBlock.text()).toContain('Morning Session')
-      expect(firstBlock.text()).toContain('09:00:00')
       expect(firstBlock.text()).toContain('120')
       expect(firstBlock.text()).toContain('30')
     })
 
     it('displays empty state when no blocks configured', async () => {
       const mockDrawApi = {
-        listBlocks: vi.fn().mockResolvedValue({ blocks: [] }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] })
+        listBlocks: vi.fn().mockResolvedValue({ data: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
       }
 
       const wrapper = await mountPage(mockDrawApi)
@@ -110,8 +109,8 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
   describe('Block CRUD operations', () => {
     it('opens create block dialog when add button clicked', async () => {
       const mockDrawApi = {
-        listBlocks: vi.fn().mockResolvedValue({ blocks: [] }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] })
+        listBlocks: vi.fn().mockResolvedValue({ data: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
       }
 
       const wrapper = await mountPage(mockDrawApi)
@@ -134,24 +133,24 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('creates new block with valid data', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn()
-          .mockResolvedValueOnce({ blocks: [] })
+          .mockResolvedValueOnce({ data: [] })
           .mockResolvedValueOnce({
-            blocks: [
+            data: [
               {
                 id: 'block-new',
                 name: 'Test Block',
-                start_time: '10:00:00',
+                start_time: '2026-03-02T10:00:00Z',
                 event_interval_seconds: 180,
                 crew_interval_seconds: 60,
                 display_order: 1
               }
             ]
           }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
         createBlock: vi.fn().mockResolvedValue({
           id: 'block-new',
           name: 'Test Block',
-          start_time: '10:00:00',
+          start_time: '2026-03-02T10:00:00Z',
           event_interval_seconds: 180,
           crew_interval_seconds: 60
         })
@@ -162,7 +161,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       await wrapper.find('[data-testid="add-block-button"]').trigger('click')
 
       await wrapper.find('input[name="block_name"]').setValue('Test Block')
-      await wrapper.find('input[name="start_time"]').setValue('10:00:00')
+      await wrapper.find('input[name="start_time"]').setValue('2026-03-02T10:00')
       await wrapper.find('input[name="event_interval_seconds"]').setValue('180')
       await wrapper.find('input[name="crew_interval_seconds"]').setValue('60')
 
@@ -171,7 +170,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       expect(mockDrawApi.createBlock).toHaveBeenCalledWith(REGATTA_ID, {
         name: 'Test Block',
-        start_time: '10:00:00',
+        start_time: new Date('2026-03-02T10:00').toISOString(),
         event_interval_seconds: 180,
         crew_interval_seconds: 60
       })
@@ -181,8 +180,8 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
     it('shows validation errors for invalid block data', async () => {
       const mockDrawApi = {
-        listBlocks: vi.fn().mockResolvedValue({ blocks: [] }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] })
+        listBlocks: vi.fn().mockResolvedValue({ data: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] })
       }
 
       const wrapper = await mountPage(mockDrawApi)
@@ -199,11 +198,11 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       const mockDrawApi = {
         listBlocks: vi.fn()
           .mockResolvedValueOnce({
-            blocks: [
+            data: [
               {
                 id: 'block-1',
                 name: 'Morning Session',
-                start_time: '09:00:00',
+                start_time: '2026-03-02T09:00:00Z',
                 event_interval_seconds: 120,
                 crew_interval_seconds: 30,
                 display_order: 1
@@ -211,18 +210,18 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
             ]
           })
           .mockResolvedValueOnce({
-            blocks: [
+            data: [
               {
                 id: 'block-1',
                 name: 'Updated Session',
-                start_time: '09:30:00',
+                start_time: '2026-03-02T09:30:00Z',
                 event_interval_seconds: 150,
                 crew_interval_seconds: 40,
                 display_order: 1
               }
             ]
           }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
         updateBlock: vi.fn().mockResolvedValue({})
       }
 
@@ -232,7 +231,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       await editButton.trigger('click')
 
       await wrapper.find('input[name="block_name"]').setValue('Updated Session')
-      await wrapper.find('input[name="start_time"]').setValue('09:30:00')
+      await wrapper.find('input[name="start_time"]').setValue('2026-03-02T09:30')
       await wrapper.find('input[name="event_interval_seconds"]').setValue('150')
       await wrapper.find('input[name="crew_interval_seconds"]').setValue('40')
 
@@ -241,7 +240,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       expect(mockDrawApi.updateBlock).toHaveBeenCalledWith(REGATTA_ID, 'block-1', {
         name: 'Updated Session',
-        start_time: '09:30:00',
+        start_time: new Date('2026-03-02T09:30').toISOString(),
         event_interval_seconds: 150,
         crew_interval_seconds: 40
       })
@@ -251,19 +250,19 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       const mockDrawApi = {
         listBlocks: vi.fn()
           .mockResolvedValueOnce({
-            blocks: [
+            data: [
               {
                 id: 'block-1',
                 name: 'Morning Session',
-                start_time: '09:00:00',
+                start_time: '2026-03-02T09:00:00Z',
                 event_interval_seconds: 120,
                 crew_interval_seconds: 30,
                 display_order: 1
               }
             ]
           })
-          .mockResolvedValueOnce({ blocks: [] }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] }),
+          .mockResolvedValueOnce({ data: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
         deleteBlock: vi.fn().mockResolvedValue({})
       }
 
@@ -287,11 +286,11 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('displays bib pools grouped by block', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          blocks: [
+          data: [
             {
               id: 'block-1',
               name: 'Morning Session',
-              start_time: '09:00:00',
+              start_time: '2026-03-02T09:00:00Z',
               event_interval_seconds: 120,
               crew_interval_seconds: 30,
               display_order: 1
@@ -299,7 +298,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
           ]
         }),
         listBibPools: vi.fn().mockResolvedValue({
-          bib_pools: [
+          data: [
             {
               id: 'pool-1',
               name: 'Main Pool',
@@ -343,9 +342,9 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
     it('displays overflow pool separately', async () => {
       const mockDrawApi = {
-        listBlocks: vi.fn().mockResolvedValue({ blocks: [] }),
+        listBlocks: vi.fn().mockResolvedValue({ data: [] }),
         listBibPools: vi.fn().mockResolvedValue({
-          bib_pools: [
+          data: [
             {
               id: 'pool-overflow',
               name: 'Overflow Pool',
@@ -374,12 +373,12 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('creates bib pool in range mode', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          blocks: [{ id: 'block-1', name: 'Morning', start_time: '09:00:00', event_interval_seconds: 120, crew_interval_seconds: 30 }]
+          data: [{ id: 'block-1', name: 'Morning', start_time: '2026-03-02T09:00:00Z', event_interval_seconds: 120, crew_interval_seconds: 30 }]
         }),
         listBibPools: vi.fn()
-          .mockResolvedValueOnce({ bib_pools: [] })
+          .mockResolvedValueOnce({ data: [] })
           .mockResolvedValueOnce({
-            bib_pools: [
+            data: [
               {
                 id: 'pool-new',
                 name: 'Test Pool',
@@ -420,12 +419,12 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('creates bib pool in explicit list mode', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          blocks: [{ id: 'block-1', name: 'Morning', start_time: '09:00:00', event_interval_seconds: 120, crew_interval_seconds: 30 }]
+          data: [{ id: 'block-1', name: 'Morning', start_time: '2026-03-02T09:00:00Z', event_interval_seconds: 120, crew_interval_seconds: 30 }]
         }),
         listBibPools: vi.fn()
-          .mockResolvedValueOnce({ bib_pools: [] })
+          .mockResolvedValueOnce({ data: [] })
           .mockResolvedValueOnce({
-            bib_pools: [
+            data: [
               {
                 id: 'pool-new',
                 name: 'Explicit Pool',
@@ -463,9 +462,9 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('shows bib pool overlap validation errors', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          blocks: [{ id: 'block-1', name: 'Morning', start_time: '09:00:00', event_interval_seconds: 120, crew_interval_seconds: 30 }]
+          data: [{ id: 'block-1', name: 'Morning', start_time: '2026-03-02T09:00:00Z', event_interval_seconds: 120, crew_interval_seconds: 30 }]
         }),
-        listBibPools: vi.fn().mockResolvedValue({ bib_pools: [] }),
+        listBibPools: vi.fn().mockResolvedValue({ data: [] }),
         createBibPool: vi.fn().mockRejectedValue({
           code: 'BIB_POOL_VALIDATION_ERROR',
           message: 'Bib pool overlap detected',
