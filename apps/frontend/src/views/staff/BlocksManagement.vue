@@ -548,8 +548,13 @@ function onDragOver(event, blockId) {
   dragOverBlockId.value = blockId
 }
 
-function onDragLeave() {
-  dragOverBlockId.value = null
+function onDragLeave(event) {
+  const currentTarget = event?.currentTarget
+  const nextTarget = event?.relatedTarget
+
+  if (!currentTarget || !nextTarget || !currentTarget.contains(nextTarget)) {
+    dragOverBlockId.value = null
+  }
 }
 
 function onDrop(event, targetBlockId) {
@@ -574,32 +579,11 @@ async function reorderBlocksAfterDrop(sourceBlockId, targetBlockId) {
   const sourceIndex = currentBlocks.findIndex(b => b.id === sourceBlockId)
   const targetIndex = currentBlocks.findIndex(b => b.id === targetBlockId)
 
-  if (sourceIndex === -1 || targetIndex === -1) {
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
     return
   }
 
-  const reorderedBlocks = [...currentBlocks]
-  const [movedBlock] = reorderedBlocks.splice(sourceIndex, 1)
-  reorderedBlocks.splice(targetIndex, 0, movedBlock)
-
-  blocks.value = reorderedBlocks
-
-  const payload = {
-    items: reorderedBlocks.map((block, index) => ({
-      block_id: block.id,
-      display_order: index + 1
-    }))
-  }
-
-  try {
-    reorderError.value = null
-    await drawApi.reorderBlocks(regattaId, payload)
-    await loadBlocks()
-  } catch (err) {
-    reorderError.value = t('blocks.reorder_error')
-    blocks.value = currentBlocks
-    console.error('Failed to reorder blocks:', err)
-  }
+  await applyReorderAndPersist(sourceIndex, targetIndex)
 }
 
 // Keyboard reordering handlers
@@ -648,6 +632,10 @@ async function commitKeyboardReorder(sourceIndex) {
   keyboardReorderBlockId.value = null
   keyboardReorderTargetIndex.value = -1
 
+  await applyReorderAndPersist(sourceIndex, targetIndex)
+}
+
+async function applyReorderAndPersist(sourceIndex, targetIndex) {
   const currentBlocks = [...blocks.value]
   const reorderedBlocks = [...currentBlocks]
   const [movedBlock] = reorderedBlocks.splice(sourceIndex, 1)
@@ -722,7 +710,12 @@ onMounted(() => {
           </button>
         </div>
 
-        <div v-if="canReorderBlocks" data-testid="reorder-instructions" class="reorder-instructions">
+        <div
+          v-if="canReorderBlocks"
+          id="blocks-reorder-instructions"
+          data-testid="reorder-instructions"
+          class="reorder-instructions"
+        >
           {{ t('blocks.reorder_instructions') }}
         </div>
 
@@ -738,7 +731,7 @@ onMounted(() => {
             class="block-item"
             :class="{ 'drag-over': dragOverBlockId === block.id }"
             @dragover="onDragOver($event, block.id)"
-            @dragleave="onDragLeave"
+            @dragleave="onDragLeave($event)"
             @drop="onDrop($event, block.id)"
           >
             <div class="block-header">
@@ -750,6 +743,7 @@ onMounted(() => {
                   :data-testid="`drag-handle-${block.id}`"
                   :aria-label="t('blocks.drag_handle')"
                   :aria-pressed="keyboardReorderMode && keyboardReorderBlockId === block.id ? 'true' : 'false'"
+                  aria-describedby="blocks-reorder-instructions"
                   :title="t('blocks.reorder_keyboard_hint')"
                   draggable="true"
                   @dragstart="onDragStart($event, block.id)"

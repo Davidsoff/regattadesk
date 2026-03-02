@@ -527,6 +527,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       expect(dragHandles).toHaveLength(2)
       expect(dragHandles[0].attributes('draggable')).toBe('true')
       expect(dragHandles[0].attributes('aria-label')).toContain('Drag to reorder')
+      expect(dragHandles[0].attributes('aria-describedby')).toBe('blocks-reorder-instructions')
     })
 
     it('does not display drag handles when only one block exists', async () => {
@@ -851,6 +852,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       const instructions = wrapper.find('[data-testid="reorder-instructions"]')
       expect(instructions.exists()).toBe(true)
+      expect(instructions.attributes('id')).toBe('blocks-reorder-instructions')
       expect(instructions.text()).toContain('drag and drop')
       expect(instructions.text()).toContain('arrow keys')
     })

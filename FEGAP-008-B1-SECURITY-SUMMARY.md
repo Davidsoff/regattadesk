@@ -225,7 +225,7 @@ The drag-and-drop block reordering implementation introduces no new security vul
 - Follows RegattaDesk security best practices
 - Passed CodeQL security scan with 0 alerts
 
-**Approved for deployment** pending code review and manual QA.
+**Approved for deployment** pending code review and manual QA completion.
 
 ---
 
@@ -234,5 +234,5 @@ The drag-and-drop block reordering implementation introduces no new security vul
 **Security Review Completed**: 2026-03-02  
 **Reviewed By**: GitHub Copilot (Automated Security Analysis)  
 **CodeQL Scan**: PASSED (0 alerts)  
-**Manual Review**: PASSED  
-**Status**: ✅ APPROVED
+**Manual Review**: PENDING  
+**Status**: ✅ CONDITIONALLY APPROVED (pending manual QA)

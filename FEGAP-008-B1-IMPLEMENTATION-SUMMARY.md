@@ -137,7 +137,7 @@ async function reorderBlocksAfterDrop(sourceBlockId, targetBlockId) {
 ```
 
 ### 4. Test Coverage (`BlocksManagement.test.js`)
-Added 6 comprehensive tests:
+Added 7 comprehensive tests:
 
 1. **"displays drag handles for blocks when multiple blocks exist"**
    - Verifies drag handles shown when 2+ blocks
@@ -172,14 +172,14 @@ Added 6 comprehensive tests:
    - Checks instructional text presence
    - Ensures guidance for users
 
-**Test Results**: ✅ All 19 tests passing (13 existing + 6 new)
+**Test Results**: ✅ All 19 tests passing (12 existing + 7 new)
 
 ## Acceptance Criteria
 
 ### ✅ Staff can reorder blocks via keyboard-accessible drag-and-drop UI
 - Native HTML5 drag-and-drop implemented
 - Keyboard navigation with Enter/Space and Arrow keys
-- Full ARIA support (aria-pressed, aria-label, title)
+- Full ARIA support (aria-pressed, aria-label, aria-describedby, title)
 
 ### ✅ UI persists the new order via `drawApi.reorderBlocks(regattaId, { items })`
 - Correct API payload: `{ items: [{ block_id, display_order }] }`
@@ -195,7 +195,7 @@ Added 6 comprehensive tests:
 - Error displayed in banner with `role="alert"`
 
 ### ✅ Unit/integration tests cover success + failure + accessibility keyboard flow
-- 6 new tests covering all scenarios
+- 7 new tests covering all scenarios
 - All tests passing (19/19)
 
 ### ✅ i18n strings added for drag handles/instructions in en/nl
