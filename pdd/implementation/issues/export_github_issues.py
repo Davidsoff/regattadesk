@@ -349,6 +349,119 @@ mutation($issueId: ID!, $blockingIssueId: ID!) {
     )
 
 
+def _record_missing_dependencies(
+    *,
+    missing_pairs: set[tuple[str, str]],
+    dependent_ticket_id: str,
+    dependencies: list[str],
+) -> None:
+    for dependency_ticket_id in dependencies:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+
+
+def _ensure_blocked_cache(
+    *,
+    blocked_cache: dict[str, set[str]],
+    dependent_issue_id: str | None,
+    verbose: bool,
+) -> None:
+    if not _is_real_issue_id(dependent_issue_id):
+        return
+    if dependent_issue_id in blocked_cache:
+        return
+    blocked_cache[dependent_issue_id] = fetch_blocked_by_ids(
+        issue_id=dependent_issue_id,
+        verbose=verbose,
+    )
+
+
+def _is_existing_dependency_link(
+    *,
+    dependent_issue_id: str | None,
+    blocking_issue_id: str | None,
+    blocked_cache: dict[str, set[str]],
+) -> bool:
+    return bool(
+        _is_real_issue_id(dependent_issue_id)
+        and _is_real_issue_id(blocking_issue_id)
+        and blocking_issue_id in blocked_cache.get(dependent_issue_id, set())
+    )
+
+
+def _issue_display(issue: dict[str, Any] | None) -> str:
+    number = (issue or {}).get("number")
+    return f"#{number}" if number is not None else "<new issue>"
+
+
+def _print_dry_run_dependency_link(
+    *,
+    dependent_ticket_id: str,
+    dependency_ticket_id: str,
+    dependent_issue: dict[str, Any] | None,
+    blocking_issue: dict[str, Any] | None,
+) -> None:
+    dep_display = _issue_display(dependent_issue)
+    block_display = _issue_display(blocking_issue)
+    print(
+        "DRY RUN: would link dependency "
+        f"{dependent_ticket_id} ({dep_display}) blocked by "
+        f"{dependency_ticket_id} ({block_display})"
+    )
+
+
+def _apply_single_dependency(
+    *,
+    dependent_ticket_id: str,
+    dependency_ticket_id: str,
+    dependent_issue: dict[str, Any] | None,
+    dependent_issue_id: str | None,
+    ticket_issue_index: dict[str, dict[str, Any]],
+    dry_run: bool,
+    verbose: bool,
+    missing_pairs: set[tuple[str, str]],
+    blocked_cache: dict[str, set[str]],
+) -> int:
+    blocking_issue = ticket_issue_index.get(dependency_ticket_id)
+    if not blocking_issue:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+
+    blocking_issue_id = blocking_issue.get("id")
+    if _is_existing_dependency_link(
+        dependent_issue_id=dependent_issue_id,
+        blocking_issue_id=blocking_issue_id,
+        blocked_cache=blocked_cache,
+    ):
+        return 0
+
+    if dry_run:
+        _print_dry_run_dependency_link(
+            dependent_ticket_id=dependent_ticket_id,
+            dependency_ticket_id=dependency_ticket_id,
+            dependent_issue=dependent_issue,
+            blocking_issue=blocking_issue,
+        )
+        return 1
+
+    if dependent_issue is None or dependent_issue_id is None:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+    if blocking_issue_id is None:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+    if dependent_issue_id == blocking_issue_id:
+        print(f"WARNING: skipping self dependency for {dependent_ticket_id}")
+        return 0
+
+    add_blocked_by_link(
+        issue_id=dependent_issue_id,
+        blocking_issue_id=blocking_issue_id,
+        verbose=verbose,
+    )
+    blocked_cache.setdefault(dependent_issue_id, set()).add(blocking_issue_id)
+    return 1
+
+
 def apply_dependency_links(
     *,
     entries: list[dict[str, Any]],
@@ -369,65 +482,32 @@ def apply_dependency_links(
 
         dependent_issue = ticket_issue_index.get(dependent_ticket_id)
         if not dependent_issue and not dry_run:
-            for dependency_ticket_id in dependencies:
-                missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+            _record_missing_dependencies(
+                missing_pairs=missing_pairs,
+                dependent_ticket_id=dependent_ticket_id,
+                dependencies=dependencies,
+            )
             continue
 
         dependent_issue_id = (dependent_issue or {}).get("id")
-        if _is_real_issue_id(dependent_issue_id) and dependent_issue_id not in blocked_cache:
-            blocked_cache[dependent_issue_id] = fetch_blocked_by_ids(
-                issue_id=dependent_issue_id,
-                verbose=verbose,
-            )
+        _ensure_blocked_cache(
+            blocked_cache=blocked_cache,
+            dependent_issue_id=dependent_issue_id,
+            verbose=verbose,
+        )
 
         for dependency_ticket_id in dependencies:
-            blocking_issue = ticket_issue_index.get(dependency_ticket_id)
-            if not blocking_issue:
-                missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
-                continue
-
-            blocking_issue_id = blocking_issue.get("id")
-            existing_block = (
-                _is_real_issue_id(dependent_issue_id)
-                and _is_real_issue_id(blocking_issue_id)
-                and blocking_issue_id in blocked_cache.get(dependent_issue_id, set())
-            )
-            if existing_block:
-                continue
-
-            if dry_run:
-                dep_number = dependent_issue.get("number") if dependent_issue else None
-                blocking_number = blocking_issue.get("number")
-                dep_display = f"#{dep_number}" if dep_number is not None else "<new issue>"
-                block_display = (
-                    f"#{blocking_number}" if blocking_number is not None else "<new issue>"
-                )
-                print(
-                    "DRY RUN: would link dependency "
-                    f"{dependent_ticket_id} ({dep_display}) blocked by "
-                    f"{dependency_ticket_id} ({block_display})"
-                )
-                linked_count += 1
-                continue
-
-            if dependent_issue is None or dependent_issue_id is None:
-                missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
-                continue
-
-            if blocking_issue_id is None:
-                missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
-                continue
-            if dependent_issue_id == blocking_issue_id:
-                print(f"WARNING: skipping self dependency for {dependent_ticket_id}")
-                continue
-
-            add_blocked_by_link(
-                issue_id=dependent_issue_id,
-                blocking_issue_id=blocking_issue_id,
+            linked_count += _apply_single_dependency(
+                dependent_ticket_id=dependent_ticket_id,
+                dependency_ticket_id=dependency_ticket_id,
+                dependent_issue=dependent_issue,
+                dependent_issue_id=dependent_issue_id,
+                ticket_issue_index=ticket_issue_index,
+                dry_run=dry_run,
                 verbose=verbose,
+                missing_pairs=missing_pairs,
+                blocked_cache=blocked_cache,
             )
-            blocked_cache[dependent_issue_id].add(blocking_issue_id)
-            linked_count += 1
 
     if missing_pairs:
         for dependent_ticket_id, dependency_ticket_id in sorted(missing_pairs):
