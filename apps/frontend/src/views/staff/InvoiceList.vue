@@ -1,8 +1,9 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
+import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
 
 const route = useRoute()
 const router = useRouter()
@@ -10,10 +11,11 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
-const SUCCESS_MESSAGE_DURATION_MS = 3000
-const INVOICE_GENERATION_RELOAD_DELAY_MS = 2000
+const INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS = 6
+const INVOICE_GENERATION_REFRESH_INTERVAL_MS = 1000
 
-const regattaId = route.params.regattaId
+const regattaId = validateRouteParam(route.params.regattaId, 'regattaId')
+const hasValidRouteParams = Boolean(regattaId)
 
 const invoices = ref([])
 const loading = ref(true)
@@ -21,8 +23,29 @@ const error = ref(null)
 const generating = ref(false)
 const generateError = ref(null)
 const generateSuccess = ref(false)
+let successMessageTimeoutId = null
+let isUnmounted = false
+
+function clearSuccessMessageTimeout() {
+  if (successMessageTimeoutId !== null) {
+    clearTimeout(successMessageTimeoutId)
+    successMessageTimeoutId = null
+  }
+}
+
+async function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
 
 async function loadInvoices() {
+  if (!hasValidRouteParams) {
+    error.value = t('finance.invalid_route_params')
+    loading.value = false
+    return
+  }
+
   loading.value = true
   error.value = null
   try {
@@ -36,16 +59,39 @@ async function loadInvoices() {
 }
 
 async function generateInvoices() {
+  if (!hasValidRouteParams) {
+    generateError.value = t('finance.invalid_route_params')
+    return
+  }
+
   generating.value = true
   generateError.value = null
   generateSuccess.value = false
   try {
+    const previousInvoiceCount = invoices.value.length
     await financeApi.generateInvoices(regattaId)
     generateSuccess.value = true
-    setTimeout(async () => {
+    clearSuccessMessageTimeout()
+    successMessageTimeoutId = setTimeout(() => {
       generateSuccess.value = false
+    }, SUCCESS_MESSAGE_DURATION_MS)
+
+    // We do not have a generation job-status endpoint yet, so we use bounded polling.
+    for (let attempt = 0; attempt < INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS; attempt += 1) {
+      if (isUnmounted) {
+        return
+      }
+
       await loadInvoices()
-    }, INVOICE_GENERATION_RELOAD_DELAY_MS)
+
+      if (invoices.value.length > previousInvoiceCount) {
+        break
+      }
+
+      if (attempt < INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS - 1) {
+        await sleep(INVOICE_GENERATION_REFRESH_INTERVAL_MS)
+      }
+    }
   } catch (err) {
     generateError.value = err.message || t('finance.invoice.generate_error')
   } finally {
@@ -62,6 +108,11 @@ function viewInvoice(invoiceId) {
 
 onMounted(() => {
   loadInvoices()
+})
+
+onUnmounted(() => {
+  isUnmounted = true
+  clearSuccessMessageTimeout()
 })
 </script>
 
@@ -114,6 +165,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import './financeViewShared.css';
+
 .invoice-list {
   max-width: 72rem;
   margin: 2rem auto;
@@ -129,17 +182,17 @@ onMounted(() => {
 
 h2 {
   margin: 0;
-  color: #1d3557;
+  color: var(--rd-text);
 }
 
 .primary {
   font: inherit;
-  border: 1px solid #1d3557;
+  border: 1px solid var(--rd-text);
   border-radius: 0.5rem;
   padding: 0.6rem 1.5rem;
   cursor: pointer;
-  background: #1d3557;
-  color: #ffffff;
+  background: var(--rd-text);
+  color: var(--rd-bg);
 }
 
 .primary:disabled {
@@ -147,38 +200,15 @@ h2 {
   cursor: not-allowed;
 }
 
-.loading,
-.error,
-.empty {
-  padding: 1rem;
-  border-radius: 0.5rem;
-}
-
-.loading,
-.empty {
-  background: #f0f4f8;
-  color: #34506f;
-}
-
 .error {
-  background: #fce4e8;
-  color: #8b2531;
-  margin-bottom: 1rem;
-}
-
-.success {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: #dff5e6;
-  color: #0a6d35;
   margin-bottom: 1rem;
 }
 
 .invoices-table {
   width: 100%;
   border-collapse: collapse;
-  background: #ffffff;
-  border: 1px solid #d7dee7;
+  background: var(--rd-bg);
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
   overflow: hidden;
 }
@@ -187,13 +217,13 @@ h2 {
 .invoices-table td {
   text-align: left;
   padding: 0.75rem;
-  border-bottom: 1px solid #d7dee7;
+  border-bottom: 1px solid var(--rd-border);
 }
 
 .invoices-table th {
   font-weight: 600;
-  color: #34506f;
-  background: #f8fbff;
+  color: var(--rd-text-muted);
+  background: var(--rd-surface);
 }
 
 .invoices-table tbody tr:last-child td {
@@ -201,36 +231,13 @@ h2 {
 }
 
 .invoices-table tbody tr:hover {
-  background: #f8fbff;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9em;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.status-badge--paid {
-  background: #dff5e6;
-  color: #0a6d35;
-}
-
-.status-badge--unpaid {
-  background: #fce4e8;
-  color: #8b2531;
+  background: var(--rd-surface);
 }
 
 .link-button {
   background: none;
   border: none;
-  color: #1d3557;
+  color: var(--rd-text);
   text-decoration: underline;
   cursor: pointer;
   font: inherit;
@@ -238,6 +245,6 @@ h2 {
 }
 
 .link-button:hover {
-  color: #457b9d;
+  color: var(--rd-accent);
 }
 </style>

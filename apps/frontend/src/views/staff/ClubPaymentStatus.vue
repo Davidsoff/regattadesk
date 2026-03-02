@@ -1,18 +1,18 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
+import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
 
 const route = useRoute()
 const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
-const SUCCESS_MESSAGE_DURATION_MS = 3000
-
-const regattaId = route.params.regattaId
-const clubId = route.params.clubId
+const regattaId = validateRouteParam(route.params.regattaId, 'regattaId')
+const clubId = validateRouteParam(route.params.clubId, 'clubId')
+const hasValidRouteParams = Boolean(regattaId && clubId)
 
 const club = ref(null)
 const loading = ref(true)
@@ -20,11 +20,26 @@ const error = ref(null)
 const updating = ref(false)
 const updateError = ref(null)
 const updateSuccess = ref(false)
+const updatedEntriesCount = ref(0)
 
 const paymentStatus = ref('paid')
 const paymentReference = ref('')
+let successMessageTimeoutId = null
+
+function clearSuccessMessageTimeout() {
+  if (successMessageTimeoutId !== null) {
+    clearTimeout(successMessageTimeoutId)
+    successMessageTimeoutId = null
+  }
+}
 
 async function loadClub() {
+  if (!hasValidRouteParams) {
+    error.value = t('finance.invalid_route_params')
+    loading.value = false
+    return
+  }
+
   loading.value = true
   error.value = null
   try {
@@ -37,6 +52,11 @@ async function loadClub() {
 }
 
 async function updateStatus() {
+  if (!hasValidRouteParams) {
+    updateError.value = t('finance.invalid_route_params')
+    return
+  }
+
   updating.value = true
   updateError.value = null
   updateSuccess.value = false
@@ -45,10 +65,13 @@ async function updateStatus() {
       payment_status: paymentStatus.value,
       payment_reference: paymentReference.value.trim() || undefined
     }
-    await financeApi.updateClubPaymentStatus(regattaId, clubId, payload)
+    const result = await financeApi.updateClubPaymentStatus(regattaId, clubId, payload)
+    const updatedEntries = Number(result?.updated_entries ?? result?.updated_count ?? 0)
+    updatedEntriesCount.value = Number.isFinite(updatedEntries) ? updatedEntries : 0
     updateSuccess.value = true
     await loadClub()
-    setTimeout(() => {
+    clearSuccessMessageTimeout()
+    successMessageTimeoutId = setTimeout(() => {
       updateSuccess.value = false
     }, SUCCESS_MESSAGE_DURATION_MS)
   } catch (err) {
@@ -60,6 +83,10 @@ async function updateStatus() {
 
 onMounted(() => {
   loadClub()
+})
+
+onUnmounted(() => {
+  clearSuccessMessageTimeout()
 })
 </script>
 
@@ -84,7 +111,7 @@ onMounted(() => {
         <dd>{{ club.unpaid_entries }}</dd>
       </dl>
 
-      <form class="update-form" @submit.prevent="updateStatus">
+      <form class="finance-form update-form" @submit.prevent="updateStatus">
         <h3>{{ t('finance.club.update_all') }}</h3>
 
         <label>
@@ -101,7 +128,9 @@ onMounted(() => {
         </label>
 
         <div v-if="updateError" class="error" role="alert">{{ updateError }}</div>
-        <div v-if="updateSuccess" class="success" role="status">{{ t('finance.club.update_success', { count: club.unpaid_entries }) }}</div>
+        <div v-if="updateSuccess" class="success" role="status">
+          {{ t('finance.club.update_success', { count: updatedEntriesCount }) }}
+        </div>
 
         <button type="submit" class="primary" :disabled="updating">
           {{ updating ? t('finance.bulk.submitting') : t('common.submit') }}
@@ -110,7 +139,7 @@ onMounted(() => {
 
       <section v-if="club.entries && club.entries.length > 0" class="entries-list">
         <h3>{{ t('finance.club.entries_list') }}</h3>
-        <table>
+        <table class="finance-table">
           <thead>
             <tr>
               <th>{{ t('finance.entry.entry_id') }}</th>
@@ -136,40 +165,12 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import './financeViewShared.css';
+
 .club-payment-status {
   max-width: 56rem;
   margin: 2rem auto;
   padding: 1.5rem;
-}
-
-h2,
-h3 {
-  margin: 0 0 1rem;
-  color: #1d3557;
-}
-
-.loading,
-.error {
-  padding: 1rem;
-  border-radius: 0.5rem;
-}
-
-.loading {
-  background: #f0f4f8;
-  color: #34506f;
-}
-
-.error {
-  background: #fce4e8;
-  color: #8b2531;
-}
-
-.success {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: #dff5e6;
-  color: #0a6d35;
-  margin-bottom: 1rem;
 }
 
 .club-info {
@@ -178,104 +179,29 @@ h3 {
   gap: 0.5rem 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: #f8fbff;
-  border: 1px solid #d7dee7;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
 }
 
 .club-info dt {
   font-weight: 600;
-  color: #34506f;
+  color: var(--rd-text-muted);
 }
 
 .club-info dd {
   margin: 0;
-  color: #1d3557;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9em;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.status-badge--paid {
-  background: #dff5e6;
-  color: #0a6d35;
-}
-
-.status-badge--unpaid {
-  background: #fce4e8;
-  color: #8b2531;
+  color: var(--rd-text);
 }
 
 .update-form {
-  padding: 1.5rem;
-  border: 1px solid #d7dee7;
-  border-radius: 0.5rem;
-  background: #ffffff;
   margin-bottom: 2rem;
-}
-
-.update-form label {
-  display: grid;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.update-form input,
-.update-form select {
-  font: inherit;
-  border: 1px solid #b5c4d5;
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem;
-}
-
-.update-form button {
-  font: inherit;
-  border: 1px solid #1d3557;
-  border-radius: 0.5rem;
-  padding: 0.6rem 1.5rem;
-  cursor: pointer;
-  background: #1d3557;
-  color: #ffffff;
-}
-
-.update-form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .entries-list {
   padding: 1.5rem;
-  border: 1px solid #d7dee7;
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
-  background: #ffffff;
-}
-
-.entries-list table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.entries-list th,
-.entries-list td {
-  text-align: left;
-  padding: 0.5rem;
-  border-bottom: 1px solid #d7dee7;
-}
-
-.entries-list th {
-  font-weight: 600;
-  color: #34506f;
-  background: #f8fbff;
+  background: var(--rd-bg);
 }
 </style>

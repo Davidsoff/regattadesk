@@ -132,9 +132,10 @@
       "density_compact": "Compact",
       "regatta_id_label": "Regatta ID (UUID)",
       "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    },
-    "title": "Financiën",
-    "entry": {
+  },
+  "title": "Financiën",
+  "invalid_route_params": "Ongeldige of ontbrekende routeparameters.",
+  "entry": {
       "title": "Inschrijving Betalingsstatus",
       "entry_id": "Inschrijving ID",
       "payment_status": "Betalingsstatus",

@@ -1,0 +1,119 @@
+h2,
+h3 {
+  margin: 0 0 1rem;
+  color: var(--rd-text);
+}
+
+.loading,
+.error,
+.success,
+.empty {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.loading,
+.empty {
+  background: var(--rd-surface-2);
+  color: var(--rd-text-muted);
+}
+
+.error {
+  background: #fce4e8;
+  color: #8b2531;
+}
+
+.success {
+  background: #dff5e6;
+  color: #0a6d35;
+  margin-bottom: 1rem;
+}
+
+.mono {
+  font-family: var(--rd-font-numeric);
+  font-size: 0.9em;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status-badge--paid {
+  background: #dff5e6;
+  color: #0a6d35;
+}
+
+.status-badge--unpaid {
+  background: #fce4e8;
+  color: #8b2531;
+}
+
+.finance-form {
+  padding: 1.5rem;
+  border: 1px solid var(--rd-border);
+  border-radius: 0.5rem;
+  background: var(--rd-bg);
+}
+
+.finance-form label {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.finance-form input,
+.finance-form select,
+.finance-form button {
+  font: inherit;
+}
+
+.finance-form input,
+.finance-form select {
+  border: 1px solid #b5c4d5;
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.finance-form button {
+  border: 1px solid var(--rd-text);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  background: var(--rd-text);
+  color: var(--rd-bg);
+}
+
+.finance-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.finance-data-box {
+  padding: 1.5rem;
+  border: 1px solid var(--rd-border);
+  border-radius: 0.5rem;
+  background: var(--rd-surface);
+}
+
+.finance-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.finance-table th,
+.finance-table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--rd-border);
+}
+
+.finance-table th {
+  font-weight: 600;
+  color: var(--rd-text-muted);
+  background: var(--rd-surface);
+}

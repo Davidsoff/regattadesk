@@ -43,23 +43,23 @@ function navigateToInvoices() {
   gap: 1rem;
   margin-bottom: 2rem;
   padding: 1rem;
-  background: #f8fbff;
-  border: 1px solid #d7dee7;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
 }
 
 .nav-button {
   font: inherit;
-  border: 1px solid #1d3557;
+  border: 1px solid var(--rd-text);
   border-radius: 0.5rem;
   padding: 0.6rem 1.5rem;
   cursor: pointer;
-  background: #ffffff;
-  color: #1d3557;
+  background: var(--rd-bg);
+  color: var(--rd-text);
 }
 
 .nav-button:hover {
-  background: #1d3557;
-  color: #ffffff;
+  background: var(--rd-text);
+  color: var(--rd-bg);
 }
 </style>

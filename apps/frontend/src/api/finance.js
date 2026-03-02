@@ -52,7 +52,7 @@ export function createFinanceApi(client) {
      * @returns {Promise<object>} Updated entry payment status
      */
     async updateEntryPaymentStatus(regattaId, entryId, payload) {
-      return client.put(`/regattas/${regattaId}/entries/${entryId}/payment_status`, payload)
+      return client.patch(`/regattas/${regattaId}/entries/${entryId}/payment_status`, payload)
     },
 
     /**
@@ -77,7 +77,7 @@ export function createFinanceApi(client) {
      * @returns {Promise<object>} Bulk update result for club
      */
     async updateClubPaymentStatus(regattaId, clubId, payload) {
-      return client.put(`/regattas/${regattaId}/clubs/${clubId}/payment_status`, payload)
+      return client.patch(`/regattas/${regattaId}/clubs/${clubId}/payment_status`, payload)
     },
 
     /**

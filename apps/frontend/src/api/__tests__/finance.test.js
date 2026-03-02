@@ -9,7 +9,7 @@ describe('finance', () => {
     mockClient = {
       request: vi.fn(),
       get: vi.fn(),
-      put: vi.fn(),
+      patch: vi.fn(),
       post: vi.fn()
     }
     api = createFinanceApi(mockClient)
@@ -153,11 +153,11 @@ describe('finance', () => {
         payment_reference: 'REF-456'
       }
 
-      mockClient.put.mockResolvedValue(mockResponse)
+      mockClient.patch.mockResolvedValue(mockResponse)
 
       const result = await api.updateEntryPaymentStatus(regattaId, entryId, payload)
 
-      expect(mockClient.put).toHaveBeenCalledWith(
+      expect(mockClient.patch).toHaveBeenCalledWith(
         `/regattas/${regattaId}/entries/${entryId}/payment_status`,
         payload
       )
@@ -202,11 +202,11 @@ describe('finance', () => {
         message: 'Updated payment status for 2 entries'
       }
 
-      mockClient.put.mockResolvedValue(mockResponse)
+      mockClient.patch.mockResolvedValue(mockResponse)
 
       const result = await api.updateClubPaymentStatus(regattaId, clubId, payload)
 
-      expect(mockClient.put).toHaveBeenCalledWith(
+      expect(mockClient.patch).toHaveBeenCalledWith(
         `/regattas/${regattaId}/clubs/${clubId}/payment_status`,
         payload
       )

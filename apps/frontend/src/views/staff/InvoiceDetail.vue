@@ -1,18 +1,18 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
+import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
 
 const route = useRoute()
 const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
-const SUCCESS_MESSAGE_DURATION_MS = 3000
-
-const regattaId = route.params.regattaId
-const invoiceId = route.params.invoiceId
+const regattaId = validateRouteParam(route.params.regattaId, 'regattaId')
+const invoiceId = validateRouteParam(route.params.invoiceId, 'invoiceId')
+const hasValidRouteParams = Boolean(regattaId && invoiceId)
 
 const invoice = ref(null)
 const loading = ref(true)
@@ -22,8 +22,22 @@ const markError = ref(null)
 const markSuccess = ref(false)
 
 const paymentReference = ref('')
+let successMessageTimeoutId = null
+
+function clearSuccessMessageTimeout() {
+  if (successMessageTimeoutId !== null) {
+    clearTimeout(successMessageTimeoutId)
+    successMessageTimeoutId = null
+  }
+}
 
 async function loadInvoice() {
+  if (!hasValidRouteParams) {
+    error.value = t('finance.invalid_route_params')
+    loading.value = false
+    return
+  }
+
   loading.value = true
   error.value = null
   try {
@@ -37,6 +51,11 @@ async function loadInvoice() {
 }
 
 async function markAsPaid() {
+  if (!hasValidRouteParams) {
+    markError.value = t('finance.invalid_route_params')
+    return
+  }
+
   marking.value = true
   markError.value = null
   markSuccess.value = false
@@ -46,7 +65,8 @@ async function markAsPaid() {
     }
     invoice.value = await financeApi.markInvoicePaid(regattaId, invoiceId, payload)
     markSuccess.value = true
-    setTimeout(() => {
+    clearSuccessMessageTimeout()
+    successMessageTimeoutId = setTimeout(() => {
       markSuccess.value = false
     }, SUCCESS_MESSAGE_DURATION_MS)
   } catch (err) {
@@ -58,6 +78,10 @@ async function markAsPaid() {
 
 onMounted(() => {
   loadInvoice()
+})
+
+onUnmounted(() => {
+  clearSuccessMessageTimeout()
 })
 </script>
 
@@ -99,7 +123,7 @@ onMounted(() => {
         </template>
       </dl>
 
-      <form v-if="invoice.status === 'unpaid'" class="mark-paid-form" @submit.prevent="markAsPaid">
+      <form v-if="invoice.status === 'unpaid'" class="finance-form mark-paid-form" @submit.prevent="markAsPaid">
         <h3>{{ t('finance.invoice.mark_paid') }}</h3>
 
         <label>
@@ -117,7 +141,7 @@ onMounted(() => {
 
       <section v-if="invoice.entries && invoice.entries.length > 0" class="entries-section">
         <h3>{{ t('finance.invoice.entries') }}</h3>
-        <table>
+        <table class="finance-table">
           <thead>
             <tr>
               <th>{{ t('finance.entry.entry_id') }}</th>
@@ -139,40 +163,12 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import './financeViewShared.css';
+
 .invoice-detail {
   max-width: 56rem;
   margin: 2rem auto;
   padding: 1.5rem;
-}
-
-h2,
-h3 {
-  margin: 0 0 1rem;
-  color: #1d3557;
-}
-
-.loading,
-.error {
-  padding: 1rem;
-  border-radius: 0.5rem;
-}
-
-.loading {
-  background: #f0f4f8;
-  color: #34506f;
-}
-
-.error {
-  background: #fce4e8;
-  color: #8b2531;
-}
-
-.success {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  background: #dff5e6;
-  color: #0a6d35;
-  margin-bottom: 1rem;
 }
 
 .invoice-info {
@@ -181,103 +177,29 @@ h3 {
   gap: 0.5rem 1.5rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: #f8fbff;
-  border: 1px solid #d7dee7;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
 }
 
 .invoice-info dt {
   font-weight: 600;
-  color: #34506f;
+  color: var(--rd-text-muted);
 }
 
 .invoice-info dd {
   margin: 0;
-  color: #1d3557;
-}
-
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.9em;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 99px;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.status-badge--paid {
-  background: #dff5e6;
-  color: #0a6d35;
-}
-
-.status-badge--unpaid {
-  background: #fce4e8;
-  color: #8b2531;
+  color: var(--rd-text);
 }
 
 .mark-paid-form {
-  padding: 1.5rem;
-  border: 1px solid #d7dee7;
-  border-radius: 0.5rem;
-  background: #ffffff;
   margin-bottom: 2rem;
-}
-
-.mark-paid-form label {
-  display: grid;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.mark-paid-form input {
-  font: inherit;
-  border: 1px solid #b5c4d5;
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.75rem;
-}
-
-.mark-paid-form button {
-  font: inherit;
-  border: 1px solid #1d3557;
-  border-radius: 0.5rem;
-  padding: 0.6rem 1.5rem;
-  cursor: pointer;
-  background: #1d3557;
-  color: #ffffff;
-}
-
-.mark-paid-form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .entries-section {
   padding: 1.5rem;
-  border: 1px solid #d7dee7;
+  border: 1px solid var(--rd-border);
   border-radius: 0.5rem;
-  background: #ffffff;
-}
-
-.entries-section table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-
-.entries-section th,
-.entries-section td {
-  text-align: left;
-  padding: 0.5rem;
-  border-bottom: 1px solid #d7dee7;
-}
-
-.entries-section th {
-  font-weight: 600;
-  color: #34506f;
-  background: #f8fbff;
+  background: var(--rd-bg);
 }
 </style>
