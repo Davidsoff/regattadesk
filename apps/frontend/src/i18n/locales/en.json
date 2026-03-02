@@ -132,10 +132,10 @@
       "density_compact": "Compact",
       "regatta_id_label": "Regatta ID (UUID)",
       "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-  },
-  "title": "Finance",
-  "invalid_route_params": "Invalid or missing route parameters.",
-  "entry": {
+    },
+    "title": "Finance",
+    "invalid_route_params": "Invalid or missing route parameters.",
+    "entry": {
       "title": "Entry Payment Status",
       "entry_id": "Entry ID",
       "payment_status": "Payment Status",

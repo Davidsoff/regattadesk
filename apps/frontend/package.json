@@ -10,6 +10,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "i18n:check": "node ./scripts/check-i18n.mjs",
     "test:a11y": "echo 'Accessibility tests not yet configured' && exit 1",
     "lint": "echo 'Lint placeholder - to be configured later'"
   },
@@ -23,7 +24,8 @@
     "@vue/test-utils": "2.4.6",
     "happy-dom": "20.6.1",
     "vite": "7.3.1",
-    "vitest": "4.0.18"
+    "vitest": "4.0.18",
+    "vue-i18n-extract": "^2.0.7"
   },
   "engines": {
     "node": ">=22.0.0"
