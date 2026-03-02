@@ -42,3 +42,9 @@ python3 pdd/implementation/issues/export_github_issues.py --apply --verbose --re
 - `--verbose` prints the exact `gh issue create ...` command before each create call.
 - The exporter ensures required labels exist before creating issues (it auto-creates missing labels).
 - Export order is deterministic by file name, then ticket ID.
+- The exporter now links GitHub issue dependencies using each ticket's `depends_on` list.
+  - Mapping is based on the `Ticket ID` metadata line in issue bodies.
+  - For `A depends_on B`, the exporter links A as **blocked by** B in GitHub.
+- The exporter is idempotent by `Ticket ID`:
+  - It skips creating a ticket if a GitHub issue already exists with that `Ticket ID` in metadata.
+  - It skips dependency links that already exist.

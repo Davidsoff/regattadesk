@@ -7,6 +7,7 @@ import argparse
 import glob
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -74,6 +75,105 @@ def _run_checked(cmd: list[str], *, verbose: bool) -> subprocess.CompletedProces
     return subprocess.run(cmd, check=True, text=True, capture_output=True)
 
 
+def _run_graphql(
+    *,
+    query: str,
+    variables: dict[str, str] | None,
+    verbose: bool,
+) -> dict[str, Any]:
+    cmd = ["gh", "api", "graphql", "-f", f"query={query}"]
+    for key, value in (variables or {}).items():
+        cmd.extend(["-F", f"{key}={value}"])
+
+    result = _run_checked(cmd, verbose=verbose)
+    payload = json.loads(result.stdout)
+    errors = payload.get("errors", [])
+    if errors:
+        message = "; ".join(error.get("message", "Unknown GraphQL error") for error in errors)
+        raise SystemExit(f"GraphQL request failed: {message}")
+    return payload.get("data", {})
+
+
+TICKET_ID_REGEX = re.compile(r"^- Ticket ID:\s*`([^`]+)`", re.MULTILINE)
+
+
+def _extract_ticket_id_from_body(body: str | None) -> str | None:
+    if not body:
+        return None
+    match = TICKET_ID_REGEX.search(body)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def _is_real_issue_id(issue_id: str | None) -> bool:
+    return bool(issue_id) and not str(issue_id).startswith("DRYRUN:")
+
+
+def _issue_preference(issue: dict[str, Any]) -> tuple[int, int]:
+    state = issue.get("state", "")
+    number = int(issue.get("number", 0))
+    # Prefer open issues when duplicate Ticket IDs exist, then prefer newest number.
+    return (1 if state == "OPEN" else 0, number)
+
+
+def _gh_list_limit() -> str:
+    # Allow callers to tune list size for larger repositories.
+    raw_value = os.getenv("GH_LIST_LIMIT", "5000")
+    if not raw_value.isdigit() or int(raw_value) <= 0:
+        raise SystemExit("GH_LIST_LIMIT must be a positive integer")
+    return raw_value
+
+
+def build_existing_ticket_issue_index(
+    *,
+    repo: str | None,
+    verbose: bool,
+) -> dict[str, dict[str, Any]]:
+    cmd = [
+        "gh",
+        "issue",
+        "list",
+        "--state",
+        "all",
+        "--limit",
+        _gh_list_limit(),
+        "--json",
+        "id,number,title,body,state,url",
+    ]
+    if repo:
+        cmd.extend(["--repo", repo])
+
+    result = _run_checked(cmd, verbose=verbose)
+    issues = json.loads(result.stdout)
+
+    index: dict[str, dict[str, Any]] = {}
+    duplicate_counts: dict[str, int] = {}
+    for issue in issues:
+        ticket_id = _extract_ticket_id_from_body(issue.get("body"))
+        if not ticket_id:
+            continue
+
+        duplicate_counts[ticket_id] = duplicate_counts.get(ticket_id, 0) + 1
+        current = index.get(ticket_id)
+        if current is None or _issue_preference(issue) > _issue_preference(current):
+            index[ticket_id] = {
+                "id": issue["id"],
+                "number": issue["number"],
+                "url": issue["url"],
+                "state": issue["state"],
+            }
+
+    duplicates = sorted(ticket_id for ticket_id, count in duplicate_counts.items() if count > 1)
+    if duplicates:
+        print(
+            "WARNING: duplicate Ticket IDs found on GitHub; using preferred open/newest issue for:",
+            ", ".join(duplicates),
+        )
+
+    return index
+
+
 def _label_color(label: str) -> str:
     # Keep deterministic colors by label namespace to make scanning easier in GitHub UI.
     if label.startswith("type:"):
@@ -108,7 +208,7 @@ def ensure_labels_exist(
             print("DRY RUN:", shlex.join(cmd))
         return
 
-    list_cmd = ["gh", "label", "list", "--limit", "1000", "--json", "name"]
+    list_cmd = ["gh", "label", "list", "--limit", _gh_list_limit(), "--json", "name"]
     if repo:
         list_cmd.extend(["--repo", repo])
     result = _run_checked(list_cmd, verbose=verbose)
@@ -179,7 +279,7 @@ def run_gh_issue_create(
     repo: str | None,
     dry_run: bool,
     verbose: bool,
-) -> None:
+) -> dict[str, Any] | None:
     cmd = ["gh", "issue", "create", "--title", title]
     if repo:
         cmd.extend(["--repo", repo])
@@ -195,7 +295,7 @@ def run_gh_issue_create(
             print("... (truncated preview)\n")
         else:
             print()
-        return
+        return None
 
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp:
         tmp.write(body)
@@ -203,11 +303,249 @@ def run_gh_issue_create(
 
     try:
         create_cmd = cmd + ["--body-file", tmp_path]
-        if verbose:
-            print("RUN:", shlex.join(create_cmd))
-        subprocess.run(create_cmd, check=True)
+        result = _run_checked(create_cmd, verbose=verbose)
+
+        create_output = "\n".join(
+            [x for x in [result.stdout.strip(), result.stderr.strip()] if x]
+        )
+        issue_locator: str | None = None
+
+        url_match = re.search(r"https://github\.com/\S+/issues/\d+", create_output)
+        if url_match:
+            issue_locator = url_match.group(0)
+        else:
+            # Fallback for alternate gh output formats that print issue numbers.
+            number_match = re.search(r"(?:^|\s)#?(\d+)(?:\s|$)", create_output)
+            if number_match:
+                issue_locator = number_match.group(1)
+
+        if not issue_locator:
+            raise SystemExit(
+                "Failed to parse created issue reference from gh output. "
+                "Expected either an issue URL or issue number. "
+                f"Output was: {create_output!r}"
+            )
+
+        view_cmd = ["gh", "issue", "view", issue_locator, "--json", "id,number,url,state"]
+        if repo:
+            view_cmd.extend(["--repo", repo])
+        view_result = _run_checked(view_cmd, verbose=verbose)
+        issue_data = json.loads(view_result.stdout)
+        return {
+            "id": issue_data["id"],
+            "number": issue_data["number"],
+            "url": issue_data["url"],
+            "state": issue_data["state"],
+        }
     finally:
         os.unlink(tmp_path)
+
+
+def fetch_blocked_by_ids(*, issue_id: str, verbose: bool) -> set[str]:
+    query = """
+query($id: ID!) {
+  node(id: $id) {
+    ... on Issue {
+      blockedBy(first: 100) {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+}
+"""
+    data = _run_graphql(query=query, variables={"id": issue_id}, verbose=verbose)
+    node = data.get("node") or {}
+    blocked_nodes = (((node.get("blockedBy") or {}).get("nodes")) or [])
+    return {item["id"] for item in blocked_nodes if item and item.get("id")}
+
+
+def add_blocked_by_link(*, issue_id: str, blocking_issue_id: str, verbose: bool) -> None:
+    mutation = """
+mutation($issueId: ID!, $blockingIssueId: ID!) {
+  addBlockedBy(input: {issueId: $issueId, blockingIssueId: $blockingIssueId}) {
+    issue { number }
+    blockingIssue { number }
+  }
+}
+"""
+    _run_graphql(
+        query=mutation,
+        variables={"issueId": issue_id, "blockingIssueId": blocking_issue_id},
+        verbose=verbose,
+    )
+
+
+def _record_missing_dependencies(
+    *,
+    missing_pairs: set[tuple[str, str]],
+    dependent_ticket_id: str,
+    dependencies: list[str],
+) -> None:
+    for dependency_ticket_id in dependencies:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+
+
+def _ensure_blocked_cache(
+    *,
+    blocked_cache: dict[str, set[str]],
+    dependent_issue_id: str | None,
+    verbose: bool,
+) -> None:
+    if not _is_real_issue_id(dependent_issue_id):
+        return
+    if dependent_issue_id in blocked_cache:
+        return
+    blocked_cache[dependent_issue_id] = fetch_blocked_by_ids(
+        issue_id=dependent_issue_id,
+        verbose=verbose,
+    )
+
+
+def _is_existing_dependency_link(
+    *,
+    dependent_issue_id: str | None,
+    blocking_issue_id: str | None,
+    blocked_cache: dict[str, set[str]],
+) -> bool:
+    return bool(
+        _is_real_issue_id(dependent_issue_id)
+        and _is_real_issue_id(blocking_issue_id)
+        and blocking_issue_id in blocked_cache.get(dependent_issue_id, set())
+    )
+
+
+def _issue_display(issue: dict[str, Any] | None) -> str:
+    number = (issue or {}).get("number")
+    return f"#{number}" if number is not None else "<new issue>"
+
+
+def _print_dry_run_dependency_link(
+    *,
+    dependent_ticket_id: str,
+    dependency_ticket_id: str,
+    dependent_issue: dict[str, Any] | None,
+    blocking_issue: dict[str, Any] | None,
+) -> None:
+    dep_display = _issue_display(dependent_issue)
+    block_display = _issue_display(blocking_issue)
+    print(
+        "DRY RUN: would link dependency "
+        f"{dependent_ticket_id} ({dep_display}) blocked by "
+        f"{dependency_ticket_id} ({block_display})"
+    )
+
+
+def _apply_single_dependency(
+    *,
+    dependent_ticket_id: str,
+    dependency_ticket_id: str,
+    dependent_issue: dict[str, Any] | None,
+    dependent_issue_id: str | None,
+    ticket_issue_index: dict[str, dict[str, Any]],
+    dry_run: bool,
+    verbose: bool,
+    missing_pairs: set[tuple[str, str]],
+    blocked_cache: dict[str, set[str]],
+) -> int:
+    blocking_issue = ticket_issue_index.get(dependency_ticket_id)
+    if not blocking_issue:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+
+    blocking_issue_id = blocking_issue.get("id")
+    if _is_existing_dependency_link(
+        dependent_issue_id=dependent_issue_id,
+        blocking_issue_id=blocking_issue_id,
+        blocked_cache=blocked_cache,
+    ):
+        return 0
+
+    if dry_run:
+        _print_dry_run_dependency_link(
+            dependent_ticket_id=dependent_ticket_id,
+            dependency_ticket_id=dependency_ticket_id,
+            dependent_issue=dependent_issue,
+            blocking_issue=blocking_issue,
+        )
+        return 1
+
+    if dependent_issue is None or dependent_issue_id is None:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+    if blocking_issue_id is None:
+        missing_pairs.add((dependent_ticket_id, dependency_ticket_id))
+        return 0
+    if dependent_issue_id == blocking_issue_id:
+        print(f"WARNING: skipping self dependency for {dependent_ticket_id}")
+        return 0
+
+    add_blocked_by_link(
+        issue_id=dependent_issue_id,
+        blocking_issue_id=blocking_issue_id,
+        verbose=verbose,
+    )
+    blocked_cache.setdefault(dependent_issue_id, set()).add(blocking_issue_id)
+    return 1
+
+
+def apply_dependency_links(
+    *,
+    entries: list[dict[str, Any]],
+    ticket_issue_index: dict[str, dict[str, Any]],
+    dry_run: bool,
+    verbose: bool,
+) -> None:
+    missing_pairs: set[tuple[str, str]] = set()
+    blocked_cache: dict[str, set[str]] = {}
+    linked_count = 0
+
+    for entry in entries:
+        ticket = entry["ticket"]
+        dependent_ticket_id = ticket["id"]
+        dependencies = ticket.get("depends_on", []) or []
+        if not dependencies:
+            continue
+
+        dependent_issue = ticket_issue_index.get(dependent_ticket_id)
+        if not dependent_issue and not dry_run:
+            _record_missing_dependencies(
+                missing_pairs=missing_pairs,
+                dependent_ticket_id=dependent_ticket_id,
+                dependencies=dependencies,
+            )
+            continue
+
+        dependent_issue_id = (dependent_issue or {}).get("id")
+        _ensure_blocked_cache(
+            blocked_cache=blocked_cache,
+            dependent_issue_id=dependent_issue_id,
+            verbose=verbose,
+        )
+
+        for dependency_ticket_id in dependencies:
+            linked_count += _apply_single_dependency(
+                dependent_ticket_id=dependent_ticket_id,
+                dependency_ticket_id=dependency_ticket_id,
+                dependent_issue=dependent_issue,
+                dependent_issue_id=dependent_issue_id,
+                ticket_issue_index=ticket_issue_index,
+                dry_run=dry_run,
+                verbose=verbose,
+                missing_pairs=missing_pairs,
+                blocked_cache=blocked_cache,
+            )
+
+    if missing_pairs:
+        for dependent_ticket_id, dependency_ticket_id in sorted(missing_pairs):
+            print(
+                "WARNING: dependency not linked because ticket was not found on GitHub by "
+                f"metadata Ticket ID: {dependent_ticket_id} -> {dependency_ticket_id}"
+            )
+
+    action = "would link" if dry_run else "linked"
+    print(f"Dependencies: {action} {linked_count} relationship(s)")
 
 
 def main() -> int:
@@ -257,6 +595,14 @@ def main() -> int:
     mode = "DRY RUN" if dry_run else "APPLY"
     print(f"Mode: {mode}")
     print(f"Found {len(entries)} tickets")
+    existing_ticket_issue_index = build_existing_ticket_issue_index(
+        repo=args.repo,
+        verbose=args.verbose,
+    )
+    print(
+        "Found "
+        f"{len(existing_ticket_issue_index)} existing GitHub issue(s) with Ticket ID metadata"
+    )
     ensure_labels_exist(
         labels_needed=all_labels,
         repo=args.repo,
@@ -264,11 +610,21 @@ def main() -> int:
         verbose=args.verbose,
     )
 
+    created_ticket_issue_index: dict[str, dict[str, Any]] = {}
     for entry in entries:
         t = entry["ticket"]
+        ticket_id = t["id"]
+        existing_issue = existing_ticket_issue_index.get(ticket_id)
+        if existing_issue:
+            print(
+                "SKIP: ticket already exists on GitHub "
+                f"({ticket_id} -> #{existing_issue['number']}, state={existing_issue['state']})"
+            )
+            continue
+
         labels = [f"{args.label_prefix}{x}" for x in entry.get("labels", [])]
         body = render_issue_body(entry)
-        run_gh_issue_create(
+        created_issue = run_gh_issue_create(
             title=t["title"],
             body=body,
             labels=labels,
@@ -276,6 +632,26 @@ def main() -> int:
             dry_run=dry_run,
             verbose=args.verbose,
         )
+        if created_issue:
+            created_ticket_issue_index[ticket_id] = created_issue
+
+    ticket_issue_index = dict(existing_ticket_issue_index)
+    if dry_run:
+        for entry in entries:
+            ticket_id = entry["ticket"]["id"]
+            ticket_issue_index.setdefault(
+                ticket_id,
+                {"id": f"DRYRUN:{ticket_id}", "number": None, "url": "", "state": "OPEN"},
+            )
+    else:
+        ticket_issue_index.update(created_ticket_issue_index)
+
+    apply_dependency_links(
+        entries=entries,
+        ticket_issue_index=ticket_issue_index,
+        dry_run=dry_run,
+        verbose=args.verbose,
+    )
 
     print("Done")
     return 0

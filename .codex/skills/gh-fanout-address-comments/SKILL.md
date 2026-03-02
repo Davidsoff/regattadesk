@@ -68,6 +68,7 @@ For each PR, give the subagent:
 - The PR number
 - The requirement to run the `pr-address-comments` skill for that PR
 - A reminder to handle only that PR
+- Any extra scope the user specified (for example author-pattern checks like `kilocode`, or "run Sonar remediation even when no open threads")
 
 Subagent instruction template:
 
@@ -80,6 +81,7 @@ Run inside this dedicated worktree:
 Scope:
 - Work only on PR #<N>.
 - Address the PR comments per the `pr-address-comments` skill workflow.
+- If requested by the user for this run: explicitly verify author-pattern comments (for example `kilocode`) and enforce Sonar open/new issue cleanup even when there are no open threads.
 - Commit and push fixes to the PR branch.
 - Report blockers immediately.
 - Do not edit files outside `/tmp/pr-<N>-fanout`.
