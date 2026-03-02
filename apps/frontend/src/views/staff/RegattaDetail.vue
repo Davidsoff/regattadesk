@@ -12,7 +12,7 @@ const route = useRoute()
 // Export functionality
 const apiClient = createApiClient()
 const exportApi = createExportApi(apiClient)
-const { status: exportStatus, jobId, downloadUrl, error: exportError, startExport } = useExportJob(
+const { status: exportStatus, jobId, downloadUrl, error: exportError, startExport, resetState: resetExportState } = useExportJob(
   exportApi,
   () => route.params.regattaId
 )
@@ -158,6 +158,13 @@ watch(showWithdrawDialog, async (open) => {
   const focusable = dialogFocusableElements()
   ;(focusable[0] || withdrawDialog.value)?.focus()
 })
+
+watch(
+  () => route.params.regattaId,
+  () => {
+    resetExportState()
+  }
+)
 </script>
 
 <template>
@@ -169,10 +176,10 @@ watch(showWithdrawDialog, async (open) => {
     <section data-testid="export-section">
       <h3>{{ t('staff.regatta_detail.sections.export') }}</h3>
       <button
-        v-if="exportStatus === 'idle'"
         type="button"
         data-testid="export-printables-button"
         :aria-label="t('staff.regatta_detail.export.export_printables_aria')"
+        :disabled="exportStatus === 'pending' || exportStatus === 'processing'"
         @click="startExport"
       >
         {{ t('staff.regatta_detail.export.export_printables') }}

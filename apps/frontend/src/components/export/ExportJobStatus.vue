@@ -28,6 +28,7 @@
     >
       <span class="export-job-status__message">{{ t('export.status.ready') }}</span>
       <a
+        v-if="downloadUrl"
         :href="downloadUrl"
         data-testid="export-download-link"
         class="export-job-status__download-link"

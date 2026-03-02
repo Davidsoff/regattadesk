@@ -95,6 +95,13 @@ export function useExportJob(exportApi, regattaId) {
 
     try {
       const resolvedId = unref(regattaId)
+      if (!resolvedId) {
+        status.value = 'failed'
+        error.value = 'Regatta ID is required to start export'
+        return
+      }
+
+      status.value = 'pending'
       const response = await exportApi.requestPrintableExport(resolvedId)
 
       jobId.value = response.job_id
@@ -130,6 +137,7 @@ export function useExportJob(exportApi, regattaId) {
 
     // Actions
     startExport,
-    cleanup
+    cleanup,
+    resetState
   }
 }
