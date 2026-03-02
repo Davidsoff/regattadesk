@@ -139,6 +139,25 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
         expect(errorMessage.text()).toMatch(/Failed to load|laden mislukt/i)
       })
     })
+
+    it('reloads ruleset when route param changes', async () => {
+      const nextRulesetId = '4f3971f5-c6cc-4501-bf3d-84e1db61995b'
+      mockDrawApi.getRuleset
+        .mockResolvedValueOnce(mockRuleset)
+        .mockResolvedValueOnce({ ...mockRuleset, id: nextRulesetId, name: 'Second Ruleset' })
+
+      const wrapper = await mountPage()
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalledWith(RULESET_ID)
+      })
+
+      await wrapper.vm.$router.push(`/staff/rulesets/${nextRulesetId}`)
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalledWith(nextRulesetId)
+      })
+    })
   })
 
   describe('Form validation', () => {
@@ -243,6 +262,25 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
       const dialog = wrapper.find('[data-testid="duplicate-dialog"]')
       expect(dialog.exists()).toBe(true)
       expect(dialog.element.tagName).toBe('DIALOG')
+    })
+
+    it('moves focus into duplicate dialog and restores focus on close', async () => {
+      const wrapper = await mountPage()
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalled()
+      })
+
+      const duplicateButton = wrapper.find('button[data-testid="duplicate-button"]')
+      await duplicateButton.trigger('click')
+      await vi.waitFor(() => {
+        expect(document.activeElement?.getAttribute('name')).toBe('new_name')
+      })
+
+      await wrapper.find('[data-testid="duplicate-dialog"] button:last-of-type').trigger('click')
+      await vi.waitFor(() => {
+        expect(document.activeElement).toBe(duplicateButton.element)
+      })
     })
 
     it('duplicates ruleset with new name and version', async () => {
@@ -356,6 +394,25 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
       expect(dialog.text()).toMatch(/promote.*global/i)
     })
 
+    it('moves focus into promote dialog and restores focus on close', async () => {
+      const wrapper = await mountPage({ userRole: 'super_admin' })
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalled()
+      })
+
+      const promoteButton = wrapper.find('button[data-testid="promote-button"]')
+      await promoteButton.trigger('click')
+      await vi.waitFor(() => {
+        expect(document.activeElement).toBe(wrapper.find('button[data-testid="promote-confirm"]').element)
+      })
+
+      await wrapper.find('[data-testid="promote-dialog"] button:last-of-type').trigger('click')
+      await vi.waitFor(() => {
+        expect(document.activeElement).toBe(promoteButton.element)
+      })
+    })
+
     it('promotes ruleset to global on confirmation', async () => {
       const promotedRuleset = { ...mockRuleset, is_global: true }
       mockDrawApi.promoteRuleset.mockResolvedValue(promotedRuleset)
@@ -447,6 +504,39 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
 
       const confirmButton = dialog.find('button[data-testid="duplicate-confirm"]')
       expect(confirmButton.attributes('disabled')).toBeDefined()
+    })
+  })
+
+  describe('Lifecycle cleanup', () => {
+    it('clears pending success timers on unmount', async () => {
+      vi.useFakeTimers()
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+
+      mockDrawApi.updateRuleset.mockResolvedValue({ ...mockRuleset, name: 'Updated Name' })
+      mockDrawApi.promoteRuleset.mockResolvedValue({ ...mockRuleset, is_global: true })
+
+      const wrapper = await mountPage({ userRole: 'super_admin' })
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalled()
+      })
+
+      await wrapper.find('input[name="name"]').setValue('Updated Name')
+      await wrapper.find('button[data-testid="save-button"]').trigger('click')
+      await vi.waitFor(() => {
+        expect(mockDrawApi.updateRuleset).toHaveBeenCalled()
+      })
+
+      await wrapper.find('button[data-testid="promote-button"]').trigger('click')
+      await wrapper.find('button[data-testid="promote-confirm"]').trigger('click')
+      await vi.waitFor(() => {
+        expect(mockDrawApi.promoteRuleset).toHaveBeenCalled()
+      })
+
+      wrapper.unmount()
+      expect(clearTimeoutSpy).toHaveBeenCalled()
+
+      clearTimeoutSpy.mockRestore()
+      vi.useRealTimers()
     })
   })
 })

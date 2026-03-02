@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { createApiClient, createDrawApi } from '../../api'
@@ -35,6 +35,7 @@ const formErrors = ref({
 
 // Duplicate dialog state
 const showDuplicateDialog = ref(false)
+const duplicateTriggerButton = ref(null)
 const duplicateDialog = ref(null)
 const duplicateForm = ref({
   new_name: '',
@@ -47,7 +48,10 @@ const duplicateFormErrors = ref({
 
 // Promote dialog state
 const showPromoteDialog = ref(false)
+const promoteTriggerButton = ref(null)
 const promoteDialog = ref(null)
+const saveSuccessTimerId = ref(null)
+const promoteSuccessTimerId = ref(null)
 
 // User role check (from global auth context)
 const userRole = computed(() => {
@@ -140,9 +144,12 @@ async function saveRuleset() {
     ruleset.value = updated
     successMessage.value = t('ruleset.messages.save_success')
     
-    // Clear success message after 3 seconds
-    setTimeout(() => {
+    if (saveSuccessTimerId.value) {
+      clearTimeout(saveSuccessTimerId.value)
+    }
+    saveSuccessTimerId.value = setTimeout(() => {
       successMessage.value = ''
+      saveSuccessTimerId.value = null
     }, 3000)
   } catch (error) {
     errorMessage.value = t('ruleset.messages.save_error')
@@ -167,6 +174,9 @@ function openDuplicateDialog() {
 
 function closeDuplicateDialog() {
   showDuplicateDialog.value = false
+  nextTick(() => {
+    duplicateTriggerButton.value?.focus()
+  })
 }
 
 function validateDuplicateForm() {
@@ -229,6 +239,9 @@ function openPromoteDialog() {
 
 function closePromoteDialog() {
   showPromoteDialog.value = false
+  nextTick(() => {
+    promoteTriggerButton.value?.focus()
+  })
 }
 
 async function confirmPromote() {
@@ -241,9 +254,12 @@ async function confirmPromote() {
     successMessage.value = t('ruleset.messages.promote_success')
     closePromoteDialog()
     
-    // Clear success message after 3 seconds
-    setTimeout(() => {
+    if (promoteSuccessTimerId.value) {
+      clearTimeout(promoteSuccessTimerId.value)
+    }
+    promoteSuccessTimerId.value = setTimeout(() => {
       successMessage.value = ''
+      promoteSuccessTimerId.value = null
     }, 3000)
   } catch (error) {
     if (error.status === 403) {
@@ -303,6 +319,50 @@ function onDialogKeydown(event, closeHandler) {
     first.focus()
   }
 }
+
+watch(showDuplicateDialog, async (open) => {
+  if (!open) {
+    return
+  }
+
+  await nextTick()
+  const focusable = dialogFocusableElements(duplicateDialog.value)
+  ;(focusable[0] || duplicateDialog.value)?.focus()
+})
+
+watch(showPromoteDialog, async (open) => {
+  if (!open) {
+    return
+  }
+
+  await nextTick()
+  const focusable = dialogFocusableElements(promoteDialog.value)
+  ;(focusable[0] || promoteDialog.value)?.focus()
+})
+
+watch(
+  () => route.params.rulesetId,
+  (newRulesetId, previousRulesetId) => {
+    if (!newRulesetId || newRulesetId === previousRulesetId) {
+      return
+    }
+
+    errorMessage.value = ''
+    successMessage.value = ''
+    closeDuplicateDialog()
+    closePromoteDialog()
+    loadRuleset()
+  }
+)
+
+onUnmounted(() => {
+  if (saveSuccessTimerId.value) {
+    clearTimeout(saveSuccessTimerId.value)
+  }
+  if (promoteSuccessTimerId.value) {
+    clearTimeout(promoteSuccessTimerId.value)
+  }
+})
 
 // Initialize
 onMounted(() => {
@@ -414,6 +474,7 @@ onMounted(() => {
           <button
             type="button"
             data-testid="duplicate-button"
+            ref="duplicateTriggerButton"
             @click="openDuplicateDialog"
           >
             {{ t('ruleset.actions.duplicate') }}
@@ -423,6 +484,7 @@ onMounted(() => {
             v-if="canPromote"
             type="button"
             data-testid="promote-button"
+            ref="promoteTriggerButton"
             @click="openPromoteDialog"
           >
             {{ t('ruleset.actions.promote') }}
