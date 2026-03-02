@@ -1,6 +1,6 @@
 ---
 name: gh-issue-to-pr-tdd
-description: Implement one GitHub issue end-to-end and open a pull request using a strict TDD flow (Red, Green, Refactor). Use when a user wants a single issue picked up, assigned, implemented on a fresh branch from latest master in an isolated worktree, reviewed for requirement coverage, fully validated against CI-equivalent tests, and submitted as a PR.
+description: Implement one GitHub issue end-to-end and open a pull request using a strict TDD flow (Red, Green, Refactor). Use when a user wants a single issue picked up, assigned, implemented on a fresh branch from the latest default branch in an isolated worktree, reviewed for requirement coverage, fully validated against CI-equivalent tests, and submitted as a PR.
 ---
 
 # GitHub Issue To PR (TDD)
@@ -13,7 +13,7 @@ Always run in a dedicated worktree, use subagents for Red/Green/Refactor, then r
 ## Inputs
 
 - Required: issue number
-- Optional: base branch (default `master`)
+- Optional: base branch (default repository default branch)
 
 If issue number is missing, ask:
 `Which issue number should I implement?`
@@ -47,14 +47,14 @@ Extract:
 - implied constraints
 - out-of-scope boundaries
 
-### 3) Create Fresh Worktree From Latest Master
+### 3) Create Fresh Worktree From Latest Default Branch
 
 Use branch prefix `codex/`.
 
 ```bash
 set -euo pipefail
 ISSUE=<ISSUE_NUMBER>
-BASE=master
+BASE=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
 SLUG=$(gh issue view "$ISSUE" --json title --jq '.title' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g' | cut -c1-40)
 BRANCH="codex/issue-${ISSUE}-${SLUG}"
 WT="/tmp/issue-${ISSUE}-pr"
@@ -148,8 +148,9 @@ git push -u origin "$(git rev-parse --abbrev-ref HEAD)"
 ### 9) Open Pull Request
 
 ```bash
+BASE=${BASE:-$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')}
 gh pr create \
-  --base master \
+  --base "$BASE" \
   --head "$(git rev-parse --abbrev-ref HEAD)" \
   --title "Fix #<ISSUE_NUMBER>: <issue title>" \
   --body-file - <<'EOF'

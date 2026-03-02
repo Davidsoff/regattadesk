@@ -308,15 +308,25 @@ def run_gh_issue_create(
         create_output = "\n".join(
             [x for x in [result.stdout.strip(), result.stderr.strip()] if x]
         )
+        issue_locator: str | None = None
+
         url_match = re.search(r"https://github\.com/\S+/issues/\d+", create_output)
-        if not url_match:
+        if url_match:
+            issue_locator = url_match.group(0)
+        else:
+            # Fallback for alternate gh output formats that print issue numbers.
+            number_match = re.search(r"(?:^|\s)#?(\d+)(?:\s|$)", create_output)
+            if number_match:
+                issue_locator = number_match.group(1)
+
+        if not issue_locator:
             raise SystemExit(
-                "Failed to parse created issue URL from gh output. "
+                "Failed to parse created issue reference from gh output. "
+                "Expected either an issue URL or issue number. "
                 f"Output was: {create_output!r}"
             )
 
-        issue_url = url_match.group(0)
-        view_cmd = ["gh", "issue", "view", issue_url, "--json", "id,number,url,state"]
+        view_cmd = ["gh", "issue", "view", issue_locator, "--json", "id,number,url,state"]
         if repo:
             view_cmd.extend(["--repo", repo])
         view_result = _run_checked(view_cmd, verbose=verbose)

@@ -72,15 +72,16 @@ If queue is empty, report: `No open unassigned unblocked issues.`
 For each issue `<N>`:
 
 ```bash
-git fetch origin master
+BASE=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
+git fetch origin "$BASE"
 WT="/tmp/issue-${N}-pr"
 if git worktree list --porcelain | grep -q "worktree $WT$"; then
   git worktree remove --force "$WT"
 fi
-git worktree add "$WT" origin/master
+git worktree add "$WT" "origin/$BASE"
 ```
 
-The per-issue worker will create its own branch from this fresh master worktree.
+The per-issue worker will create its own branch from this fresh default-branch worktree.
 
 ### 7) Spawn Workers (Max 5 Parallel)
 
