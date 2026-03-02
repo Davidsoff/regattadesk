@@ -242,4 +242,17 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     expect(scanCaptureButton.exists()).toBe(true)
     expect(scanCaptureButton.attributes('disabled')).toBeUndefined()
   })
+
+  it('does not call capture session create endpoint when workspace is toggled without capture_session_id', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = await mountLineScan()
+    await wrapper.find('[data-testid="toggle-capture-workspace"]').trigger('click')
+    await flushPromises()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Capture session is required to open workspace')
+    expect(wrapper.text()).toContain('capture_session_id')
+  })
 })

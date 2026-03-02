@@ -273,6 +273,26 @@
     "line_scan": {
       "title": "Line Scan",
       "description": "Vastleggen van line scan foto's en finishtijden"
+    },
+    "capture": {
+      "title": "Line Scan Opname",
+      "overview": "Overzicht",
+      "detail": "Detailweergave",
+      "markers": "Markeringen",
+      "unlinked_markers": "Niet-gekoppelde markeringen",
+      "linked_markers": "Gekoppelde markeringen",
+      "create_marker": "Markering maken",
+      "delete_marker": "Verwijderen",
+      "link_to_bib": "Koppelen aan startnummer",
+      "unlink": "Ontkoppelen",
+      "approve": "Goedkeuren",
+      "locked": "Vergrendeld",
+      "bib_number": "Startnr",
+      "frame_offset": "Frame",
+      "timestamp": "Tijd",
+      "no_markers": "Nog geen markeringen",
+      "marker_approved": "Deze markering is goedgekeurd en kan niet worden gewijzigd",
+      "undo": "Ongedaan maken"
     }
   },
   "public": {
