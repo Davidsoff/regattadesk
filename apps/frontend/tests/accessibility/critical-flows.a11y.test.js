@@ -1,4 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mount, flushPromises } from '@vue/test-utils';
+import { createI18n } from 'vue-i18n';
+import { createMemoryHistory, createRouter } from 'vue-router';
+import Results from '../../src/views/public/Results.vue';
+import { calculateReconnectDelay } from '../../src/composables/useSseReconnect';
 
 /**
  * Critical flow E2E tests
@@ -11,69 +16,125 @@ describe('Public Bootstrap Flow', () => {
   beforeEach(() => {
     // Reset fetch mock before each test
     vi.resetAllMocks();
+    vi.stubGlobal('sessionStorage', {
+      getItem: vi.fn(() => 'test-regatta-123'),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      length: 0,
+      key: vi.fn()
+    });
+    vi.stubGlobal('EventSource', vi.fn(function MockEventSource() {
+      return {
+        addEventListener: vi.fn(),
+        close: vi.fn()
+      };
+    }));
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  async function mountResults() {
+    const i18n = createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: {
+        en: {
+          live: {
+            live: 'Live',
+            offline: 'Offline',
+            stale_data_message: 'Showing cached results. Reconnecting for latest updates.'
+          },
+          status: {
+            entered: 'Entered'
+          },
+          public: {
+            results: {
+              title: 'Results',
+              description: 'Live race results'
+            },
+            version: {
+              draw: 'Draw Revision',
+              results: 'Results Revision'
+            }
+          }
+        }
+      }
+    });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        {
+          path: '/public/v:drawRevision-:resultsRevision/results',
+          name: 'results',
+          component: Results
+        }
+      ]
+    });
+
+    await router.push('/public/v1-0/results?regatta_id=test-regatta');
+    await router.isReady();
+
+    return mount(Results, {
+      global: {
+        plugins: [i18n, router]
+      }
+    });
+  }
+
   it('should handle bootstrap flow: /versions 401 → /public/session → retry /versions', async () => {
-    let callCount = 0;
-    
-    global.fetch = vi.fn((url) => {
-      if (url.includes('/public/regattas/') && url.includes('/versions')) {
-        callCount++;
-        if (callCount === 1) {
-          // First call returns 401
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (String(url).includes('/versions')) {
+        if (globalThis.fetch.mock.calls.filter(([calledUrl]) => String(calledUrl).includes('/versions')).length === 1) {
           return Promise.resolve({
             ok: false,
             status: 401,
             headers: { get: () => null }
           });
-        } else {
-          // Second call succeeds after session established
-          return Promise.resolve({
-            ok: true,
-            status: 200,
-            headers: { get: () => 'application/json' },
-            json: () => Promise.resolve({ 
-              draw_revision: 1, 
-              results_revision: 0 
-            })
-          });
         }
-      }
-      
-      if (url.includes('/public/session')) {
+
         return Promise.resolve({
           ok: true,
-          status: 204
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ draw_revision: 1, results_revision: 0 })
+        });
+      }
+
+      if (String(url).includes('/public/session')) {
+        return Promise.resolve({
+          ok: true,
+          status: 204,
+          headers: { get: () => null }
+        });
+      }
+
+      if (String(url).includes('/public/v1-0/regattas/')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ data: [] })
         });
       }
 
       return Promise.reject(new Error('Unexpected URL'));
-    });
+    }));
 
-    // Simulate bootstrap flow
-    const versionsUrl = '/public/regattas/test-regatta/versions';
-    
-    // First attempt
-    let response = await fetch(versionsUrl);
-    expect(response.status).toBe(401);
-    
-    // Call session endpoint
-    const sessionResponse = await fetch('/public/session', { method: 'POST' });
-    expect(sessionResponse.ok).toBe(true);
-    expect(sessionResponse.status).toBe(204);
-    
-    // Retry versions
-    response = await fetch(versionsUrl);
-    expect(response.ok).toBe(true);
-    const data = await response.json();
-    expect(data).toEqual({ draw_revision: 1, results_revision: 0 });
-    
-    // Verify flow executed correctly
-    expect(callCount).toBe(2);
+    await mountResults();
+    await flushPromises();
+
+    const calledUrls = globalThis.fetch.mock.calls.map(([url]) => String(url));
+    expect(calledUrls[0]).toContain('/public/regattas/test-regatta/versions');
+    expect(calledUrls[1]).toContain('/public/session');
+    expect(calledUrls[2]).toContain('/public/regattas/test-regatta/versions');
   });
 
   it('should handle /versions success on first try (existing session)', async () => {
-    global.fetch = vi.fn((url) => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
       if (url.includes('/versions')) {
         return Promise.resolve({
           ok: true,
@@ -86,7 +147,7 @@ describe('Public Bootstrap Flow', () => {
         });
       }
       return Promise.reject(new Error('Unexpected URL'));
-    });
+    }));
 
     const response = await fetch('/public/regattas/test-regatta/versions');
     expect(response.ok).toBe(true);
@@ -127,22 +188,16 @@ describe('SSE Connection State Management', () => {
   });
 
   it('should handle SSE reconnection logic with backoff', () => {
-    // Test exponential backoff calculation (deterministic)
-    const calculateBackoff = (attempt, minMs = 100, baseMs = 500, capMs = 20000) => {
-      const exponential = Math.min(baseMs * Math.pow(2, attempt), capMs);
-      // Use deterministic jitter for testing (0.5 = 50% of exponential)
-      return Math.max(minMs, exponential * 0.5);
-    };
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
-    // Test backoff progression
-    expect(calculateBackoff(0)).toBe(250);  // 500 * 0.5
-    expect(calculateBackoff(1)).toBe(500);  // 1000 * 0.5
-    expect(calculateBackoff(2)).toBe(1000); // 2000 * 0.5
-    expect(calculateBackoff(3)).toBe(2000); // 4000 * 0.5
-    expect(calculateBackoff(4)).toBe(4000); // 8000 * 0.5
-    expect(calculateBackoff(5)).toBe(8000); // 16000 * 0.5
-    expect(calculateBackoff(6)).toBe(10000); // 20000 * 0.5 (capped)
-    expect(calculateBackoff(10)).toBe(10000); // Still capped
+    expect(calculateReconnectDelay(0)).toBe(250); // 500 * 0.5
+    expect(calculateReconnectDelay(1)).toBe(500); // 1000 * 0.5
+    expect(calculateReconnectDelay(2)).toBe(1000); // 2000 * 0.5
+    expect(calculateReconnectDelay(3)).toBe(2000); // 4000 * 0.5
+    expect(calculateReconnectDelay(4)).toBe(4000); // 8000 * 0.5
+    expect(calculateReconnectDelay(5)).toBe(8000); // 16000 * 0.5
+    expect(calculateReconnectDelay(6)).toBe(10000); // 20000 * 0.5 (capped)
+    expect(calculateReconnectDelay(10)).toBe(10000); // Still capped
   });
 
   it('should handle snapshot + tick events correctly', () => {

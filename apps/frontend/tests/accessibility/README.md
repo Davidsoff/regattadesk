@@ -152,7 +152,7 @@ For critical flows (public results, operator capture, staff workflows), complete
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - [axe-core Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
 - [Vue Accessibility Guide](https://vuejs.org/guide/best-practices/accessibility.html)
-- [RegattaDesk Style Guide](../../pdd/design/style-guide.md)
+- [RegattaDesk Style Guide](../../../../pdd/design/style-guide.md)
 
 ## Reporting Issues
 
@@ -162,4 +162,3 @@ When an accessibility issue is found:
 3. Suggest remediation
 4. Link to WCAG success criterion
 5. Assign priority based on impact (critical, serious, moderate, minor)
-

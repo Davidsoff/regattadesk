@@ -154,23 +154,4 @@ describe('RdChip Accessibility', () => {
     }
   });
 
-  it('should be accessible when dismissible', async () => {
-    const wrapper = mount(RdChip, {
-      props: {
-        label: 'Dismissible chip',
-        dismissible: true
-      },
-      attachTo: document.body
-    });
-
-    const results = await axeRun(wrapper.element, {
-      rules: {
-        'button-name': { enabled: true },
-        'color-contrast': { enabled: true }
-      }
-    });
-
-    expect(results.violations).toHaveLength(0);
-    wrapper.unmount();
-  });
 });

@@ -304,6 +304,7 @@ jobs:
         id: a11y-tests
 
       - name: Report accessibility tests result
+        if: always()
         run: |
           if [[ "${{ steps.a11y-tests.outcome }}" == "success" ]]; then
             echo "✅ Accessibility tests passed"
