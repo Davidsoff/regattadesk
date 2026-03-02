@@ -212,7 +212,8 @@
         "events": "Events",
         "athletes": "Athletes",
         "crews": "Crews",
-        "entries": "Entries"
+        "entries": "Entries",
+        "export": "Export"
       },
       "form": {
         "eventGroup": "Event group",
@@ -223,6 +224,10 @@
         "allStatuses": "All",
         "athlete": "Athlete",
         "saveEntry": "Save entry"
+      },
+      "export": {
+        "export_printables": "Export Printables",
+        "export_printables_aria": "Start asynchronous export job for printable documents"
       },
       "events": {
         "open2x": "Open 2x"
@@ -346,6 +351,16 @@
       "draw": "Draw Revision",
       "results": "Results Revision"
     }
+  },
+  "export": {
+    "status": {
+      "preparing": "Preparing export...",
+      "generating": "Generating export...",
+      "ready": "Export ready",
+      "failed": "Export failed"
+    },
+    "retry": "Retry",
+    "expiration_notice": "Download available for 1 hour"
   },
   "errors": {
     "unauthorized": {
