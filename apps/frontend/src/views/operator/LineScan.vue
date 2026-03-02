@@ -72,12 +72,12 @@ const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
 function resolveCaptureSessionFromQuery() {
-  const queryValue =
-    typeof route.query?.capture_session_id === 'string'
-      ? route.query.capture_session_id
-      : typeof route.query?.captureSessionId === 'string'
-        ? route.query.captureSessionId
-        : ''
+  let queryValue = ''
+  if (typeof route.query?.capture_session_id === 'string') {
+    queryValue = route.query.capture_session_id
+  } else if (typeof route.query?.captureSessionId === 'string') {
+    queryValue = route.query.captureSessionId
+  }
 
   return queryValue.trim()
 }
