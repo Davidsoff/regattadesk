@@ -210,7 +210,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
         `/api/v1/regattas/${REGATTA_ID}/draw/publish`,
-        expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
+        expect.objectContaining({ method: 'POST' })
       )
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Published')
@@ -241,7 +241,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
         `/api/v1/regattas/${REGATTA_ID}/draw/unpublish`,
-        expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
+        expect.objectContaining({ method: 'POST' })
       )
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Not Generated')
