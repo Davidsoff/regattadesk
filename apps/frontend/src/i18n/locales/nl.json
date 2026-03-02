@@ -258,6 +258,70 @@
         "currentAction": "Huidige actie",
         "nextAction": "Volgende actie"
       }
+    },
+    "draw_workflow": {
+      "title": "Loting Workflow",
+      "description": "Genereer, publiceer en beheer de race loting",
+      "status": {
+        "label": "Loting Status",
+        "not_generated": "Niet Gegenereerd",
+        "generated": "Gegenereerd (Ongepubliceerd)",
+        "published": "Gepubliceerd"
+      },
+      "revisions": {
+        "draw": "Loting Versie",
+        "results": "Resultaten Versie",
+        "current": "Huidige: {revision}"
+      },
+      "generate": {
+        "button": "Genereer Loting",
+        "button_disabled": "Loting Reeds Gegenereerd",
+        "title": "Genereer Loting",
+        "description": "Genereer een willekeurige loting voor alle actieve inschrijvingen",
+        "seed_label": "Aangepaste Seed (optioneel)",
+        "seed_placeholder": "Laat leeg voor automatisch gegenereerde seed",
+        "seed_show": "Gebruik aangepaste seed",
+        "seed_hide": "Gebruik automatisch gegenereerde seed",
+        "success": "Loting succesvol gegenereerd",
+        "error": "Genereren van loting mislukt",
+        "invalid_seed": "Seed moet een veilig geheel getal zijn",
+        "invalid_response": "Ongeldige generate-response van de server",
+        "generated_seed": "Gegenereerde Seed",
+        "copy_seed": "Kopieer seed naar klembord",
+        "copy_failed": "Kopieren van seed naar klembord mislukt"
+      },
+      "publish": {
+        "button": "Publiceer Loting",
+        "button_disabled": "Genereer eerst loting",
+        "title": "Publiceer Loting",
+        "confirm_title": "Bevestig Loting Publicatie",
+        "confirm_message": "Dit verhoogt draw_revision van {from} naar {to}",
+        "confirm_warning": "Gepubliceerde lotingen maken het publieke schema zichtbaar",
+        "confirm_note": "Gebruik Depubliceer om opnieuw te genereren indien nodig",
+        "success": "Loting succesvol gepubliceerd",
+        "error": "Publiceren van loting mislukt",
+        "invalid_response": "Ongeldige publish-response van de server"
+      },
+      "unpublish": {
+        "button": "Depubliceer Loting",
+        "button_disabled": "Geen gepubliceerde loting",
+        "title": "Depubliceer Loting",
+        "confirm_title": "Bevestig Loting Depublicatie",
+        "confirm_message": "Dit past de draw_revision aan vanaf {current} en maakt de huidige loting niet meer publiek zichtbaar",
+        "confirm_warning": "Dit verbergt het schema voor publieke weergave",
+        "confirm_note": "Na depubliceren kun je desgewenst een nieuwe loting genereren en opnieuw publiceren",
+        "success": "Loting succesvol gedepubliceerd",
+        "error": "Depubliceren van loting mislukt",
+        "invalid_response": "Ongeldige unpublish-response van de server"
+      },
+      "prerequisites": {
+        "title": "Vereisten",
+        "blocks_configured": "Blokken geconfigureerd",
+        "bib_pools_assigned": "Rugnummer-pools toegewezen",
+        "entries_exist": "Inschrijvingen bestaan",
+        "all_met": "Alle vereisten voldaan",
+        "not_met": "Vereisten niet voldaan - kan geen loting genereren"
+      }
     }
   },
   "blocks": {

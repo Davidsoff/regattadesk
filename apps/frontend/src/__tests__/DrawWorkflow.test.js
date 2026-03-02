@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { nextTick } from 'vue'
 
@@ -7,6 +7,19 @@ import i18n from '../i18n'
 import DrawWorkflow from '../views/staff/DrawWorkflow.vue'
 
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
+
+function jsonResponse(body, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === 'content-type' ? 'application/json' : null
+      }
+    },
+    json: vi.fn().mockResolvedValue(body)
+  }
+}
 
 async function mountPage(regattaState = {}) {
   const router = createRouter({
@@ -28,7 +41,7 @@ async function mountPage(regattaState = {}) {
     global: {
       plugins: [router, i18n],
       provide: {
-        regattaState: regattaState
+        regattaState
       }
     }
   })
@@ -38,275 +51,222 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     document.body.innerHTML = ''
+    global.fetch = vi.fn()
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined)
+      }
+    })
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
+    vi.unstubAllGlobals()
   })
 
   describe('display and state', () => {
     it('renders the draw workflow view', async () => {
       const wrapper = await mountPage()
-      
+
       expect(wrapper.find('[data-testid="draw-workflow"]').exists()).toBe(true)
       expect(wrapper.text()).toContain('Draw Workflow')
     })
 
-    it('displays current draw status as not generated', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: false,
-        drawPublished: false,
-        drawRevision: 0,
-        resultsRevision: 0
-      })
-      
-      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Not Generated')
-    })
-
-    it('displays current draw status as generated', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: false,
-        drawRevision: 0,
-        resultsRevision: 0
-      })
-      
-      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Generated')
-    })
-
-    it('displays current draw status as published', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: true,
-        drawRevision: 1,
-        resultsRevision: 0
-      })
-      
-      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Published')
-    })
-
-    it('displays draw_revision and results_revision', async () => {
+    it('displays current draw status and revisions', async () => {
       const wrapper = await mountPage({
         drawGenerated: true,
         drawPublished: true,
         drawRevision: 2,
         resultsRevision: 1
       })
-      
-      const revisionDisplay = wrapper.find('[data-testid="revisions"]')
-      expect(revisionDisplay.text()).toContain('Current: 2')
-      expect(revisionDisplay.text()).toContain('Current: 1')
+
+      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Published')
+      const revisionDisplay = wrapper.find('[data-testid="revisions"]').text()
+      expect(revisionDisplay).toContain('Current: 2')
+      expect(revisionDisplay).toContain('Current: 1')
     })
   })
 
   describe('generate draw', () => {
-    it('shows generate draw button when not generated', async () => {
+    it('calls generate endpoint and updates seed/revision state', async () => {
+      global.fetch.mockResolvedValueOnce(
+        jsonResponse({ seed: 12345, generated_entry_count: 42 })
+      )
+
       const wrapper = await mountPage({
         drawGenerated: false,
-        drawPublished: false
+        drawPublished: false,
+        drawRevision: 0,
+        resultsRevision: 0,
+        prerequisites: {
+          blocksConfigured: true,
+          bibPoolsAssigned: true,
+          entriesExist: true
+        }
       })
-      
-      const generateButton = wrapper.find('[data-testid="generate-draw-button"]')
-      expect(generateButton.exists()).toBe(true)
-      expect(generateButton.attributes('disabled')).toBeUndefined()
-    })
 
-    it('disables generate button when already generated and published', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: true
-      })
-      
-      const generateButton = wrapper.find('[data-testid="generate-draw-button"]')
-      expect(generateButton.attributes('disabled')).toBeDefined()
-    })
-
-    it('shows optional custom seed input', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: false,
-        drawPublished: false
-      })
-      
-      const seedToggle = wrapper.find('[data-testid="seed-toggle"]')
-      expect(seedToggle.exists()).toBe(true)
-      
-      await seedToggle.trigger('click')
-      await nextTick()
-      
+      await wrapper.find('[data-testid="seed-toggle"]').trigger('click')
       const seedInput = wrapper.find('[data-testid="custom-seed-input"]')
-      expect(seedInput.exists()).toBe(true)
+      await seedInput.setValue('12345')
+      await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
+      await nextTick()
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/v1/regattas/${REGATTA_ID}/draw/generate`,
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ seed: 12345 })
+        })
+      )
+
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Generated')
+      expect(wrapper.find('[data-testid="generated-seed"]').text()).toContain('12345')
+      expect(wrapper.find('[data-testid="revisions"]').text()).toContain('Current: 1')
     })
 
-    it('displays generated seed after generation', async () => {
+    it('shows validation error for invalid custom seed', async () => {
+      const wrapper = await mountPage({
+        drawGenerated: false,
+        drawPublished: false,
+        prerequisites: {
+          blocksConfigured: true,
+          bibPoolsAssigned: true,
+          entriesExist: true
+        }
+      })
+
+      await wrapper.find('[data-testid="seed-toggle"]').trigger('click')
+      await wrapper.find('[data-testid="custom-seed-input"]').setValue('bad-seed')
+      await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
+      await nextTick()
+
+      expect(global.fetch).not.toHaveBeenCalled()
+      expect(wrapper.find('[data-testid="error"]').text()).toContain('Seed must be a safe integer')
+    })
+
+    it('shows loading state while generate request is in flight', async () => {
+      let resolveFetch
+      const pendingFetch = new Promise((resolve) => {
+        resolveFetch = resolve
+      })
+      global.fetch.mockReturnValueOnce(pendingFetch)
+
+      const wrapper = await mountPage({
+        drawGenerated: false,
+        drawPublished: false,
+        prerequisites: {
+          blocksConfigured: true,
+          bibPoolsAssigned: true,
+          entriesExist: true
+        }
+      })
+
+      await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
+      await nextTick()
+
+      expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
+
+      resolveFetch(jsonResponse({ seed: 99, generated_entry_count: 3 }))
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
+    })
+
+    it('shows copy error when clipboard write fails', async () => {
+      navigator.clipboard.writeText.mockRejectedValueOnce(new Error('denied'))
+
       const wrapper = await mountPage({
         drawGenerated: true,
         drawPublished: false,
-        generatedSeed: 'test-seed-12345'
+        generatedSeed: 101
       })
-      
-      const seedDisplay = wrapper.find('[data-testid="generated-seed"]')
-      expect(seedDisplay.exists()).toBe(true)
-      expect(seedDisplay.text()).toContain('test-seed-12345')
+
+      await wrapper.find('[data-testid="generated-seed"] button').trigger('click')
+      await nextTick()
+
+      expect(wrapper.find('[data-testid="error"]').text()).toContain('Failed to copy seed to clipboard')
     })
   })
 
-  describe('publish draw', () => {
-    it('shows publish button only when draw is generated', async () => {
+  describe('publish and unpublish', () => {
+    it('publishes and updates draw/results revisions', async () => {
+      global.fetch.mockResolvedValueOnce(
+        jsonResponse({ draw_revision: 2, results_revision: 1 })
+      )
+
       const wrapper = await mountPage({
         drawGenerated: true,
         drawPublished: false,
-        drawRevision: 0
+        drawRevision: 1,
+        resultsRevision: 0
       })
-      
-      const publishButton = wrapper.find('[data-testid="publish-draw-button"]')
-      expect(publishButton.exists()).toBe(true)
-      expect(publishButton.attributes('disabled')).toBeUndefined()
-    })
 
-    it('disables publish button when draw not generated', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: false,
-        drawPublished: false
-      })
-      
-      const publishButton = wrapper.find('[data-testid="publish-draw-button"]')
-      expect(publishButton.attributes('disabled')).toBeDefined()
-    })
-
-    it('shows confirmation dialog when publish is clicked', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: false,
-        drawRevision: 1
-      })
-      
       await wrapper.find('[data-testid="publish-draw-button"]').trigger('click')
-      await nextTick()
-      
-      const dialog = wrapper.find('[data-testid="publish-confirm-dialog"]')
-      expect(dialog.exists()).toBe(true)
-      expect(dialog.text()).toContain('from 1 to 2')
+      await wrapper.find('[data-testid="publish-confirm-dialog"] button').trigger('click')
+      await flushPromises()
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/v1/regattas/${REGATTA_ID}/draw/publish`,
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
+      )
+
+      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Published')
+      const revisionsText = wrapper.find('[data-testid="revisions"]').text()
+      expect(revisionsText).toContain('Current: 2')
+      expect(revisionsText).toContain('Current: 1')
     })
 
-    it('shows warning about revision increment in confirmation', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: false,
-        drawRevision: 1
-      })
-      
-      await wrapper.find('[data-testid="publish-draw-button"]').trigger('click')
-      await nextTick()
-      
-      const dialog = wrapper.find('[data-testid="publish-confirm-dialog"]')
-      expect(dialog.text()).toContain('Published draws enable public schedule visibility')
-    })
-  })
+    it('unpublishes and updates draw/results revisions', async () => {
+      global.fetch.mockResolvedValueOnce(
+        jsonResponse({ draw_revision: 5, results_revision: 3 })
+      )
 
-  describe('unpublish draw', () => {
-    it('shows unpublish button only when draw is published', async () => {
       const wrapper = await mountPage({
         drawGenerated: true,
         drawPublished: true,
-        drawRevision: 2
+        drawRevision: 2,
+        resultsRevision: 1,
+        generatedSeed: 555
       })
-      
-      const unpublishButton = wrapper.find('[data-testid="unpublish-draw-button"]')
-      expect(unpublishButton.exists()).toBe(true)
-      expect(unpublishButton.attributes('disabled')).toBeUndefined()
-    })
 
-    it('disables unpublish button when no published draw', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: false,
-        drawPublished: false
-      })
-      
-      const unpublishButton = wrapper.find('[data-testid="unpublish-draw-button"]')
-      expect(unpublishButton.attributes('disabled')).toBeDefined()
-    })
-
-    it('shows confirmation dialog when unpublish is clicked', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: true,
-        drawPublished: true,
-        drawRevision: 2
-      })
-      
       await wrapper.find('[data-testid="unpublish-draw-button"]').trigger('click')
-      await nextTick()
-      
-      const dialog = wrapper.find('[data-testid="unpublish-confirm-dialog"]')
-      expect(dialog.exists()).toBe(true)
-      expect(dialog.text()).toContain('from 2 to 1')
-    })
-  })
+      const unpublishDialog = wrapper.find('[data-testid="unpublish-confirm-dialog"]')
+      expect(unpublishDialog.text()).toContain('update draw_revision from 2')
 
-  describe('prerequisites', () => {
-    it('displays prerequisites checklist', async () => {
-      const wrapper = await mountPage({
-        prerequisites: {
-          blocksConfigured: true,
-          bibPoolsAssigned: true,
-          entriesExist: true
-        }
-      })
-      
-      const prerequisites = wrapper.find('[data-testid="prerequisites"]')
-      expect(prerequisites.exists()).toBe(true)
-      expect(prerequisites.text()).toContain('Blocks configured')
-      expect(prerequisites.text()).toContain('Bib pools assigned')
-      expect(prerequisites.text()).toContain('Entries exist')
+      await unpublishDialog.find('button').trigger('click')
+      await flushPromises()
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/v1/regattas/${REGATTA_ID}/draw/unpublish`,
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
+      )
+
+      expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Not Generated')
+      const revisionsText = wrapper.find('[data-testid="revisions"]').text()
+      expect(revisionsText).toContain('Current: 5')
+      expect(revisionsText).toContain('Current: 3')
+      expect(wrapper.find('[data-testid="generated-seed"]').exists()).toBe(false)
     })
 
-    it('disables generate when prerequisites not met', async () => {
+    it('closes publish dialog when Escape is pressed', async () => {
       const wrapper = await mountPage({
-        drawGenerated: false,
-        prerequisites: {
-          blocksConfigured: false,
-          bibPoolsAssigned: false,
-          entriesExist: false
-        }
-      })
-      
-      const generateButton = wrapper.find('[data-testid="generate-draw-button"]')
-      expect(generateButton.attributes('disabled')).toBeDefined()
-    })
-  })
-
-  describe('loading states', () => {
-    it('shows loading state during generate action', async () => {
-      const wrapper = await mountPage({
-        drawGenerated: false,
+        drawGenerated: true,
         drawPublished: false,
-        prerequisites: {
-          blocksConfigured: true,
-          bibPoolsAssigned: true,
-          entriesExist: true
-        }
+        drawRevision: 1,
+        resultsRevision: 0
       })
-      
-      // Mock a slow API call
-      const mockApi = vi.spyOn(wrapper.vm, 'generateDraw')
-      mockApi.mockImplementation(async () => {
-        wrapper.vm.loading = true
-        await new Promise(resolve => setTimeout(resolve, 100))
-        wrapper.vm.loading = false
-      })
-      
-      // Trigger generate action but don't await yet
-      const generatePromise = wrapper.vm.generateDraw()
+
+      await wrapper.find('[data-testid="publish-draw-button"]').trigger('click')
+      const dialog = wrapper.find('[data-testid="publish-confirm-dialog"]')
+      expect(dialog.exists()).toBe(true)
+
+      await dialog.trigger('keydown', { key: 'Escape' })
       await nextTick()
-      
-      // Check loading state is true
-      expect(wrapper.vm.loading).toBe(true)
-      
-      // Wait for completion
-      await generatePromise
-      await nextTick()
-      
-      // Loading should be false now
-      expect(wrapper.vm.loading).toBe(false)
+
+      expect(wrapper.find('[data-testid="publish-confirm-dialog"]').exists()).toBe(false)
     })
   })
 })

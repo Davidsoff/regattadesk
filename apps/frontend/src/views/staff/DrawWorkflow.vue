@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { createApiClient, createDrawApi } from '../../api'
@@ -26,6 +26,10 @@ const error = ref(null)
 const showSeedInput = ref(false)
 const customSeed = ref('')
 const generatedSeed = ref(regattaState.generatedSeed || null)
+const publishButton = ref(null)
+const unpublishButton = ref(null)
+const publishDialog = ref(null)
+const unpublishDialog = ref(null)
 const drawStatus = ref({
   generated: regattaState.drawGenerated || false,
   published: regattaState.drawPublished || false
@@ -76,7 +80,36 @@ const canUnpublish = computed(() => {
 })
 
 const nextDrawRevision = computed(() => revisions.value.draw + 1)
-const previousDrawRevision = computed(() => Math.max(0, revisions.value.draw - 1))
+
+function isInteger(value) {
+  return typeof value === 'number' && Number.isInteger(value)
+}
+
+function parseSeedValue(rawValue) {
+  const trimmedSeed = rawValue.trim()
+  if (trimmedSeed === '') {
+    return null
+  }
+
+  const numericSeed = Number(trimmedSeed)
+  if (!Number.isSafeInteger(numericSeed)) {
+    throw new Error(t('staff.draw_workflow.generate.invalid_seed'))
+  }
+
+  return numericSeed
+}
+
+function validateGenerateResponse(result) {
+  if (!result || !isInteger(result.seed)) {
+    throw new Error(t('staff.draw_workflow.generate.invalid_response'))
+  }
+}
+
+function validateRevisionResponse(result, action) {
+  if (!result || !isInteger(result.draw_revision) || !isInteger(result.results_revision)) {
+    throw new Error(t(`staff.draw_workflow.${action}.invalid_response`))
+  }
+}
 
 // Actions
 async function generateDraw() {
@@ -84,11 +117,18 @@ async function generateDraw() {
   error.value = null
   
   try {
-    const payload = customSeed.value ? { seed: customSeed.value } : {}
+    const payload = {}
+    const parsedSeed = parseSeedValue(customSeed.value)
+    if (parsedSeed !== null) {
+      payload.seed = parsedSeed
+    }
+
     const result = await drawApi.generateDraw(route.params.regattaId, payload)
+    validateGenerateResponse(result)
     
     drawStatus.value.generated = true
     generatedSeed.value = result.seed
+    revisions.value.draw += 1
     
     // Reset seed input
     showSeedInput.value = false
@@ -106,6 +146,9 @@ function openPublishDialog() {
 
 function closePublishDialog() {
   showPublishDialog.value = false
+  nextTick(() => {
+    publishButton.value?.focus()
+  })
 }
 
 async function confirmPublish() {
@@ -115,9 +158,11 @@ async function confirmPublish() {
   
   try {
     const result = await drawApi.publishDraw(route.params.regattaId)
+    validateRevisionResponse(result, 'publish')
     
     drawStatus.value.published = true
     revisions.value.draw = result.draw_revision
+    revisions.value.results = result.results_revision
   } catch (err) {
     error.value = err.message || t('staff.draw_workflow.publish.error')
   } finally {
@@ -131,6 +176,9 @@ function openUnpublishDialog() {
 
 function closeUnpublishDialog() {
   showUnpublishDialog.value = false
+  nextTick(() => {
+    unpublishButton.value?.focus()
+  })
 }
 
 async function confirmUnpublish() {
@@ -140,10 +188,12 @@ async function confirmUnpublish() {
   
   try {
     const result = await drawApi.unpublishDraw(route.params.regattaId)
+    validateRevisionResponse(result, 'unpublish')
     
     drawStatus.value.published = false
     drawStatus.value.generated = false
     revisions.value.draw = result.draw_revision
+    revisions.value.results = result.results_revision
     generatedSeed.value = null
   } catch (err) {
     error.value = err.message || t('staff.draw_workflow.unpublish.error')
@@ -159,9 +209,77 @@ function toggleSeedInput() {
   }
 }
 
-function copySeedToClipboard() {
-  if (generatedSeed.value && navigator.clipboard) {
-    navigator.clipboard.writeText(generatedSeed.value)
+function dialogFocusableElements(dialogRef) {
+  if (!dialogRef?.value) {
+    return []
+  }
+
+  return [...dialogRef.value.querySelectorAll('button, textarea, input, select, [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.hasAttribute('disabled'))
+}
+
+function onDialogKeydown(event, closeDialog, dialogRef) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeDialog()
+    return
+  }
+
+  if (event.key !== 'Tab') {
+    return
+  }
+
+  const focusable = dialogFocusableElements(dialogRef)
+  if (!focusable.length) {
+    event.preventDefault()
+    return
+  }
+
+  const first = focusable[0]
+  const last = focusable[focusable.length - 1]
+  const active = document.activeElement
+
+  if (event.shiftKey) {
+    if (active === first || !dialogRef.value?.contains(active)) {
+      event.preventDefault()
+      last.focus()
+    }
+    return
+  }
+
+  if (active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+watch(showPublishDialog, async (open) => {
+  if (!open) {
+    return
+  }
+
+  await nextTick()
+  const focusable = dialogFocusableElements(publishDialog)
+  ;(focusable[0] || publishDialog.value)?.focus()
+})
+
+watch(showUnpublishDialog, async (open) => {
+  if (!open) {
+    return
+  }
+
+  await nextTick()
+  const focusable = dialogFocusableElements(unpublishDialog)
+  ;(focusable[0] || unpublishDialog.value)?.focus()
+})
+
+async function copySeedToClipboard() {
+  if (generatedSeed.value && navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(String(generatedSeed.value))
+    } catch {
+      error.value = t('staff.draw_workflow.generate.copy_failed')
+    }
   }
 }
 </script>
@@ -201,28 +319,34 @@ function copySeedToClipboard() {
       <h3>{{ t('staff.draw_workflow.prerequisites.title') }}</h3>
       <ul>
         <li>
-          <input 
-            type="checkbox" 
-            :checked="prerequisites.blocksConfigured" 
-            disabled 
-          />
-          {{ t('staff.draw_workflow.prerequisites.blocks_configured') }}
+          <label>
+            <input 
+              type="checkbox" 
+              :checked="prerequisites.blocksConfigured" 
+              disabled 
+            />
+            {{ t('staff.draw_workflow.prerequisites.blocks_configured') }}
+          </label>
         </li>
         <li>
-          <input 
-            type="checkbox" 
-            :checked="prerequisites.bibPoolsAssigned" 
-            disabled 
-          />
-          {{ t('staff.draw_workflow.prerequisites.bib_pools_assigned') }}
+          <label>
+            <input 
+              type="checkbox" 
+              :checked="prerequisites.bibPoolsAssigned" 
+              disabled 
+            />
+            {{ t('staff.draw_workflow.prerequisites.bib_pools_assigned') }}
+          </label>
         </li>
         <li>
-          <input 
-            type="checkbox" 
-            :checked="prerequisites.entriesExist" 
-            disabled 
-          />
-          {{ t('staff.draw_workflow.prerequisites.entries_exist') }}
+          <label>
+            <input 
+              type="checkbox" 
+              :checked="prerequisites.entriesExist" 
+              disabled 
+            />
+            {{ t('staff.draw_workflow.prerequisites.entries_exist') }}
+          </label>
         </li>
       </ul>
     </section>
@@ -272,6 +396,7 @@ function copySeedToClipboard() {
     <section>
       <h3>{{ t('staff.draw_workflow.publish.title') }}</h3>
       <button
+        ref="publishButton"
         data-testid="publish-draw-button"
         type="button"
         :disabled="!canPublish"
@@ -283,10 +408,13 @@ function copySeedToClipboard() {
       <!-- Publish confirmation dialog -->
       <dialog
         v-if="showPublishDialog"
+        ref="publishDialog"
         open
         data-testid="publish-confirm-dialog"
         aria-modal="true"
         aria-labelledby="publish-dialog-title"
+        tabindex="-1"
+        @keydown="(event) => onDialogKeydown(event, closePublishDialog, publishDialog)"
       >
         <h4 id="publish-dialog-title">{{ t('staff.draw_workflow.publish.confirm_title') }}</h4>
         <p>{{ t('staff.draw_workflow.publish.confirm_message', { from: revisions.draw, to: nextDrawRevision }) }}</p>
@@ -305,6 +433,7 @@ function copySeedToClipboard() {
     <section>
       <h3>{{ t('staff.draw_workflow.unpublish.title') }}</h3>
       <button
+        ref="unpublishButton"
         data-testid="unpublish-draw-button"
         type="button"
         :disabled="!canUnpublish"
@@ -316,13 +445,16 @@ function copySeedToClipboard() {
       <!-- Unpublish confirmation dialog -->
       <dialog
         v-if="showUnpublishDialog"
+        ref="unpublishDialog"
         open
         data-testid="unpublish-confirm-dialog"
         aria-modal="true"
         aria-labelledby="unpublish-dialog-title"
+        tabindex="-1"
+        @keydown="(event) => onDialogKeydown(event, closeUnpublishDialog, unpublishDialog)"
       >
         <h4 id="unpublish-dialog-title">{{ t('staff.draw_workflow.unpublish.confirm_title') }}</h4>
-        <p>{{ t('staff.draw_workflow.unpublish.confirm_message', { from: revisions.draw, to: previousDrawRevision }) }}</p>
+        <p>{{ t('staff.draw_workflow.unpublish.confirm_message', { current: revisions.draw }) }}</p>
         <p>{{ t('staff.draw_workflow.unpublish.confirm_warning') }}</p>
         <p>{{ t('staff.draw_workflow.unpublish.confirm_note') }}</p>
         <button type="button" @click="confirmUnpublish">

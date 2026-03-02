@@ -258,6 +258,70 @@
         "currentAction": "Current action",
         "nextAction": "Next action"
       }
+    },
+    "draw_workflow": {
+      "title": "Draw Workflow",
+      "description": "Generate, publish, and manage the race draw",
+      "status": {
+        "label": "Draw Status",
+        "not_generated": "Not Generated",
+        "generated": "Generated (Unpublished)",
+        "published": "Published"
+      },
+      "revisions": {
+        "draw": "Draw Revision",
+        "results": "Results Revision",
+        "current": "Current: {revision}"
+      },
+      "generate": {
+        "button": "Generate Draw",
+        "button_disabled": "Draw Already Generated",
+        "title": "Generate Draw",
+        "description": "Generate a random draw for all active entries",
+        "seed_label": "Custom Seed (optional)",
+        "seed_placeholder": "Leave empty for auto-generated seed",
+        "seed_show": "Use custom seed",
+        "seed_hide": "Use auto-generated seed",
+        "success": "Draw generated successfully",
+        "error": "Failed to generate draw",
+        "invalid_seed": "Seed must be a safe integer",
+        "invalid_response": "Invalid generate response from server",
+        "generated_seed": "Generated Seed",
+        "copy_seed": "Copy seed to clipboard",
+        "copy_failed": "Failed to copy seed to clipboard"
+      },
+      "publish": {
+        "button": "Publish Draw",
+        "button_disabled": "Generate draw first",
+        "title": "Publish Draw",
+        "confirm_title": "Confirm Draw Publication",
+        "confirm_message": "This will increment draw_revision from {from} to {to}",
+        "confirm_warning": "Published draws enable public schedule visibility",
+        "confirm_note": "Use Unpublish to regenerate if needed",
+        "success": "Draw published successfully",
+        "error": "Failed to publish draw",
+        "invalid_response": "Invalid publish response from server"
+      },
+      "unpublish": {
+        "button": "Unpublish Draw",
+        "button_disabled": "No published draw",
+        "title": "Unpublish Draw",
+        "confirm_title": "Confirm Draw Unpublication",
+        "confirm_message": "This will unpublish the current draw and update draw_revision from {current}",
+        "confirm_warning": "This will hide the schedule from public view",
+        "confirm_note": "You can regenerate and republish after unpublishing",
+        "success": "Draw unpublished successfully",
+        "error": "Failed to unpublish draw",
+        "invalid_response": "Invalid unpublish response from server"
+      },
+      "prerequisites": {
+        "title": "Prerequisites",
+        "blocks_configured": "Blocks configured",
+        "bib_pools_assigned": "Bib pools assigned",
+        "entries_exist": "Entries exist",
+        "all_met": "All prerequisites met",
+        "not_met": "Prerequisites not met - cannot generate draw"
+      }
     }
   },
   "blocks": {
