@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
+import LineScanCapture from '../../components/operator/LineScanCapture.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -70,6 +71,33 @@ const operatorStation = computed(() => {
 const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
+function resolveCaptureSessionFromQuery() {
+  let queryValue = ''
+  if (typeof route.query?.capture_session_id === 'string') {
+    queryValue = route.query.capture_session_id
+  } else if (typeof route.query?.captureSessionId === 'string') {
+    queryValue = route.query.captureSessionId
+  }
+
+  return queryValue.trim()
+}
+
+function resolveCaptureSessionId() {
+  const contextSessionId =
+    typeof globalThis.__REGATTADESK_AUTH__?.captureSessionId === 'string'
+      ? globalThis.__REGATTADESK_AUTH__.captureSessionId.trim()
+      : ''
+  const querySessionId = resolveCaptureSessionFromQuery()
+  const storageSessionId =
+    typeof globalThis.window?.localStorage?.getItem === 'function'
+      ? (globalThis.window.localStorage.getItem('rd_capture_session_id') || '').trim()
+      : ''
+
+  return contextSessionId || querySessionId || storageSessionId || null
+}
+
+const captureSessionId = ref(resolveCaptureSessionId())
+const showCaptureWorkspace = ref(false) // Toggle for showing capture workspace
 
 function applyAccessModeFromResponse(response) {
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
@@ -213,11 +241,30 @@ async function completeHandoff() {
     })
     handoff.value = response
     applyAccessModeFromResponse(response)
+    if (typeof response?.capture_session_id === 'string' && response.capture_session_id.trim()) {
+      captureSessionId.value = response.capture_session_id.trim()
+    }
   } catch (error) {
     handleCompleteHandoffError(error)
   } finally {
     isSubmitting.value = false
   }
+}
+
+function toggleCaptureWorkspace() {
+  if (showCaptureWorkspace.value) {
+    showCaptureWorkspace.value = false
+    return
+  }
+
+  if (!captureSessionId.value) {
+    handoffErrorMessage.value =
+      'Capture session is required to open workspace. Provide capture_session_id in auth context or URL.'
+    return
+  }
+
+  handoffErrorMessage.value = ''
+  showCaptureWorkspace.value = true
 }
 </script>
 
@@ -276,8 +323,23 @@ async function completeHandoff() {
       <button type="button" data-testid="line-scan-capture" :disabled="isCaptureDisabled">
         Capture frame
       </button>
+      <button
+        type="button"
+        data-testid="toggle-capture-workspace"
+        @click="toggleCaptureWorkspace"
+        :disabled="!operatorToken"
+      >
+        {{ showCaptureWorkspace ? 'Hide' : 'Show' }} Capture Workspace
+      </button>
       <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
     </div>
+
+    <!-- Capture Workspace -->
+    <LineScanCapture
+      v-if="showCaptureWorkspace && operatorToken && captureSessionId"
+      :capture-session-id="captureSessionId"
+      :regatta-id="route.params.regattaId"
+    />
   </div>
 </template>
 

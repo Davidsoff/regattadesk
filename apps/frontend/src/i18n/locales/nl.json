@@ -212,7 +212,8 @@
         "events": "Nummers",
         "athletes": "Atleten",
         "crews": "Ploegen",
-        "entries": "Inschrijvingen"
+        "entries": "Inschrijvingen",
+        "export": "Export"
       },
       "form": {
         "eventGroup": "Nummergroep",
@@ -223,6 +224,10 @@
         "allStatuses": "Alle",
         "athlete": "Atleet",
         "saveEntry": "Inschrijving opslaan"
+      },
+      "export": {
+        "export_printables": "Printbare bestanden exporteren",
+        "export_printables_aria": "Start asynchrone exporttaak voor printbare documenten"
       },
       "events": {
         "open2x": "Open 2x"
@@ -311,6 +316,34 @@
       "bib_overlap_details": "Startnummers {bibs} overlappen met pool: {poolName}"
     }
   },
+  "rulesets": {
+    "title": "Regelsets",
+    "createButton": "Regelset aanmaken",
+    "tableCaption": "Lijst van regelsets",
+    "emptyState": "Geen regelsets gevonden",
+    "loadError": "Kan regelsets niet laden. Probeer het opnieuw.",
+    "retryButton": "Opnieuw proberen",
+    "filter": {
+      "all": "Alle regelsets",
+      "global": "Alleen globaal",
+      "regattaOwned": "Alleen regatta-eigendom"
+    },
+    "columns": {
+      "name": "Naam",
+      "version": "Versie",
+      "ageCalculation": "Leeftijdsberekening",
+      "scope": "Bereik",
+      "description": "Beschrijving"
+    },
+    "scope": {
+      "global": "Globaal",
+      "regattaOwned": "Regatta-eigendom"
+    },
+    "ageCalculation": {
+      "actualAtStart": "Werkelijke leeftijd bij start",
+      "ageAsOfJan1": "Leeftijd per 1 januari"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Ploeg is verplicht",
@@ -329,6 +362,26 @@
     "line_scan": {
       "title": "Line Scan",
       "description": "Vastleggen van line scan foto's en finishtijden"
+    },
+    "capture": {
+      "title": "Line Scan Opname",
+      "overview": "Overzicht",
+      "detail": "Detailweergave",
+      "markers": "Markeringen",
+      "unlinked_markers": "Niet-gekoppelde markeringen",
+      "linked_markers": "Gekoppelde markeringen",
+      "create_marker": "Markering maken",
+      "delete_marker": "Verwijderen",
+      "link_to_bib": "Koppelen aan startnummer",
+      "unlink": "Ontkoppelen",
+      "approve": "Goedkeuren",
+      "locked": "Vergrendeld",
+      "bib_number": "Startnr",
+      "frame_offset": "Frame",
+      "timestamp": "Tijd",
+      "no_markers": "Nog geen markeringen",
+      "marker_approved": "Deze markering is goedgekeurd en kan niet worden gewijzigd",
+      "undo": "Ongedaan maken"
     }
   },
   "public": {
@@ -354,6 +407,16 @@
       "draw": "Loting versie",
       "results": "Resultaten versie"
     }
+  },
+  "export": {
+    "status": {
+      "preparing": "Export voorbereiden...",
+      "generating": "Export genereren...",
+      "ready": "Export klaar",
+      "failed": "Export mislukt"
+    },
+    "retry": "Opnieuw proberen",
+    "expiration_notice": "Download beschikbaar voor 1 uur"
   },
   "errors": {
     "unauthorized": {

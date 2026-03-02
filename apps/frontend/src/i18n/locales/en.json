@@ -212,7 +212,8 @@
         "events": "Events",
         "athletes": "Athletes",
         "crews": "Crews",
-        "entries": "Entries"
+        "entries": "Entries",
+        "export": "Export"
       },
       "form": {
         "eventGroup": "Event group",
@@ -223,6 +224,10 @@
         "allStatuses": "All",
         "athlete": "Athlete",
         "saveEntry": "Save entry"
+      },
+      "export": {
+        "export_printables": "Export Printables",
+        "export_printables_aria": "Start asynchronous export job for printable documents"
       },
       "events": {
         "open2x": "Open 2x"
@@ -311,6 +316,34 @@
       "bib_overlap_details": "Bibs {bibs} overlap with pool: {poolName}"
     }
   },
+  "rulesets": {
+    "title": "Rulesets",
+    "createButton": "Create Ruleset",
+    "tableCaption": "List of rulesets",
+    "emptyState": "No rulesets found",
+    "loadError": "Failed to load rulesets. Please try again.",
+    "retryButton": "Retry",
+    "filter": {
+      "all": "All rulesets",
+      "global": "Global only",
+      "regattaOwned": "Regatta-owned only"
+    },
+    "columns": {
+      "name": "Name",
+      "version": "Version",
+      "ageCalculation": "Age Calculation",
+      "scope": "Scope",
+      "description": "Description"
+    },
+    "scope": {
+      "global": "Global",
+      "regattaOwned": "Regatta-owned"
+    },
+    "ageCalculation": {
+      "actualAtStart": "Actual age at start",
+      "ageAsOfJan1": "Age as of January 1"
+    }
+  },
   "validation": {
     "entry": {
       "crewRequired": "Crew is required",
@@ -329,6 +362,26 @@
     "line_scan": {
       "title": "Line Scan",
       "description": "Capture line scan images and mark finish times"
+    },
+    "capture": {
+      "title": "Line Scan Capture",
+      "overview": "Overview",
+      "detail": "Detail View",
+      "markers": "Markers",
+      "unlinked_markers": "Unlinked Markers",
+      "linked_markers": "Linked Markers",
+      "create_marker": "Create Marker",
+      "delete_marker": "Delete",
+      "link_to_bib": "Link to Bib",
+      "unlink": "Unlink",
+      "approve": "Approve",
+      "locked": "Locked",
+      "bib_number": "Bib",
+      "frame_offset": "Frame",
+      "timestamp": "Time",
+      "no_markers": "No markers yet",
+      "marker_approved": "This marker is approved and cannot be edited",
+      "undo": "Undo"
     }
   },
   "public": {
@@ -354,6 +407,16 @@
       "draw": "Draw Revision",
       "results": "Results Revision"
     }
+  },
+  "export": {
+    "status": {
+      "preparing": "Preparing export...",
+      "generating": "Generating export...",
+      "ready": "Export ready",
+      "failed": "Export failed"
+    },
+    "retry": "Retry",
+    "expiration_notice": "Download available for 1 hour"
   },
   "errors": {
     "unauthorized": {

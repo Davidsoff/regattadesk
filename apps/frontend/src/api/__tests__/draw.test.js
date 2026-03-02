@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createDrawApi } from '../draw.js'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createDrawApi } from '../draw'
 
-describe('createDrawApi', () => {
+describe('draw', () => {
   let api
   let mockClient
 
@@ -15,15 +15,171 @@ describe('createDrawApi', () => {
     api = createDrawApi(mockClient)
   })
 
-  describe('Blocks API', () => {
-    const regattaId = 'regatta-123'
-    const blockId = 'block-456'
-
-    describe('listBlocks', () => {
-      it('calls GET /regattas/:regattaId/blocks', async () => {
+  describe('rulesets', () => {
+    describe('listRulesets', () => {
+      it('fetches all rulesets without filter', async () => {
         const mockResponse = {
-          blocks: [
-            { id: 'block-1', name: 'Morning Session', start_time: '09:00:00' }
+          data: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440000',
+              name: 'FISA Rules',
+              version: '2024',
+              description: 'FISA rowing rules',
+              age_calculation_type: 'actual_at_start',
+              is_global: true
+            }
+          ]
+        }
+        mockClient.get.mockResolvedValue(mockResponse)
+
+        const result = await api.listRulesets()
+
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets')
+        expect(result).toEqual(mockResponse)
+      })
+
+      it('fetches global rulesets when is_global=true', async () => {
+        const mockResponse = { data: [] }
+        mockClient.get.mockResolvedValue(mockResponse)
+
+        await api.listRulesets({ is_global: true })
+
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets?is_global=true')
+      })
+
+      it('fetches regatta-owned rulesets when is_global=false', async () => {
+        const mockResponse = { data: [] }
+        mockClient.get.mockResolvedValue(mockResponse)
+
+        await api.listRulesets({ is_global: false })
+
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets?is_global=false')
+      })
+    })
+
+    describe('getRuleset', () => {
+      it('fetches a single ruleset by id', async () => {
+        const rulesetId = '550e8400-e29b-41d4-a716-446655440000'
+        const mockResponse = {
+          id: rulesetId,
+          name: 'Custom Rules',
+          version: 'v1',
+          age_calculation_type: 'age_as_of_jan_1',
+          is_global: false
+        }
+        mockClient.get.mockResolvedValue(mockResponse)
+
+        const result = await api.getRuleset(rulesetId)
+
+        expect(mockClient.get).toHaveBeenCalledWith(`/rulesets/${rulesetId}`)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('createRuleset', () => {
+      it('creates a new ruleset', async () => {
+        const payload = {
+          name: 'New Ruleset',
+          version: '2024',
+          description: 'Test ruleset',
+          age_calculation_type: 'actual_at_start'
+        }
+        const mockResponse = {
+          id: '550e8400-e29b-41d4-a716-446655440000',
+          ...payload,
+          is_global: false
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.createRuleset(payload)
+
+        expect(mockClient.post).toHaveBeenCalledWith('/rulesets', payload)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('updateRuleset', () => {
+      it('updates an existing ruleset', async () => {
+        const rulesetId = '550e8400-e29b-41d4-a716-446655440000'
+        const payload = {
+          name: 'Updated Name',
+          description: 'Updated description'
+        }
+        const mockResponse = {
+          id: rulesetId,
+          name: 'Updated Name',
+          version: '2024',
+          description: 'Updated description',
+          age_calculation_type: 'actual_at_start',
+          is_global: false
+        }
+        mockClient.patch.mockResolvedValue(mockResponse)
+
+        const result = await api.updateRuleset(rulesetId, payload)
+
+        expect(mockClient.patch).toHaveBeenCalledWith(`/rulesets/${rulesetId}`, payload)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('duplicateRuleset', () => {
+      it('duplicates a ruleset with new name and version', async () => {
+        const rulesetId = '550e8400-e29b-41d4-a716-446655440000'
+        const payload = {
+          new_name: 'Duplicated Ruleset',
+          new_version: '2024-v2'
+        }
+        const mockResponse = {
+          id: '660e8400-e29b-41d4-a716-446655440000',
+          name: 'Duplicated Ruleset',
+          version: '2024-v2',
+          age_calculation_type: 'actual_at_start',
+          is_global: false
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.duplicateRuleset(rulesetId, payload)
+
+        expect(mockClient.post).toHaveBeenCalledWith(`/rulesets/${rulesetId}/duplicate`, payload)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('promoteRuleset', () => {
+      it('promotes a regatta-owned ruleset to global (super_admin only)', async () => {
+        const rulesetId = '550e8400-e29b-41d4-a716-446655440000'
+        const mockResponse = {
+          id: rulesetId,
+          name: 'Promoted Ruleset',
+          version: '2024',
+          age_calculation_type: 'actual_at_start',
+          is_global: true
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.promoteRuleset(rulesetId)
+
+        expect(mockClient.post).toHaveBeenCalledWith(`/rulesets/${rulesetId}/promote`)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+  })
+
+  describe('blocks', () => {
+    describe('listBlocks', () => {
+      it('fetches blocks for a regatta', async () => {
+        const regattaId = 'regatta-123'
+        const mockResponse = {
+          data: [
+            {
+              id: 'block-1',
+              regatta_id: regattaId,
+              name: 'Morning Session',
+              start_time: '2024-08-15T09:00:00Z',
+              event_interval_seconds: 300,
+              crew_interval_seconds: 60,
+              display_order: 1
+            }
           ]
         }
         mockClient.get.mockResolvedValue(mockResponse)
@@ -36,30 +192,46 @@ describe('createDrawApi', () => {
     })
 
     describe('createBlock', () => {
-      it('calls POST /regattas/:regattaId/blocks with payload', async () => {
+      it('creates a new block', async () => {
+        const regattaId = 'regatta-123'
         const payload = {
-          name: 'Morning Session',
-          start_time: '09:00:00',
-          event_interval_seconds: 120,
-          crew_interval_seconds: 30
+          name: 'Afternoon Session',
+          start_time: '2024-08-15T14:00:00Z',
+          event_interval_seconds: 300,
+          crew_interval_seconds: 60
         }
-        const mockResponse = { id: blockId, ...payload }
+        const mockResponse = {
+          id: 'block-2',
+          regatta_id: regattaId,
+          ...payload,
+          display_order: 2
+        }
         mockClient.post.mockResolvedValue(mockResponse)
 
         const result = await api.createBlock(regattaId, payload)
 
-        expect(mockClient.post).toHaveBeenCalledWith(
-          `/regattas/${regattaId}/blocks`,
-          payload
-        )
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/blocks`, payload)
         expect(result).toEqual(mockResponse)
       })
     })
 
     describe('updateBlock', () => {
-      it('calls PATCH /regattas/:regattaId/blocks/:blockId with payload', async () => {
-        const payload = { name: 'Updated Morning Session' }
-        const mockResponse = { id: blockId, ...payload }
+      it('updates an existing block', async () => {
+        const regattaId = 'regatta-123'
+        const blockId = 'block-1'
+        const payload = {
+          name: 'Updated Morning Session',
+          start_time: '2024-08-15T08:30:00Z'
+        }
+        const mockResponse = {
+          id: blockId,
+          regatta_id: regattaId,
+          name: 'Updated Morning Session',
+          start_time: '2024-08-15T08:30:00Z',
+          event_interval_seconds: 300,
+          crew_interval_seconds: 60,
+          display_order: 1
+        }
         mockClient.patch.mockResolvedValue(mockResponse)
 
         const result = await api.updateBlock(regattaId, blockId, payload)
@@ -73,41 +245,58 @@ describe('createDrawApi', () => {
     })
 
     describe('deleteBlock', () => {
-      it('calls DELETE /regattas/:regattaId/blocks/:blockId', async () => {
-        mockClient.delete.mockResolvedValue(undefined)
+      it('deletes a block', async () => {
+        const regattaId = 'regatta-123'
+        const blockId = 'block-1'
+        mockClient.delete.mockResolvedValue(null)
 
         await api.deleteBlock(regattaId, blockId)
 
-        expect(mockClient.delete).toHaveBeenCalledWith(
-          `/regattas/${regattaId}/blocks/${blockId}`
-        )
+        expect(mockClient.delete).toHaveBeenCalledWith(`/regattas/${regattaId}/blocks/${blockId}`)
       })
     })
 
     describe('reorderBlocks', () => {
-      it('calls POST /regattas/:regattaId/blocks/reorder with block IDs', async () => {
-        const payload = { block_ids: ['block-1', 'block-2', 'block-3'] }
-        mockClient.post.mockResolvedValue(undefined)
+      it('reorders blocks by display_order', async () => {
+        const regattaId = 'regatta-123'
+        const payload = {
+          items: [
+            { block_id: 'block-2', display_order: 1 },
+            { block_id: 'block-1', display_order: 2 }
+          ]
+        }
+        const mockResponse = { data: [] }
+        mockClient.post.mockResolvedValue(mockResponse)
 
-        await api.reorderBlocks(regattaId, payload)
+        const result = await api.reorderBlocks(regattaId, payload)
 
         expect(mockClient.post).toHaveBeenCalledWith(
           `/regattas/${regattaId}/blocks/reorder`,
           payload
         )
+        expect(result).toEqual(mockResponse)
       })
     })
   })
 
-  describe('Bib Pools API', () => {
-    const regattaId = 'regatta-123'
-    const poolId = 'pool-789'
-
+  describe('bib pools', () => {
     describe('listBibPools', () => {
-      it('calls GET /regattas/:regattaId/bib_pools', async () => {
+      it('fetches bib pools for a regatta', async () => {
+        const regattaId = 'regatta-123'
         const mockResponse = {
-          bib_pools: [
-            { id: 'pool-1', name: 'Main Pool', allocation_mode: 'range', start_bib: 1, end_bib: 100 }
+          data: [
+            {
+              id: 'pool-1',
+              regatta_id: regattaId,
+              block_id: 'block-1',
+              name: 'Morning Pool',
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 100,
+              bib_numbers: null,
+              priority: 1,
+              is_overflow: false
+            }
           ]
         }
         mockClient.get.mockResolvedValue(mockResponse)
@@ -120,72 +309,102 @@ describe('createDrawApi', () => {
     })
 
     describe('createBibPool', () => {
-      it('calls POST /regattas/:regattaId/bib_pools with range mode payload', async () => {
+      it('creates a range-based bib pool', async () => {
+        const regattaId = 'regatta-123'
         const payload = {
-          name: 'Main Pool',
-          block_id: 'block-123',
+          block_id: 'block-1',
+          name: 'Pool 1-100',
           allocation_mode: 'range',
           start_bib: 1,
           end_bib: 100,
+          priority: 1,
           is_overflow: false
         }
-        const mockResponse = { id: poolId, ...payload }
+        const mockResponse = {
+          id: 'pool-1',
+          regatta_id: regattaId,
+          ...payload,
+          bib_numbers: null
+        }
         mockClient.post.mockResolvedValue(mockResponse)
 
         const result = await api.createBibPool(regattaId, payload)
 
-        expect(mockClient.post).toHaveBeenCalledWith(
-          `/regattas/${regattaId}/bib_pools`,
-          payload
-        )
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/bib_pools`, payload)
         expect(result).toEqual(mockResponse)
       })
 
-      it('calls POST /regattas/:regattaId/bib_pools with explicit list mode payload', async () => {
+      it('creates an explicit-list bib pool', async () => {
+        const regattaId = 'regatta-123'
         const payload = {
-          name: 'Special Pool',
-          block_id: 'block-123',
+          block_id: 'block-1',
+          name: 'Custom Pool',
           allocation_mode: 'explicit_list',
-          bib_numbers: [1, 5, 10, 15],
+          bib_numbers: [101, 102, 103, 200, 201],
+          priority: 2,
           is_overflow: false
         }
-        const mockResponse = { id: poolId, ...payload }
+        const mockResponse = {
+          id: 'pool-2',
+          regatta_id: regattaId,
+          ...payload,
+          start_bib: null,
+          end_bib: null
+        }
         mockClient.post.mockResolvedValue(mockResponse)
 
         const result = await api.createBibPool(regattaId, payload)
 
-        expect(mockClient.post).toHaveBeenCalledWith(
-          `/regattas/${regattaId}/bib_pools`,
-          payload
-        )
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/bib_pools`, payload)
         expect(result).toEqual(mockResponse)
       })
 
-      it('calls POST /regattas/:regattaId/bib_pools with overflow pool payload', async () => {
+      it('creates an overflow bib pool', async () => {
+        const regattaId = 'regatta-123'
         const payload = {
           name: 'Overflow Pool',
           allocation_mode: 'range',
-          start_bib: 900,
-          end_bib: 999,
+          start_bib: 500,
+          end_bib: 599,
+          priority: 99,
           is_overflow: true
         }
-        const mockResponse = { id: poolId, ...payload }
+        const mockResponse = {
+          id: 'pool-overflow',
+          regatta_id: regattaId,
+          block_id: null,
+          ...payload
+        }
         mockClient.post.mockResolvedValue(mockResponse)
 
         const result = await api.createBibPool(regattaId, payload)
 
-        expect(mockClient.post).toHaveBeenCalledWith(
-          `/regattas/${regattaId}/bib_pools`,
-          payload
-        )
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/bib_pools`, payload)
         expect(result).toEqual(mockResponse)
       })
     })
 
     describe('updateBibPool', () => {
-      it('calls PATCH /regattas/:regattaId/bib_pools/:poolId with payload', async () => {
-        const payload = { name: 'Updated Pool' }
-        const mockResponse = { id: poolId, ...payload }
+      it('updates a bib pool', async () => {
+        const regattaId = 'regatta-123'
+        const poolId = 'pool-1'
+        const payload = {
+          name: 'Updated Pool Name',
+          start_bib: 1,
+          end_bib: 150
+        }
+        const mockResponse = {
+          id: poolId,
+          regatta_id: regattaId,
+          block_id: 'block-1',
+          name: 'Updated Pool Name',
+          allocation_mode: 'range',
+          start_bib: 1,
+          end_bib: 150,
+          bib_numbers: null,
+          priority: 1,
+          is_overflow: false
+        }
         mockClient.patch.mockResolvedValue(mockResponse)
 
         const result = await api.updateBibPool(regattaId, poolId, payload)
@@ -199,8 +418,10 @@ describe('createDrawApi', () => {
     })
 
     describe('deleteBibPool', () => {
-      it('calls DELETE /regattas/:regattaId/bib_pools/:poolId', async () => {
-        mockClient.delete.mockResolvedValue(undefined)
+      it('deletes a bib pool', async () => {
+        const regattaId = 'regatta-123'
+        const poolId = 'pool-1'
+        mockClient.delete.mockResolvedValue(null)
 
         await api.deleteBibPool(regattaId, poolId)
 
@@ -211,16 +432,96 @@ describe('createDrawApi', () => {
     })
 
     describe('reorderBibPools', () => {
-      it('calls POST /regattas/:regattaId/bib_pools/reorder with pool IDs', async () => {
-        const payload = { bib_pool_ids: ['pool-1', 'pool-2', 'pool-3'] }
-        mockClient.post.mockResolvedValue(undefined)
+      it('reorders bib pools by priority', async () => {
+        const regattaId = 'regatta-123'
+        const payload = {
+          items: [
+            { bib_pool_id: 'pool-2', priority: 1 },
+            { bib_pool_id: 'pool-1', priority: 2 }
+          ]
+        }
+        const mockResponse = { data: [] }
+        mockClient.post.mockResolvedValue(mockResponse)
 
-        await api.reorderBibPools(regattaId, payload)
+        const result = await api.reorderBibPools(regattaId, payload)
 
         expect(mockClient.post).toHaveBeenCalledWith(
           `/regattas/${regattaId}/bib_pools/reorder`,
           payload
         )
+        expect(result).toEqual(mockResponse)
+      })
+    })
+  })
+
+  describe('draw operations', () => {
+    describe('generateDraw', () => {
+      it('generates draw without custom seed', async () => {
+        const regattaId = 'regatta-123'
+        const mockResponse = {
+          draw_revision: 1,
+          results_revision: 0,
+          seed: 'auto-generated-seed-123'
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.generateDraw(regattaId)
+
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/generate`, undefined)
+        expect(result).toEqual(mockResponse)
+      })
+
+      it('generates draw with custom seed', async () => {
+        const regattaId = 'regatta-123'
+        const payload = {
+          seed: 'custom-seed-456'
+        }
+        const mockResponse = {
+          draw_revision: 1,
+          results_revision: 0,
+          seed: 'custom-seed-456'
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.generateDraw(regattaId, payload)
+
+        expect(mockClient.post).toHaveBeenCalledWith(
+          `/regattas/${regattaId}/draw/generate`,
+          payload
+        )
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('publishDraw', () => {
+      it('publishes draw and increments draw_revision', async () => {
+        const regattaId = 'regatta-123'
+        const mockResponse = {
+          draw_revision: 2,
+          results_revision: 0
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.publishDraw(regattaId)
+
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/publish`)
+        expect(result).toEqual(mockResponse)
+      })
+    })
+
+    describe('unpublishDraw', () => {
+      it('unpublishes draw and reverts draw_revision', async () => {
+        const regattaId = 'regatta-123'
+        const mockResponse = {
+          draw_revision: 1,
+          results_revision: 0
+        }
+        mockClient.post.mockResolvedValue(mockResponse)
+
+        const result = await api.unpublishDraw(regattaId)
+
+        expect(mockClient.post).toHaveBeenCalledWith(`/regattas/${regattaId}/draw/unpublish`)
+        expect(result).toEqual(mockResponse)
       })
     })
   })
