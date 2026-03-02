@@ -56,7 +56,38 @@ const sortedMarkers = computed(() => {
 
 const hasMarkers = computed(() => markers.value.length > 0)
 
+function hasCaptureSession() {
+  return typeof props.captureSessionId === 'string' && props.captureSessionId.trim().length > 0
+}
+
+function resolveTileMetadata(frameOffset) {
+  const frame = globalThis.__REGATTADESK_CAPTURE_FRAME__
+  if (
+    frame &&
+    typeof frame.tile_id === 'string' &&
+    Number.isInteger(frame.tile_x) &&
+    Number.isInteger(frame.tile_y)
+  ) {
+    return {
+      tile_id: frame.tile_id,
+      tile_x: frame.tile_x,
+      tile_y: frame.tile_y
+    }
+  }
+
+  return {
+    tile_id: `${props.captureSessionId}-${frameOffset}`,
+    tile_x: frameOffset % 1024,
+    tile_y: Math.floor(frameOffset / 1024)
+  }
+}
+
 async function loadMarkers() {
+  if (!hasCaptureSession()) {
+    errorMessage.value = 'Capture session is required'
+    return
+  }
+
   if (isLoading.value) {
     return
   }
@@ -77,6 +108,11 @@ async function loadMarkers() {
 }
 
 async function createMarker() {
+  if (!hasCaptureSession()) {
+    errorMessage.value = 'Capture session is required'
+    return
+  }
+
   if (isLoading.value) {
     return
   }
@@ -85,15 +121,15 @@ async function createMarker() {
   isLoading.value = true
 
   try {
-    // Follow-up: replace placeholder with frame position from line-scan camera.
-    // Current implementation uses timestamp as a temporary frame surrogate.
+    const frameOffset = Date.now() % 100000
+    const tileMetadata = resolveTileMetadata(frameOffset)
     const newMarker = await operatorApi.createMarker(props.regattaId, {
       capture_session_id: props.captureSessionId,
-      frame_offset: Date.now() % 100000, // Simplified: use timestamp mod as frame
+      frame_offset: frameOffset,
       timestamp_ms: Date.now(),
-      tile_id: 'tile-1',
-      tile_x: 0,
-      tile_y: 0
+      tile_id: tileMetadata.tile_id,
+      tile_x: tileMetadata.tile_x,
+      tile_y: tileMetadata.tile_y
     })
     markers.value.push(newMarker)
   } catch (error) {
@@ -186,7 +222,18 @@ function startLinking(markerId) {
 }
 
 async function linkMarker(markerId) {
-  if (isLoading.value || !linkingEntryId.value) {
+  if (isLoading.value) {
+    return
+  }
+
+  const normalizedEntryId = linkingEntryId.value.trim()
+  if (!normalizedEntryId) {
+    errorMessage.value = 'Entry ID is required'
+    return
+  }
+
+  if (!/^[A-Za-z0-9-]{1,64}$/.test(normalizedEntryId)) {
+    errorMessage.value = 'Entry ID format is invalid'
     return
   }
 
@@ -195,7 +242,7 @@ async function linkMarker(markerId) {
 
   try {
     const linked = await operatorApi.linkMarker(props.regattaId, markerId, {
-      entry_id: linkingEntryId.value
+      entry_id: normalizedEntryId
     })
     
     const index = markers.value.findIndex((m) => m.id === markerId)

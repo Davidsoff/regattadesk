@@ -73,6 +73,7 @@ const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_onl
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
 const captureSessionId = ref(null) // Will be set after handoff is complete
 const showCaptureWorkspace = ref(false) // Toggle for showing capture workspace
+const isCaptureSessionLoading = ref(false)
 
 function applyAccessModeFromResponse(response) {
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
@@ -222,6 +223,58 @@ async function completeHandoff() {
     isSubmitting.value = false
   }
 }
+
+async function ensureCaptureSession() {
+  if (captureSessionId.value) {
+    return true
+  }
+
+  if (!operatorToken.value) {
+    handoffErrorMessage.value = 'Operator token is required to create a capture session.'
+    return false
+  }
+
+  if (isCaptureSessionLoading.value) {
+    return false
+  }
+
+  isCaptureSessionLoading.value = true
+  handoffErrorMessage.value = ''
+
+  try {
+    const session = await operatorApi.createCaptureSession(route.params.regattaId, {
+      station: operatorStation.value,
+      device_id: currentDeviceId.value,
+      session_type: 'finish',
+      fps: 30
+    })
+
+    if (!session?.id) {
+      handoffErrorMessage.value = 'Capture session could not be initialized.'
+      return false
+    }
+
+    captureSessionId.value = session.id
+    return true
+  } catch (error) {
+    handoffErrorMessage.value = error instanceof Error ? error.message : 'Failed to create capture session'
+    return false
+  } finally {
+    isCaptureSessionLoading.value = false
+  }
+}
+
+async function toggleCaptureWorkspace() {
+  if (showCaptureWorkspace.value) {
+    showCaptureWorkspace.value = false
+    return
+  }
+
+  const sessionReady = await ensureCaptureSession()
+  if (sessionReady) {
+    showCaptureWorkspace.value = true
+  }
+}
 </script>
 
 <template>
@@ -282,8 +335,8 @@ async function completeHandoff() {
       <button
         type="button"
         data-testid="toggle-capture-workspace"
-        @click="showCaptureWorkspace = !showCaptureWorkspace"
-        :disabled="!operatorToken"
+        @click="toggleCaptureWorkspace"
+        :disabled="!operatorToken || isCaptureSessionLoading"
       >
         {{ showCaptureWorkspace ? 'Hide' : 'Show' }} Capture Workspace
       </button>
@@ -293,7 +346,7 @@ async function completeHandoff() {
     <!-- Capture Workspace -->
     <!-- Note: captureSessionId should be created via API after handoff -->
     <LineScanCapture
-      v-if="showCaptureWorkspace && operatorToken"
+      v-if="showCaptureWorkspace && operatorToken && captureSessionId"
       :capture-session-id="captureSessionId"
       :regatta-id="route.params.regattaId"
     />
