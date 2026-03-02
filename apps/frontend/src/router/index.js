@@ -33,6 +33,11 @@ const router = createRouter({
           component: () => import('../views/staff/RegattaFinance.vue')
         },
         {
+          path: 'rulesets/:rulesetId',
+          name: 'staff-ruleset-detail',
+          component: () => import('../views/staff/RulesetDetail.vue')
+        },
+        {
           path: 'regattas/:regattaId/finance/entries/:entryId',
           name: 'staff-regatta-finance-entry',
           component: () => import('../views/staff/EntryPaymentStatus.vue')
