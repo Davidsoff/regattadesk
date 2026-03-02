@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 import { run as axeRun } from 'axe-core';
 import Schedule from '../../src/views/public/Schedule.vue';
 import Results from '../../src/views/public/Results.vue';
@@ -195,9 +195,9 @@ describe('Public Schedule Page Accessibility', () => {
       attachTo: document.body
     });
 
-    // Wait for error state
+    // Wait for error state to be applied
     await wrapper.vm.$nextTick();
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await flushPromises();
 
     // Check for role="alert" on error messages
     const errorElement = wrapper.find('[role="alert"]');
