@@ -5,7 +5,6 @@ import { execFileSync } from 'node:child_process'
 
 const projectRoot = path.resolve(import.meta.dirname, '..')
 const reportPath = path.join(os.tmpdir(), `vue-i18n-extract-report-${Date.now()}.json`)
-const baselinePath = path.join(projectRoot, 'i18n-unused-keys-baseline.json')
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'))
@@ -31,12 +30,11 @@ try {
   )
 
   const report = readJson(reportPath)
-  const baseline = new Set(readJson(baselinePath))
 
   const missingKeys = report.missingKeys ?? []
-  const unexpectedUnused = (report.unusedKeys ?? []).filter((item) => !baseline.has(item.path))
+  const unusedKeys = report.unusedKeys ?? []
 
-  if (missingKeys.length > 0 || unexpectedUnused.length > 0) {
+  if (missingKeys.length > 0 || unusedKeys.length > 0) {
     if (reportOutput.trim()) {
       console.error(reportOutput)
     }
@@ -48,19 +46,18 @@ try {
       }
     }
 
-    if (unexpectedUnused.length > 0) {
-      console.error('\nUnexpected unused translation keys:')
-      for (const item of unexpectedUnused) {
+    if (unusedKeys.length > 0) {
+      console.error('\nUnused translation keys:')
+      for (const item of unusedKeys) {
         console.error(`- ${item.path} (${item.language}) in ${item.file}`)
       }
-      console.error('\nIf intentional, update i18n-unused-keys-baseline.json.')
     }
 
     process.exit(1)
   }
 
   console.log(
-    `\nI18n check passed (${missingKeys.length} missing, ${unexpectedUnused.length} unexpected unused).`
+    `\nI18n check passed (${missingKeys.length} missing, ${unusedKeys.length} unused).`
   )
 } catch (error) {
   if (error.stdout) {

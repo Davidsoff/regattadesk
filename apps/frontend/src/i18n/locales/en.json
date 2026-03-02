@@ -4,26 +4,13 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
-    "add": "Add",
-    "close": "Close",
     "confirm": "Confirm",
     "search": "Search",
-    "filter": "Filter",
-    "clear": "Clear",
     "yes": "Yes",
     "no": "No",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success",
-    "warning": "Warning",
-    "info": "Info",
-    "back": "Back",
-    "next": "Next",
-    "previous": "Previous",
     "submit": "Submit",
-    "export": "Export",
-    "import": "Import",
-    "print": "Print",
     "download": "Download",
     "open": "Open",
     "skip_to_content": "Skip to main content",
@@ -35,63 +22,23 @@
   "status": {
     "entered": "Entered",
     "withdrawn_before_draw": "Withdrawn Before Draw",
-    "withdrawn_after_draw": "Withdrawn After Draw",
-    "dns": "DNS (Did Not Start)",
-    "dnf": "DNF (Did Not Finish)",
-    "excluded": "Excluded",
-    "dsq": "DSQ (Disqualified)",
-    "under_investigation": "Under Investigation",
-    "approved": "Approved",
-    "immutable": "Immutable",
-    "offline_queued": "Queued (Offline)",
-    "provisional": "Provisional",
-    "edited": "Edited",
-    "official": "Official"
-  },
-  "regatta": {
-    "name": "Regatta",
-    "date": "Date",
-    "location": "Location",
-    "organizer": "Organizer",
-    "schedule": "Schedule",
-    "results": "Results",
-    "entries": "Entries",
-    "events": "Events",
-    "draw": "Draw",
-    "draw_revision": "Draw Revision",
-    "results_revision": "Results Revision"
+    "withdrawn_after_draw": "Withdrawn After Draw"
   },
   "entry": {
-    "bib": "Bib",
     "crew": "Crew",
-    "club": "Club",
-    "time": "Time",
-    "rank": "Rank",
-    "delta": "Delta",
-    "status": "Status",
-    "category": "Category",
-    "boat_type": "Boat Type"
-  },
-  "time": {
-    "start_time": "Start Time",
-    "finish_time": "Finish Time",
-    "elapsed_time": "Elapsed Time",
-    "scheduled_time": "Scheduled Time"
+    "status": "Status"
   },
   "print": {
     "generated": "Generated",
     "page": "Page",
     "of": "of",
-    "regatta_name": "Regatta Name",
     "draw_version": "Draw Version",
     "results_version": "Results Version"
   },
   "live": {
     "live": "Live",
     "offline": "Offline",
-    "stale_data_message": "Showing cached results. Reconnecting for latest updates.",
-    "update_available": "New results available",
-    "view_latest": "View latest"
+    "stale_data_message": "Showing cached results. Reconnecting for latest updates."
   },
   "finance": {
     "bulk": {
@@ -129,9 +76,7 @@
       "message": "Message",
       "density": "Table density",
       "density_comfortable": "Comfortable",
-      "density_compact": "Compact",
-      "regatta_id_label": "Regatta ID (UUID)",
-      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "density_compact": "Compact"
     },
     "title": "Finance",
     "invalid_route_params": "Invalid or missing route parameters.",
@@ -162,7 +107,6 @@
       "entries_list": "Entries"
     },
     "invoice": {
-      "title": "Invoices",
       "list_title": "Invoice List",
       "detail_title": "Invoice Details",
       "invoice_id": "Invoice ID",
@@ -186,10 +130,6 @@
       "entries": "Invoice Entries"
     },
     "navigation": {
-      "overview": "Overview",
-      "bulk_payments": "Bulk Payments",
-      "entries": "Entry Payments",
-      "clubs": "Club Payments",
       "invoices": "Invoices"
     }
   },
@@ -277,12 +217,10 @@
         "button": "Generate Draw",
         "button_disabled": "Draw Already Generated",
         "title": "Generate Draw",
-        "description": "Generate a random draw for all active entries",
         "seed_label": "Custom Seed (optional)",
         "seed_placeholder": "Leave empty for auto-generated seed",
         "seed_show": "Use custom seed",
         "seed_hide": "Use auto-generated seed",
-        "success": "Draw generated successfully",
         "error": "Failed to generate draw",
         "invalid_seed": "Seed must be a safe integer",
         "invalid_response": "Invalid generate response from server",
@@ -298,9 +236,7 @@
         "confirm_message": "This will increment draw_revision from {from} to {to}",
         "confirm_warning": "Published draws enable public schedule visibility",
         "confirm_note": "Use Unpublish to regenerate if needed",
-        "success": "Draw published successfully",
-        "error": "Failed to publish draw",
-        "invalid_response": "Invalid publish response from server"
+        "error": "Failed to publish draw"
       },
       "unpublish": {
         "button": "Unpublish Draw",
@@ -310,17 +246,13 @@
         "confirm_message": "This will unpublish the current draw and update draw_revision from {current}",
         "confirm_warning": "This will hide the schedule from public view",
         "confirm_note": "You can regenerate and republish after unpublishing",
-        "success": "Draw unpublished successfully",
-        "error": "Failed to unpublish draw",
-        "invalid_response": "Invalid unpublish response from server"
+        "error": "Failed to unpublish draw"
       },
       "prerequisites": {
         "title": "Prerequisites",
         "blocks_configured": "Blocks configured",
         "bib_pools_assigned": "Bib pools assigned",
-        "entries_exist": "Entries exist",
-        "all_met": "All prerequisites met",
-        "not_met": "Prerequisites not met - cannot generate draw"
+        "entries_exist": "Entries exist"
       }
     }
   },
@@ -340,10 +272,9 @@
       "name": "Block Name",
       "start_time": "Start Time",
       "event_interval": "Event Interval (seconds)",
-      "crew_interval": "Crew Interval (seconds)",
-      "display_order": "Display Order"
+      "crew_interval": "Crew Interval (seconds)"
     },
-  "bib_pool": {
+    "bib_pool": {
       "name": "Pool Name",
       "allocation_mode": "Allocation Mode",
       "allocation_mode_range": "Range",
@@ -353,17 +284,16 @@
       "bib_numbers": "Bib Numbers (comma-separated)",
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overflow Pool",
-    "priority": "Priority",
-    "block_assignment": "Assigned to Block",
-    "unassigned_option": "Select a block"
-  },
+      "block_assignment": "Assigned to Block",
+      "unassigned_option": "Select a block"
+    },
     "no_blocks": "No blocks configured yet",
     "no_bib_pools": "No bib pools configured yet",
     "no_overflow_pool": "No overflow pool configured",
     "validation": {
       "block_name_required": "Block name is required",
       "start_time_required": "Start time is required",
-    "start_time_format": "Start time must be a valid date and time",
+      "start_time_format": "Start time must be a valid date and time",
       "event_interval_required": "Event interval is required",
       "event_interval_positive": "Event interval must be positive",
       "crew_interval_required": "Crew interval is required",
@@ -374,10 +304,10 @@
       "start_bib_positive": "Start bib must be positive",
       "end_bib_required": "End bib is required",
       "end_bib_positive": "End bib must be positive",
-    "end_bib_greater": "End bib must be greater than or equal to start bib",
-    "block_assignment_required": "Block assignment is required for non-overflow pools",
+      "end_bib_greater": "End bib must be greater than or equal to start bib",
+      "block_assignment_required": "Block assignment is required for non-overflow pools",
       "bib_numbers_required": "Bib numbers are required",
-    "bib_numbers_format": "Bib numbers must be unique comma-separated integers (minimum 1)",
+      "bib_numbers_format": "Bib numbers must be unique comma-separated integers (minimum 1)",
       "bib_overlap": "Bib pool overlap detected",
       "bib_overlap_details": "Bibs {bibs} overlap with pool: {poolName}"
     }
@@ -404,10 +334,6 @@
     "scope": {
       "global": "Global",
       "regattaOwned": "Regatta-owned"
-    },
-    "ageCalculation": {
-      "actualAtStart": "Actual age at start",
-      "ageAsOfJan1": "Age as of January 1"
     }
   },
   "ruleset": {
@@ -416,7 +342,6 @@
     "version": "Version",
     "description": "Description",
     "age_calculation_type": "Age Calculation Type",
-    "is_global": "Global Ruleset",
     "age_calculation": {
       "actual_at_start": "Actual Age at Start",
       "age_as_of_jan_1": "Age as of January 1"
@@ -470,22 +395,14 @@
     },
     "capture": {
       "title": "Line Scan Capture",
-      "overview": "Overview",
-      "detail": "Detail View",
-      "markers": "Markers",
-      "unlinked_markers": "Unlinked Markers",
-      "linked_markers": "Linked Markers",
       "create_marker": "Create Marker",
       "delete_marker": "Delete",
       "link_to_bib": "Link to Bib",
       "unlink": "Unlink",
-      "approve": "Approve",
       "locked": "Locked",
       "bib_number": "Bib",
       "frame_offset": "Frame",
-      "timestamp": "Time",
       "no_markers": "No markers yet",
-      "marker_approved": "This marker is approved and cannot be edited",
       "undo": "Undo"
     }
   },

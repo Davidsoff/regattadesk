@@ -4,26 +4,13 @@
     "cancel": "Annuleren",
     "delete": "Verwijderen",
     "edit": "Bewerken",
-    "add": "Toevoegen",
-    "close": "Sluiten",
     "confirm": "Bevestigen",
     "search": "Zoeken",
-    "filter": "Filteren",
-    "clear": "Wissen",
     "yes": "Ja",
     "no": "Nee",
     "loading": "Laden...",
     "error": "Fout",
-    "success": "Succes",
-    "warning": "Waarschuwing",
-    "info": "Informatie",
-    "back": "Terug",
-    "next": "Volgende",
-    "previous": "Vorige",
     "submit": "Verzenden",
-    "export": "Exporteren",
-    "import": "Importeren",
-    "print": "Afdrukken",
     "download": "Downloaden",
     "open": "Openen",
     "skip_to_content": "Spring naar hoofdinhoud",
@@ -35,63 +22,23 @@
   "status": {
     "entered": "Ingeschreven",
     "withdrawn_before_draw": "Afgemeld voor loting",
-    "withdrawn_after_draw": "Afgemeld na loting",
-    "dns": "DNS (Niet gestart)",
-    "dnf": "DNF (Niet gefinisht)",
-    "excluded": "Uitgesloten",
-    "dsq": "DSQ (Gediskwalificeerd)",
-    "under_investigation": "In onderzoek",
-    "approved": "Goedgekeurd",
-    "immutable": "Onveranderbaar",
-    "offline_queued": "In wachtrij (offline)",
-    "provisional": "Voorlopig",
-    "edited": "Bewerkt",
-    "official": "Officieel"
-  },
-  "regatta": {
-    "name": "Regatta",
-    "date": "Datum",
-    "location": "Locatie",
-    "organizer": "Organisator",
-    "schedule": "Schema",
-    "results": "Resultaten",
-    "entries": "Inschrijvingen",
-    "events": "Nummers",
-    "draw": "Loting",
-    "draw_revision": "Loting versie",
-    "results_revision": "Resultaten versie"
+    "withdrawn_after_draw": "Afgemeld na loting"
   },
   "entry": {
-    "bib": "Startnummer",
     "crew": "Ploeg",
-    "club": "Vereniging",
-    "time": "Tijd",
-    "rank": "Plaats",
-    "delta": "Delta",
-    "status": "Status",
-    "category": "Categorie",
-    "boat_type": "Boottype"
-  },
-  "time": {
-    "start_time": "Starttijd",
-    "finish_time": "Finishtijd",
-    "elapsed_time": "Eindtijd",
-    "scheduled_time": "Geplande tijd"
+    "status": "Status"
   },
   "print": {
     "generated": "Gegenereerd",
     "page": "Pagina",
     "of": "van",
-    "regatta_name": "Regatta naam",
     "draw_version": "Loting versie",
     "results_version": "Resultaten versie"
   },
   "live": {
     "live": "Live",
     "offline": "Offline",
-    "stale_data_message": "Gecachte resultaten worden getoond. Opnieuw verbinden voor de nieuwste updates.",
-    "update_available": "Nieuwe resultaten beschikbaar",
-    "view_latest": "Bekijk laatste versie"
+    "stale_data_message": "Gecachte resultaten worden getoond. Opnieuw verbinden voor de nieuwste updates."
   },
   "finance": {
     "bulk": {
@@ -129,9 +76,7 @@
       "message": "Bericht",
       "density": "Tabeldichtheid",
       "density_comfortable": "Comfortabel",
-      "density_compact": "Compact",
-      "regatta_id_label": "Regatta ID (UUID)",
-      "regatta_id_placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+      "density_compact": "Compact"
     },
     "title": "Financiën",
     "invalid_route_params": "Ongeldige of ontbrekende routeparameters.",
@@ -162,7 +107,6 @@
       "entries_list": "Inschrijvingen"
     },
     "invoice": {
-      "title": "Facturen",
       "list_title": "Facturenlijst",
       "detail_title": "Factuurdetails",
       "invoice_id": "Factuur ID",
@@ -186,10 +130,6 @@
       "entries": "Factuurregels"
     },
     "navigation": {
-      "overview": "Overzicht",
-      "bulk_payments": "Bulkbetalingen",
-      "entries": "Inschrijvingsbetalingen",
-      "clubs": "Clubbetalingen",
       "invoices": "Facturen"
     }
   },
@@ -277,12 +217,10 @@
         "button": "Genereer Loting",
         "button_disabled": "Loting Reeds Gegenereerd",
         "title": "Genereer Loting",
-        "description": "Genereer een willekeurige loting voor alle actieve inschrijvingen",
         "seed_label": "Aangepaste Seed (optioneel)",
         "seed_placeholder": "Laat leeg voor automatisch gegenereerde seed",
         "seed_show": "Gebruik aangepaste seed",
         "seed_hide": "Gebruik automatisch gegenereerde seed",
-        "success": "Loting succesvol gegenereerd",
         "error": "Genereren van loting mislukt",
         "invalid_seed": "Seed moet een veilig geheel getal zijn",
         "invalid_response": "Ongeldige generate-response van de server",
@@ -298,9 +236,7 @@
         "confirm_message": "Dit verhoogt draw_revision van {from} naar {to}",
         "confirm_warning": "Gepubliceerde lotingen maken het publieke schema zichtbaar",
         "confirm_note": "Gebruik Depubliceer om opnieuw te genereren indien nodig",
-        "success": "Loting succesvol gepubliceerd",
-        "error": "Publiceren van loting mislukt",
-        "invalid_response": "Ongeldige publish-response van de server"
+        "error": "Publiceren van loting mislukt"
       },
       "unpublish": {
         "button": "Depubliceer Loting",
@@ -310,17 +246,13 @@
         "confirm_message": "Dit past de draw_revision aan vanaf {current} en maakt de huidige loting niet meer publiek zichtbaar",
         "confirm_warning": "Dit verbergt het schema voor publieke weergave",
         "confirm_note": "Na depubliceren kun je desgewenst een nieuwe loting genereren en opnieuw publiceren",
-        "success": "Loting succesvol gedepubliceerd",
-        "error": "Depubliceren van loting mislukt",
-        "invalid_response": "Ongeldige unpublish-response van de server"
+        "error": "Depubliceren van loting mislukt"
       },
       "prerequisites": {
         "title": "Vereisten",
         "blocks_configured": "Blokken geconfigureerd",
         "bib_pools_assigned": "Rugnummer-pools toegewezen",
-        "entries_exist": "Inschrijvingen bestaan",
-        "all_met": "Alle vereisten voldaan",
-        "not_met": "Vereisten niet voldaan - kan geen loting genereren"
+        "entries_exist": "Inschrijvingen bestaan"
       }
     }
   },
@@ -340,10 +272,9 @@
       "name": "Bloknaam",
       "start_time": "Starttijd",
       "event_interval": "Interval tussen nummers (seconden)",
-      "crew_interval": "Interval tussen ploegen (seconden)",
-      "display_order": "Weergavevolgorde"
+      "crew_interval": "Interval tussen ploegen (seconden)"
     },
-  "bib_pool": {
+    "bib_pool": {
       "name": "Poolnaam",
       "allocation_mode": "Toewijzingsmodus",
       "allocation_mode_range": "Bereik",
@@ -353,17 +284,16 @@
       "bib_numbers": "Startnummers (kommagescheiden)",
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overlooppool",
-    "priority": "Prioriteit",
-    "block_assignment": "Toegewezen aan blok",
-    "unassigned_option": "Selecteer een blok"
-  },
+      "block_assignment": "Toegewezen aan blok",
+      "unassigned_option": "Selecteer een blok"
+    },
     "no_blocks": "Nog geen blokken geconfigureerd",
     "no_bib_pools": "Nog geen startnummerpools geconfigureerd",
     "no_overflow_pool": "Geen overlooppool geconfigureerd",
     "validation": {
       "block_name_required": "Bloknaam is verplicht",
       "start_time_required": "Starttijd is verplicht",
-    "start_time_format": "Starttijd moet een geldige datum en tijd zijn",
+      "start_time_format": "Starttijd moet een geldige datum en tijd zijn",
       "event_interval_required": "Interval tussen nummers is verplicht",
       "event_interval_positive": "Interval tussen nummers moet positief zijn",
       "crew_interval_required": "Interval tussen ploegen is verplicht",
@@ -374,10 +304,10 @@
       "start_bib_positive": "Begin startnummer moet positief zijn",
       "end_bib_required": "Eind startnummer is verplicht",
       "end_bib_positive": "Eind startnummer moet positief zijn",
-    "end_bib_greater": "Eind startnummer moet groter dan of gelijk aan begin startnummer zijn",
-    "block_assignment_required": "Bloktoewijzing is verplicht voor niet-overlooppools",
+      "end_bib_greater": "Eind startnummer moet groter dan of gelijk aan begin startnummer zijn",
+      "block_assignment_required": "Bloktoewijzing is verplicht voor niet-overlooppools",
       "bib_numbers_required": "Startnummers zijn verplicht",
-    "bib_numbers_format": "Startnummers moeten unieke, kommagescheiden gehele getallen zijn (minimum 1)",
+      "bib_numbers_format": "Startnummers moeten unieke, kommagescheiden gehele getallen zijn (minimum 1)",
       "bib_overlap": "Overlapping van startnummers gedetecteerd",
       "bib_overlap_details": "Startnummers {bibs} overlappen met pool: {poolName}"
     }
@@ -404,10 +334,6 @@
     "scope": {
       "global": "Globaal",
       "regattaOwned": "Regatta-eigendom"
-    },
-    "ageCalculation": {
-      "actualAtStart": "Werkelijke leeftijd bij start",
-      "ageAsOfJan1": "Leeftijd per 1 januari"
     }
   },
   "ruleset": {
@@ -416,7 +342,6 @@
     "version": "Versie",
     "description": "Beschrijving",
     "age_calculation_type": "Leeftijdsberekeningstype",
-    "is_global": "Globale regelset",
     "age_calculation": {
       "actual_at_start": "Werkelijke leeftijd bij start",
       "age_as_of_jan_1": "Leeftijd per 1 januari"
@@ -470,22 +395,14 @@
     },
     "capture": {
       "title": "Line Scan Opname",
-      "overview": "Overzicht",
-      "detail": "Detailweergave",
-      "markers": "Markeringen",
-      "unlinked_markers": "Niet-gekoppelde markeringen",
-      "linked_markers": "Gekoppelde markeringen",
       "create_marker": "Markering maken",
       "delete_marker": "Verwijderen",
       "link_to_bib": "Koppelen aan startnummer",
       "unlink": "Ontkoppelen",
-      "approve": "Goedkeuren",
       "locked": "Vergrendeld",
       "bib_number": "Startnr",
       "frame_offset": "Frame",
-      "timestamp": "Tijd",
       "no_markers": "Nog geen markeringen",
-      "marker_approved": "Deze markering is goedgekeurd en kan niet worden gewijzigd",
       "undo": "Ongedaan maken"
     }
   },

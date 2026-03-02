@@ -105,9 +105,9 @@ function validateGenerateResponse(result) {
   }
 }
 
-function validateRevisionResponse(result, action) {
+function validateRevisionResponse(result, errorKey) {
   if (!result || !isInteger(result.draw_revision) || !isInteger(result.results_revision)) {
-    throw new Error(t(`staff.draw_workflow.${action}.invalid_response`))
+    throw new Error(t(errorKey))
   }
 }
 
@@ -158,7 +158,7 @@ async function confirmPublish() {
   
   try {
     const result = await drawApi.publishDraw(route.params.regattaId)
-    validateRevisionResponse(result, 'publish')
+    validateRevisionResponse(result, 'staff.draw_workflow.publish.invalid_response')
     
     drawStatus.value.published = true
     revisions.value.draw = result.draw_revision
@@ -188,7 +188,7 @@ async function confirmUnpublish() {
   
   try {
     const result = await drawApi.unpublishDraw(route.params.regattaId)
-    validateRevisionResponse(result, 'unpublish')
+    validateRevisionResponse(result, 'staff.draw_workflow.unpublish.invalid_response')
     
     drawStatus.value.published = false
     drawStatus.value.generated = false
