@@ -51,7 +51,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     document.body.innerHTML = ''
-    global.fetch = vi.fn()
+    globalThis.fetch = vi.fn()
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
       value: {
@@ -90,7 +90,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
   describe('generate draw', () => {
     it('calls generate endpoint and updates seed/revision state', async () => {
-      global.fetch.mockResolvedValueOnce(
+      globalThis.fetch.mockResolvedValueOnce(
         jsonResponse({ seed: 12345, generated_entry_count: 42 })
       )
 
@@ -112,7 +112,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
       await nextTick()
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `/api/v1/regattas/${REGATTA_ID}/draw/generate`,
         expect.objectContaining({
           method: 'POST',
@@ -143,7 +143,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
       await nextTick()
 
-      expect(global.fetch).not.toHaveBeenCalled()
+      expect(globalThis.fetch).not.toHaveBeenCalled()
       expect(wrapper.find('[data-testid="error"]').text()).toContain('Seed must be a safe integer')
     })
 
@@ -152,7 +152,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       const pendingFetch = new Promise((resolve) => {
         resolveFetch = resolve
       })
-      global.fetch.mockReturnValueOnce(pendingFetch)
+      globalThis.fetch.mockReturnValueOnce(pendingFetch)
 
       const wrapper = await mountPage({
         drawGenerated: false,
@@ -193,7 +193,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
   describe('publish and unpublish', () => {
     it('publishes and updates draw/results revisions', async () => {
-      global.fetch.mockResolvedValueOnce(
+      globalThis.fetch.mockResolvedValueOnce(
         jsonResponse({ draw_revision: 2, results_revision: 1 })
       )
 
@@ -208,7 +208,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await wrapper.find('[data-testid="publish-confirm-dialog"] button').trigger('click')
       await flushPromises()
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `/api/v1/regattas/${REGATTA_ID}/draw/publish`,
         expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
       )
@@ -220,7 +220,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
     })
 
     it('unpublishes and updates draw/results revisions', async () => {
-      global.fetch.mockResolvedValueOnce(
+      globalThis.fetch.mockResolvedValueOnce(
         jsonResponse({ draw_revision: 5, results_revision: 3 })
       )
 
@@ -239,7 +239,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await unpublishDialog.find('button').trigger('click')
       await flushPromises()
 
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         `/api/v1/regattas/${REGATTA_ID}/draw/unpublish`,
         expect.objectContaining({ method: 'POST', body: JSON.stringify({}) })
       )

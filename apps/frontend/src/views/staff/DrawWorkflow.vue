@@ -93,7 +93,7 @@ function parseSeedValue(rawValue) {
 
   const numericSeed = Number(trimmedSeed)
   if (!Number.isSafeInteger(numericSeed)) {
-    throw new Error(t('staff.draw_workflow.generate.invalid_seed'))
+    throw new TypeError(t('staff.draw_workflow.generate.invalid_seed'))
   }
 
   return numericSeed
