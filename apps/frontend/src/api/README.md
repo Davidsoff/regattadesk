@@ -191,6 +191,29 @@ This client is designed to match the contracts in `pdd/design/openapi-v0.1.yaml`
 - **Auth modes**: Supports Staff (proxy auth), Operator (token), and Public (anonymous)
 - **Idempotency**: Handles the `idempotency_key` request field as defined in the spec
 
+### Generated SDK
+
+The repo also includes an auto-generated OpenAPI SDK at `src/api/generated/`.
+
+Regenerate it from the current OpenAPI spec:
+
+```bash
+cd apps/frontend
+npm run api:generate
+```
+
+Verify generated files are up to date:
+
+```bash
+cd apps/frontend
+npm run api:check
+```
+
+`npm run dev` and `npm run build` now run `api:sync` automatically, which:
+
+1. Regenerates `pdd/design/openapi-v0.1.yaml` from backend code.
+2. Regenerates `src/api/generated/` from that spec.
+
 ## References
 
 - OpenAPI spec: `pdd/design/openapi-v0.1.yaml`

@@ -1,98 +1,38 @@
-/**
- * Shared API client for RegattaDesk frontend.
- * 
- * Provides:
- * - Consistent request/response handling
- * - OpenAPI error normalization
- * - Flexible request body handling
- */
-
+import { createClient as createGeneratedClient } from './generated/client/client.gen'
 import { normalizeApiError } from './errors.js'
 
-function isJsonSerializableBody(body) {
-  return (
-    body !== null &&
-    typeof body === 'object' &&
-    !(body instanceof ArrayBuffer) &&
-    !ArrayBuffer.isView(body) &&
-    !(typeof Blob !== 'undefined' && body instanceof Blob) &&
-    !(typeof FormData !== 'undefined' && body instanceof FormData) &&
-    !(typeof URLSearchParams !== 'undefined' && body instanceof URLSearchParams)
-  )
-}
-
-function createRequestInit(method, body, headers = {}) {
-  const requestHeaders = { ...headers }
-  const requestInit = {
-    method,
-    headers: requestHeaders
+function normalizeUnknownError(error) {
+  const normalized = normalizeApiError(error)
+  if (normalized.code !== 'UNKNOWN_ERROR' || normalized.message) {
+    return normalized
   }
 
-  if (body !== undefined) {
-    if (isJsonSerializableBody(body)) {
-      if (!('Content-Type' in requestHeaders) && !('content-type' in requestHeaders)) {
-        requestHeaders['Content-Type'] = 'application/json'
-      }
-      requestInit.body = JSON.stringify(body)
-    } else {
-      requestInit.body = body
-    }
-  }
-
-  return requestInit
-}
-
-function getResponseType(response) {
-  const contentType = response.headers?.get?.('content-type') || ''
-  const isJsonResponse = contentType.includes('application/json')
-  const isNoContentStatus = response.status === 204 || response.status === 205
-  return { isJsonResponse, isNoContentStatus }
-}
-
-async function readSuccessJson(response) {
-  try {
-    return await response.json()
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
-    }
-    return null
-  }
-}
-
-async function readErrorJson(response) {
-  try {
-    return await response.json()
-  } catch (error) {
-    if (!(error instanceof Error)) {
-      throw error
-    }
-    throw new ApiError(
-      {
-        code: 'UNKNOWN_ERROR',
-        message: '',
-        details: { parseError: error.message },
-        requestId: undefined
-      },
-      response.status
-    )
-  }
-}
-
-function normalizeNetworkError(error) {
-  if (error instanceof ApiError) {
-    return error
-  }
-
-  return new ApiError(
-    {
+  if (error instanceof Error) {
+    return {
       code: 'NETWORK_ERROR',
-      message: error instanceof Error ? error.message : '',
+      message: error.message,
       details: undefined,
       requestId: undefined
-    },
-    0
-  )
+    }
+  }
+
+  if (error && typeof error === 'object') {
+    const code = typeof error.code === 'string' ? error.code : 'UNKNOWN_ERROR'
+    const message = typeof error.message === 'string' ? error.message : ''
+    return {
+      code,
+      message,
+      details: error.details,
+      requestId: error.request_id
+    }
+  }
+
+  return {
+    code: 'UNKNOWN_ERROR',
+    message: '',
+    details: undefined,
+    requestId: undefined
+  }
 }
 
 /**
@@ -117,6 +57,11 @@ export class ApiError extends Error {
  */
 export function createApiClient(options = {}) {
   const { baseUrl = '/api/v1' } = options
+  const generatedClient = createGeneratedClient({
+    baseUrl,
+    responseStyle: 'fields',
+    throwOnError: false
+  })
 
   /**
    * Make an HTTP request to the API.
@@ -129,37 +74,40 @@ export function createApiClient(options = {}) {
    * @throws {ApiError} When response is not ok
    */
   async function request(method, path, options = {}) {
-    const { body, headers = {} } = options
-
-    const url = `${baseUrl}${path}`
-    const requestInit = createRequestInit(method, body, headers)
+    const { body, headers = {}, params, query, ...requestOptions } = options
 
     try {
-      const response = await fetch(url, requestInit)
-      const { isJsonResponse, isNoContentStatus } = getResponseType(response)
+      const result = await generatedClient.request({
+        method,
+        url: path,
+        body,
+        headers,
+        query: query ?? params,
+        ...requestOptions
+      })
 
-      if (isNoContentStatus) {
+      if (result?.error !== undefined) {
+        throw new ApiError(
+          normalizeUnknownError(result.error),
+          result.response?.status ?? 0
+        )
+      }
+
+      if (result?.response?.status === 204 || result?.response?.status === 205) {
         return null
       }
 
-      if (!response.ok) {
-        const data = isJsonResponse ? await readErrorJson(response) : null
-        const normalized = normalizeApiError(data)
-        throw new ApiError(normalized, response.status)
-      }
-
-      if (isJsonResponse) {
-        return readSuccessJson(response)
-      }
-
-      return response
+      return result?.data
     } catch (error) {
-      // Network error or other fetch failure
-      throw normalizeNetworkError(error)
+      if (error instanceof ApiError) {
+        throw error
+      }
+      throw new ApiError(normalizeUnknownError(error), 0)
     }
   }
 
   return {
+    generatedClient,
     request,
 
     /**
@@ -192,6 +140,17 @@ export function createApiClient(options = {}) {
      */
     patch(path, body, options) {
       return request('PATCH', path, { ...options, body })
+    },
+
+    /**
+     * Make a PUT request.
+     * @param {string} path - Request path
+     * @param {object} body - Request body
+     * @param {object} options - Request options
+     * @returns {Promise<object>} Response data
+     */
+    put(path, body, options) {
+      return request('PUT', path, { ...options, body })
     },
 
     /**

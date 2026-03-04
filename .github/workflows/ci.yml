@@ -229,6 +229,54 @@ jobs:
       - name: Build application
         run: npm run build
 
+  api-spec-client-sync:
+    name: API Spec + Client Sync
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: apps/frontend
+        run: npm ci
+
+      - name: Generate OpenAPI spec from backend code
+        working-directory: apps/backend
+        run: ./mvnw -q clean package -DskipTests -Dquarkus.smallrye-openapi.store-schema-directory=target/generated-openapi
+
+      - name: Sync generated OpenAPI spec into PDD
+        run: cp apps/backend/target/generated-openapi/openapi.yaml pdd/design/openapi-v0.1.yaml
+
+      - name: Generate frontend API client from OpenAPI spec
+        working-directory: apps/frontend
+        run: npm run api:generate
+
+      - name: Check generated API artifacts are committed
+        run: |
+          if ! git diff --quiet -- pdd/design/openapi-v0.1.yaml apps/frontend/src/api/generated; then
+            echo "❌ Generated API artifacts are out of date."
+            echo "Run backend OpenAPI generation and 'npm run api:generate' in apps/frontend, then commit results."
+            git --no-pager diff -- pdd/design/openapi-v0.1.yaml apps/frontend/src/api/generated
+            exit 1
+          fi
+          echo "✅ Generated API spec and client are in sync."
+
   frontend-test:
     name: Frontend Unit Tests
     runs-on: ubuntu-latest
@@ -467,6 +515,7 @@ jobs:
       backend-contract-test,
       frontend-lint, 
       frontend-build,
+      api-spec-client-sync,
       frontend-test,
       frontend-accessibility-test,
       dependency-pinning
@@ -482,6 +531,7 @@ jobs:
             ["backend-test"]="${{ needs.backend-test.result }}"
             ["frontend-lint"]="${{ needs.frontend-lint.result }}"
             ["frontend-build"]="${{ needs.frontend-build.result }}"
+            ["api-spec-client-sync"]="${{ needs.api-spec-client-sync.result }}"
             ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.result }}"
             ["dependency-pinning"]="${{ needs.dependency-pinning.result }}"
           )

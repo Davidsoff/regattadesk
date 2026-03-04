@@ -4,13 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "npm run api:sync && vite",
+    "build": "npm run api:sync && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "i18n:check": "node ./scripts/check-i18n.mjs",
+    "api:sync:spec": "bash ./scripts/sync-api-artifacts.sh",
+    "api:sync": "npm run api:sync:spec && npm run api:generate",
+    "api:generate": "rm -rf ./src/api/generated && openapi-ts -i ../../pdd/design/openapi-v0.1.yaml -o ./src/api/generated -c @hey-api/client-fetch",
+    "api:check": "npm run api:generate && git diff --exit-code -- ./src/api/generated",
     "test:a11y": "vitest run --config vitest.a11y.config.js",
     "test:a11y:watch": "vitest --config vitest.a11y.config.js",
     "lint": "echo 'Lint placeholder - to be configured later'"
@@ -21,6 +25,7 @@
     "vue-router": "4.6.4"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.93.1",
     "@vitejs/plugin-vue": "6.0.2",
     "@vue/test-utils": "2.4.6",
     "axe-core": "4.10.2",

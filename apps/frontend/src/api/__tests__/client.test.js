@@ -2,13 +2,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createApiClient } from '../client'
 
 function jsonResponse(payload, overrides = {}) {
-  return {
-    ok: true,
-    status: 200,
-    headers: { get: () => 'application/json' },
-    json: async () => payload,
-    ...overrides
-  }
+  const status = overrides.status ?? 200
+  const ok = overrides.ok ?? (status >= 200 && status < 300)
+  const headers = new Headers(overrides.headers ?? { 'Content-Type': 'application/json' })
+  const body = payload === undefined ? '' : JSON.stringify(payload)
+  return new Response(body, { status: ok ? status : status, headers })
+}
+
+function getRequest(fetchMock) {
+  const [request] = fetchMock.mock.calls[0]
+  return request
 }
 
 describe('client', () => {
@@ -39,13 +42,9 @@ describe('client', () => {
 
       const result = await client.request('GET', '/test')
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({
-          method: 'GET',
-          headers: {}
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('GET')
+      expect(request.url).toContain('/api/v1/test')
       expect(result).toEqual(mockResponse)
     })
 
@@ -57,16 +56,11 @@ describe('client', () => {
 
       const result = await client.request('POST', '/test', { body: requestBody })
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json'
-          }),
-          body: JSON.stringify(requestBody)
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('POST')
+      expect(request.url).toContain('/api/v1/test')
+      expect(request.headers.get('Content-Type')).toBe('application/json')
+      await expect(request.json()).resolves.toEqual(requestBody)
       expect(result).toEqual(mockResponse)
     })
 
@@ -82,15 +76,9 @@ describe('client', () => {
         headers: { 'Content-Type': 'image/png' }
       })
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/tiles/1',
-        expect.objectContaining({
-          body: bytes,
-          headers: expect.objectContaining({
-            'Content-Type': 'image/png'
-          })
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/tiles/1')
+      expect(request.headers.get('Content-Type')).toBe('image/png')
     })
 
     it('merges custom headers with defaults', async () => {
@@ -101,14 +89,9 @@ describe('client', () => {
         headers: { 'X-Custom': 'value' }
       })
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            'X-Custom': 'value'
-          })
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/test')
+      expect(request.headers.get('X-Custom')).toBe('value')
     })
 
     it('throws normalized error when response is not ok', async () => {
@@ -118,11 +101,8 @@ describe('client', () => {
           message: 'Invalid input'
         }
       }
-      const fetchMock = vi.fn().mockResolvedValue(
-        jsonResponse(errorResponse, {
-          ok: false,
-          status: 400
-        })
+      const fetchMock = vi.fn().mockImplementation(() =>
+        Promise.resolve(jsonResponse(errorResponse, { status: 400 }))
       )
       vi.stubGlobal('fetch', fetchMock)
 
@@ -138,15 +118,12 @@ describe('client', () => {
 
     it('includes status code in error', async () => {
       const fetchMock = vi.fn().mockResolvedValue(
-        jsonResponse(
-          {
-            error: {
-              code: 'NOT_FOUND',
-              message: 'Resource not found'
-            }
-          },
-          { ok: false, status: 404 }
-        )
+        jsonResponse({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Resource not found'
+          }
+        }, { status: 404 })
       )
       vi.stubGlobal('fetch', fetchMock)
 
@@ -169,11 +146,12 @@ describe('client', () => {
     })
 
     it('handles non-JSON error responses', async () => {
-      const fetchMock = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        headers: { get: () => 'text/plain' }
-      })
+      const fetchMock = vi.fn().mockResolvedValue(
+        new Response('internal error', {
+          status: 500,
+          headers: { 'Content-Type': 'text/plain' }
+        })
+      )
       vi.stubGlobal('fetch', fetchMock)
 
       await expect(client.request('GET', '/test')).rejects.toMatchObject({
@@ -195,15 +173,14 @@ describe('client', () => {
 
     it('returns raw response for successful non-JSON payloads', async () => {
       const rawResponse = {
-        ok: true,
         status: 200,
-        headers: { get: () => 'application/pdf' }
+        headers: { 'Content-Type': 'application/pdf' }
       }
-      const fetchMock = vi.fn().mockResolvedValue(rawResponse)
+      const fetchMock = vi.fn().mockResolvedValue(new Response('pdf-binary', rawResponse))
       vi.stubGlobal('fetch', fetchMock)
 
       const result = await client.request('GET', '/export')
-      expect(result).toBe(rawResponse)
+      expect(result).toBeInstanceOf(Blob)
     })
   })
 
@@ -215,10 +192,9 @@ describe('client', () => {
 
       const result = await client.get('/test')
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({ method: 'GET' })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('GET')
+      expect(request.url).toContain('/api/v1/test')
       expect(result).toEqual(mockResponse)
     })
 
@@ -229,13 +205,10 @@ describe('client', () => {
 
       const result = await client.post('/test', { name: 'test' })
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ name: 'test' })
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('POST')
+      expect(request.url).toContain('/api/v1/test')
+      await expect(request.json()).resolves.toEqual({ name: 'test' })
       expect(result).toEqual(mockResponse)
     })
 
@@ -246,13 +219,10 @@ describe('client', () => {
 
       const result = await client.patch('/test', { name: 'updated' })
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({
-          method: 'PATCH',
-          body: JSON.stringify({ name: 'updated' })
-        })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('PATCH')
+      expect(request.url).toContain('/api/v1/test')
+      await expect(request.json()).resolves.toEqual({ name: 'updated' })
       expect(result).toEqual(mockResponse)
     })
 
@@ -263,10 +233,9 @@ describe('client', () => {
 
       const result = await client.delete('/test')
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/v1/test',
-        expect.objectContaining({ method: 'DELETE' })
-      )
+      const request = getRequest(fetchMock)
+      expect(request.method).toBe('DELETE')
+      expect(request.url).toContain('/api/v1/test')
       expect(result).toEqual(mockResponse)
     })
   })
