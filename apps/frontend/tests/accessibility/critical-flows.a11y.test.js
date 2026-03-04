@@ -12,6 +12,54 @@ import { calculateReconnectDelay } from '../../src/composables/useSseReconnect';
  * Tests are deterministic and avoid timing thresholds per AGENTS.md guidelines
  */
 
+async function mountResults() {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        live: {
+          live: 'Live',
+          offline: 'Offline',
+          stale_data_message: 'Showing cached results. Reconnecting for latest updates.'
+        },
+        status: {
+          entered: 'Entered'
+        },
+        public: {
+          results: {
+            title: 'Results',
+            description: 'Live race results'
+          },
+          version: {
+            draw: 'Draw Revision',
+            results: 'Results Revision'
+          }
+        }
+      }
+    }
+  });
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/public/v:drawRevision-:resultsRevision/results',
+        name: 'results',
+        component: Results
+      }
+    ]
+  });
+
+  await router.push('/public/v1-0/results?regatta_id=test-regatta');
+  await router.isReady();
+
+  return mount(Results, {
+    global: {
+      plugins: [i18n, router]
+    }
+  });
+}
+
 describe('Public Bootstrap Flow', () => {
   beforeEach(() => {
     // Reset fetch mock before each test
@@ -36,54 +84,6 @@ describe('Public Bootstrap Flow', () => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
-
-  async function mountResults() {
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: {
-        en: {
-          live: {
-            live: 'Live',
-            offline: 'Offline',
-            stale_data_message: 'Showing cached results. Reconnecting for latest updates.'
-          },
-          status: {
-            entered: 'Entered'
-          },
-          public: {
-            results: {
-              title: 'Results',
-              description: 'Live race results'
-            },
-            version: {
-              draw: 'Draw Revision',
-              results: 'Results Revision'
-            }
-          }
-        }
-      }
-    });
-    const router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        {
-          path: '/public/v:drawRevision-:resultsRevision/results',
-          name: 'results',
-          component: Results
-        }
-      ]
-    });
-
-    await router.push('/public/v1-0/results?regatta_id=test-regatta');
-    await router.isReady();
-
-    return mount(Results, {
-      global: {
-        plugins: [i18n, router]
-      }
-    });
-  }
 
   it('should handle bootstrap flow: /versions 401 → /public/session → retry /versions', async () => {
     vi.stubGlobal('fetch', vi.fn((url) => {
@@ -313,13 +313,6 @@ describe('Operator Offline Queue', () => {
   });
 
   it('should require manual resolution for approved entries', () => {
-    const localEdit = {
-      markerId: 'marker-1',
-      linkedBib: '102',
-      timestamp: 1000,
-      approved: false
-    };
-
     const serverEdit = {
       markerId: 'marker-1',
       linkedBib: '101',
