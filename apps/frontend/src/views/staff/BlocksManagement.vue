@@ -18,6 +18,14 @@ const bibPools = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+// Drag-and-drop state
+const draggedBlockId = ref(null)
+const dragOverBlockId = ref(null)
+const keyboardReorderMode = ref(false)
+const keyboardReorderBlockId = ref(null)
+const keyboardReorderTargetIndex = ref(-1)
+const reorderError = ref(null)
+
 // Dialog state
 const showBlockDialog = ref(false)
 const showBibPoolDialog = ref(false)
@@ -59,6 +67,10 @@ const lastFocusedElement = ref(null)
 
 const overflowPool = computed(() => {
   return bibPools.value.find(pool => pool.is_overflow)
+})
+
+const canReorderBlocks = computed(() => {
+  return blocks.value.length > 1
 })
 
 const regularBibPools = computed(() => {
@@ -524,6 +536,145 @@ watch(
   }
 )
 
+// Drag-and-drop handlers
+function onDragStart(event, blockId) {
+  draggedBlockId.value = blockId
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', blockId)
+}
+
+function onDragOver(event, blockId) {
+  event.preventDefault()
+  dragOverBlockId.value = blockId
+}
+
+function onDragLeave(event) {
+  const currentTarget = event?.currentTarget
+  const nextTarget = event?.relatedTarget
+
+  if (!currentTarget || !nextTarget || !currentTarget.contains(nextTarget)) {
+    dragOverBlockId.value = null
+  }
+}
+
+function onDrop(event, targetBlockId) {
+  event.preventDefault()
+  dragOverBlockId.value = null
+
+  const sourceBlockId = event.dataTransfer.getData('text/plain') || draggedBlockId.value
+  if (!sourceBlockId || sourceBlockId === targetBlockId) {
+    return
+  }
+
+  reorderBlocksAfterDrop(sourceBlockId, targetBlockId)
+}
+
+function onDragEnd() {
+  draggedBlockId.value = null
+  dragOverBlockId.value = null
+}
+
+async function reorderBlocksAfterDrop(sourceBlockId, targetBlockId) {
+  const currentBlocks = [...blocks.value]
+  const sourceIndex = currentBlocks.findIndex(b => b.id === sourceBlockId)
+  const targetIndex = currentBlocks.findIndex(b => b.id === targetBlockId)
+
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return
+  }
+
+  await applyReorderAndPersist(sourceIndex, targetIndex)
+}
+
+// Keyboard reordering handlers
+function onKeyboardReorderStart(event, blockId, index) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    keyboardReorderMode.value = true
+    keyboardReorderBlockId.value = blockId
+    keyboardReorderTargetIndex.value = index
+  }
+}
+
+function onKeyboardReorderMove(event, blockId, currentIndex) {
+  if (!keyboardReorderMode.value || keyboardReorderBlockId.value !== blockId) {
+    return
+  }
+
+  if (event.key === 'ArrowUp' && keyboardReorderTargetIndex.value > 0) {
+    event.preventDefault()
+    keyboardReorderTargetIndex.value = keyboardReorderTargetIndex.value - 1
+  } else if (event.key === 'ArrowDown' && keyboardReorderTargetIndex.value < blocks.value.length - 1) {
+    event.preventDefault()
+    keyboardReorderTargetIndex.value = keyboardReorderTargetIndex.value + 1
+  } else if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    commitKeyboardReorder(currentIndex)
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    cancelKeyboardReorder()
+  }
+}
+
+async function commitKeyboardReorder(sourceIndex) {
+  const targetIndex = keyboardReorderTargetIndex.value
+  
+  // Check if we're in reorder mode and if the position actually changed
+  if (!keyboardReorderMode.value || sourceIndex === targetIndex) {
+    keyboardReorderMode.value = false
+    keyboardReorderBlockId.value = null
+    keyboardReorderTargetIndex.value = -1
+    return
+  }
+
+  // Clear reorder mode state
+  keyboardReorderMode.value = false
+  keyboardReorderBlockId.value = null
+  keyboardReorderTargetIndex.value = -1
+
+  await applyReorderAndPersist(sourceIndex, targetIndex)
+}
+
+async function applyReorderAndPersist(sourceIndex, targetIndex) {
+  const currentBlocks = [...blocks.value]
+  const reorderedBlocks = [...currentBlocks]
+  const [movedBlock] = reorderedBlocks.splice(sourceIndex, 1)
+  reorderedBlocks.splice(targetIndex, 0, movedBlock)
+
+  blocks.value = reorderedBlocks
+
+  const payload = {
+    items: reorderedBlocks.map((block, index) => ({
+      block_id: block.id,
+      display_order: index + 1
+    }))
+  }
+
+  try {
+    reorderError.value = null
+    await drawApi.reorderBlocks(regattaId, payload)
+    await loadBlocks()
+  } catch (err) {
+    reorderError.value = t('blocks.reorder_error')
+    blocks.value = currentBlocks
+    console.error('Failed to reorder blocks:', err)
+  }
+}
+
+function handleDragHandleKeydown(event, blockId, index) {
+  if (keyboardReorderMode.value && keyboardReorderBlockId.value === blockId) {
+    onKeyboardReorderMove(event, blockId, index)
+  } else {
+    onKeyboardReorderStart(event, blockId, index)
+  }
+}
+
+function cancelKeyboardReorder() {
+  keyboardReorderMode.value = false
+  keyboardReorderBlockId.value = null
+  keyboardReorderTargetIndex.value = -1
+}
+
 // Lifecycle
 onMounted(() => {
   loadData()
@@ -537,6 +688,10 @@ onMounted(() => {
 
     <div v-if="error" class="error-banner" role="alert">
       {{ error }}
+    </div>
+
+    <div v-if="reorderError" class="error-banner" role="alert">
+      {{ reorderError }}
     </div>
 
     <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
@@ -555,19 +710,50 @@ onMounted(() => {
           </button>
         </div>
 
+        <div
+          v-if="canReorderBlocks"
+          id="blocks-reorder-instructions"
+          data-testid="reorder-instructions"
+          class="reorder-instructions"
+        >
+          {{ t('blocks.reorder_instructions') }}
+        </div>
+
         <div v-if="blocks.length === 0" data-testid="no-blocks-message">
           {{ t('blocks.no_blocks') }}
         </div>
 
         <div v-else data-testid="blocks-list">
           <div
-            v-for="block in blocks"
+            v-for="(block, index) in blocks"
             :key="block.id"
             :data-testid="`block-item-${block.id}`"
             class="block-item"
+            :class="{ 'drag-over': dragOverBlockId === block.id }"
+            @dragover="onDragOver($event, block.id)"
+            @dragleave="onDragLeave($event)"
+            @drop="onDrop($event, block.id)"
           >
             <div class="block-header">
-              <h4>{{ block.name }}</h4>
+              <div class="block-title-row">
+                <button
+                  v-if="canReorderBlocks"
+                  type="button"
+                  class="drag-handle"
+                  :data-testid="`drag-handle-${block.id}`"
+                  :aria-label="t('blocks.drag_handle')"
+                  :aria-pressed="keyboardReorderMode && keyboardReorderBlockId === block.id ? 'true' : 'false'"
+                  aria-describedby="blocks-reorder-instructions"
+                  :title="t('blocks.reorder_keyboard_hint')"
+                  draggable="true"
+                  @dragstart="onDragStart($event, block.id)"
+                  @dragend="onDragEnd"
+                  @keydown="handleDragHandleKeydown($event, block.id, index)"
+                >
+                  <span aria-hidden="true">⋮⋮</span>
+                </button>
+                <h4>{{ block.name }}</h4>
+              </div>
               <div class="block-actions">
                 <button
                   type="button"
@@ -911,6 +1097,53 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--rd-space-2);
+}
+
+.block-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--rd-space-2);
+}
+
+.drag-handle {
+  cursor: grab;
+  padding: var(--rd-space-1);
+  background: transparent;
+  border: 1px solid var(--rd-border, #ddd);
+  border-radius: var(--rd-radius-sm, 2px);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--rd-text-secondary, #666);
+  transition: background-color 0.2s;
+}
+
+.drag-handle:hover {
+  background: var(--rd-bg-secondary, #f5f5f5);
+}
+
+.drag-handle:active,
+.drag-handle[aria-pressed="true"] {
+  cursor: grabbing;
+  background: var(--rd-bg-tertiary, #e0e0e0);
+}
+
+.drag-handle:focus {
+  outline: 2px solid var(--rd-primary, #1976d2);
+  outline-offset: 2px;
+}
+
+.block-item.drag-over {
+  border: 2px dashed var(--rd-primary, #1976d2);
+  background: var(--rd-bg-hover, #f0f7ff);
+}
+
+.reorder-instructions {
+  font-size: 0.875rem;
+  color: var(--rd-text-secondary, #666);
+  margin-bottom: var(--rd-space-2);
+  padding: var(--rd-space-2);
+  background: var(--rd-bg-info, #e3f2fd);
+  border-radius: var(--rd-radius-sm, 2px);
 }
 
 .block-actions,

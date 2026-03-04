@@ -12,6 +12,57 @@ vi.mock('../api', () => ({
 }))
 
 const REGATTA_ID = '11111111-1111-4111-8111-111111111111'
+const MORNING_BLOCK = {
+  id: 'block-1',
+  name: 'Morning Session',
+  start_time: '2026-03-02T09:00:00Z',
+  event_interval_seconds: 120,
+  crew_interval_seconds: 30,
+  display_order: 1
+}
+const AFTERNOON_BLOCK = {
+  id: 'block-2',
+  name: 'Afternoon Session',
+  start_time: '2026-03-02T14:00:00Z',
+  event_interval_seconds: 150,
+  crew_interval_seconds: 45,
+  display_order: 2
+}
+const REORDERED_BLOCKS = [
+  { ...AFTERNOON_BLOCK, display_order: 1 },
+  { ...MORNING_BLOCK, display_order: 2 }
+]
+const REORDER_PAYLOAD = {
+  items: [
+    { block_id: 'block-2', display_order: 1 },
+    { block_id: 'block-1', display_order: 2 }
+  ]
+}
+
+function blocksResponse(blocks) {
+  return { data: blocks.map((block) => ({ ...block })) }
+}
+
+function defaultDrawApi(overrides = {}) {
+  return {
+    listBlocks: vi.fn().mockResolvedValue({ data: [] }),
+    listBibPools: vi.fn().mockResolvedValue({ data: [] }),
+    ...overrides
+  }
+}
+
+async function dragBlockOnto(wrapper, sourceBlockId, targetBlockId) {
+  const source = wrapper.find(`[data-testid="block-item-${sourceBlockId}"]`)
+  const target = wrapper.find(`[data-testid="block-item-${targetBlockId}"]`)
+  const dataTransfer = {
+    effectAllowed: 'move',
+    setData: vi.fn(),
+    getData: vi.fn(() => sourceBlockId)
+  }
+
+  await source.trigger('dragstart', { dataTransfer })
+  await target.trigger('drop', { dataTransfer, preventDefault: vi.fn() })
+}
 
 async function mountPage(mockDrawApi = {}) {
   api.createDrawApi.mockReturnValue(mockDrawApi)
@@ -53,29 +104,9 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
   describe('Initial rendering', () => {
     it('renders blocks list with timing details', async () => {
-      const mockDrawApi = {
-        listBlocks: vi.fn().mockResolvedValue({
-          data: [
-            {
-              id: 'block-1',
-              name: 'Morning Session',
-              start_time: '2026-03-02T09:00:00Z',
-              event_interval_seconds: 120,
-              crew_interval_seconds: 30,
-              display_order: 1
-            },
-            {
-              id: 'block-2',
-              name: 'Afternoon Session',
-              start_time: '2026-03-02T14:00:00Z',
-              event_interval_seconds: 150,
-              crew_interval_seconds: 45,
-              display_order: 2
-            }
-          ]
-        }),
-        listBibPools: vi.fn().mockResolvedValue({ data: [] })
-      }
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK]))
+      })
 
       const wrapper = await mountPage(mockDrawApi)
 
@@ -373,7 +404,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('creates bib pool in range mode', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          data: [{ id: 'block-1', name: 'Morning', start_time: '2026-03-02T09:00:00Z', event_interval_seconds: 120, crew_interval_seconds: 30 }]
+          data: [{ id: MORNING_BLOCK.id, name: 'Morning', start_time: MORNING_BLOCK.start_time, event_interval_seconds: MORNING_BLOCK.event_interval_seconds, crew_interval_seconds: MORNING_BLOCK.crew_interval_seconds }]
         }),
         listBibPools: vi.fn()
           .mockResolvedValueOnce({ data: [] })
@@ -419,7 +450,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
     it('creates bib pool in explicit list mode', async () => {
       const mockDrawApi = {
         listBlocks: vi.fn().mockResolvedValue({
-          data: [{ id: 'block-1', name: 'Morning', start_time: '2026-03-02T09:00:00Z', event_interval_seconds: 120, crew_interval_seconds: 30 }]
+          data: [{ id: MORNING_BLOCK.id, name: 'Morning', start_time: MORNING_BLOCK.start_time, event_interval_seconds: MORNING_BLOCK.event_interval_seconds, crew_interval_seconds: MORNING_BLOCK.crew_interval_seconds }]
         }),
         listBibPools: vi.fn()
           .mockResolvedValueOnce({ data: [] })
@@ -492,6 +523,138 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       expect(errorMessage.text()).toContain('overlap')
       expect(errorMessage.text()).toContain('10, 11, 12')
       expect(errorMessage.text()).toContain('Existing Pool')
+    })
+  })
+
+  describe('Block reordering via drag-and-drop (FEGAP-008-B1)', () => {
+    it('displays drag handles for blocks when multiple blocks exist', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK]))
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandles = wrapper.findAll('[data-testid^="drag-handle-"]')
+      expect(dragHandles).toHaveLength(2)
+      expect(dragHandles[0].attributes('draggable')).toBe('true')
+      expect(dragHandles[0].attributes('aria-label')).toContain('Drag to reorder')
+      expect(dragHandles[0].attributes('aria-describedby')).toBe('blocks-reorder-instructions')
+    })
+
+    it('does not display drag handles when only one block exists', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK]))
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandles = wrapper.findAll('[data-testid^="drag-handle-"]')
+      expect(dragHandles).toHaveLength(0)
+    })
+
+    it('successfully reorders blocks via drag-and-drop', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn()
+          .mockResolvedValueOnce(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK]))
+          .mockResolvedValueOnce(blocksResponse(REORDERED_BLOCKS)),
+        reorderBlocks: vi.fn().mockResolvedValue(blocksResponse(REORDERED_BLOCKS))
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      await dragBlockOnto(wrapper, 'block-1', 'block-2')
+
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalledWith(REGATTA_ID, REORDER_PAYLOAD)
+
+      expect(mockDrawApi.listBlocks).toHaveBeenCalledTimes(2)
+    })
+
+    it('restores original order on reorder API failure', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK])),
+        reorderBlocks: vi.fn().mockRejectedValue(new Error('Network error'))
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      await dragBlockOnto(wrapper, 'block-1', 'block-2')
+
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalled()
+
+      const errorBanner = wrapper.find('[role="alert"]')
+      expect(errorBanner.exists()).toBe(true)
+      expect(errorBanner.text()).toContain('Failed to save new block order')
+
+      const blockItems = wrapper.findAll('[data-testid^="block-item-"]')
+      expect(blockItems[0].attributes('data-testid')).toBe('block-item-block-1')
+      expect(blockItems[1].attributes('data-testid')).toBe('block-item-block-2')
+    })
+
+    it('supports keyboard navigation for reordering blocks', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn()
+          .mockResolvedValueOnce(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK]))
+          .mockResolvedValueOnce(blocksResponse(REORDERED_BLOCKS)),
+        reorderBlocks: vi.fn().mockResolvedValue({ data: [] })
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstDragHandle = wrapper.find('[data-testid="drag-handle-block-1"]')
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('true')
+
+      await firstDragHandle.trigger('keydown', { key: 'ArrowDown' })
+
+      expect(mockDrawApi.reorderBlocks).not.toHaveBeenCalled()
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBlocks).toHaveBeenCalledWith(REGATTA_ID, REORDER_PAYLOAD)
+    })
+
+    it('cancels keyboard reordering on Escape key', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK])),
+        reorderBlocks: vi.fn()
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const firstDragHandle = wrapper.find('[data-testid="drag-handle-block-1"]')
+
+      await firstDragHandle.trigger('keydown', { key: 'Enter' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('true')
+
+      await firstDragHandle.trigger('keydown', { key: 'ArrowDown' })
+
+      await firstDragHandle.trigger('keydown', { key: 'Escape' })
+
+      expect(firstDragHandle.attributes('aria-pressed')).toBe('false')
+
+      expect(mockDrawApi.reorderBlocks).not.toHaveBeenCalled()
+    })
+
+    it('displays reorder instructions for accessibility', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK]))
+      })
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const instructions = wrapper.find('[data-testid="reorder-instructions"]')
+      expect(instructions.exists()).toBe(true)
+      expect(instructions.attributes('id')).toBe('blocks-reorder-instructions')
+      expect(instructions.text()).toContain('drag and drop')
+      expect(instructions.text()).toContain('arrow keys')
     })
   })
 })

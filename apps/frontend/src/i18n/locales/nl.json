@@ -268,6 +268,10 @@
     "edit_bib_pool": "Pool bewerken",
     "delete_block_confirm": "Weet je zeker dat je dit blok wilt verwijderen?",
     "delete_bib_pool_confirm": "Weet je zeker dat je deze pool wilt verwijderen?",
+    "drag_handle": "Sleep om te herschikken",
+    "reorder_instructions": "Gebruik slepen en neerzetten of pijltjestoetsen om blokken te herschikken",
+    "reorder_keyboard_hint": "Druk op Enter of Spatie om te beginnen met herschikken, gebruik pijltjestoetsen om te verplaatsen, druk dan op Enter of Spatie om te bevestigen",
+    "reorder_error": "Opslaan van nieuwe blokvolgorde mislukt. Volgorde is hersteld.",
     "block": {
       "name": "Bloknaam",
       "start_time": "Starttijd",
