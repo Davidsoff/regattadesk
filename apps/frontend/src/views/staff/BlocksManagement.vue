@@ -1477,27 +1477,6 @@ onMounted(() => {
   padding: var(--rd-space-4);
 }
 
-.drag-handle {
-  border: 0;
-  background: transparent;
-  cursor: move;
-  padding: var(--rd-space-1) var(--rd-space-2);
-  color: var(--rd-text-secondary, #666);
-  font-size: 1.2em;
-  user-select: none;
-  margin-right: var(--rd-space-2);
-  display: inline-block;
-}
-
-.drag-handle:hover {
-  color: var(--rd-primary, #1976d2);
-}
-
-.drag-handle:focus {
-  outline: 2px solid var(--rd-primary, #1976d2);
-  outline-offset: 2px;
-}
-
 .drag-handle.keyboard-move-active {
   color: var(--rd-primary, #1976d2);
   background: var(--rd-primary-light, #e3f2fd);
