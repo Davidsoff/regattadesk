@@ -17,6 +17,7 @@ const blocks = ref([])
 const bibPools = ref([])
 const loading = ref(true)
 const error = ref(null)
+const reorderError = ref(null)
 
 // Drag-and-drop state
 const draggedBlockId = ref(null)
@@ -24,12 +25,18 @@ const dragOverBlockId = ref(null)
 const keyboardReorderMode = ref(false)
 const keyboardReorderBlockId = ref(null)
 const keyboardReorderTargetIndex = ref(-1)
-const reorderError = ref(null)
 
 // Dialog state
 const showBlockDialog = ref(false)
 const showBibPoolDialog = ref(false)
 const showDeleteDialog = ref(false)
+
+// Drag and drop state
+const draggedPoolId = ref(null)
+const dragOverPoolId = ref(null)
+const keyboardMoveMode = ref(false)
+const keyboardMovingPoolId = ref(null)
+const keyboardTargetIndex = ref(null)
 
 // Form state
 const blockForm = ref({
@@ -78,7 +85,9 @@ const regularBibPools = computed(() => {
 })
 
 function getBibPoolsForBlock(blockId) {
-  return regularBibPools.value.filter(pool => pool.block_id === blockId)
+  return regularBibPools.value
+    .filter(pool => pool.block_id === blockId)
+    .sort((a, b) => a.priority - b.priority)
 }
 
 function parseInteger(value) {
@@ -536,19 +545,19 @@ watch(
   }
 )
 
-// Drag-and-drop handlers
-function onDragStart(event, blockId) {
+// Block drag-and-drop handlers
+function onBlockDragStart(event, blockId) {
   draggedBlockId.value = blockId
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('text/plain', blockId)
 }
 
-function onDragOver(event, blockId) {
+function onBlockDragOver(event, blockId) {
   event.preventDefault()
   dragOverBlockId.value = blockId
 }
 
-function onDragLeave(event) {
+function onBlockDragLeave(event) {
   const currentTarget = event?.currentTarget
   const nextTarget = event?.relatedTarget
 
@@ -557,7 +566,7 @@ function onDragLeave(event) {
   }
 }
 
-function onDrop(event, targetBlockId) {
+function onBlockDrop(event, targetBlockId) {
   event.preventDefault()
   dragOverBlockId.value = null
 
@@ -569,7 +578,7 @@ function onDrop(event, targetBlockId) {
   reorderBlocksAfterDrop(sourceBlockId, targetBlockId)
 }
 
-function onDragEnd() {
+function onBlockDragEnd() {
   draggedBlockId.value = null
   dragOverBlockId.value = null
 }
@@ -661,7 +670,7 @@ async function applyReorderAndPersist(sourceIndex, targetIndex) {
   }
 }
 
-function handleDragHandleKeydown(event, blockId, index) {
+function handleBlockDragHandleKeydown(event, blockId, index) {
   if (keyboardReorderMode.value && keyboardReorderBlockId.value === blockId) {
     onKeyboardReorderMove(event, blockId, index)
   } else {
@@ -675,6 +684,182 @@ function cancelKeyboardReorder() {
   keyboardReorderTargetIndex.value = -1
 }
 
+// Bib pool drag-and-drop handlers
+function onPoolDragStart(pool, event) {
+  draggedPoolId.value = pool.id
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('application/x-regattadesk-pool-id', pool.id)
+}
+
+function onPoolDragOver(pool, event) {
+  if (pool.is_overflow || draggedPoolId.value === pool.id) {
+    return
+  }
+  const sourcePool = bibPools.value.find(candidate => candidate.id === draggedPoolId.value)
+  if (!sourcePool || sourcePool.block_id !== pool.block_id) {
+    return
+  }
+  event.preventDefault()
+  dragOverPoolId.value = pool.id
+}
+
+function onPoolDragLeave() {
+  dragOverPoolId.value = null
+}
+
+function onPoolDrop(targetPool, event) {
+  event.preventDefault()
+  
+  const sourcePoolId = event.dataTransfer.getData('application/x-regattadesk-pool-id')
+  if (!sourcePoolId || sourcePoolId === targetPool.id || targetPool.is_overflow) {
+    dragOverPoolId.value = null
+    draggedPoolId.value = null
+    return
+  }
+
+  performPoolReorder(sourcePoolId, targetPool.id)
+  dragOverPoolId.value = null
+  draggedPoolId.value = null
+}
+
+function onPoolDragEnd() {
+  draggedPoolId.value = null
+  dragOverPoolId.value = null
+}
+
+function resetKeyboardMoveMode() {
+  keyboardMoveMode.value = false
+  keyboardMovingPoolId.value = null
+  keyboardTargetIndex.value = null
+}
+
+function startKeyboardMove(pool) {
+  keyboardMoveMode.value = true
+  keyboardMovingPoolId.value = pool.id
+  const blockPools = getBibPoolsForBlock(pool.block_id)
+  keyboardTargetIndex.value = blockPools.findIndex(p => p.id === pool.id)
+}
+
+function confirmKeyboardMove(pool) {
+  const blockPools = getBibPoolsForBlock(pool.block_id)
+  const originalIndex = blockPools.findIndex(p => p.id === pool.id)
+  if (keyboardTargetIndex.value !== originalIndex) {
+    const targetPoolId = blockPools[keyboardTargetIndex.value].id
+    performPoolReorder(pool.id, targetPoolId)
+  }
+  resetKeyboardMoveMode()
+}
+
+function updateKeyboardTargetIndex(pool, event) {
+  const blockPools = getBibPoolsForBlock(pool.block_id)
+  const currentIndex = keyboardTargetIndex.value
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    if (currentIndex > 0) {
+      keyboardTargetIndex.value = currentIndex - 1
+    }
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    if (currentIndex < blockPools.length - 1) {
+      keyboardTargetIndex.value = currentIndex + 1
+    }
+  }
+}
+
+function onPoolKeyDown(pool, event) {
+  if (event.key === ' ' || event.key === 'Enter') {
+    event.preventDefault()
+    if (!keyboardMoveMode.value) {
+      startKeyboardMove(pool)
+    } else if (keyboardMovingPoolId.value === pool.id) {
+      confirmKeyboardMove(pool)
+    }
+    return
+  }
+
+  if (event.key === 'Escape' && keyboardMoveMode.value) {
+    event.preventDefault()
+    resetKeyboardMoveMode()
+    return
+  }
+
+  if (!keyboardMoveMode.value || keyboardMovingPoolId.value !== pool.id) {
+    return
+  }
+
+  updateKeyboardTargetIndex(pool, event)
+}
+
+async function performPoolReorder(sourcePoolId, targetPoolId) {
+  const sourcePool = bibPools.value.find(p => p.id === sourcePoolId)
+  const targetPool = bibPools.value.find(p => p.id === targetPoolId)
+
+  if (!sourcePool || !targetPool || sourcePool.block_id !== targetPool.block_id) {
+    return
+  }
+
+  // Save original order for rollback (clone each pool to avoid in-place mutation issues)
+  const originalPools = bibPools.value.map(pool => ({ ...pool }))
+
+  // Get pools for this block, sorted by priority
+  const blockPools = getBibPoolsForBlock(sourcePool.block_id)
+  const sourceIndex = blockPools.findIndex(p => p.id === sourcePoolId)
+  const targetIndex = blockPools.findIndex(p => p.id === targetPoolId)
+
+  if (sourceIndex === -1 || targetIndex === -1) {
+    return
+  }
+
+  // Optimistically reorder in UI
+  const reorderedBlockPools = [...blockPools]
+  const [movedPool] = reorderedBlockPools.splice(sourceIndex, 1)
+  reorderedBlockPools.splice(targetIndex, 0, movedPool)
+
+  // Calculate the base priority from the first pool
+  const basePriority = blockPools[0].priority
+
+  // Update priorities with new positions
+  const items = reorderedBlockPools.map((pool, index) => ({
+    bib_pool_id: pool.id,
+    priority: basePriority + index
+  }))
+
+  // Include all other pools to maintain their priorities
+  const otherPools = bibPools.value.filter(p => !p.is_overflow && p.block_id !== sourcePool.block_id)
+  otherPools.forEach(pool => {
+    items.push({ bib_pool_id: pool.id, priority: pool.priority })
+  })
+
+  // Update local state optimistically
+  reorderedBlockPools.forEach((pool, index) => {
+    const poolInState = bibPools.value.find(p => p.id === pool.id)
+    if (poolInState) {
+      poolInState.priority = basePriority + index
+    }
+  })
+
+  try {
+    reorderError.value = null
+    await drawApi.reorderBibPools(regattaId, { items })
+    // Refresh from server to ensure consistency with backend state
+    await loadBibPools()
+  } catch (err) {
+    // Revert to original order on error
+    bibPools.value = originalPools
+    
+    // Provide contextual error message
+    if (err.message?.includes('network') || err.message?.includes('Network')) {
+      reorderError.value = t('blocks.reorder_error') + ' ' + t('blocks.network_issue_suffix')
+    } else if (err.code) {
+      reorderError.value = t('blocks.reorder_error') + ` (${err.code})`
+    } else {
+      reorderError.value = t('blocks.reorder_error')
+    }
+    
+    console.error('Failed to reorder bib pools:', err)
+  }
+}
 // Lifecycle
 onMounted(() => {
   loadData()
@@ -730,9 +915,9 @@ onMounted(() => {
             :data-testid="`block-item-${block.id}`"
             class="block-item"
             :class="{ 'drag-over': dragOverBlockId === block.id }"
-            @dragover="onDragOver($event, block.id)"
-            @dragleave="onDragLeave($event)"
-            @drop="onDrop($event, block.id)"
+            @dragover="onBlockDragOver($event, block.id)"
+            @dragleave="onBlockDragLeave($event)"
+            @drop="onBlockDrop($event, block.id)"
           >
             <div class="block-header">
               <div class="block-title-row">
@@ -746,9 +931,9 @@ onMounted(() => {
                   aria-describedby="blocks-reorder-instructions"
                   :title="t('blocks.reorder_keyboard_hint')"
                   draggable="true"
-                  @dragstart="onDragStart($event, block.id)"
-                  @dragend="onDragEnd"
-                  @keydown="handleDragHandleKeydown($event, block.id, index)"
+                  @dragstart="onBlockDragStart($event, block.id)"
+                  @dragend="onBlockDragEnd"
+                  @keydown="handleBlockDragHandleKeydown($event, block.id, index)"
                 >
                   <span aria-hidden="true">⋮⋮</span>
                 </button>
@@ -788,8 +973,36 @@ onMounted(() => {
                 :key="pool.id"
                 :data-testid="`bib-pool-item-${pool.id}`"
                 class="bib-pool-item"
+                :class="{ 'drag-over': dragOverPoolId === pool.id, 'dragging': draggedPoolId === pool.id }"
+                @dragover="onPoolDragOver(pool, $event)"
+                @dragleave="onPoolDragLeave"
+                @drop="onPoolDrop(pool, $event)"
               >
                 <div class="pool-header">
+                  <button
+                    v-if="!pool.is_overflow"
+                    type="button"
+                    :data-testid="`drag-handle-${pool.id}`"
+                    class="drag-handle"
+                    draggable="true"
+                    :aria-label="t('blocks.bib_pool.drag_handle')"
+                    :title="t('blocks.bib_pool.keyboard_reorder_instructions')"
+                    :aria-pressed="keyboardMoveMode && keyboardMovingPoolId === pool.id ? 'true' : 'false'"
+                    :aria-describedby="keyboardMoveMode && keyboardMovingPoolId === pool.id ? `move-mode-status-${pool.id}` : null"
+                    :class="{ 'keyboard-move-active': keyboardMoveMode && keyboardMovingPoolId === pool.id }"
+                    @dragstart="onPoolDragStart(pool, $event)"
+                    @dragend="onPoolDragEnd"
+                    @keydown="onPoolKeyDown(pool, $event)"
+                  >
+                    ☰
+                  </button>
+                  <span
+                    v-if="keyboardMoveMode && keyboardMovingPoolId === pool.id"
+                    :id="`move-mode-status-${pool.id}`"
+                    class="sr-only"
+                  >
+                    {{ t('blocks.bib_pool.keyboard_move_active', { position: keyboardTargetIndex + 1 }) }}
+                  </span>
                   <span class="pool-name">{{ pool.name }}</span>
                   <span class="pool-range">{{ formatBibPoolDisplay(pool) }}</span>
                   <div class="pool-actions">
@@ -1262,5 +1475,53 @@ onMounted(() => {
 .loading {
   text-align: center;
   padding: var(--rd-space-4);
+}
+
+.drag-handle {
+  border: 0;
+  background: transparent;
+  cursor: move;
+  padding: var(--rd-space-1) var(--rd-space-2);
+  color: var(--rd-text-secondary, #666);
+  font-size: 1.2em;
+  user-select: none;
+  margin-right: var(--rd-space-2);
+  display: inline-block;
+}
+
+.drag-handle:hover {
+  color: var(--rd-primary, #1976d2);
+}
+
+.drag-handle:focus {
+  outline: 2px solid var(--rd-primary, #1976d2);
+  outline-offset: 2px;
+}
+
+.drag-handle.keyboard-move-active {
+  color: var(--rd-primary, #1976d2);
+  background: var(--rd-primary-light, #e3f2fd);
+  border-radius: var(--rd-radius-sm, 2px);
+}
+
+.bib-pool-item.dragging {
+  opacity: 0.5;
+}
+
+.bib-pool-item.drag-over {
+  border: 2px dashed var(--rd-primary, #1976d2);
+  background: var(--rd-primary-light, #e3f2fd);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>

@@ -289,11 +289,16 @@
       "bib_numbers_placeholder": "1, 5, 10, 15",
       "is_overflow": "Overlooppool",
       "block_assignment": "Toegewezen aan blok",
-      "unassigned_option": "Selecteer een blok"
+      "unassigned_option": "Selecteer een blok",
+      "drag_handle": "Sleep om volgorde te wijzigen",
+      "keyboard_reorder_instructions": "Gebruik pijltjestoetsen om te verplaatsen, Spatie of Enter om te starten, Escape om te annuleren",
+      "keyboard_move_active": "Verplaatsmodus actief. Huidige doelpositie: {position}."
     },
     "no_blocks": "Nog geen blokken geconfigureerd",
     "no_bib_pools": "Nog geen startnummerpools geconfigureerd",
     "no_overflow_pool": "Geen overlooppool geconfigureerd",
+    "reorder_error": "Herschikken mislukt. Wijzigingen teruggedraaid.",
+    "network_issue_suffix": "Netwerkprobleem.",
     "validation": {
       "block_name_required": "Bloknaam is verplicht",
       "start_time_required": "Starttijd is verplicht",

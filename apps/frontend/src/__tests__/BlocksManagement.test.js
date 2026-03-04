@@ -657,4 +657,588 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
       expect(instructions.text()).toContain('arrow keys')
     })
   })
+
+  describe('Bib Pool Drag-and-Drop Reordering (FEGAP-008-B2)', () => {
+    it('displays drag handles on bib pool items', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-1',
+              name: 'Pool 1',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 50,
+              is_overflow: false,
+              priority: 1
+            },
+            {
+              id: 'pool-2',
+              name: 'Pool 2',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 51,
+              end_bib: 100,
+              is_overflow: false,
+              priority: 2
+            }
+          ]
+        })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandles = wrapper.findAll('[data-testid^="drag-handle-pool-"]')
+      expect(dragHandles.length).toBeGreaterThan(0)
+
+      const firstHandle = wrapper.find('[data-testid="drag-handle-pool-1"]')
+      expect(firstHandle.exists()).toBe(true)
+      expect(firstHandle.attributes('draggable')).toBe('true')
+      expect(firstHandle.attributes('aria-label')).toContain('Drag to reorder')
+    })
+
+    it('reorders bib pools via drag and drop', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn()
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 2
+              }
+            ]
+          })
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 2
+              }
+            ]
+          }),
+        reorderBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      // Simulate drag start on pool-1
+      const dragHandle1 = wrapper.find('[data-testid="drag-handle-pool-1"]')
+      await dragHandle1.trigger('dragstart', {
+        dataTransfer: { setData: vi.fn(), effectAllowed: '' }
+      })
+
+      // Simulate drop on pool-2
+      const poolItem2 = wrapper.find('[data-testid="bib-pool-item-pool-2"]')
+      await poolItem2.trigger('dragover', { preventDefault: vi.fn() })
+      await poolItem2.trigger('drop', {
+        preventDefault: vi.fn(),
+        dataTransfer: { getData: vi.fn(() => 'pool-1') }
+      })
+
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBibPools).toHaveBeenCalledWith(REGATTA_ID, {
+        items: [
+          { bib_pool_id: 'pool-2', priority: 1 },
+          { bib_pool_id: 'pool-1', priority: 2 }
+        ]
+      })
+
+      expect(mockDrawApi.listBibPools).toHaveBeenCalledTimes(2)
+    })
+
+    it('supports keyboard-based reordering with arrow keys', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn()
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 2
+              }
+            ]
+          })
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 2
+              }
+            ]
+          }),
+        reorderBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandle1 = wrapper.find('[data-testid="drag-handle-pool-1"]')
+
+      // Activate keyboard mode with Space
+      await dragHandle1.trigger('keydown', { key: ' ' })
+      await flushPromises()
+      expect(dragHandle1.attributes('aria-pressed')).toBe('true')
+      expect(dragHandle1.classes()).toContain('keyboard-move-active')
+      expect(wrapper.find('#move-mode-status-pool-1').exists()).toBe(true)
+
+      // Move down with ArrowDown
+      await dragHandle1.trigger('keydown', { key: 'ArrowDown' })
+      await flushPromises()
+
+      // Confirm with Enter
+      await dragHandle1.trigger('keydown', { key: 'Enter' })
+      await flushPromises()
+
+      expect(mockDrawApi.reorderBibPools).toHaveBeenCalledWith(REGATTA_ID, {
+        items: [
+          { bib_pool_id: 'pool-2', priority: 1 },
+          { bib_pool_id: 'pool-1', priority: 2 }
+        ]
+      })
+    })
+
+    it('cancels keyboard reordering with Escape', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-1',
+              name: 'Pool 1',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 50,
+              is_overflow: false,
+              priority: 1
+            },
+            {
+              id: 'pool-2',
+              name: 'Pool 2',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 51,
+              end_bib: 100,
+              is_overflow: false,
+              priority: 2
+            }
+          ]
+        }),
+        reorderBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const dragHandle1 = wrapper.find('[data-testid="drag-handle-pool-1"]')
+
+      // Activate keyboard mode with Space
+      await dragHandle1.trigger('keydown', { key: ' ' })
+      await flushPromises()
+
+      // Move down with ArrowDown
+      await dragHandle1.trigger('keydown', { key: 'ArrowDown' })
+      await flushPromises()
+
+      // Cancel with Escape
+      await dragHandle1.trigger('keydown', { key: 'Escape' })
+      await flushPromises()
+
+      // Should not call reorder API
+      expect(mockDrawApi.reorderBibPools).not.toHaveBeenCalled()
+    })
+
+    it('reverts optimistic update on reorder failure', async () => {
+      let rejectReorderRequest
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-1',
+              name: 'Pool 1',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 50,
+              is_overflow: false,
+              priority: 1
+            },
+            {
+              id: 'pool-2',
+              name: 'Pool 2',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 51,
+              end_bib: 100,
+              is_overflow: false,
+              priority: 2
+            }
+          ]
+        }),
+        reorderBibPools: vi.fn().mockImplementation(() => new Promise((_, reject) => {
+          rejectReorderRequest = reject
+        }))
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      // Simulate drag and drop
+      const dragHandle1 = wrapper.find('[data-testid="drag-handle-pool-1"]')
+      await dragHandle1.trigger('dragstart', {
+        dataTransfer: { setData: vi.fn(), effectAllowed: '' }
+      })
+
+      const poolItem2 = wrapper.find('[data-testid="bib-pool-item-pool-2"]')
+      await poolItem2.trigger('dragover', { preventDefault: vi.fn() })
+      await poolItem2.trigger('drop', {
+        preventDefault: vi.fn(),
+        dataTransfer: { getData: vi.fn(() => 'pool-1') }
+      })
+
+      await wrapper.vm.$nextTick()
+
+      // Verify optimistic reorder changed rendered order before API error rollback
+      let poolsList = wrapper.findAll('[data-testid^="bib-pool-item-pool-"]')
+      expect(poolsList[0].attributes('data-testid')).toBe('bib-pool-item-pool-2')
+      expect(poolsList[1].attributes('data-testid')).toBe('bib-pool-item-pool-1')
+
+      rejectReorderRequest(new Error('Network error'))
+      await flushPromises()
+
+      // Check error message displayed
+      const errorBanner = wrapper.find('.error-banner')
+      expect(errorBanner.exists()).toBe(true)
+      expect(errorBanner.text()).toContain('Failed to reorder')
+
+      // Verify that the order is reverted (original order maintained)
+      poolsList = wrapper.findAll('[data-testid^="bib-pool-item-pool-"]')
+      expect(poolsList[0].attributes('data-testid')).toBe('bib-pool-item-pool-1')
+      expect(poolsList[1].attributes('data-testid')).toBe('bib-pool-item-pool-2')
+    })
+
+    it('does not show drag handle on overflow pool', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({ data: [] }),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-overflow',
+              name: 'Overflow Pool',
+              allocation_mode: 'range',
+              start_bib: 900,
+              end_bib: 999,
+              is_overflow: true,
+              priority: 999
+            }
+          ]
+        })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      const overflowHandle = wrapper.find('[data-testid="drag-handle-pool-overflow"]')
+      expect(overflowHandle.exists()).toBe(false)
+    })
+
+    it('prevents overflow pool from being included in reorder operations', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            }
+          ]
+        }),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-1',
+              name: 'Pool 1',
+              block_id: 'block-1',
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 50,
+              is_overflow: false,
+              priority: 1
+            },
+            {
+              id: 'pool-overflow',
+              name: 'Overflow Pool',
+              allocation_mode: 'range',
+              start_bib: 900,
+              end_bib: 999,
+              is_overflow: true,
+              priority: 999
+            }
+          ]
+        }),
+        reorderBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      // Only regular pool should have drag handle
+      expect(wrapper.find('[data-testid="drag-handle-pool-1"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="drag-handle-pool-overflow"]').exists()).toBe(false)
+    })
+
+    it('preserves block assignment constraints during reorder', async () => {
+      const mockDrawApi = {
+        listBlocks: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'block-1',
+              name: 'Morning Session',
+              start_time: '2026-03-02T09:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 1
+            },
+            {
+              id: 'block-2',
+              name: 'Afternoon Session',
+              start_time: '2026-03-02T14:00:00Z',
+              event_interval_seconds: 120,
+              crew_interval_seconds: 30,
+              display_order: 2
+            }
+          ]
+        }),
+        listBibPools: vi.fn()
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 2
+              },
+              {
+                id: 'pool-3',
+                name: 'Pool 3',
+                block_id: 'block-2',
+                allocation_mode: 'range',
+                start_bib: 101,
+                end_bib: 150,
+                is_overflow: false,
+                priority: 3
+              }
+            ]
+          })
+          .mockResolvedValueOnce({
+            data: [
+              {
+                id: 'pool-2',
+                name: 'Pool 2',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 51,
+                end_bib: 100,
+                is_overflow: false,
+                priority: 1
+              },
+              {
+                id: 'pool-1',
+                name: 'Pool 1',
+                block_id: 'block-1',
+                allocation_mode: 'range',
+                start_bib: 1,
+                end_bib: 50,
+                is_overflow: false,
+                priority: 2
+              },
+              {
+                id: 'pool-3',
+                name: 'Pool 3',
+                block_id: 'block-2',
+                allocation_mode: 'range',
+                start_bib: 101,
+                end_bib: 150,
+                is_overflow: false,
+                priority: 3
+              }
+            ]
+          }),
+        reorderBibPools: vi.fn().mockResolvedValue({ data: [] })
+      }
+
+      const wrapper = await mountPage(mockDrawApi)
+
+      // Drag pool-1 in block-1
+      const dragHandle1 = wrapper.find('[data-testid="drag-handle-pool-1"]')
+      await dragHandle1.trigger('dragstart', {
+        dataTransfer: { setData: vi.fn(), effectAllowed: '' }
+      })
+
+      // Drag-over on a different block should not be treated as a valid drop target
+      const crossBlockDragOverEvent = { preventDefault: vi.fn() }
+      const poolItem3 = wrapper.find('[data-testid="bib-pool-item-pool-3"]')
+      await poolItem3.trigger('dragover', crossBlockDragOverEvent)
+      expect(crossBlockDragOverEvent.preventDefault).not.toHaveBeenCalled()
+
+      // Drop on pool-2 in block-1
+      const poolItem2 = wrapper.find('[data-testid="bib-pool-item-pool-2"]')
+      await poolItem2.trigger('dragover', { preventDefault: vi.fn() })
+      await poolItem2.trigger('drop', {
+        preventDefault: vi.fn(),
+        dataTransfer: { getData: vi.fn(() => 'pool-1') }
+      })
+
+      await flushPromises()
+
+      // Should only reorder within block-1 (pool-1 and pool-2), not pool-3
+      expect(mockDrawApi.reorderBibPools).toHaveBeenCalledWith(REGATTA_ID, {
+        items: expect.arrayContaining([
+          { bib_pool_id: 'pool-2', priority: 1 },
+          { bib_pool_id: 'pool-1', priority: 2 }
+        ])
+      })
+
+      // Pool-3 should maintain its priority since it's in a different block
+      const call = mockDrawApi.reorderBibPools.mock.calls[0][1]
+      const pool3Item = call.items.find(item => item.bib_pool_id === 'pool-3')
+      expect(pool3Item.priority).toBe(3)
+    })
+  })
 })
