@@ -301,16 +301,18 @@ jobs:
 
       - name: Run accessibility tests
         run: npm run test:a11y
-        continue-on-error: true
         id: a11y-tests
 
       - name: Report accessibility tests result
+        if: always()
         run: |
-          if [[ "${{ steps.a11y-tests.outcome }}" == "failure" ]]; then
-            echo "⚠️ Accessibility tests failed or not yet configured"
-            echo "This is expected if axe-core tests haven't been set up yet"
-          else
+          if [[ "${{ steps.a11y-tests.outcome }}" == "success" ]]; then
             echo "✅ Accessibility tests passed"
+            echo "All components meet WCAG 2.2 AA standards"
+          else
+            echo "❌ Accessibility tests failed"
+            echo "Critical or serious WCAG violations detected"
+            exit 1
           fi
 
       - name: Upload accessibility test results
@@ -480,6 +482,7 @@ jobs:
             ["backend-test"]="${{ needs.backend-test.result }}"
             ["frontend-lint"]="${{ needs.frontend-lint.result }}"
             ["frontend-build"]="${{ needs.frontend-build.result }}"
+            ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.result }}"
             ["dependency-pinning"]="${{ needs.dependency-pinning.result }}"
           )
           
@@ -489,7 +492,6 @@ jobs:
             ["backend-integration-test"]="${{ needs.backend-integration-test.outputs.test-outcome || needs.backend-integration-test.result }}"
             ["backend-contract-test"]="${{ needs.backend-contract-test.outputs.test-outcome || needs.backend-contract-test.result }}"
             ["frontend-test"]="${{ needs.frontend-test.outputs.test-outcome || needs.frontend-test.result }}"
-            ["frontend-accessibility-test"]="${{ needs.frontend-accessibility-test.outputs.test-outcome || needs.frontend-accessibility-test.result }}"
           )
           
           FAILED_REQUIRED=()
