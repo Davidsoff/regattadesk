@@ -4,8 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run api:sync && vite",
-    "build": "npm run api:sync && vite build",
+    "dev": "vite",
+    "dev:sync": "npm run api:sync && vite",
+    "build": "vite build",
+    "build:sync": "npm run api:sync && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",

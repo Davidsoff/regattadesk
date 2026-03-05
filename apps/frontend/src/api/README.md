@@ -209,7 +209,16 @@ cd apps/frontend
 npm run api:check
 ```
 
-`npm run dev` and `npm run build` now run `api:sync` automatically, which:
+Use the sync variants when you want to regenerate artifacts before starting:
+
+```bash
+cd apps/frontend
+npm run dev:sync
+# or
+npm run build:sync
+```
+
+These commands run `api:sync` first, which:
 
 1. Regenerates `pdd/design/openapi-v0.1.yaml` from backend code.
 2. Regenerates `src/api/generated/` from that spec.
