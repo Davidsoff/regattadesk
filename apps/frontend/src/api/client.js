@@ -35,6 +35,17 @@ function normalizeUnknownError(error) {
   }
 }
 
+function getResponseStatus(response) {
+  if (response && typeof response.status === 'number') {
+    return response.status
+  }
+  return 0
+}
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
 /**
  * Custom error class for API errors with normalized fields.
  */
@@ -86,18 +97,33 @@ export function createApiClient(options = {}) {
         ...requestOptions
       })
 
-      if (result?.error !== undefined) {
+      if (!result || typeof result !== 'object') {
         throw new ApiError(
-          normalizeUnknownError(result.error),
-          result.response?.status ?? 0
+          {
+            code: 'UNKNOWN_ERROR',
+            message: 'Malformed API client response',
+            details: undefined,
+            requestId: undefined
+          },
+          0
         )
       }
 
-      if (result?.response?.status === 204 || result?.response?.status === 205) {
+      const status = getResponseStatus(result.response)
+
+      if (hasOwn(result, 'error') && result.error !== undefined && result.error !== null) {
+        throw new ApiError(normalizeUnknownError(result.error), status)
+      }
+
+      if (status === 204 || status === 205) {
         return null
       }
 
-      return result?.data
+      if (!hasOwn(result, 'data') || result.data === undefined) {
+        return null
+      }
+
+      return result.data
     } catch (error) {
       if (error instanceof ApiError) {
         throw error

@@ -385,13 +385,13 @@ jobs:
           echo "Checking for required lockfiles..."
           
           # Check Maven effective POM has versions
-          if [ ! -f "apps/backend/pom.xml" ]; then
+          if [[ ! -f "apps/backend/pom.xml" ]]; then
             echo "❌ Missing apps/backend/pom.xml"
             exit 1
           fi
           
           # Check npm lockfile exists
-          if [ ! -f "apps/frontend/package-lock.json" ]; then
+          if [[ ! -f "apps/frontend/package-lock.json" ]]; then
             echo "❌ Missing apps/frontend/package-lock.json"
             exit 1
           fi
@@ -403,9 +403,9 @@ jobs:
           echo "Validating npm dependency pinning..."
           
           # Check for caret (^) or tilde (~) ranges in package.json dependencies
-          UNPINNED=$(grep -E '"\^|"~' apps/frontend/package.json || true)
+          UNPINNED="$(grep -E '"\^|"~' apps/frontend/package.json || true)"
           
-          if [ -n "$UNPINNED" ]; then
+          if [[ -n "$UNPINNED" ]]; then
             echo "❌ Found unpinned dependencies in package.json:"
             echo "$UNPINNED"
             echo ""
@@ -492,7 +492,16 @@ jobs:
       - name: Wait for services to be healthy
         run: |
           echo "Waiting for services to become healthy..."
-          timeout 60 bash -c 'until docker compose -f infra/compose/docker-compose.yml ps | grep -q "healthy"; do sleep 2; done'
+          for attempt in {1..30}; do
+            if docker compose -f infra/compose/docker-compose.yml ps | grep -q "healthy"; then
+              echo "✅ At least one service reports healthy state"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "❌ Timed out waiting for healthy services"
+          docker compose -f infra/compose/docker-compose.yml ps
+          exit 1
 
       - name: Check service health
         working-directory: infra/compose
