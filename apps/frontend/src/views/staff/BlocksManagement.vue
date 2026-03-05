@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { createApiClient, createDrawApi } from '../../api'
+import { parseBibPoolValidationError, formatOverlappingBibs } from '../../composables/useBibPoolValidation'
+import { useDrawImmutability } from '../../composables/useDrawImmutability'
 import { validateRouteParam } from './financeViewShared'
 
 const { t } = useI18n()
@@ -18,6 +20,7 @@ const bibPools = ref([])
 const loading = ref(true)
 const error = ref(null)
 const reorderError = ref(null)
+const regatta = ref(null)
 
 // Drag-and-drop state
 const draggedBlockId = ref(null)
@@ -71,13 +74,16 @@ const blockDialog = ref(null)
 const bibPoolDialog = ref(null)
 const deleteDialog = ref(null)
 const lastFocusedElement = ref(null)
+const { isPublished, canEdit, getMessage } = useDrawImmutability(regatta)
+
+const immutabilityMessage = computed(() => getMessage('blocks'))
 
 const overflowPool = computed(() => {
   return bibPools.value.find(pool => pool.is_overflow)
 })
 
 const canReorderBlocks = computed(() => {
-  return blocks.value.length > 1
+  return canEdit.value && blocks.value.length > 1
 })
 
 const regularBibPools = computed(() => {
@@ -134,6 +140,16 @@ function validateExplicitListAllocation(errors) {
 }
 
 // API functions
+async function loadRegatta() {
+  try {
+    const response = await apiClient.get(`/regattas/${regattaId}`)
+    regatta.value = response?.data && typeof response.data === 'object' ? response.data : response
+  } catch (err) {
+    error.value = t('common.error')
+    console.error('Failed to load regatta:', err)
+  }
+}
+
 async function loadBlocks() {
   try {
     const response = await drawApi.listBlocks(regattaId)
@@ -163,12 +179,15 @@ async function loadData() {
 
   loading.value = true
   error.value = null
-  await Promise.all([loadBlocks(), loadBibPools()])
+  await Promise.all([loadRegatta(), loadBlocks(), loadBibPools()])
   loading.value = false
 }
 
 // Block operations
 function openAddBlockDialog() {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   blockForm.value = {
     id: null,
@@ -182,6 +201,9 @@ function openAddBlockDialog() {
 }
 
 function openEditBlockDialog(block) {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   blockForm.value = {
     id: block.id,
@@ -226,6 +248,10 @@ function validateBlockForm() {
 }
 
 async function saveBlock() {
+  if (!canEdit.value) {
+    return
+  }
+
   if (!validateBlockForm()) {
     return
   }
@@ -253,6 +279,9 @@ async function saveBlock() {
 }
 
 function openDeleteBlockDialog(block) {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   deleteTarget.value = block
   deleteType.value = 'block'
@@ -260,6 +289,10 @@ function openDeleteBlockDialog(block) {
 }
 
 async function confirmDelete() {
+  if (!canEdit.value) {
+    return
+  }
+
   try {
     if (deleteType.value === 'block') {
       await drawApi.deleteBlock(regattaId, deleteTarget.value.id)
@@ -278,6 +311,9 @@ async function confirmDelete() {
 
 // Bib Pool operations
 function openAddBibPoolDialog() {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   bibPoolForm.value = {
     id: null,
@@ -295,6 +331,9 @@ function openAddBibPoolDialog() {
 }
 
 function openEditBibPoolDialog(pool) {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   bibPoolForm.value = {
     id: pool.id,
@@ -337,6 +376,10 @@ function validateBibPoolForm() {
 }
 
 async function saveBibPool() {
+  if (!canEdit.value) {
+    return
+  }
+
   if (!validateBibPoolForm()) {
     return
   }
@@ -373,12 +416,9 @@ async function saveBibPool() {
     closeBibPoolDialog()
     await loadBibPools()
   } catch (err) {
-    if (err.code === 'BIB_POOL_VALIDATION_ERROR') {
-      bibPoolError.value = {
-        message: err.message,
-        overlapping_bibs: err.details?.overlapping_bibs || [],
-        conflicting_pool: err.details?.conflicting_pool_name || ''
-      }
+    const validationError = parseBibPoolValidationError(err)
+    if (validationError) {
+      bibPoolError.value = validationError
     } else {
       error.value = t('common.error')
       console.error('Failed to save bib pool:', err)
@@ -387,6 +427,9 @@ async function saveBibPool() {
 }
 
 function openDeleteBibPoolDialog(pool) {
+  if (!canEdit.value) {
+    return
+  }
   lastFocusedElement.value = document.activeElement
   deleteTarget.value = pool
   deleteType.value = 'bib_pool'
@@ -547,12 +590,18 @@ watch(
 
 // Block drag-and-drop handlers
 function onBlockDragStart(event, blockId) {
+  if (!canEdit.value) {
+    return
+  }
   draggedBlockId.value = blockId
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('text/plain', blockId)
 }
 
 function onBlockDragOver(event, blockId) {
+  if (!canEdit.value) {
+    return
+  }
   event.preventDefault()
   dragOverBlockId.value = blockId
 }
@@ -567,6 +616,9 @@ function onBlockDragLeave(event) {
 }
 
 function onBlockDrop(event, targetBlockId) {
+  if (!canEdit.value) {
+    return
+  }
   event.preventDefault()
   dragOverBlockId.value = null
 
@@ -686,12 +738,18 @@ function cancelKeyboardReorder() {
 
 // Bib pool drag-and-drop handlers
 function onPoolDragStart(pool, event) {
+  if (!canEdit.value) {
+    return
+  }
   draggedPoolId.value = pool.id
   event.dataTransfer.effectAllowed = 'move'
   event.dataTransfer.setData('application/x-regattadesk-pool-id', pool.id)
 }
 
 function onPoolDragOver(pool, event) {
+  if (!canEdit.value) {
+    return
+  }
   if (pool.is_overflow || draggedPoolId.value === pool.id) {
     return
   }
@@ -708,6 +766,9 @@ function onPoolDragLeave() {
 }
 
 function onPoolDrop(targetPool, event) {
+  if (!canEdit.value) {
+    return
+  }
   event.preventDefault()
   
   const sourcePoolId = event.dataTransfer.getData('application/x-regattadesk-pool-id')
@@ -768,6 +829,9 @@ function updateKeyboardTargetIndex(pool, event) {
 }
 
 function onPoolKeyDown(pool, event) {
+  if (!canEdit.value) {
+    return
+  }
   if (event.key === ' ' || event.key === 'Enter') {
     event.preventDefault()
     if (!keyboardMoveMode.value) {
@@ -879,6 +943,10 @@ onMounted(() => {
       {{ reorderError }}
     </div>
 
+    <div v-if="isPublished && immutabilityMessage" class="warning-banner" role="alert" data-testid="immutability-warning">
+      <strong>Locked:</strong> {{ immutabilityMessage }}
+    </div>
+
     <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
 
     <div v-if="!loading">
@@ -889,6 +957,8 @@ onMounted(() => {
           <button
             type="button"
             data-testid="add-block-button"
+            :disabled="!canEdit"
+            :title="canEdit ? t('blocks.add_block') : immutabilityMessage"
             @click="openAddBlockDialog"
           >
             {{ t('blocks.add_block') }}
@@ -938,11 +1008,20 @@ onMounted(() => {
                   <span aria-hidden="true">⋮⋮</span>
                 </button>
                 <h4>{{ block.name }}</h4>
+                <span
+                  v-if="isPublished"
+                  class="lock-indicator"
+                  :data-testid="`block-locked-${block.id}`"
+                >
+                  Locked
+                </span>
               </div>
               <div class="block-actions">
                 <button
                   type="button"
                   :data-testid="`edit-block-${block.id}`"
+                  :disabled="!canEdit"
+                  :title="canEdit ? t('common.edit') : immutabilityMessage"
                   @click="openEditBlockDialog(block)"
                 >
                   {{ t('common.edit') }}
@@ -950,6 +1029,8 @@ onMounted(() => {
                 <button
                   type="button"
                   :data-testid="`delete-block-${block.id}`"
+                  :disabled="!canEdit"
+                  :title="canEdit ? t('common.delete') : immutabilityMessage"
                   @click="openDeleteBlockDialog(block)"
                 >
                   {{ t('common.delete') }}
@@ -980,7 +1061,7 @@ onMounted(() => {
               >
                 <div class="pool-header">
                   <button
-                    v-if="!pool.is_overflow"
+                    v-if="!pool.is_overflow && canEdit"
                     type="button"
                     :data-testid="`drag-handle-${pool.id}`"
                     class="drag-handle"
@@ -1004,11 +1085,20 @@ onMounted(() => {
                     {{ t('blocks.bib_pool.keyboard_move_active', { position: keyboardTargetIndex + 1 }) }}
                   </span>
                   <span class="pool-name">{{ pool.name }}</span>
+                  <span
+                    v-if="isPublished"
+                    class="lock-indicator"
+                    :data-testid="`bib-pool-locked-${pool.id}`"
+                  >
+                    Locked
+                  </span>
                   <span class="pool-range">{{ formatBibPoolDisplay(pool) }}</span>
                   <div class="pool-actions">
                     <button
                       type="button"
                       :data-testid="`edit-bib-pool-${pool.id}`"
+                      :disabled="!canEdit"
+                      :title="canEdit ? t('common.edit') : immutabilityMessage"
                       @click="openEditBibPoolDialog(pool)"
                     >
                       {{ t('common.edit') }}
@@ -1016,6 +1106,8 @@ onMounted(() => {
                     <button
                       type="button"
                       :data-testid="`delete-bib-pool-${pool.id}`"
+                      :disabled="!canEdit"
+                      :title="canEdit ? t('common.delete') : immutabilityMessage"
                       @click="openDeleteBibPoolDialog(pool)"
                     >
                       {{ t('common.delete') }}
@@ -1035,6 +1127,8 @@ onMounted(() => {
           <button
             type="button"
             data-testid="add-bib-pool-button"
+            :disabled="!canEdit"
+            :title="canEdit ? t('blocks.add_bib_pool') : immutabilityMessage"
             @click="openAddBibPoolDialog"
           >
             {{ t('blocks.add_bib_pool') }}
@@ -1052,11 +1146,20 @@ onMounted(() => {
         >
           <div class="pool-header">
             <span class="pool-name">{{ overflowPool.name }}</span>
+            <span
+              v-if="isPublished"
+              class="lock-indicator"
+              :data-testid="`bib-pool-locked-${overflowPool.id}`"
+            >
+              Locked
+            </span>
             <span class="pool-range">{{ formatBibPoolDisplay(overflowPool) }}</span>
             <div class="pool-actions">
               <button
                 type="button"
                 :data-testid="`edit-bib-pool-${overflowPool.id}`"
+                :disabled="!canEdit"
+                :title="canEdit ? t('common.edit') : immutabilityMessage"
                 @click="openEditBibPoolDialog(overflowPool)"
               >
                 {{ t('common.edit') }}
@@ -1064,6 +1167,8 @@ onMounted(() => {
               <button
                 type="button"
                 :data-testid="`delete-bib-pool-${overflowPool.id}`"
+                :disabled="!canEdit"
+                :title="canEdit ? t('common.delete') : immutabilityMessage"
                 @click="openDeleteBibPoolDialog(overflowPool)"
               >
                 {{ t('common.delete') }}
@@ -1136,7 +1241,7 @@ onMounted(() => {
         </div>
 
         <div class="dialog-actions">
-          <button type="submit" data-testid="save-block-button">{{ t('common.save') }}</button>
+          <button type="submit" data-testid="save-block-button" :disabled="!canEdit">{{ t('common.save') }}</button>
           <button type="button" @click="closeBlockDialog">{{ t('common.cancel') }}</button>
         </div>
       </form>
@@ -1242,16 +1347,16 @@ onMounted(() => {
 
         <div v-if="bibPoolError" data-testid="bib-pool-error" class="error-banner">
           <p>{{ t('blocks.validation.bib_overlap') }}: {{ bibPoolError.message }}</p>
-          <p v-if="bibPoolError.overlapping_bibs.length > 0">
+          <p v-if="bibPoolError.overlappingBibs.length > 0">
             {{ t('blocks.validation.bib_overlap_details', {
-              bibs: bibPoolError.overlapping_bibs.join(', '),
-              poolName: bibPoolError.conflicting_pool
+              bibs: formatOverlappingBibs(bibPoolError.overlappingBibs),
+              poolName: bibPoolError.conflictingPoolName
             }) }}
           </p>
         </div>
 
         <div class="dialog-actions">
-          <button type="submit" data-testid="save-bib-pool-button">{{ t('common.save') }}</button>
+          <button type="submit" data-testid="save-bib-pool-button" :disabled="!canEdit">{{ t('common.save') }}</button>
           <button type="button" @click="closeBibPoolDialog">{{ t('common.cancel') }}</button>
         </div>
       </form>
@@ -1272,7 +1377,7 @@ onMounted(() => {
         {{ deleteType === 'block' ? t('blocks.delete_block_confirm') : t('blocks.delete_bib_pool_confirm') }}
       </p>
       <div class="dialog-actions">
-        <button type="button" data-testid="confirm-delete-button" @click="confirmDelete">
+        <button type="button" data-testid="confirm-delete-button" :disabled="!canEdit" @click="confirmDelete">
           {{ t('common.delete') }}
         </button>
         <button type="button" @click="closeDeleteDialog">{{ t('common.cancel') }}</button>
@@ -1462,6 +1567,19 @@ onMounted(() => {
   padding: var(--rd-space-3);
   border-radius: var(--rd-radius-sm, 2px);
   margin-bottom: var(--rd-space-3);
+}
+
+.warning-banner {
+  background: var(--rd-warning-bg, #fff3e0);
+  color: var(--rd-warning, #f57c00);
+  padding: var(--rd-space-3);
+  border-radius: var(--rd-radius-sm, 2px);
+  margin-bottom: var(--rd-space-3);
+}
+
+.lock-indicator {
+  font-size: 0.875rem;
+  color: var(--rd-text-secondary, #666);
 }
 
 .validation-errors {

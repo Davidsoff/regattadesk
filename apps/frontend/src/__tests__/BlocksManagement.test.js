@@ -64,7 +64,16 @@ async function dragBlockOnto(wrapper, sourceBlockId, targetBlockId) {
   await target.trigger('drop', { dataTransfer, preventDefault: vi.fn() })
 }
 
-async function mountPage(mockDrawApi = {}) {
+async function mountPage(mockDrawApi = {}, options = {}) {
+  const { drawRevision = 0 } = options
+  api.createApiClient.mockReturnValue({
+    get: vi.fn().mockResolvedValue({
+      data: {
+        id: REGATTA_ID,
+        draw_revision: drawRevision
+      }
+    })
+  })
   api.createDrawApi.mockReturnValue(mockDrawApi)
 
   const router = createRouter({
@@ -134,6 +143,41 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       expect(wrapper.find('[data-testid="no-blocks-message"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="no-blocks-message"]').text()).toContain('No blocks configured')
+    })
+
+    it('shows immutability warning, lock indicators, and disables edits after draw publication', async () => {
+      const mockDrawApi = defaultDrawApi({
+        listBlocks: vi.fn().mockResolvedValue(blocksResponse([MORNING_BLOCK, AFTERNOON_BLOCK])),
+        listBibPools: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'pool-1',
+              name: 'Main Pool',
+              block_id: MORNING_BLOCK.id,
+              allocation_mode: 'range',
+              start_bib: 1,
+              end_bib: 50,
+              is_overflow: false,
+              priority: 1
+            }
+          ]
+        })
+      })
+
+      const wrapper = await mountPage(mockDrawApi, { drawRevision: 2 })
+
+      expect(wrapper.find('[data-testid="immutability-warning"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="block-locked-block-1"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="bib-pool-locked-pool-1"]').exists()).toBe(true)
+
+      expect(wrapper.find('[data-testid="add-block-button"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="edit-block-block-1"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="delete-block-block-1"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="add-bib-pool-button"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="edit-bib-pool-pool-1"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="delete-bib-pool-pool-1"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="drag-handle-block-1"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="drag-handle-pool-1"]').exists()).toBe(false)
     })
   })
 
@@ -500,7 +544,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
           code: 'BIB_POOL_VALIDATION_ERROR',
           message: 'Bib pool overlap detected',
           details: {
-            overlapping_bibs: [10, 11, 12],
+            overlapping_bibs: [12, 10, 11, 10],
             conflicting_pool_name: 'Existing Pool'
           }
         })
@@ -587,7 +631,7 @@ describe('BlocksManagement view (FEGAP-008-B)', () => {
 
       const errorBanner = wrapper.find('[role="alert"]')
       expect(errorBanner.exists()).toBe(true)
-      expect(errorBanner.text()).toContain('Failed to save new block order')
+      expect(errorBanner.text()).toContain('Failed to reorder')
 
       const blockItems = wrapper.findAll('[data-testid^="block-item-"]')
       expect(blockItems[0].attributes('data-testid')).toBe('block-item-block-1')

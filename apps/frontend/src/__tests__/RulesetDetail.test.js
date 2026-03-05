@@ -50,7 +50,10 @@ async function mountPage(options = {}) {
   // Set user role in global context for testing
   globalThis.__REGATTADESK_AUTH__ = {
     staffAuthenticated: true,
-    userRole: userRole
+    userRole: userRole,
+    user: {
+      role: userRole
+    }
   }
 
   return mount(RulesetDetail, {
