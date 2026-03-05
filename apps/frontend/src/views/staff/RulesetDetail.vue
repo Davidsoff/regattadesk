@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { createApiClient, createDrawApi } from '../../api'
+import { useUserRole } from '../../composables/useUserRole'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -53,14 +54,7 @@ const promoteDialog = ref(null)
 const saveSuccessTimerId = ref(null)
 const promoteSuccessTimerId = ref(null)
 
-// User role check (from global auth context)
-const userRole = computed(() => {
-  return globalThis.__REGATTADESK_AUTH__?.userRole || 'staff'
-})
-
-const isSuperAdmin = computed(() => {
-  return userRole.value === 'super_admin'
-})
+const { isSuperAdmin, loadRole } = useUserRole()
 
 const canPromote = computed(() => {
   return isSuperAdmin.value && ruleset.value && !ruleset.value.is_global
@@ -366,6 +360,7 @@ onUnmounted(() => {
 
 // Initialize
 onMounted(() => {
+  loadRole()
   loadRuleset()
 })
 </script>
