@@ -93,16 +93,6 @@ export type PaymentStatusUpdateRequest = {
     payment_reference?: string;
 };
 
-export type RegattaCreateRequest = {
-    name: string;
-    description?: string;
-    time_zone: string;
-    entry_fee?: number;
-    currency?: string;
-    default_penalty_seconds?: number;
-    allow_custom_penalty_seconds?: boolean;
-};
-
 export type RulesetCreateRequest = {
     id?: Uuid;
     name: string;
@@ -280,60 +270,6 @@ export type PatchApiV1EntriesByIdPaymentStatusData = {
 };
 
 export type PatchApiV1EntriesByIdPaymentStatusResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type GetApiV1RegattasData = {
-    body?: never;
-    path?: never;
-    query?: {
-        cursor?: string;
-        limit?: number;
-    };
-    url: '/api/v1/regattas';
-};
-
-export type GetApiV1RegattasResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type PostApiV1RegattasData = {
-    body: RegattaCreateRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/regattas';
-};
-
-export type PostApiV1RegattasErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-};
-
-export type PostApiV1RegattasResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type GetApiV1RegattasByRegattaIdData = {
-    body?: never;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}';
-};
-
-export type GetApiV1RegattasByRegattaIdResponses = {
     /**
      * OK
      */

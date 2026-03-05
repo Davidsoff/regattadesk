@@ -6,7 +6,7 @@ function jsonResponse(payload, overrides = {}) {
   const ok = overrides.ok ?? (status >= 200 && status < 300)
   const headers = new Headers(overrides.headers ?? { 'Content-Type': 'application/json' })
   const body = payload === undefined ? '' : JSON.stringify(payload)
-  return new Response(body, { status: ok ? status : status, headers })
+  return new Response(body, { status, headers })
 }
 
 function getRequest(fetchMock) {

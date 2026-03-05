@@ -206,29 +206,6 @@ components:
           type: string
         payment_reference:
           type: string
-    RegattaCreateRequest:
-      type: object
-      required:
-      - name
-      - time_zone
-      properties:
-        name:
-          type: string
-          pattern: \S
-        description:
-          type: string
-        time_zone:
-          type: string
-          pattern: \S
-        entry_fee:
-          type: number
-        currency:
-          type: string
-        default_penalty_seconds:
-          type: integer
-          format: int32
-        allow_custom_penalty_seconds:
-          type: boolean
     RulesetCreateRequest:
       type: object
       properties:
@@ -489,63 +466,6 @@ paths:
       summary: Update Payment Status
       tags:
       - Entry Resource
-  /api/v1/regattas:
-    get:
-      parameters:
-      - name: cursor
-        in: query
-        schema:
-          type: string
-      - name: limit
-        in: query
-        schema:
-          type: integer
-          format: int32
-          default: 20
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-      summary: List Regattas
-      tags:
-      - Regatta Resource
-    post:
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegattaCreateRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-        "400":
-          description: Bad Request
-      summary: Create Regatta
-      tags:
-      - Regatta Resource
-  /api/v1/regattas/{regatta_id}:
-    get:
-      parameters:
-      - name: regatta_id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: {}
-      summary: Get Regatta
-      tags:
-      - Regatta Resource
   /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status:
     put:
       parameters:
