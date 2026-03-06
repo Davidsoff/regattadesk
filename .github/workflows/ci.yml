@@ -269,7 +269,7 @@ jobs:
 
       - name: Check generated API artifacts are committed
         run: |
-          if ! git diff --quiet -- pdd/design/openapi-v0.1.yaml apps/frontend/src/api/generated; then
+          if git status --porcelain -- pdd/design/openapi-v0.1.yaml apps/frontend/src/api/generated | grep -q .; then
             echo "❌ Generated API artifacts are out of date."
             echo "Run backend OpenAPI generation and 'npm run api:generate' in apps/frontend, then commit results."
             git --no-pager diff -- pdd/design/openapi-v0.1.yaml apps/frontend/src/api/generated
