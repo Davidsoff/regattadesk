@@ -3,18 +3,15 @@ import { createApiClient } from '../../api/client.js'
 import { createOperatorApi } from '../../api/operator.js'
 
 function jsonResponse(status, body) {
-  return {
-    ok: status >= 200 && status < 300,
+  return new Response(body === null ? '' : JSON.stringify(body), {
     status,
-    headers: {
-      get(name) {
-        return name.toLowerCase() === 'content-type' ? 'application/json' : null
-      }
-    },
-    async json() {
-      return body
-    }
-  }
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+function getRequest(fetchMock) {
+  const [request] = fetchMock.mock.calls[0]
+  return request
 }
 
 describe('Operator API - Capture Sessions', () => {
@@ -52,11 +49,11 @@ describe('Operator API - Capture Sessions', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/capture_sessions')
-      expect(options.method).toBe('POST')
-      expect(options.headers.x_operator_token).toBe('test-token')
-      expect(JSON.parse(options.body)).toEqual({
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/capture_sessions')
+      expect(request.method).toBe('POST')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
+      await expect(request.json()).resolves.toEqual({
         station: 'finish-line',
         device_id: 'device-1',
         session_type: 'finish',
@@ -81,12 +78,12 @@ describe('Operator API - Capture Sessions', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toContain('/api/v1/regattas/regatta-1/operator/capture_sessions')
-      expect(url).toContain('station=finish-line')
-      expect(url).toContain('state=open')
-      expect(options.method).toBe('GET')
-      expect(options.headers.x_operator_token).toBe('test-token')
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/capture_sessions')
+      expect(request.url).toContain('station=finish-line')
+      expect(request.url).toContain('state=open')
+      expect(request.method).toBe('GET')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
       expect(result).toEqual(sessions)
     })
   })
@@ -106,11 +103,11 @@ describe('Operator API - Capture Sessions', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/capture_sessions/session-1/close')
-      expect(options.method).toBe('POST')
-      expect(options.headers.x_operator_token).toBe('test-token')
-      expect(JSON.parse(options.body)).toEqual({
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/capture_sessions/session-1/close')
+      expect(request.method).toBe('POST')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
+      await expect(request.json()).resolves.toEqual({
         close_reason: 'capture_complete'
       })
       expect(result).toEqual(closedSession)
@@ -156,11 +153,11 @@ describe('Operator API - Markers', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/markers')
-      expect(options.method).toBe('POST')
-      expect(options.headers.x_operator_token).toBe('test-token')
-      expect(JSON.parse(options.body)).toEqual({
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers')
+      expect(request.method).toBe('POST')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
+      await expect(request.json()).resolves.toEqual({
         capture_session_id: 'session-1',
         frame_offset: 12345,
         timestamp_ms: 1609459200000,
@@ -189,11 +186,11 @@ describe('Operator API - Markers', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/markers/marker-1')
-      expect(options.method).toBe('PATCH')
-      expect(options.headers.x_operator_token).toBe('test-token')
-      expect(JSON.parse(options.body)).toEqual({
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers/marker-1')
+      expect(request.method).toBe('PATCH')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
+      await expect(request.json()).resolves.toEqual({
         frame_offset: 12346,
         timestamp_ms: 1609459201000
       })
@@ -208,10 +205,10 @@ describe('Operator API - Markers', () => {
       await operatorApi.deleteMarker('regatta-1', 'marker-1')
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/markers/marker-1')
-      expect(options.method).toBe('DELETE')
-      expect(options.headers.x_operator_token).toBe('test-token')
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers/marker-1')
+      expect(request.method).toBe('DELETE')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
     })
   })
 
@@ -231,11 +228,11 @@ describe('Operator API - Markers', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/markers/marker-1/link')
-      expect(options.method).toBe('POST')
-      expect(options.headers.x_operator_token).toBe('test-token')
-      expect(JSON.parse(options.body)).toEqual({
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers/marker-1/link')
+      expect(request.method).toBe('POST')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
+      await expect(request.json()).resolves.toEqual({
         entry_id: 'entry-1'
       })
       expect(result).toEqual(linkedMarker)
@@ -256,10 +253,10 @@ describe('Operator API - Markers', () => {
       const result = await operatorApi.unlinkMarker('regatta-1', 'marker-1')
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toBe('/api/v1/regattas/regatta-1/operator/markers/marker-1/unlink')
-      expect(options.method).toBe('POST')
-      expect(options.headers.x_operator_token).toBe('test-token')
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers/marker-1/unlink')
+      expect(request.method).toBe('POST')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
       expect(result).toEqual(unlinkedMarker)
     })
   })
@@ -278,11 +275,11 @@ describe('Operator API - Markers', () => {
       })
       
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      const [url, options] = fetchMock.mock.calls[0]
-      expect(url).toContain('/api/v1/regattas/regatta-1/operator/markers')
-      expect(url).toContain('capture_session_id=session-1')
-      expect(options.method).toBe('GET')
-      expect(options.headers.x_operator_token).toBe('test-token')
+      const request = getRequest(fetchMock)
+      expect(request.url).toContain('/api/v1/regattas/regatta-1/operator/markers')
+      expect(request.url).toContain('capture_session_id=session-1')
+      expect(request.method).toBe('GET')
+      expect(request.headers.get('x_operator_token')).toBe('test-token')
       expect(result).toEqual(markers)
     })
   })

@@ -5,12 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:sync": "npm run api:sync && vite",
     "build": "vite build",
+    "build:sync": "npm run api:sync && vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "i18n:check": "node ./scripts/check-i18n.mjs",
+    "api:sync:spec": "bash ./scripts/sync-api-artifacts.sh",
+    "api:sync": "npm run api:sync:spec && npm run api:generate",
+    "api:generate": "rm -rf ./src/api/generated && openapi-ts -i ../../pdd/design/openapi-v0.1.yaml -o ./src/api/generated -c @hey-api/client-fetch && node ./scripts/patch-generated-api.mjs",
+    "api:check": "npm run api:generate && if git status --porcelain -- ./src/api/generated | grep -q .; then echo 'Generated API client is out of date.' && git --no-pager diff -- ./src/api/generated && exit 1; fi",
     "test:a11y": "vitest run --config vitest.a11y.config.js",
     "test:a11y:watch": "vitest --config vitest.a11y.config.js",
     "lint": "echo 'Lint placeholder - to be configured later'"
@@ -21,6 +27,7 @@
     "vue-router": "4.6.4"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "0.93.1",
     "@vitejs/plugin-vue": "6.0.2",
     "@vue/test-utils": "2.4.6",
     "axe-core": "4.10.2",
