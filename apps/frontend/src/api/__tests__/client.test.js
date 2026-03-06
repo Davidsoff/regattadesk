@@ -4,7 +4,10 @@ import { createApiClient } from '../client'
 function jsonResponse(payload, overrides = {}) {
   const status = overrides.status ?? 200
   const headers = new Headers(overrides.headers ?? { 'Content-Type': 'application/json' })
-  const body = payload === undefined ? '' : JSON.stringify(payload)
+  let body = ''
+  if (payload !== undefined) {
+    body = JSON.stringify(payload)
+  }
   return new Response(body, { status, headers })
 }
 

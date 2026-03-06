@@ -141,11 +141,9 @@ export const createSseClient = <TData = unknown>({
         let buffer = '';
 
         const abortHandler = () => {
-          try {
-            reader.cancel();
-          } catch {
+          void reader.cancel().catch(() => {
             // noop
-          }
+          });
         };
 
         signal.addEventListener('abort', abortHandler);
