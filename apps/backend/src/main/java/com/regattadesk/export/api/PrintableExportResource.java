@@ -5,6 +5,7 @@ import com.regattadesk.export.ExportJobService;
 import com.regattadesk.export.ExportRegattaRepository;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.Role;
+import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -41,6 +42,9 @@ public class PrintableExportResource {
     @Inject
     ExportRegattaRepository regattaRepository;
 
+    @Inject
+    SecurityContext securityContext;
+
     /**
      * Request a printable export job for a regatta.
      *
@@ -68,7 +72,11 @@ public class PrintableExportResource {
                     .build();
         }
 
-        UUID jobId = exportJobService.createJob(regattaId, null);
+        String requestedBy = securityContext.getPrincipal() != null
+                ? securityContext.getPrincipal().getUsername()
+                : null;
+
+        UUID jobId = exportJobService.createJob(regattaId, requestedBy);
 
         // Process asynchronously using a virtual thread
         Thread.ofVirtual().name("export-job-" + jobId).start(() -> exportJobService.processJob(jobId));

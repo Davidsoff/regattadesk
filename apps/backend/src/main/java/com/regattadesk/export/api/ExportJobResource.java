@@ -42,6 +42,7 @@ public class ExportJobResource {
     @Inject
     ExportJobService exportJobService;
 
+    /** Clock used for expiry checks. Package-visible for test overrides. */
     Clock clock = Clock.systemUTC();
 
     /**
