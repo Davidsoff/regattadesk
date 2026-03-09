@@ -40,6 +40,97 @@ components:
           type: string
         club_id:
           $ref: "#/components/schemas/UUID"
+    CaptureSessionCreateRequest:
+      type: object
+      required:
+      - block_id
+      - station
+      - device_id
+      - session_type
+      - fps
+      properties:
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        station:
+          type: string
+        device_id:
+          type: string
+        session_type:
+          type: string
+          enum: [start, finish]
+        server_time_at_start:
+          $ref: "#/components/schemas/Instant"
+        device_monotonic_offset_ms:
+          type: integer
+          format: int64
+        fps:
+          type: integer
+          format: int32
+          minimum: 1
+    CaptureSessionSyncStateRequest:
+      type: object
+      properties:
+        is_synced:
+          type: boolean
+        drift_exceeded_threshold:
+          type: boolean
+        unsynced_reason:
+          type: string
+        observed_at:
+          $ref: "#/components/schemas/Instant"
+    CaptureSessionCloseRequest:
+      type: object
+      properties:
+        close_reason:
+          type: string
+    CaptureSessionResponse:
+      type: object
+      properties:
+        capture_session_id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        station:
+          type: string
+        device_id:
+          type: string
+        session_type:
+          type: string
+          enum: [start, finish]
+        state:
+          type: string
+          enum: [open, closed]
+        server_time_at_start:
+          $ref: "#/components/schemas/Instant"
+        device_monotonic_offset_ms:
+          type: integer
+          format: int64
+        fps:
+          type: integer
+          format: int32
+        is_synced:
+          type: boolean
+        drift_exceeded_threshold:
+          type: boolean
+        unsynced_reason:
+          type: string
+        closed_at:
+          $ref: "#/components/schemas/Instant"
+        close_reason:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/Instant"
+        updated_at:
+          $ref: "#/components/schemas/Instant"
+    CaptureSessionListResponse:
+      type: object
+      properties:
+        capture_sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptureSessionResponse"
     Cookie:
       type: object
       properties:
@@ -1175,6 +1266,194 @@ paths:
       summary: Unlink
       tags:
       - Marker Resource
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions:
+    post:
+      summary: Start a new capture session
+      tags:
+      - Capture Session Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureSessionCreateRequest"
+      responses:
+        "201":
+          description: Capture session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionResponse"
+        "400":
+          description: Invalid request
+        "401":
+          description: Missing or invalid operator token
+    get:
+      summary: List capture sessions for a regatta
+      tags:
+      - Capture Session Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        schema:
+          type: string
+      - name: X-Forwarded-User
+        in: header
+        schema:
+          type: string
+      - name: block_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: station
+        in: query
+        schema:
+          type: string
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum: [open, closed]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionListResponse"
+        "401":
+          description: Missing or invalid authentication
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}:
+    get:
+      summary: Get a specific capture session
+      tags:
+      - Capture Session Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: capture_session_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        schema:
+          type: string
+      - name: X-Forwarded-User
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionResponse"
+        "401":
+          description: Missing or invalid authentication
+        "404":
+          description: Capture session not found
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state:
+    post:
+      summary: Update the sync state of an open capture session
+      tags:
+      - Capture Session Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: capture_session_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureSessionSyncStateRequest"
+      responses:
+        "200":
+          description: Sync state updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionResponse"
+        "401":
+          description: Missing or invalid operator token
+        "404":
+          description: Capture session not found
+        "409":
+          description: Session is already closed
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close:
+    post:
+      summary: Close a capture session
+      tags:
+      - Capture Session Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: capture_session_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureSessionCloseRequest"
+      responses:
+        "200":
+          description: Session closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionResponse"
+        "401":
+          description: Missing or invalid operator token
+        "404":
+          description: Capture session not found
+        "409":
+          description: Session is already closed
   /api/v1/regattas/{regatta_id}/operator/station_handoffs:
     post:
       parameters:
