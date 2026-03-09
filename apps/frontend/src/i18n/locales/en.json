@@ -135,6 +135,12 @@
   },
   "navigation": {
     "regattas": "Regattas",
+    "rulesets": "Rulesets",
+    "setup": "Setup",
+    "draw": "Draw",
+    "finance": "Finance",
+    "blocks": "Blocks",
+    "line_scan": "Line Scan",
     "schedule": "Schedule",
     "results": "Results"
   },
@@ -271,7 +277,6 @@
     "drag_handle": "Drag to reorder",
     "reorder_instructions": "Use drag and drop or arrow keys to reorder blocks",
     "reorder_keyboard_hint": "Press Enter or Space to start reordering, use arrow keys to move, then press Enter or Space to confirm",
-    "reorder_error": "Failed to save new block order. Order has been restored.",
     "block": {
       "name": "Block Name",
       "start_time": "Start Time",
@@ -392,7 +397,8 @@
   "operator": {
     "regattas": {
       "title": "Regattas",
-      "description": "Select a regatta to work with"
+      "description": "Select a regatta to work with",
+      "access_hint": "Open the link provided by your regatta administrator to access your assigned regatta."
     },
     "regatta": {
       "title": "Regatta",

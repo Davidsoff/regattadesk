@@ -135,6 +135,12 @@
   },
   "navigation": {
     "regattas": "Regatta's",
+    "rulesets": "Reglementen",
+    "setup": "Instelling",
+    "draw": "Loting",
+    "finance": "Financiën",
+    "blocks": "Blokken",
+    "line_scan": "Fotolijn",
     "schedule": "Schema",
     "results": "Resultaten"
   },
@@ -271,7 +277,6 @@
     "drag_handle": "Sleep om te herschikken",
     "reorder_instructions": "Gebruik slepen en neerzetten of pijltjestoetsen om blokken te herschikken",
     "reorder_keyboard_hint": "Druk op Enter of Spatie om te beginnen met herschikken, gebruik pijltjestoetsen om te verplaatsen, druk dan op Enter of Spatie om te bevestigen",
-    "reorder_error": "Opslaan van nieuwe blokvolgorde mislukt. Volgorde is hersteld.",
     "block": {
       "name": "Bloknaam",
       "start_time": "Starttijd",
@@ -392,7 +397,8 @@
   "operator": {
     "regattas": {
       "title": "Regatta's",
-      "description": "Selecteer een regatta om mee te werken"
+      "description": "Selecteer een regatta om mee te werken",
+      "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",

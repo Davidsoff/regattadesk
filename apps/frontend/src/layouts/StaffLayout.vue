@@ -1,7 +1,12 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
+const route = useRoute()
+
+const regattaId = computed(() => route.params.regattaId)
 </script>
 
 <template>
@@ -18,8 +23,43 @@ const { t } = useI18n()
         <router-link to="/staff/regattas" class="staff-layout__nav-item">
           {{ t('navigation.regattas') }}
         </router-link>
+        <router-link to="/staff/rulesets" class="staff-layout__nav-item">
+          {{ t('navigation.rulesets') }}
+        </router-link>
       </nav>
     </header>
+
+    <nav
+      v-if="regattaId"
+      class="staff-layout__subnav"
+      aria-label="Regatta navigation"
+    >
+      <router-link
+        :to="`/staff/regattas/${regattaId}`"
+        class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-regatta-detail' ? 'page' : undefined"
+      >
+        {{ t('navigation.setup') }}
+      </router-link>
+      <router-link
+        :to="`/staff/regattas/${regattaId}/draw`"
+        class="staff-layout__subnav-item"
+      >
+        {{ t('navigation.draw') }}
+      </router-link>
+      <router-link
+        :to="`/staff/regattas/${regattaId}/finance`"
+        class="staff-layout__subnav-item"
+      >
+        {{ t('navigation.finance') }}
+      </router-link>
+      <router-link
+        :to="`/staff/regattas/${regattaId}/blocks`"
+        class="staff-layout__subnav-item"
+      >
+        {{ t('navigation.blocks') }}
+      </router-link>
+    </nav>
     
     <main id="main-content" class="staff-layout__main">
       <router-view />
@@ -94,6 +134,31 @@ const { t } = useI18n()
 }
 
 .staff-layout__nav-item.router-link-active {
+  background: var(--rd-accent);
+  color: white;
+}
+
+.staff-layout__subnav {
+  background: var(--rd-surface);
+  border-bottom: 1px solid var(--rd-border);
+  padding: var(--rd-space-2) var(--rd-space-4);
+  display: flex;
+  gap: var(--rd-space-3);
+}
+
+.staff-layout__subnav-item {
+  padding: var(--rd-space-1) var(--rd-space-3);
+  text-decoration: none;
+  color: var(--rd-text);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.staff-layout__subnav-item:hover {
+  background: var(--rd-surface-2);
+}
+
+.staff-layout__subnav-item.router-link-active {
   background: var(--rd-accent);
   color: white;
 }

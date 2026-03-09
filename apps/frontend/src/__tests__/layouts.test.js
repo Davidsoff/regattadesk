@@ -11,7 +11,38 @@ function createTestRouter(extraRoutes = []) {
     history: createMemoryHistory(),
     routes: [
       { path: '/staff/regattas', name: 'staff-regattas', component: { template: '<div>Staff Regattas</div>' } },
+      { path: '/staff/rulesets', name: 'staff-rulesets', component: { template: '<div>Staff Rulesets</div>' } },
+      {
+        path: '/staff/regattas/:regattaId',
+        name: 'staff-regatta-detail',
+        component: { template: '<div>Staff Regatta Detail</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/draw',
+        name: 'staff-regatta-draw',
+        component: { template: '<div>Staff Draw</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance',
+        name: 'staff-regatta-finance',
+        component: { template: '<div>Staff Finance</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/blocks',
+        name: 'staff-blocks-management',
+        component: { template: '<div>Staff Blocks</div>' },
+      },
       { path: '/operator/regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
+      {
+        path: '/operator/regattas/:regattaId',
+        name: 'operator-regatta-detail',
+        component: { template: '<div>Operator Regatta Detail</div>' },
+      },
+      {
+        path: '/operator/regattas/:regattaId/line-scan',
+        name: 'operator-line-scan',
+        component: { template: '<div>Operator Line Scan</div>' },
+      },
       {
         path: '/public/v:drawRevision-:resultsRevision/schedule',
         name: 'public-schedule',
@@ -41,6 +72,12 @@ function createTestI18n() {
         },
         navigation: {
           regattas: 'Regattas',
+          rulesets: 'Rulesets',
+          setup: 'Setup',
+          draw: 'Draw',
+          finance: 'Finance',
+          blocks: 'Blocks',
+          line_scan: 'Line Scan',
           schedule: 'Schedule',
           results: 'Results',
         },
@@ -154,6 +191,76 @@ describe('Layout Components', () => {
       expect(wrapper.find('.skip-link').exists()).toBe(true)
       expect(wrapper.find('#main-content').exists()).toBe(true)
       expect(wrapper.text()).toContain('RegattaDesk')
+    })
+  })
+
+  describe('StaffLayout regatta-scoped secondary navigation', () => {
+    it('does not render subnav when not inside a regatta', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
+      expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
+    })
+
+    it('renders subnav with draw, finance, blocks links inside a regatta', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
+      expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
+      const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
+      expect(links).toContain('/staff/regattas/test-id-123')
+      expect(links).toContain('/staff/regattas/test-id-123/draw')
+      expect(links).toContain('/staff/regattas/test-id-123/finance')
+      expect(links).toContain('/staff/regattas/test-id-123/blocks')
+    })
+
+    it('subnav is labelled for accessibility', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/abc/finance', StaffLayout)
+      const subnav = wrapper.find('.staff-layout__subnav')
+      expect(subnav.attributes('aria-label')).toBeTruthy()
+    })
+
+    it('shows Rulesets in primary nav', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
+      const navItems = wrapper.findAll('.staff-layout__nav-item').map((n) => n.attributes('href'))
+      expect(navItems).toContain('/staff/rulesets')
+    })
+  })
+
+  describe('OperatorLayout regatta-scoped navigation', () => {
+    it('shows Regattas link at all times', async () => {
+      const wrapper = await mountAtRoute(router, '/operator/regattas', OperatorLayout)
+      const links = wrapper.findAll('.operator-layout__nav-item').map((n) => n.attributes('href'))
+      expect(links).toContain('/operator/regattas')
+    })
+
+    it('does not show Line Scan link when outside a regatta', async () => {
+      const wrapper = await mountAtRoute(router, '/operator/regattas', OperatorLayout)
+      const links = wrapper.findAll('.operator-layout__nav-item').map((n) => n.attributes('href'))
+      expect(links.some((href) => href?.includes('line-scan'))).toBe(false)
+    })
+
+    it('shows Line Scan link when inside a regatta', async () => {
+      const wrapper = await mountAtRoute(router, '/operator/regattas/my-regatta-id/line-scan', OperatorLayout)
+      const links = wrapper.findAll('.operator-layout__nav-item').map((n) => n.attributes('href'))
+      expect(links).toContain('/operator/regattas/my-regatta-id/line-scan')
+    })
+
+    it('operator nav is labelled for accessibility', async () => {
+      const wrapper = await mountAtRoute(router, '/operator/regattas', OperatorLayout)
+      expect(wrapper.find('.operator-layout__nav').attributes('aria-label')).toBeTruthy()
+    })
+  })
+
+  describe('PublicLayout locale switcher', () => {
+    it('renders locale buttons', async () => {
+      const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
+      const localeGroup = wrapper.find('.public-layout__locale')
+      expect(localeGroup.exists()).toBe(true)
+      const buttons = wrapper.findAll('.public-layout__locale-btn')
+      expect(buttons.length).toBeGreaterThan(0)
+    })
+
+    it('locale control has accessible group role', async () => {
+      const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
+      const localeGroup = wrapper.find('.public-layout__locale')
+      expect(localeGroup.attributes('role')).toBe('group')
     })
   })
 })

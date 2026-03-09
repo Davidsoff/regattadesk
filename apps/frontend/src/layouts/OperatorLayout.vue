@@ -1,7 +1,12 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
+const route = useRoute()
+
+const regattaId = computed(() => route.params.regattaId)
 </script>
 
 <template>
@@ -13,6 +18,19 @@ const { t } = useI18n()
         <h1>RegattaDesk</h1>
         <span class="operator-layout__surface-label">{{ t('common.operator') }}</span>
       </div>
+
+      <nav class="operator-layout__nav" aria-label="Operator navigation">
+        <router-link to="/operator/regattas" class="operator-layout__nav-item">
+          {{ t('navigation.regattas') }}
+        </router-link>
+        <router-link
+          v-if="regattaId"
+          :to="`/operator/regattas/${regattaId}/line-scan`"
+          class="operator-layout__nav-item"
+        >
+          {{ t('navigation.line_scan') }}
+        </router-link>
+      </nav>
     </header>
     
     <main id="main-content" class="operator-layout__main">
@@ -54,6 +72,7 @@ const { t } = useI18n()
   min-height: var(--rd-hit-operator);
   display: flex;
   align-items: center;
+  gap: var(--rd-space-6);
 }
 
 .operator-layout__brand {
@@ -74,6 +93,32 @@ const { t } = useI18n()
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 600;
+}
+
+.operator-layout__nav {
+  display: flex;
+  gap: var(--rd-space-4);
+}
+
+.operator-layout__nav-item {
+  padding: var(--rd-space-2) var(--rd-space-3);
+  text-decoration: none;
+  color: var(--rd-text);
+  border-radius: 4px;
+  min-height: var(--rd-hit-operator);
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.operator-layout__nav-item:hover {
+  background: var(--rd-surface-2);
+}
+
+.operator-layout__nav-item.router-link-active {
+  background: var(--rd-accent);
+  color: white;
 }
 
 .operator-layout__main {
