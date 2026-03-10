@@ -16,6 +16,10 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      live: {
+        live: 'Live',
+        offline: 'Offline'
+      },
       public: {
         schedule: {
           title: 'Schedule',
@@ -40,7 +44,15 @@ const i18n = createI18n({
         },
         results: {
           title: 'Results',
-          description: 'Race results'
+          description: 'Live race results',
+          empty: 'No results published for this revision yet.',
+          version_banner: 'Draw v{drawRevision}, Results v{resultsRevision}',
+          version_link: 'Copy canonical results link',
+          recovery: {
+            missing_regatta: 'Missing regatta context.',
+            bootstrap_failed: 'Unable to refresh public results right now.',
+            retry: 'Retry loading results'
+          }
         },
         version: {
           draw: 'Draw Revision',

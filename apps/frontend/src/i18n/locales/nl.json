@@ -482,7 +482,27 @@
     },
     "results": {
       "title": "Resultaten",
-      "description": "Bekijk race resultaten"
+      "description": "Live wedstrijduitslagen",
+      "empty": "Er zijn nog geen resultaten gepubliceerd voor deze versie.",
+      "version_banner": "Loting v{drawRevision}, Resultaten v{resultsRevision}",
+      "version_link": "Kopieer canonieke resultatenlink",
+      "fields": {
+        "rank": "Plaats",
+        "crew": "Ploeg",
+        "club": "Club",
+        "time": "Tijd",
+        "delta": "Delta",
+        "status": "Status"
+      },
+      "penalties": {
+        "label": "Straf",
+        "seconds": "+{seconds}s"
+      },
+      "recovery": {
+        "missing_regatta": "Regattacontext ontbreekt. Open de gepubliceerde resultatenlink voor deze regatta opnieuw.",
+        "bootstrap_failed": "Het vernieuwen van openbare resultaten lukt nu niet.",
+        "retry": "Resultaten opnieuw laden"
+      }
     },
     "version": {
       "draw": "Loting versie",
