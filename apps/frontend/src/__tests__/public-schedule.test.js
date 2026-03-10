@@ -3,6 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import ScheduleView from '../views/public/Schedule.vue'
+import en from '../i18n/locales/en.json'
+import nl from '../i18n/locales/nl.json'
 
 const SCHEDULE_ROUTE_PATH = '/public/v:drawRevision-:resultsRevision/schedule'
 const TABLE_WRAPPER_SELECTOR = '.rd-table-wrapper'
@@ -21,72 +23,7 @@ function createTestI18n() {
   return createI18n({
     legacy: false,
     locale: 'en',
-    messages: {
-      en: {
-        public: {
-          schedule: {
-            title: 'Schedule',
-            description: 'View the race schedule',
-            empty: 'No schedule entries available for this revision.',
-            headers: {
-              time: 'Start',
-              event: 'Event',
-              crew: 'Crew',
-              club: 'Club',
-              bib_lane: 'Bib / Lane',
-              status: 'Status',
-            },
-            recovery: {
-              saved_regatta_hint: 'This link is missing regatta context.',
-              use_saved_regatta: 'Use saved regatta',
-            },
-            errors: {
-              missing_regatta: 'Missing regatta id in URL.',
-              load_failed: 'Failed to load schedule data.',
-            },
-          },
-          version: {
-            draw: 'Draw Revision',
-            results: 'Results Revision',
-          },
-        },
-        status: {
-          entered: 'Entered',
-        },
-      },
-      nl: {
-        public: {
-          schedule: {
-            title: 'Schema',
-            description: 'Bekijk het raceschema',
-            empty: 'Geen schema-items beschikbaar voor deze versie.',
-            headers: {
-              time: 'Start',
-              event: 'Onderdeel',
-              crew: 'Ploeg',
-              club: 'Club',
-              bib_lane: 'Startnr / Baan',
-              status: 'Status',
-            },
-            recovery: {
-              saved_regatta_hint: 'Deze link mist regatta-context.',
-              use_saved_regatta: 'Gebruik opgeslagen regatta',
-            },
-            errors: {
-              missing_regatta: 'Regatta-id ontbreekt in de URL.',
-              load_failed: 'Kon schema-data niet laden.',
-            },
-          },
-          version: {
-            draw: 'Loting versie',
-            results: 'Resultaten versie',
-          },
-        },
-        status: {
-          entered: 'Ingeschreven',
-        },
-      },
-    },
+    messages: { en, nl },
   })
 }
 
