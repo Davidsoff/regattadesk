@@ -7,6 +7,7 @@ import com.regattadesk.eventstore.EventStore;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import javax.sql.DataSource;
@@ -21,8 +22,10 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -96,10 +99,31 @@ public class InvoiceService {
         if (hasMore) {
             items.remove(items.size() - 1);
         }
-        List<InvoiceRecord> withEntries = items.stream()
-            .map(invoice -> getInvoice(regattaId, invoice.id()).orElse(invoice))
-            .toList();
-        return new InvoiceListResult(withEntries, hasMore ? String.valueOf(offset + normalizedLimit) : null);
+        try (Connection conn = dataSource.getConnection()) {
+            Map<UUID, List<InvoiceEntryLine>> entriesByInvoiceId = loadInvoiceEntries(conn, items.stream()
+                .map(InvoiceRecord::id)
+                .toList());
+            List<InvoiceRecord> withEntries = items.stream()
+                .map(invoice -> new InvoiceRecord(
+                    invoice.id(),
+                    invoice.regattaId(),
+                    invoice.clubId(),
+                    invoice.invoiceNumber(),
+                    entriesByInvoiceId.getOrDefault(invoice.id(), List.of()),
+                    invoice.totalAmount(),
+                    invoice.currency(),
+                    invoice.status(),
+                    invoice.generatedAt(),
+                    invoice.sentAt(),
+                    invoice.paidAt(),
+                    invoice.paidBy(),
+                    invoice.paymentReference()
+                ))
+                .toList();
+            return new InvoiceListResult(withEntries, hasMore ? String.valueOf(offset + normalizedLimit) : null);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list invoice entries", e);
+        }
     }
 
     public Optional<InvoiceRecord> getInvoice(UUID regattaId, UUID invoiceId) {
@@ -211,6 +235,7 @@ public class InvoiceService {
         }
     }
 
+    @Transactional
     public InvoiceRecord markPaid(
         UUID regattaId,
         UUID invoiceId,
@@ -551,6 +576,36 @@ public class InvoiceService {
             }
         }
         return entries;
+    }
+
+    private Map<UUID, List<InvoiceEntryLine>> loadInvoiceEntries(Connection conn, List<UUID> invoiceIds) throws Exception {
+        Map<UUID, List<InvoiceEntryLine>> entriesByInvoiceId = new HashMap<>();
+        if (invoiceIds.isEmpty()) {
+            return entriesByInvoiceId;
+        }
+
+        StringBuilder sql = new StringBuilder("""
+            SELECT invoice_id, entry_id, amount
+            FROM invoice_entries
+            WHERE invoice_id IN (
+            """);
+        appendPlaceholders(sql, invoiceIds.size());
+        sql.append(") ORDER BY invoice_id, entry_id");
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+            bindParams(stmt, new ArrayList<>(invoiceIds));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    UUID invoiceId = (UUID) rs.getObject("invoice_id");
+                    entriesByInvoiceId.computeIfAbsent(invoiceId, ignored -> new ArrayList<>())
+                        .add(new InvoiceEntryLine(
+                            (UUID) rs.getObject("entry_id"),
+                            rs.getBigDecimal("amount")
+                        ));
+                }
+            }
+        }
+        return entriesByInvoiceId;
     }
 
     private InvoiceRecord readInvoiceRow(ResultSet rs, List<InvoiceEntryLine> entries) throws Exception {

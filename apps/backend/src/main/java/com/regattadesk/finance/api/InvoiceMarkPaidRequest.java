@@ -16,6 +16,7 @@ public record InvoiceMarkPaidRequest(
     @JsonProperty("paid_at")
     Instant paidAt,
     @JsonProperty("payment_reference")
+    @Size(max = 255)
     String paymentReference
 ) {
 }

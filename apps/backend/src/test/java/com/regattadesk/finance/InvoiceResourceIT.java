@@ -11,6 +11,8 @@ import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -240,6 +242,43 @@ class InvoiceResourceIT {
             .post("/api/v1/regattas/" + data.regattaId + "/invoices/" + invoiceId + "/mark_paid")
             .then()
             .statusCode(409);
+    }
+
+    @Test
+    void markPaid_rejectsPaymentReferenceLongerThan255Characters() throws Exception {
+        TestData data = seedInvoiceData();
+
+        String jobId = given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("{}")
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/invoices/generate")
+            .then()
+            .statusCode(202)
+            .extract()
+            .path("job_id");
+        String invoiceId = awaitCompletedJob(data.regattaId, UUID.fromString(jobId));
+
+        String paymentReference = IntStream.range(0, 256)
+            .mapToObj(ignored -> "R")
+            .collect(Collectors.joining());
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "paid_by": "cashier-3",
+                  "payment_reference": "%s"
+                }
+                """.formatted(paymentReference))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/invoices/" + invoiceId + "/mark_paid")
+            .then()
+            .statusCode(400);
     }
 
     private String awaitCompletedJob(UUID regattaId, UUID jobId) throws Exception {
