@@ -38,7 +38,8 @@ const { currentLocale, supportedLocales, switchLocale, getLocaleName } = useLoca
         </router-link>
       </nav>
 
-      <div class="public-layout__locale" role="group" aria-label="Language">
+      <fieldset class="public-layout__locale">
+        <legend class="rd-sr-only">Language</legend>
         <button
           v-for="locale in supportedLocales"
           :key="locale"
@@ -48,7 +49,7 @@ const { currentLocale, supportedLocales, switchLocale, getLocaleName } = useLoca
         >
           {{ getLocaleName(locale) }}
         </button>
-      </div>
+      </fieldset>
     </header>
     
     <main id="main-content" class="public-layout__main">
@@ -125,6 +126,10 @@ const { currentLocale, supportedLocales, switchLocale, getLocaleName } = useLoca
 }
 
 .public-layout__locale {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
   display: flex;
   gap: var(--rd-space-2);
 }
