@@ -92,6 +92,7 @@ components:
           $ref: "#/components/schemas/Instant"
         payment_reference:
           type: string
+          maxLength: 255
     LineScanManifestUpsertRequest:
       type: object
       required:
