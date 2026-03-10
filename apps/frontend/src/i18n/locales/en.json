@@ -5,7 +5,6 @@
     "delete": "Delete",
     "edit": "Edit",
     "confirm": "Confirm",
-    "search": "Search",
     "yes": "Yes",
     "no": "No",
     "loading": "Loading...",
@@ -19,14 +18,8 @@
     "go_home": "Go to Home",
     "powered_by_regattadesk": "Powered by RegattaDesk"
   },
-  "status": {
-    "entered": "Entered",
-    "withdrawn_before_draw": "Withdrawn Before Draw",
-    "withdrawn_after_draw": "Withdrawn After Draw"
-  },
   "entry": {
-    "crew": "Crew",
-    "status": "Status"
+    "crew": "Crew"
   },
   "print": {
     "generated": "Generated",
@@ -156,54 +149,14 @@
     },
     "regatta_detail": {
       "sections": {
-        "events": "Events",
-        "athletes": "Athletes",
-        "crews": "Crews",
-        "entries": "Entries",
         "export": "Export"
       },
       "form": {
-        "eventGroup": "Event group",
-        "selectPlaceholder": "Select",
-        "groupA": "Group A",
-        "name": "Name",
-        "crewName": "Crew name",
-        "allStatuses": "All",
-        "athlete": "Athlete",
-        "saveEntry": "Save entry"
+        "selectPlaceholder": "Select"
       },
       "export": {
         "export_printables": "Export Printables",
         "export_printables_aria": "Start asynchronous export job for printable documents"
-      },
-      "events": {
-        "open2x": "Open 2x"
-      },
-      "athletes": {
-        "row1": "Athlete 1"
-      },
-      "crews": {
-        "row1": "Crew 1"
-      },
-      "withdraw": {
-        "open": "Withdraw entry",
-        "confirmTitle": "Confirm destructive action",
-        "reason": "Reason",
-        "auditActor": "actor: staff.user",
-        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
-        "conflict": "conflict: this entry changed since your last fetch",
-        "reload": "Reload",
-        "alreadyBeforeDraw": "Already withdrawn before draw",
-        "setEntered": "Set entered",
-        "invalidTransition": "Invalid transition"
-      },
-      "table": {
-        "event": "Event",
-        "action": "Action",
-        "athlete": "Athlete",
-        "crew": "Crew",
-        "currentAction": "Current action",
-        "nextAction": "Next action"
       }
     },
     "draw_workflow": {
@@ -386,10 +339,6 @@
     }
   },
   "validation": {
-    "entry": {
-      "crewRequired": "Crew is required",
-      "athleteRequired": "Athlete is required"
-    },
     "ruleset": {
       "nameRequired": "Name is required",
       "versionRequired": "Version is required",
