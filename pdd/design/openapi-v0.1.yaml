@@ -552,7 +552,7 @@ components:
         download_url:
           type: string
           description: >
-            Relative URL to download the PDF artifact.
+            Absolute-path URL to download the PDF artifact.
             Present only when status is "completed" and the artifact has not expired.
         error:
           type: string
@@ -945,16 +945,6 @@ paths:
   /api/v1/regattas/{regatta_id}/invoices/generate:
     post:
       summary: Generate invoices
-  /api/v1/regattas/{regatta_id}/export/printables:
-    post:
-      summary: Request Printable Export
-      description: >
-        Request an asynchronous printable PDF export for a regatta.
-        Returns 202 Accepted with a job_id immediately.
-        Poll GET /api/v1/jobs/{job_id} for status.
-        Required roles: regatta_admin, head_of_jury, info_desk.
-      tags:
-      - Export Job Resource
       parameters:
       - name: regatta_id
         in: path
@@ -982,6 +972,44 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Invoice Resource
+  /api/v1/regattas/{regatta_id}/export/printables:
+    post:
+      summary: Request Printable Export
+      description: >
+        Request an asynchronous printable PDF export for a regatta.
+        Returns 202 Accepted with a job_id immediately.
+        Poll GET /api/v1/jobs/{job_id} for status.
+        Required roles: regatta_admin, head_of_jury, info_desk.
+      tags:
+      - Export Job Resource
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "202":
+          description: Export job accepted; processing in background
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobCreatedResponse"
+        "403":
+          description: Forbidden – insufficient role
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: Regatta not found
+          content:
+            application/json:
+              schema: {}
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema: {}
   /api/v1/regattas/{regatta_id}/invoices/jobs/{job_id}:
     get:
       summary: Get invoice generation job
@@ -1087,39 +1115,6 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Invoice Resource
-  /api/v1/regattas/{regatta_id}/export/printables:
-    post:
-      summary: Request Printable Export
-      description: >
-        Request an asynchronous printable PDF export for a regatta.
-        Returns 202 Accepted with a job_id immediately.
-        Poll GET /api/v1/jobs/{job_id} for status.
-        Required roles: regatta_admin, head_of_jury, info_desk.
-      tags:
-      - Export Job Resource
-      parameters:
-      - name: regatta_id
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-      responses:
-        "202":
-          description: Export job accepted; processing in background
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ExportJobCreatedResponse"
-        "403":
-          description: Forbidden – insufficient role
-          content:
-            application/json:
-              schema: {}
-        "404":
-          description: Regatta not found
-          content:
-            application/json:
-              schema: {}
   /api/v1/regattas/{regatta_id}/line_scan/manifests:
     post:
       parameters:
