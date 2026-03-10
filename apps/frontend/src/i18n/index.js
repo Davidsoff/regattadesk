@@ -56,26 +56,38 @@ export function initI18n() {
   }
 }
 
-/**
- * Update the locale and persist it to localStorage
- */
-export function setLocale(locale) {
+function persistLocale(locale) {
+  try {
+    localStorage.setItem('regattadesk-locale', locale);
+  } catch {
+    // Storage may be unavailable in some environments.
+  }
+}
+
+function applyDocumentLocale(locale) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', locale);
+  }
+}
+
+export function applyLocalePreference(locale, applyLocale) {
   let normalizedLocale = normalizeLocale(locale);
   if (!normalizedLocale) {
     console.warn(`Unsupported locale: ${locale}. Using 'nl' instead.`);
     normalizedLocale = 'nl';
   }
-  
-  i18n.global.locale.value = normalizedLocale;
-  try {
-    localStorage.setItem('regattadesk-locale', normalizedLocale);
-  } catch (storageError) {
-    // localStorage may be unavailable (e.g. private browsing, storage quota exceeded).
-    // Locale preference is not persisted but the app continues to function correctly.
-    console.debug('Could not persist locale to localStorage:', storageError)
-  }
 
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('lang', normalizedLocale);
-  }
+  applyLocale(normalizedLocale);
+  persistLocale(normalizedLocale);
+  applyDocumentLocale(normalizedLocale);
+  return normalizedLocale;
+}
+
+/**
+ * Update the locale and persist it to localStorage
+ */
+export function setLocale(locale) {
+  applyLocalePreference(locale, (normalizedLocale) => {
+    i18n.global.locale.value = normalizedLocale;
+  });
 }

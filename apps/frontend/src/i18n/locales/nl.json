@@ -21,6 +21,7 @@
   },
   "status": {
     "entered": "Ingeschreven",
+    "official": "Officieel",
     "withdrawn_before_draw": "Afgemeld voor loting",
     "withdrawn_after_draw": "Afgemeld na loting"
   },
@@ -485,7 +486,7 @@
       "description": "Live wedstrijduitslagen",
       "empty": "Er zijn nog geen resultaten gepubliceerd voor deze versie.",
       "version_banner": "Loting v{drawRevision}, Resultaten v{resultsRevision}",
-      "version_link": "Kopieer canonieke resultatenlink",
+      "version_link": "Canonieke resultatenlink",
       "fields": {
         "rank": "Plaats",
         "crew": "Ploeg",
