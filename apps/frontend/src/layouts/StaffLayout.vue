@@ -15,6 +15,27 @@ const regattaNavItems = computed(() => getStaffRegattaNavItems(regattaId.value))
 function isRouteActive(navItem) {
   return navItem.routeNames.includes(String(route.name))
 }
+
+function getNavigationLabel(navItem) {
+  switch (navItem.key) {
+    case 'regattas':
+      return t('navigation.regattas')
+    case 'rulesets':
+      return t('navigation.rulesets')
+    case 'setup':
+      return t('navigation.setup')
+    case 'draw':
+      return t('navigation.draw')
+    case 'finance':
+      return t('navigation.finance')
+    case 'operator_access':
+      return t('navigation.operator_access')
+    case 'blocks':
+      return t('navigation.blocks')
+    default:
+      return navItem.key
+  }
+}
 </script>
 
 <template>
@@ -35,7 +56,7 @@ function isRouteActive(navItem) {
           class="staff-layout__nav-item"
           :aria-current="isRouteActive(navItem) ? 'page' : undefined"
         >
-          {{ t(`navigation.${navItem.key}`) }}
+          {{ getNavigationLabel(navItem) }}
         </router-link>
       </nav>
     </header>
@@ -52,7 +73,7 @@ function isRouteActive(navItem) {
         class="staff-layout__subnav-item"
         :aria-current="isRouteActive(navItem) ? 'page' : undefined"
       >
-        {{ t(`navigation.${navItem.key}`) }}
+        {{ getNavigationLabel(navItem) }}
       </router-link>
       <router-link
         :to="`/staff/regattas/${regattaId}/printables`"

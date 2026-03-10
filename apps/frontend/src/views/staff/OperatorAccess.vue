@@ -154,6 +154,17 @@ function cancelPendingTokenAction() {
   pendingTokenAction.value = null
 }
 
+function getConfirmationMessage(action, station) {
+  switch (action) {
+    case 'export':
+      return t('operator_access.confirmation.export', { station })
+    case 'revoke':
+      return t('operator_access.confirmation.revoke', { station })
+    default:
+      return ''
+  }
+}
+
 async function confirmPendingTokenAction() {
   if (!pendingTokenAction.value) {
     return
@@ -204,9 +215,7 @@ onMounted(async () => {
     >
       <h3>{{ t('operator_access.confirmation.title') }}</h3>
       <p>
-        {{ t(`operator_access.confirmation.${pendingTokenAction.action}`, {
-          station: pendingTokenAction.token.station
-        }) }}
+        {{ getConfirmationMessage(pendingTokenAction.action, pendingTokenAction.token.station) }}
       </p>
       <div class="operator-access__actions">
         <button data-testid="confirm-token-action" type="button" @click="confirmPendingTokenAction">
