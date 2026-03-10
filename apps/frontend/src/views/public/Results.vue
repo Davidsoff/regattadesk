@@ -228,8 +228,12 @@ function translateResultLabel(label) {
     return null
   }
 
-  const labelKey = `status.${label}`
-  return te(labelKey) ? t(labelKey) : label
+  switch (label) {
+    case 'official':
+      return t('status.official')
+    default:
+      return label
+  }
 }
 
 function formatValue(value) {
