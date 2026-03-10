@@ -38,8 +38,8 @@ public class ExportJobResource {
 
     private static final Logger LOG = Logger.getLogger(ExportJobResource.class);
 
-    /** Relative URL template for artifact download links. */
-    private static final String DOWNLOAD_URL_TEMPLATE = "api/v1/jobs/%s/download";
+    /** Absolute-path URL template for artifact download links. */
+    private static final String DOWNLOAD_URL_TEMPLATE = "/api/v1/jobs/%s/download";
 
     @Inject
     ExportJobService exportJobService;
@@ -67,7 +67,9 @@ public class ExportJobResource {
 
             ExportJob job = opt.get();
             String downloadUrl = null;
-            if (job.getStatus() == ExportJobStatus.COMPLETED && job.isDownloadable(clock.instant())) {
+            if (job.getStatus() == ExportJobStatus.COMPLETED
+                    && job.getExpiresAt() != null
+                    && clock.instant().isBefore(job.getExpiresAt())) {
                 downloadUrl = String.format(DOWNLOAD_URL_TEMPLATE, jobId);
             }
 

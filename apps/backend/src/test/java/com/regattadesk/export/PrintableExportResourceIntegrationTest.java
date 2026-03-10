@@ -235,7 +235,7 @@ class PrintableExportResourceIntegrationTest {
                 .get("/api/v1/jobs/" + jobId)
         .then()
                 .statusCode(200)
-                .body("download_url", containsString("api/v1/jobs/"))
+                .body("download_url", startsWith("/api/v1/jobs/"))
                 .body("download_url", containsString("/download"));
     }
 
