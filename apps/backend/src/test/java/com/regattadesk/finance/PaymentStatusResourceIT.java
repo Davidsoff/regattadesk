@@ -350,7 +350,17 @@ class PaymentStatusResourceIT {
             .get("/api/v1/regattas/" + data.regattaId + "/finance/clubs")
             .then()
             .statusCode(400)
-            .body("error.message", equalTo("cursor must be a non-negative integer"));
+            .body("error.message", equalTo("cursor must be a non-negative integer no greater than 10000"));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("cursor", "10001")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/entries")
+            .then()
+            .statusCode(400)
+            .body("error.message", equalTo("cursor must be a non-negative integer no greater than 10000"));
     }
 
     private int countAuditEvents(String eventType, UUID aggregateId) throws Exception {

@@ -164,6 +164,36 @@ export type ExportJobStatusResponse = {
     error?: string;
 };
 
+export type FinanceClubListResponse = {
+    clubs?: Array<FinanceClubSummaryResponse>;
+    pagination?: FinanceListPaginationResponse;
+};
+
+export type FinanceClubSummaryResponse = {
+    club_id?: Uuid;
+    club_name?: string;
+    payment_status?: string;
+    paid_entries?: number;
+    unpaid_entries?: number;
+};
+
+export type FinanceEntryListResponse = {
+    entries?: Array<FinanceEntrySummaryResponse>;
+    pagination?: FinanceListPaginationResponse;
+};
+
+export type FinanceEntrySummaryResponse = {
+    entry_id?: Uuid;
+    crew_name?: string;
+    club_name?: string;
+    payment_status?: string;
+};
+
+export type FinanceListPaginationResponse = {
+    has_more?: boolean;
+    next_cursor?: string;
+};
+
 export type GenerateDrawRequest = {
     seed?: number;
 };
@@ -979,18 +1009,29 @@ export type GetApiV1RegattasByRegattaIdFinanceClubsData = {
     query?: {
         cursor?: string;
         limit?: number;
-        payment_status?: string;
+        payment_status?: 'paid' | 'unpaid' | 'partial';
         search?: string;
     };
     url: '/api/v1/regattas/{regatta_id}/finance/clubs';
 };
 
+export type GetApiV1RegattasByRegattaIdFinanceClubsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdFinanceClubsError = GetApiV1RegattasByRegattaIdFinanceClubsErrors[keyof GetApiV1RegattasByRegattaIdFinanceClubsErrors];
+
 export type GetApiV1RegattasByRegattaIdFinanceClubsResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: FinanceClubListResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdFinanceClubsResponse = GetApiV1RegattasByRegattaIdFinanceClubsResponses[keyof GetApiV1RegattasByRegattaIdFinanceClubsResponses];
 
 export type GetApiV1RegattasByRegattaIdFinanceEntriesData = {
     body?: never;
@@ -1000,18 +1041,29 @@ export type GetApiV1RegattasByRegattaIdFinanceEntriesData = {
     query?: {
         cursor?: string;
         limit?: number;
-        payment_status?: string;
+        payment_status?: 'paid' | 'unpaid';
         search?: string;
     };
     url: '/api/v1/regattas/{regatta_id}/finance/entries';
 };
 
+export type GetApiV1RegattasByRegattaIdFinanceEntriesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdFinanceEntriesError = GetApiV1RegattasByRegattaIdFinanceEntriesErrors[keyof GetApiV1RegattasByRegattaIdFinanceEntriesErrors];
+
 export type GetApiV1RegattasByRegattaIdFinanceEntriesResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: FinanceEntryListResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdFinanceEntriesResponse = GetApiV1RegattasByRegattaIdFinanceEntriesResponses[keyof GetApiV1RegattasByRegattaIdFinanceEntriesResponses];
 
 export type GetApiV1RegattasByRegattaIdInvoicesData = {
     body?: never;

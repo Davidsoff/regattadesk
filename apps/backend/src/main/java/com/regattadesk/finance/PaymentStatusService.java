@@ -30,6 +30,7 @@ import java.util.UUID;
 public class PaymentStatusService {
     private static final int DEFAULT_DISCOVERY_LIMIT = 100;
     private static final int MAX_DISCOVERY_LIMIT = 100;
+    private static final int MAX_DISCOVERY_CURSOR_OFFSET = 10_000;
 
     @Inject
     EventStore eventStore;
@@ -893,12 +894,16 @@ public class PaymentStatusService {
         }
         try {
             int offset = Integer.parseInt(normalizedCursor);
-            if (offset < 0) {
-                throw new IllegalArgumentException("cursor must be a non-negative integer");
+            if (offset < 0 || offset > MAX_DISCOVERY_CURSOR_OFFSET) {
+                throw new IllegalArgumentException(
+                    "cursor must be a non-negative integer no greater than " + MAX_DISCOVERY_CURSOR_OFFSET
+                );
             }
             return offset;
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("cursor must be a non-negative integer");
+            throw new IllegalArgumentException(
+                "cursor must be a non-negative integer no greater than " + MAX_DISCOVERY_CURSOR_OFFSET
+            );
         }
     }
 
