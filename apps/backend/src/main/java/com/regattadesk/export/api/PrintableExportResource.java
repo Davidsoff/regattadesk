@@ -14,6 +14,11 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
 
 import java.sql.SQLException;
@@ -55,6 +60,20 @@ public class PrintableExportResource {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @Operation(summary = "Request Printable Export")
+    @APIResponses({
+            @APIResponse(responseCode = "202", description = "Export job accepted; processing in background",
+                    content = @Content(schema = @Schema(implementation = ExportJobCreatedResponse.class))),
+            @APIResponse(responseCode = "403", description = "Forbidden – insufficient role",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Regatta not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response requestPrintableExport(@PathParam("regatta_id") UUID regattaId) {
         // Verify regatta exists before creating job
         try {

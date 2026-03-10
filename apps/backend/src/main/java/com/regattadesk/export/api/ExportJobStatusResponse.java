@@ -2,6 +2,8 @@ package com.regattadesk.export.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Response body for job status polling.
@@ -16,15 +18,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * </ul>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Schema(name = "ExportJobStatusResponse", description = "Export job status response for polling clients.")
 public class ExportJobStatusResponse {
 
     @JsonProperty("status")
+    @Schema(
+            required = true,
+            description = "Current lifecycle state of the export job.",
+            enumeration = {"pending", "processing", "completed", "failed"})
     private final String status;
 
     @JsonProperty("download_url")
+    @Schema(
+            type = SchemaType.STRING,
+            description = "Absolute-path URL to download the PDF artifact. Present only when status is \"completed\" and the artifact has not expired.")
     private final String downloadUrl;
 
     @JsonProperty("error")
+    @Schema(
+            type = SchemaType.STRING,
+            description = "Human-readable error description. Present only when status is \"failed\".")
     private final String error;
 
     public ExportJobStatusResponse(String status, String downloadUrl, String error) {

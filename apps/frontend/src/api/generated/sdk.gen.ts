@@ -81,17 +81,11 @@ export const patchApiV1EntriesByIdPaymentStatus = <ThrowOnError extends boolean 
 
 /**
  * Get Export Job Status
- *
- * Poll the current state of an async export job. Clients should poll until status is "completed" or "failed". When completed, the response includes a download_url valid for 1 hour.
- *
  */
 export const getApiV1JobsByJobId = <ThrowOnError extends boolean = false>(options: Options<GetApiV1JobsByJobIdData, ThrowOnError>) => (options.client ?? client).get<GetApiV1JobsByJobIdResponses, GetApiV1JobsByJobIdErrors, ThrowOnError>({ url: '/api/v1/jobs/{job_id}', ...options });
 
 /**
  * Download Export Artifact
- *
- * Download the completed PDF artifact for an export job. Returns 404 when the job has not yet completed or has no artifact. Returns 410 when the artifact download window (1 hour) has expired.
- *
  */
 export const getApiV1JobsByJobIdDownload = <ThrowOnError extends boolean = false>(options: Options<GetApiV1JobsByJobIdDownloadData, ThrowOnError>) => (options.client ?? client).get<GetApiV1JobsByJobIdDownloadResponses, GetApiV1JobsByJobIdDownloadErrors, ThrowOnError>({ url: '/api/v1/jobs/{job_id}/download', ...options });
 
@@ -130,6 +124,11 @@ export const putApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatus = <ThrowOn
 });
 
 /**
+ * Request Printable Export
+ */
+export const postApiV1RegattasByRegattaIdExportPrintables = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdExportPrintablesData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdExportPrintablesResponses, PostApiV1RegattasByRegattaIdExportPrintablesErrors, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/export/printables', ...options });
+
+/**
  * List invoices
  */
 export const getApiV1RegattasByRegattaIdInvoices = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdInvoicesData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdInvoicesResponses, GetApiV1RegattasByRegattaIdInvoicesErrors, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/invoices', ...options });
@@ -145,14 +144,6 @@ export const postApiV1RegattasByRegattaIdInvoicesGenerate = <ThrowOnError extend
         ...options.headers
     }
 });
-
-/**
- * Request Printable Export
- *
- * Request an asynchronous printable PDF export for a regatta. Returns 202 Accepted with a job_id immediately. Poll GET /api/v1/jobs/{job_id} for status. Required roles: regatta_admin, head_of_jury, info_desk.
- *
- */
-export const postApiV1RegattasByRegattaIdExportPrintables = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdExportPrintablesData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdExportPrintablesResponses, PostApiV1RegattasByRegattaIdExportPrintablesErrors, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/export/printables', ...options });
 
 /**
  * Get invoice generation job

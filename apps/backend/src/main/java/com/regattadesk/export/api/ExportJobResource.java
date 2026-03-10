@@ -14,6 +14,13 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.headers.Header;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.jboss.logging.Logger;
 
 import java.time.Clock;
@@ -56,6 +63,17 @@ public class ExportJobResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @Operation(summary = "Get Export Job Status")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Job status response",
+                    content = @Content(schema = @Schema(implementation = ExportJobStatusResponse.class))),
+            @APIResponse(responseCode = "403", description = "Forbidden – insufficient role",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Job not found",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response getJobStatus(@PathParam("job_id") UUID jobId) {
         try {
             Optional<ExportJob> opt = exportJobService.getJobMetadata(jobId);
@@ -97,6 +115,25 @@ public class ExportJobResource {
     @Path("/download")
     @Produces("application/pdf")
     @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @Operation(summary = "Download Export Artifact")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "PDF artifact",
+                    content = @Content(mediaType = "application/pdf"),
+                    headers = {
+                            @Header(name = "Content-Disposition",
+                                    description = "attachment; filename=\"export-{job_id}.pdf\"",
+                                    schema = @Schema(type = SchemaType.STRING))
+                    }),
+            @APIResponse(responseCode = "403", description = "Forbidden – insufficient role",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Job not found or artifact not available",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "410", description = "Artifact has expired",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response downloadArtifact(@PathParam("job_id") UUID jobId) {
         try {
             Optional<ExportJob> opt = exportJobService.getJob(jobId);
