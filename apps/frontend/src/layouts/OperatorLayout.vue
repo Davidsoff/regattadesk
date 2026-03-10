@@ -2,11 +2,37 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import {
+  buildOperatorSessionWorkspacePath,
+  buildOperatorSessionsPath,
+  getSelectedCaptureSessionId
+} from '../operatorSessionSelection'
 
 const { t } = useI18n()
 const route = useRoute()
 
 const regattaId = computed(() => route.params.regattaId)
+const captureSessionId = computed(() => route.params.captureSessionId)
+const sessionsPath = computed(() =>
+  regattaId.value ? buildOperatorSessionsPath(String(regattaId.value)) : null
+)
+const legacyLineScanPath = computed(() =>
+  regattaId.value ? `/operator/regattas/${String(regattaId.value)}/line-scan` : null
+)
+const lineScanPath = computed(() => {
+  if (!regattaId.value) {
+    return null
+  }
+
+  const selectedCaptureSessionId =
+    typeof captureSessionId.value === 'string' && captureSessionId.value.trim().length > 0
+      ? captureSessionId.value
+      : getSelectedCaptureSessionId(String(regattaId.value))
+
+  return selectedCaptureSessionId
+    ? buildOperatorSessionWorkspacePath(String(regattaId.value), selectedCaptureSessionId)
+    : legacyLineScanPath.value
+})
 </script>
 
 <template>
@@ -29,9 +55,21 @@ const regattaId = computed(() => route.params.regattaId)
         </router-link>
         <router-link
           v-if="regattaId"
-          :to="`/operator/regattas/${regattaId}/line-scan`"
+          :to="sessionsPath"
           class="operator-layout__nav-item"
-          :aria-current="route.name === 'operator-line-scan' ? 'page' : undefined"
+          :aria-current="route.name === 'operator-regatta-sessions' ? 'page' : undefined"
+        >
+          {{ t('navigation.sessions') }}
+        </router-link>
+        <router-link
+          v-if="regattaId && lineScanPath"
+          :to="lineScanPath"
+          class="operator-layout__nav-item"
+          :aria-current="
+            route.name === 'operator-session-line-scan' || route.name === 'operator-line-scan-legacy'
+              ? 'page'
+              : undefined
+          "
         >
           {{ t('navigation.line_scan') }}
         </router-link>

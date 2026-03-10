@@ -135,6 +135,7 @@
   },
   "navigation": {
     "regattas": "Regatta's",
+    "sessions": "Sessies",
     "rulesets": "Reglementen",
     "setup": "Instelling",
     "draw": "Loting",
@@ -399,11 +400,21 @@
     "regattas": {
       "title": "Regatta's",
       "description": "Selecteer een regatta om mee te werken",
+      "token_status": "Actief token {token} op station {station}.",
       "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",
-      "id": "Regatta ID"
+      "id": "Regatta ID",
+      "token_status": "Operator-token: {token}",
+      "no_token": "Niet beschikbaar",
+      "station_context": "Station: {station}",
+      "create_session": "Opnamesessie maken",
+      "loading_sessions": "Opnamesessies laden...",
+      "open_session": "Sessie openen",
+      "close_session": "Sessie sluiten",
+      "session_summary": "{station} · {session_type} · {state}",
+      "sync_summary": "Openstaand {pending_operations}, mislukt {failed_operations}"
     },
     "line_scan": {
       "title": "Line Scan",

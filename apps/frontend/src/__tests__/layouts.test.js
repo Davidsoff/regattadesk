@@ -35,12 +35,17 @@ function createTestRouter(extraRoutes = []) {
       { path: '/operator/regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
       {
         path: '/operator/regattas/:regattaId',
-        name: 'operator-regatta-detail',
+        name: 'operator-regatta-home',
         component: { template: '<div>Operator Regatta Detail</div>' },
       },
       {
-        path: '/operator/regattas/:regattaId/line-scan',
-        name: 'operator-line-scan',
+        path: '/operator/regattas/:regattaId/sessions',
+        name: 'operator-regatta-sessions',
+        component: { template: '<div>Operator Sessions</div>' },
+      },
+      {
+        path: '/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan',
+        name: 'operator-session-line-scan',
         component: { template: '<div>Operator Line Scan</div>' },
       },
       {
@@ -72,6 +77,7 @@ function createTestI18n() {
         },
         navigation: {
           regattas: 'Regattas',
+          sessions: 'Sessions',
           rulesets: 'Rulesets',
           setup: 'Setup',
           draw: 'Draw',
@@ -247,9 +253,14 @@ describe('Layout Components', () => {
     })
 
     it('shows Line Scan link when inside a regatta', async () => {
-      const wrapper = await mountAtRoute(router, '/operator/regattas/my-regatta-id/line-scan', OperatorLayout)
+      const wrapper = await mountAtRoute(
+        router,
+        '/operator/regattas/my-regatta-id/sessions/my-session-id/line-scan',
+        OperatorLayout
+      )
       const links = wrapper.findAll('.operator-layout__nav-item').map((n) => n.attributes('href'))
-      expect(links).toContain('/operator/regattas/my-regatta-id/line-scan')
+      expect(links).toContain('/operator/regattas/my-regatta-id/sessions')
+      expect(links).toContain('/operator/regattas/my-regatta-id/sessions/my-session-id/line-scan')
     })
 
     it('operator nav is labelled for accessibility', async () => {
@@ -262,8 +273,12 @@ describe('Layout Components', () => {
       const regattasLink = regattasWrapper.findAll('.operator-layout__nav-item')[0]
       expect(regattasLink.attributes('aria-current')).toBe('page')
 
-      const lineScanWrapper = await mountAtRoute(router, '/operator/regattas/my-regatta-id/line-scan', OperatorLayout)
-      const lineScanLink = lineScanWrapper.findAll('.operator-layout__nav-item')[1]
+      const lineScanWrapper = await mountAtRoute(
+        router,
+        '/operator/regattas/my-regatta-id/sessions/my-session-id/line-scan',
+        OperatorLayout
+      )
+      const lineScanLink = lineScanWrapper.findAll('.operator-layout__nav-item')[2]
       expect(lineScanLink.attributes('aria-current')).toBe('page')
     })
   })
