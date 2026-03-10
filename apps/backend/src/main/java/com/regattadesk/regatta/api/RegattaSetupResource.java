@@ -20,6 +20,13 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +47,11 @@ public class RegattaSetupResource {
     @POST
     @Path("/event-groups")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Create Event Group")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = EventGroupResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response createEventGroup(@PathParam("regatta_id") UUID regattaId, @Valid EventGroupCreateRequest request) {
         return Response.status(Response.Status.CREATED).entity(service.createEventGroup(regattaId, request)).build();
     }
@@ -47,13 +59,20 @@ public class RegattaSetupResource {
     @GET
     @Path("/event-groups")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "List Event Groups")
+    @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EventGroupListResponse.class)))
     public Response listEventGroups(@PathParam("regatta_id") UUID regattaId, @QueryParam("search") String search) {
-        return Response.ok(service.listEventGroups(regattaId, search)).build();
+        return Response.ok(EventGroupListResponse.from(service.listEventGroups(regattaId, search))).build();
     }
 
     @POST
     @Path("/events")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Create Event")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = EventResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response createEvent(@PathParam("regatta_id") UUID regattaId, @Valid EventCreateRequest request) {
         return Response.status(Response.Status.CREATED).entity(service.createEvent(regattaId, request)).build();
     }
@@ -61,13 +80,20 @@ public class RegattaSetupResource {
     @GET
     @Path("/events")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "List Events")
+    @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EventListResponse.class)))
     public Response listEvents(@PathParam("regatta_id") UUID regattaId) {
-        return Response.ok(service.listEvents(regattaId)).build();
+        return Response.ok(EventListResponse.from(service.listEvents(regattaId))).build();
     }
 
     @POST
     @Path("/crews")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Create Crew")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = CrewResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response createCrew(@PathParam("regatta_id") UUID regattaId, @Valid CrewCreateRequest request) {
         return Response.status(Response.Status.CREATED).entity(service.createCrew(regattaId, request)).build();
     }
@@ -75,13 +101,20 @@ public class RegattaSetupResource {
     @GET
     @Path("/crews")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "List Crews")
+    @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = CrewListResponse.class)))
     public Response listCrews(@PathParam("regatta_id") UUID regattaId) {
-        return Response.ok(service.listCrews(regattaId)).build();
+        return Response.ok(CrewListResponse.from(service.listCrews(regattaId))).build();
     }
 
     @POST
     @Path("/entries")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Create Entry")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Created", content = @Content(schema = @Schema(implementation = EntryResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response createEntry(@PathParam("regatta_id") UUID regattaId, @Valid EntryCreateRequest request) {
         return Response.status(Response.Status.CREATED).entity(service.createEntry(regattaId, request)).build();
     }
@@ -89,17 +122,28 @@ public class RegattaSetupResource {
     @GET
     @Path("/entries")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "List Entries")
+    @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EntryListResponse.class)))
     public Response listEntries(@PathParam("regatta_id") UUID regattaId, @QueryParam("status") String status) {
-        return Response.ok(service.listEntries(regattaId, status)).build();
+        return Response.ok(EntryListResponse.from(service.listEntries(regattaId, status))).build();
     }
 
     @POST
     @Path("/entries/{entry_id}/withdraw")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Withdraw Entry")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = WithdrawResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "409", description = "Conflict", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response withdrawEntry(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("entry_id") UUID entryId,
+        @Parameter(hidden = true)
         @HeaderParam("Remote-User") String actor,
+        @RequestBody(required = true)
         @Valid WithdrawEntryRequest request
     ) {
         return Response.ok(service.withdrawEntry(regattaId, entryId, request, actor)).build();
@@ -108,10 +152,19 @@ public class RegattaSetupResource {
     @POST
     @Path("/entries/{entry_id}/reinstate")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Reinstate Entry")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = WithdrawResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "409", description = "Conflict", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response reinstateEntry(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("entry_id") UUID entryId,
+        @Parameter(hidden = true)
         @HeaderParam("Remote-User") String actor,
+        @RequestBody(required = true)
         @Valid ReinstateEntryRequest request
     ) {
         return Response.ok(service.reinstateEntry(regattaId, entryId, request, actor)).build();
@@ -187,14 +240,23 @@ record EntryCreateRequest(
 }
 
 record WithdrawEntryRequest(
-    @NotBlank @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$") String status,
+    @NotBlank
+    @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$")
+    @Schema(enumeration = {"withdrawn_before_draw", "withdrawn_after_draw"})
+    String status,
     @NotBlank String reason,
-    @NotBlank @Pattern(regexp = "^(entered|withdrawn_before_draw|withdrawn_after_draw|dns|dnf|excluded|dsq)$") String expected_status
+    @NotBlank
+    @Pattern(regexp = "^(entered|withdrawn_before_draw|withdrawn_after_draw|dns|dnf|excluded|dsq)$")
+    @Schema(enumeration = {"entered", "withdrawn_before_draw", "withdrawn_after_draw", "dns", "dnf", "excluded", "dsq"})
+    String expected_status
 ) {
 }
 
 record ReinstateEntryRequest(
-    @NotBlank @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$") String expected_status
+    @NotBlank
+    @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$")
+    @Schema(enumeration = {"withdrawn_before_draw", "withdrawn_after_draw"})
+    String expected_status
 ) {
 }
 
@@ -240,8 +302,8 @@ record EntryResponse(
     UUID block_id,
     UUID crew_id,
     UUID billing_club_id,
-    String status,
-    String payment_status,
+    @Schema(enumeration = {"entered", "withdrawn_before_draw", "withdrawn_after_draw", "dns", "dnf", "excluded", "dsq"}) String status,
+    @Schema(enumeration = {"unpaid", "paid"}) String payment_status,
     Instant paid_at,
     String paid_by,
     String payment_reference,
@@ -271,7 +333,7 @@ record EntryResponse(
 
 record WithdrawResponse(
     UUID id,
-    String status,
+    @Schema(enumeration = {"entered", "withdrawn_before_draw", "withdrawn_after_draw"}) String status,
     AuditResponse audit
 ) {
 }
@@ -287,6 +349,42 @@ record ListResponse<T>(
     List<T> data,
     Pagination pagination
 ) {
+}
+
+record EventGroupListResponse(
+    List<EventGroupResponse> data,
+    Pagination pagination
+) {
+    static EventGroupListResponse from(ListResponse<EventGroupResponse> response) {
+        return new EventGroupListResponse(response.data(), response.pagination());
+    }
+}
+
+record EventListResponse(
+    List<EventResponse> data,
+    Pagination pagination
+) {
+    static EventListResponse from(ListResponse<EventResponse> response) {
+        return new EventListResponse(response.data(), response.pagination());
+    }
+}
+
+record CrewListResponse(
+    List<CrewResponse> data,
+    Pagination pagination
+) {
+    static CrewListResponse from(ListResponse<CrewResponse> response) {
+        return new CrewListResponse(response.data(), response.pagination());
+    }
+}
+
+record EntryListResponse(
+    List<EntryResponse> data,
+    Pagination pagination
+) {
+    static EntryListResponse from(ListResponse<EntryResponse> response) {
+        return new EntryListResponse(response.data(), response.pagination());
+    }
 }
 
 record Pagination(
