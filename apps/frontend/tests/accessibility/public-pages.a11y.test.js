@@ -21,11 +21,34 @@ const i18n = createI18n({
           title: 'Schedule',
           description: 'Race schedule',
           empty: 'No scheduled races',
+          headers: {
+            time: 'Start',
+            event: 'Event',
+            crew: 'Crew',
+            club: 'Club',
+            bib_lane: 'Bib / Lane',
+            status: 'Status'
+          },
+          recovery: {
+            saved_regatta_hint: 'This link is missing regatta context.',
+            use_saved_regatta: 'Use saved regatta'
+          },
           errors: {
             missing_regatta: 'Missing regatta ID',
             load_failed: 'Failed to load schedule'
           }
+        },
+        results: {
+          title: 'Results',
+          description: 'Race results'
+        },
+        version: {
+          draw: 'Draw Revision',
+          results: 'Results Revision'
         }
+      },
+      live: {
+        offline: 'Offline'
       },
       status: {
         active: 'Active',
