@@ -423,7 +423,6 @@
       "open_session": "Sessie openen",
       "close_session": "Sessie sluiten",
       "session_summary": "{station} · {session_type} · {state}",
-      "sync_summary": "Openstaand {pending_operations}, mislukt {failed_operations}",
       "sync_synced": "Syncstatus: gesynchroniseerd",
       "sync_pending": "Syncstatus: in wachtrij ({reason})",
       "sync_pending_default": "wacht op upload",

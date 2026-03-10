@@ -423,7 +423,6 @@
       "open_session": "Open Session",
       "close_session": "Close Session",
       "session_summary": "{station} · {session_type} · {state}",
-      "sync_summary": "Pending {pending_operations}, failed {failed_operations}",
       "sync_synced": "Sync status: synced",
       "sync_pending": "Sync status: pending ({reason})",
       "sync_pending_default": "awaiting upload",
