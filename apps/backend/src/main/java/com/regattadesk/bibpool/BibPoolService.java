@@ -274,18 +274,39 @@ public class BibPoolService {
     }
 
     private List<BibPoolView> listBibPoolsFromEvents(UUID regattaId) {
-        java.util.LinkedHashSet<UUID> poolIds = eventStore.readGlobal(10_000, 0).stream()
-            .filter(event -> "BibPool".equals(event.getAggregateType()))
-            .map(EventEnvelope::getAggregateId)
-            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        String sql = """
+            SELECT id, regatta_id, block_id, name, allocation_mode, start_bib, end_bib, bib_numbers, priority, is_overflow
+            FROM bib_pools
+            WHERE regatta_id = ?
+            ORDER BY priority
+            """;
 
-        return poolIds.stream()
-            .map(this::loadAggregate)
-            .flatMap(Optional::stream)
-            .filter(pool -> !pool.isDeleted() && regattaId.equals(pool.getRegattaId()))
-            .map(this::toView)
-            .sorted(java.util.Comparator.comparingInt(BibPoolView::priority))
-            .toList();
+        List<BibPoolView> pools = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, regattaId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    pools.add(new BibPoolView(
+                        resultSet.getObject("id", UUID.class),
+                        resultSet.getObject("regatta_id", UUID.class),
+                        resultSet.getObject("block_id", UUID.class),
+                        resultSet.getString("name"),
+                        resultSet.getString("allocation_mode"),
+                        (Integer) resultSet.getObject("start_bib"),
+                        (Integer) resultSet.getObject("end_bib"),
+                        readIntArray(resultSet.getArray("bib_numbers")),
+                        resultSet.getInt("priority"),
+                        resultSet.getBoolean("is_overflow")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to list bib pools for regatta " + regattaId, e);
+        }
+
+        return pools;
     }
 
     public record BibPoolView(

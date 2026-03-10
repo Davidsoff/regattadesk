@@ -16,7 +16,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -182,18 +181,36 @@ public class BlockService {
     }
 
     private List<BlockView> listBlocksFromEvents(UUID regattaId) {
-        LinkedHashSet<UUID> blockIds = eventStore.readGlobal(10_000, 0).stream()
-            .filter(event -> "Block".equals(event.getAggregateType()))
-            .map(EventEnvelope::getAggregateId)
-            .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        String sql = """
+            SELECT id, regatta_id, name, start_time, event_interval_seconds, crew_interval_seconds, display_order
+            FROM blocks
+            WHERE regatta_id = ?
+            ORDER BY display_order
+            """;
 
-        return blockIds.stream()
-            .map(this::loadAggregate)
-            .flatMap(Optional::stream)
-            .filter(block -> !block.isDeleted() && regattaId.equals(block.getRegattaId()))
-            .map(this::toView)
-            .sorted(java.util.Comparator.comparingInt(BlockView::displayOrder))
-            .toList();
+        List<BlockView> blocks = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setObject(1, regattaId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    blocks.add(new BlockView(
+                        resultSet.getObject("id", UUID.class),
+                        resultSet.getObject("regatta_id", UUID.class),
+                        resultSet.getString("name"),
+                        resultSet.getTimestamp("start_time").toInstant(),
+                        resultSet.getInt("event_interval_seconds"),
+                        resultSet.getInt("crew_interval_seconds"),
+                        resultSet.getInt("display_order")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to list blocks for regatta " + regattaId, e);
+        }
+
+        return blocks;
     }
 
     public record BlockView(

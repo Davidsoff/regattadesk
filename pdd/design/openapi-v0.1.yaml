@@ -40,6 +40,13 @@ components:
           type: string
         club_id:
           $ref: "#/components/schemas/UUID"
+    BibPoolListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BibPoolResponse"
     BibPoolMutationRequest:
       type: object
       properties:
@@ -77,6 +84,35 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BibPoolReorderItem"
+    BibPoolResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        allocation_mode:
+          type: string
+        start_bib:
+          type: integer
+          format: int32
+        end_bib:
+          type: integer
+          format: int32
+        bib_numbers:
+          type: array
+          items:
+            type: integer
+            format: int32
+        priority:
+          type: integer
+          format: int32
+        is_overflow:
+          type: boolean
     BlockMutationRequest:
       type: object
       properties:
@@ -877,6 +913,7 @@ paths:
       - Regatta Resource
   /api/v1/regattas/{regatta_id}/bib_pools:
     get:
+      summary: List bib pools
       parameters:
       - name: regatta_id
         in: path
@@ -888,11 +925,12 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: List Bib Pools
+              schema:
+                $ref: "#/components/schemas/BibPoolListResponse"
       tags:
       - Bib Pool Resource
     post:
+      summary: Create bib pool
       parameters:
       - name: regatta_id
         in: path
@@ -906,18 +944,35 @@ paths:
               $ref: "#/components/schemas/BibPoolMutationRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/BibPoolResponse"
         "400":
-          description: Bad Request
-      summary: Create Bib Pool
+          description: "Validation error, including overlapping bibs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Bib Pool Resource
   /api/v1/regattas/{regatta_id}/bib_pools/reorder:
     post:
+      summary: Reorder bib pools
       parameters:
       - name: regatta_id
         in: path
@@ -935,14 +990,31 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/BibPoolListResponse"
         "400":
-          description: Bad Request
-      summary: Reorder Bib Pools
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta or bib pool not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Bib Pool Resource
   /api/v1/regattas/{regatta_id}/bib_pools/{pool_id}:
     patch:
+      summary: Update bib pool
       parameters:
       - name: pool_id
         in: path
@@ -965,11 +1037,30 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Update Bib Pool
+              schema:
+                $ref: "#/components/schemas/BibPoolResponse"
+        "400":
+          description: "Validation error, including overlapping bibs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta or bib pool not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Bib Pool Resource
     delete:
+      summary: Delete bib pool
       parameters:
       - name: pool_id
         in: path
@@ -982,12 +1073,20 @@ paths:
         schema:
           $ref: "#/components/schemas/UUID"
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
+        "404":
+          description: Regatta or bib pool not found
           content:
             application/json:
-              schema: {}
-      summary: Delete Bib Pool
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Bib Pool Resource
   /api/v1/regattas/{regatta_id}/blocks:

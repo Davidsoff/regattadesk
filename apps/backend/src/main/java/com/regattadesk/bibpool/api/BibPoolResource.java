@@ -8,6 +8,11 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.List;
 import java.util.Map;
@@ -26,12 +31,41 @@ public class BibPoolResource {
 
     @GET
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN})
+    @Operation(summary = "List bib pools")
+    @APIResponse(
+        responseCode = "200",
+        description = "OK",
+        content = @Content(schema = @Schema(implementation = BibPoolListResponse.class))
+    )
     public Response listBibPools(@PathParam("regatta_id") UUID regattaId) {
         return Response.ok(BibPoolListResponse.from(bibPoolService.listBibPools(regattaId))).build();
     }
 
     @POST
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN})
+    @Operation(summary = "Create bib pool")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "201",
+            description = "Created",
+            content = @Content(schema = @Schema(implementation = BibPoolResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Validation error, including overlapping bibs",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Regatta not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Draw is published; setup is immutable",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response createBibPool(@PathParam("regatta_id") UUID regattaId, BibPoolMutationRequest request) {
         try {
             validateRequest(request);
@@ -58,6 +92,29 @@ public class BibPoolResource {
     @PATCH
     @Path("/{pool_id}")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN})
+    @Operation(summary = "Update bib pool")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = BibPoolResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Validation error, including overlapping bibs",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Regatta or bib pool not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Draw is published; setup is immutable",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response updateBibPool(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("pool_id") UUID poolId,
@@ -87,6 +144,20 @@ public class BibPoolResource {
     @DELETE
     @Path("/{pool_id}")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN})
+    @Operation(summary = "Delete bib pool")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "No Content"),
+        @APIResponse(
+            responseCode = "404",
+            description = "Regatta or bib pool not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Draw is published; setup is immutable",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response deleteBibPool(@PathParam("regatta_id") UUID regattaId, @PathParam("pool_id") UUID poolId) {
         try {
             bibPoolService.deleteBibPool(regattaId, poolId);
@@ -101,6 +172,29 @@ public class BibPoolResource {
     @POST
     @Path("/reorder")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN})
+    @Operation(summary = "Reorder bib pools")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = BibPoolListResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Regatta or bib pool not found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Draw is published; setup is immutable",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response reorderBibPools(@PathParam("regatta_id") UUID regattaId, BibPoolReorderRequest request) {
         try {
             if (request == null || request.items() == null || request.items().isEmpty()) {

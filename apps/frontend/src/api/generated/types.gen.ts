@@ -22,6 +22,10 @@ export type AthleteUpdateRequest = {
     club_id?: Uuid;
 };
 
+export type BibPoolListResponse = {
+    data?: Array<BibPoolResponse>;
+};
+
 export type BibPoolMutationRequest = {
     block_id?: Uuid;
     name?: string;
@@ -39,6 +43,19 @@ export type BibPoolReorderItem = {
 
 export type BibPoolReorderRequest = {
     items?: Array<BibPoolReorderItem>;
+};
+
+export type BibPoolResponse = {
+    id?: Uuid;
+    regatta_id?: Uuid;
+    block_id?: Uuid;
+    name?: string;
+    allocation_mode?: string;
+    start_bib?: number;
+    end_bib?: number;
+    bib_numbers?: Array<number>;
+    priority?: number;
+    is_overflow?: boolean;
 };
 
 export type BlockMutationRequest = {
@@ -543,8 +560,10 @@ export type GetApiV1RegattasByRegattaIdBibPoolsResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: BibPoolListResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdBibPoolsResponse = GetApiV1RegattasByRegattaIdBibPoolsResponses[keyof GetApiV1RegattasByRegattaIdBibPoolsResponses];
 
 export type PostApiV1RegattasByRegattaIdBibPoolsData = {
     body: BibPoolMutationRequest;
@@ -557,17 +576,29 @@ export type PostApiV1RegattasByRegattaIdBibPoolsData = {
 
 export type PostApiV1RegattasByRegattaIdBibPoolsErrors = {
     /**
-     * Bad Request
+     * Validation error, including overlapping bibs
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Regatta not found
+     */
+    404: ErrorResponse;
+    /**
+     * Draw is published; setup is immutable
+     */
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdBibPoolsError = PostApiV1RegattasByRegattaIdBibPoolsErrors[keyof PostApiV1RegattasByRegattaIdBibPoolsErrors];
 
 export type PostApiV1RegattasByRegattaIdBibPoolsResponses = {
     /**
-     * OK
+     * Created
      */
-    200: unknown;
+    201: BibPoolResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdBibPoolsResponse = PostApiV1RegattasByRegattaIdBibPoolsResponses[keyof PostApiV1RegattasByRegattaIdBibPoolsResponses];
 
 export type PostApiV1RegattasByRegattaIdBibPoolsReorderData = {
     body: BibPoolReorderRequest;
@@ -580,17 +611,29 @@ export type PostApiV1RegattasByRegattaIdBibPoolsReorderData = {
 
 export type PostApiV1RegattasByRegattaIdBibPoolsReorderErrors = {
     /**
-     * Bad Request
+     * Validation error
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Regatta or bib pool not found
+     */
+    404: ErrorResponse;
+    /**
+     * Draw is published; setup is immutable
+     */
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdBibPoolsReorderError = PostApiV1RegattasByRegattaIdBibPoolsReorderErrors[keyof PostApiV1RegattasByRegattaIdBibPoolsReorderErrors];
 
 export type PostApiV1RegattasByRegattaIdBibPoolsReorderResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: BibPoolListResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdBibPoolsReorderResponse = PostApiV1RegattasByRegattaIdBibPoolsReorderResponses[keyof PostApiV1RegattasByRegattaIdBibPoolsReorderResponses];
 
 export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
     body?: never;
@@ -602,12 +645,27 @@ export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
     url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}';
 };
 
+export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors = {
+    /**
+     * Regatta or bib pool not found
+     */
+    404: ErrorResponse;
+    /**
+     * Draw is published; setup is immutable
+     */
+    409: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdError = DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors[keyof DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors];
+
 export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses = {
     /**
-     * OK
+     * No Content
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponse = DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses[keyof DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses];
 
 export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
     body: BibPoolMutationRequest;
@@ -619,12 +677,31 @@ export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
     url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}';
 };
 
+export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors = {
+    /**
+     * Validation error, including overlapping bibs
+     */
+    400: ErrorResponse;
+    /**
+     * Regatta or bib pool not found
+     */
+    404: ErrorResponse;
+    /**
+     * Draw is published; setup is immutable
+     */
+    409: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdError = PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors[keyof PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors];
+
 export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: BibPoolResponse;
 };
+
+export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponse = PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses[keyof PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses];
 
 export type GetApiV1RegattasByRegattaIdBlocksData = {
     body?: never;

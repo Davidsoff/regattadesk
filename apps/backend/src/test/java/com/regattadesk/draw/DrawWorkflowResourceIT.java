@@ -137,7 +137,6 @@ class DrawWorkflowResourceIT {
                   "allocation_mode": "range",
                   "start_bib": 1,
                   "end_bib": 50,
-                  "priority": 1,
                   "is_overflow": false
                 }
                 """, blockId))
@@ -157,7 +156,6 @@ class DrawWorkflowResourceIT {
                   "allocation_mode": "range",
                   "start_bib": 40,
                   "end_bib": 75,
-                  "priority": 2,
                   "is_overflow": false
                 }
                 """, blockId))
