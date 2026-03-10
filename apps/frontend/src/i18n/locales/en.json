@@ -448,12 +448,19 @@
   "public": {
     "schedule": {
       "title": "Schedule",
-      "description": "View the race schedule",
+      "description": "View the race schedule with local start times and lane assignments.",
       "empty": "No schedule entries available for this revision.",
       "headers": {
-        "lane": "Lane",
-        "race": "Race",
+        "time": "Start",
+        "event": "Event",
+        "crew": "Crew",
+        "club": "Club",
+        "bib_lane": "Bib / Lane",
         "status": "Status"
+      },
+      "recovery": {
+        "saved_regatta_hint": "This link is missing regatta context. You can recover using the last regatta opened on this device.",
+        "use_saved_regatta": "Use saved regatta"
       },
       "errors": {
         "missing_regatta": "Missing regatta id in URL.",

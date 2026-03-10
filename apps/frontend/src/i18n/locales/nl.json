@@ -448,12 +448,19 @@
   "public": {
     "schedule": {
       "title": "Schema",
-      "description": "Bekijk het race schema",
+      "description": "Bekijk het raceschema met lokale starttijden en baanindeling.",
       "empty": "Geen schema-items beschikbaar voor deze versie.",
       "headers": {
-        "lane": "Baan",
-        "race": "Race",
+        "time": "Start",
+        "event": "Onderdeel",
+        "crew": "Ploeg",
+        "club": "Club",
+        "bib_lane": "Startnr / Baan",
         "status": "Status"
+      },
+      "recovery": {
+        "saved_regatta_hint": "Deze link mist regatta-context. Je kunt herstellen met de laatst geopende regatta op dit apparaat.",
+        "use_saved_regatta": "Gebruik opgeslagen regatta"
       },
       "errors": {
         "missing_regatta": "Regatta-id ontbreekt in de URL.",
