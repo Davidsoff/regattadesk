@@ -20,10 +20,18 @@ const regattaId = computed(() => route.params.regattaId)
       </div>
       
       <nav class="staff-layout__nav" aria-label="Primary navigation">
-        <router-link to="/staff/regattas" class="staff-layout__nav-item">
+        <router-link
+          to="/staff/regattas"
+          class="staff-layout__nav-item"
+          :aria-current="route.name === 'staff-regattas' ? 'page' : undefined"
+        >
           {{ t('navigation.regattas') }}
         </router-link>
-        <router-link to="/staff/rulesets" class="staff-layout__nav-item">
+        <router-link
+          to="/staff/rulesets"
+          class="staff-layout__nav-item"
+          :aria-current="route.name === 'staff-rulesets' ? 'page' : undefined"
+        >
           {{ t('navigation.rulesets') }}
         </router-link>
       </nav>

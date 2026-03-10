@@ -38,7 +38,7 @@ const { currentLocale, supportedLocales, switchLocale, getLocaleName } = useLoca
         </router-link>
       </nav>
 
-      <fieldset class="public-layout__locale">
+      <fieldset class="public-layout__locale" role="group">
         <legend class="rd-sr-only">Language</legend>
         <button
           v-for="locale in supportedLocales"

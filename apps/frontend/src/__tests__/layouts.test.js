@@ -221,6 +221,16 @@ describe('Layout Components', () => {
       const navItems = wrapper.findAll('.staff-layout__nav-item').map((n) => n.attributes('href'))
       expect(navItems).toContain('/staff/rulesets')
     })
+
+    it('sets aria-current on the active primary nav item', async () => {
+      const regattasWrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
+      const regattasLink = regattasWrapper.findAll('.staff-layout__nav-item')[0]
+      expect(regattasLink.attributes('aria-current')).toBe('page')
+
+      const rulesetsWrapper = await mountAtRoute(router, '/staff/rulesets', StaffLayout)
+      const rulesetsLink = rulesetsWrapper.findAll('.staff-layout__nav-item')[1]
+      expect(rulesetsLink.attributes('aria-current')).toBe('page')
+    })
   })
 
   describe('OperatorLayout regatta-scoped navigation', () => {
@@ -245,6 +255,16 @@ describe('Layout Components', () => {
     it('operator nav is labelled for accessibility', async () => {
       const wrapper = await mountAtRoute(router, '/operator/regattas', OperatorLayout)
       expect(wrapper.find('.operator-layout__nav').attributes('aria-label')).toBeTruthy()
+    })
+
+    it('sets aria-current on the active operator nav item', async () => {
+      const regattasWrapper = await mountAtRoute(router, '/operator/regattas', OperatorLayout)
+      const regattasLink = regattasWrapper.findAll('.operator-layout__nav-item')[0]
+      expect(regattasLink.attributes('aria-current')).toBe('page')
+
+      const lineScanWrapper = await mountAtRoute(router, '/operator/regattas/my-regatta-id/line-scan', OperatorLayout)
+      const lineScanLink = lineScanWrapper.findAll('.operator-layout__nav-item')[1]
+      expect(lineScanLink.attributes('aria-current')).toBe('page')
     })
   })
 

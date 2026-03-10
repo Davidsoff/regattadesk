@@ -20,13 +20,18 @@ const regattaId = computed(() => route.params.regattaId)
       </div>
 
       <nav class="operator-layout__nav" aria-label="Operator navigation">
-        <router-link to="/operator/regattas" class="operator-layout__nav-item">
+        <router-link
+          to="/operator/regattas"
+          class="operator-layout__nav-item"
+          :aria-current="route.name === 'operator-regattas' ? 'page' : undefined"
+        >
           {{ t('navigation.regattas') }}
         </router-link>
         <router-link
           v-if="regattaId"
           :to="`/operator/regattas/${regattaId}/line-scan`"
           class="operator-layout__nav-item"
+          :aria-current="route.name === 'operator-line-scan' ? 'page' : undefined"
         >
           {{ t('navigation.line_scan') }}
         </router-link>
