@@ -15,7 +15,7 @@ const apiClient = createApiClient()
 const exportApi = createExportApi(apiClient)
 const { status: exportStatus, jobId, downloadUrl, error: exportError, startExport, resetState: resetExportState } = useExportJob(
   exportApi,
-  () => regattaId.value
+  regattaId
 )
 
 const regattaName = ref(`Regatta ${route.params.regattaId}`)
@@ -34,6 +34,7 @@ function resetMetadata() {
   regattaName.value = `Regatta ${regattaId.value}`
   drawRevision.value = 0
   resultsRevision.value = 0
+  regattaTimezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 }
 
 function applyRegattaMetadata(regatta) {
@@ -64,6 +65,12 @@ function applyRevisionMetadata(versions) {
   }
 }
 
+function fetchVersions() {
+  return fetch(`/public/regattas/${regattaId.value}/versions`, {
+    credentials: 'include'
+  })
+}
+
 async function loadRegattaMetadata() {
   resetMetadata()
   try {
@@ -79,9 +86,15 @@ async function loadRegattaMetadata() {
   }
 
   try {
-    const response = await fetch(`/public/regattas/${regattaId.value}/versions`, {
-      credentials: 'include'
-    })
+    let response = await fetchVersions()
+
+    if (response.status === 401 || response.status === 403) {
+      await fetch('/public/session', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      response = await fetchVersions()
+    }
 
     if (!response.ok || !isJsonResponse(response)) {
       return

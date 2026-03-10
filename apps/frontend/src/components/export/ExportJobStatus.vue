@@ -36,7 +36,7 @@
       >
         {{ t('common.download') }}
       </a>
-      <p data-testid="export-expiration-notice" class="export-job-status__expiration">
+      <p v-if="downloadUrl" data-testid="export-expiration-notice" class="export-job-status__expiration">
         {{ t('export.expiration_notice') }}
       </p>
       <button

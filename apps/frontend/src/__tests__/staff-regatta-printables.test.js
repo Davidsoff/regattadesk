@@ -129,6 +129,7 @@ describe('Staff regatta printables UX (issue #143)', () => {
     await wrapper.find('[data-testid="export-printables-button"]').trigger('click')
     await flushPromises()
 
+    expect(mockExportApi.requestPrintableExport).toHaveBeenCalledWith(REGATTA_ID)
     expect(wrapper.find('[data-testid="export-status-pending"]').exists()).toBe(true)
 
     await vi.runOnlyPendingTimersAsync()
@@ -200,5 +201,55 @@ describe('Staff regatta printables UX (issue #143)', () => {
     expect(downloadLink.exists()).toBe(true)
     expect(downloadLink.attributes('href')).toBe('/api/v1/jobs/job-regenerated/download')
     expect(mockExportApi.requestPrintableExport).toHaveBeenCalledTimes(2)
+  })
+
+  it('boots public versions via /public/session retry when the first attempt is unauthorized', async () => {
+    mockFetch.mockReset()
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: REGATTA_ID,
+            name: 'Spring Head',
+            draw_revision: 4,
+            results_revision: 2,
+            timezone: 'Europe/Amsterdam',
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            draw_revision: 7,
+            results_revision: 5,
+          }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        )
+      )
+
+    const wrapper = await mountAtPrintablesRoute()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="printables-header-preview"]').text()).toContain('Draw Version: v7')
+    expect(mockFetch.mock.calls[1][0]).toBe(`/public/regattas/${REGATTA_ID}/versions`)
+    expect(mockFetch.mock.calls[2][0]).toBe('/public/session')
+    expect(mockFetch.mock.calls[2][1]).toMatchObject({
+      method: 'POST',
+      credentials: 'include',
+    })
+    expect(mockFetch.mock.calls[3][0]).toBe(`/public/regattas/${REGATTA_ID}/versions`)
   })
 })
