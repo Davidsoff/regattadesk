@@ -4,12 +4,16 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
 import LineScanCapture from '../../components/operator/LineScanCapture.vue'
+import { useOfflineQueue } from '../../composables/useOfflineQueue'
 import { resolveOperatorDeviceId, resolveOperatorStation, resolveOperatorToken } from '../../operatorContext'
 import { setSelectedCaptureSessionId } from '../../operatorSessionSelection'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+// Offline queue state
+const { queueSize } = useOfflineQueue()
 
 const handoff = ref(null)
 const handoffPin = ref('')
@@ -298,6 +302,15 @@ watch(
       <span v-if="captureSessionId" class="operator-session-state">Session {{ captureSessionId }}</span>
     </div>
 
+    <!-- Offline queue indicator -->
+    <div
+      v-if="queueSize > 0"
+      data-testid="offline-queue-indicator"
+      class="offline-queue-indicator"
+    >
+      <span>{{ t('operator.line_scan.queued_operations', { count: queueSize }) }}</span>
+    </div>
+
     <!-- Capture Workspace -->
     <LineScanCapture
       v-if="isCaptureWorkspaceVisible && operatorToken && captureSessionId"
@@ -354,5 +367,13 @@ watch(
   display: flex;
   gap: var(--rd-space-2);
   align-items: center;
+}
+
+.offline-queue-indicator {
+  margin-top: var(--rd-space-2);
+  padding: var(--rd-space-2);
+  border: 1px solid var(--rd-color-warning, #e1b100);
+  background: var(--rd-color-warning-soft, #fff7d1);
+  font-size: 0.875rem;
 }
 </style>

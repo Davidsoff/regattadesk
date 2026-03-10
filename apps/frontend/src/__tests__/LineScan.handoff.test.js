@@ -40,12 +40,23 @@ function createTestI18n() {
           },
           line_scan: {
             title: 'Line Scan',
-            description: 'Capture line scan images and mark finish times'
+            description: 'Capture line scan images and mark finish times',
+            queued_operations: '{count} operation(s) queued'
           },
           capture: {
             title: 'Line Scan Capture',
             create_marker: 'Create Marker',
-            no_markers: 'No markers yet'
+            no_markers: 'No markers yet',
+            high_contrast_on: 'High Contrast: On',
+            high_contrast_off: 'High Contrast: Off',
+            session_status: 'Session Status',
+            session_status_refresh: 'Refresh',
+            session_status_loading: 'Loading...',
+            tile_status: 'Tile Status',
+            conflicts_pending_title: 'Conflicts Requiring Resolution',
+            conflict_keep_mine: 'Keep Mine',
+            conflict_use_server: 'Use Server',
+            conflict_detected: 'A conflict was detected.'
           }
         }
       }
