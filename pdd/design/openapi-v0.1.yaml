@@ -317,6 +317,7 @@ components:
         amount:
           type: number
           format: double
+          minimum: 0
     InvoiceResponse:
       type: object
       required:
@@ -349,7 +350,11 @@ components:
           type: string
         status:
           type: string
-          pattern: draft|sent|paid|cancelled
+          enum:
+          - draft
+          - sent
+          - paid
+          - cancelled
         generated_at:
           $ref: "#/components/schemas/Instant"
         sent_at:
@@ -359,10 +364,10 @@ components:
     InvoiceListResponse:
       type: object
       required:
-      - data
+      - invoices
       - pagination
       properties:
-        data:
+        invoices:
           type: array
           items:
             $ref: "#/components/schemas/InvoiceResponse"
@@ -377,8 +382,6 @@ components:
               type: string
     InvoiceGenerateRequest:
       type: object
-      required:
-      - club_ids
       properties:
         club_ids:
           type: array
@@ -398,7 +401,11 @@ components:
           $ref: "#/components/schemas/UUID"
         status:
           type: string
-          pattern: pending|running|completed|failed
+          enum:
+          - pending
+          - running
+          - completed
+          - failed
         invoice_ids:
           type: array
           items:
@@ -417,6 +424,7 @@ components:
         paid_by:
           type: string
           pattern: \S
+          maxLength: 255
         paid_at:
           $ref: "#/components/schemas/Instant"
         payment_reference:
@@ -1265,6 +1273,11 @@ paths:
         in: query
         schema:
           type: string
+          enum:
+          - draft
+          - sent
+          - paid
+          - cancelled
       responses:
         "200":
           description: OK
@@ -1353,7 +1366,7 @@ paths:
       summary: Get Invoice
       tags:
       - Invoice Resource
-  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark-paid:
+  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid:
     post:
       parameters:
       - name: regatta_id
