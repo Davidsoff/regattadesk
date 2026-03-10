@@ -5,38 +5,7 @@ import {
   getSelectedCaptureSessionId,
   setSelectedCaptureSessionId
 } from '../operatorSessionSelection'
-
-function installStorage() {
-  const values = new Map()
-  const storage = {
-    getItem(key) {
-      return values.has(key) ? values.get(key) : null
-    },
-    setItem(key, value) {
-      values.set(key, String(value))
-    },
-    removeItem(key) {
-      values.delete(key)
-    },
-    clear() {
-      values.clear()
-    }
-  }
-
-  if (globalThis.window) {
-    Object.defineProperty(globalThis.window, 'localStorage', {
-      value: storage,
-      configurable: true
-    })
-  }
-
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: storage,
-    configurable: true
-  })
-
-  return storage
-}
+import { installStorage } from './operatorTestUtils'
 
 describe('operatorSessionSelection', () => {
   beforeEach(() => {

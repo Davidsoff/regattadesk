@@ -1,42 +1,11 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import {
+  SELECTED_CAPTURE_SESSIONS_STORAGE_KEY,
+  installStorage,
+  mountOperatorRegattaHome
+} from './operatorTestUtils'
 import RegattaDetail from '../views/operator/RegattaDetail.vue'
-
-const SELECTED_CAPTURE_SESSIONS_STORAGE_KEY = 'rd_operator_selected_capture_sessions'
-
-function installStorage() {
-  const values = new Map()
-  const storage = {
-    getItem(key) {
-      return values.has(key) ? values.get(key) : null
-    },
-    setItem(key, value) {
-      values.set(key, String(value))
-    },
-    removeItem(key) {
-      values.delete(key)
-    },
-    clear() {
-      values.clear()
-    }
-  }
-
-  if (globalThis.window) {
-    Object.defineProperty(globalThis.window, 'localStorage', {
-      value: storage,
-      configurable: true
-    })
-  }
-
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: storage,
-    configurable: true
-  })
-
-  return storage
-}
 
 const listCaptureSessions = vi.fn()
 const createCaptureSession = vi.fn()
@@ -50,89 +19,6 @@ vi.mock('../api', () => ({
     closeCaptureSession
   }))
 }))
-
-function createTestI18n() {
-  return createI18n({
-    legacy: false,
-    locale: 'en',
-    messages: {
-      en: {
-        common: {
-          operator: 'Operator'
-        },
-        navigation: {
-          line_scan: 'Line Scan'
-        },
-        operator: {
-          regatta: {
-            title: 'Regatta',
-            id: 'Regatta ID',
-            token_status: 'Operator token: {token}',
-            no_token: 'Unavailable',
-            station_context: 'Station: {station}',
-            create_session: 'Create Capture Session',
-            loading_sessions: 'Loading capture sessions...',
-            create_failed: 'Failed to create capture session.',
-            close_failed: 'Failed to close capture session.',
-            errors: {
-              load_sessions_failed: 'Failed to load capture sessions.',
-              create_failed: 'Failed to create capture session.',
-              close_failed: 'Failed to close capture session.'
-            },
-            missing_block_scope: 'Operator token must include a block scope before starting a capture session.',
-            open_session: 'Open Session',
-            close_session: 'Close Session',
-            session_summary: '{station} · {session_type} · {state}',
-            sync_summary: 'Pending {pending_operations}, failed {failed_operations}',
-            sync_synced: 'Sync status: synced',
-            sync_pending: 'Sync status: pending ({reason})',
-            sync_pending_default: 'awaiting upload',
-            sync_attention: 'Sync status: attention required'
-          }
-        }
-      }
-    }
-  })
-}
-
-function createTestRouter() {
-  return createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      {
-        path: '/operator/regattas/:regattaId',
-        name: 'operator-regatta-home',
-        component: RegattaDetail
-      },
-      {
-        path: '/operator/regattas/:regattaId/sessions',
-        name: 'operator-regatta-sessions',
-        component: { template: '<div>Sessions</div>' }
-      },
-      {
-        path: '/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan',
-        name: 'operator-session-line-scan',
-        component: { template: '<div>Workspace</div>' }
-      }
-    ]
-  })
-}
-
-async function mountAtRegattaHome() {
-  const router = createTestRouter()
-  await router.push('/operator/regattas/regatta-138')
-  await router.isReady()
-
-  const wrapper = mount(RegattaDetail, {
-    global: {
-      plugins: [router, createTestI18n()]
-    }
-  })
-
-  await flushPromises()
-
-  return { router, wrapper }
-}
 
 describe('Operator regatta home for issue #138', () => {
   beforeEach(() => {
@@ -185,7 +71,7 @@ describe('Operator regatta home for issue #138', () => {
   })
 
   it('loads capture sessions and renders token status, station context, sync-state summary, and lifecycle controls', async () => {
-    const { wrapper } = await mountAtRegattaHome()
+    const { wrapper } = await mountOperatorRegattaHome(RegattaDetail)
 
     expect(listCaptureSessions).toHaveBeenCalledWith('regatta-138')
     expect(wrapper.find('[data-testid="operator-token-status"]').text()).toContain('token-138')
@@ -200,7 +86,7 @@ describe('Operator regatta home for issue #138', () => {
   })
 
   it('selects a capture session through normal navigation and persists the selected session by regatta', async () => {
-    const { router, wrapper } = await mountAtRegattaHome()
+    const { router, wrapper } = await mountOperatorRegattaHome(RegattaDetail)
 
     await wrapper.find('[data-testid="capture-session-select-session-138-a"]').trigger('click')
     await flushPromises()
@@ -214,7 +100,7 @@ describe('Operator regatta home for issue #138', () => {
   })
 
   it('creates a capture session and routes into the canonical session workspace', async () => {
-    const { router, wrapper } = await mountAtRegattaHome()
+    const { router, wrapper } = await mountOperatorRegattaHome(RegattaDetail)
 
     await wrapper.find('[data-testid="capture-session-create"]').trigger('click')
     await flushPromises()
@@ -240,7 +126,7 @@ describe('Operator regatta home for issue #138', () => {
       })
     )
 
-    const { router, wrapper } = await mountAtRegattaHome()
+    const { router, wrapper } = await mountOperatorRegattaHome(RegattaDetail)
 
     await wrapper.find('[data-testid="capture-session-close-session-138-a"]').trigger('click')
     await flushPromises()
@@ -280,7 +166,7 @@ describe('Operator regatta home for issue #138', () => {
         ]
       })
 
-    const { router, wrapper } = await mountAtRegattaHome()
+    const { router, wrapper } = await mountOperatorRegattaHome(RegattaDetail)
 
     await router.push('/operator/regattas/regatta-139')
     await flushPromises()

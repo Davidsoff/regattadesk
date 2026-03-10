@@ -1,38 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-const SELECTED_CAPTURE_SESSIONS_STORAGE_KEY = 'rd_operator_selected_capture_sessions'
-
-function installStorage() {
-  const values = new Map()
-  const storage = {
-    getItem(key) {
-      return values.has(key) ? values.get(key) : null
-    },
-    setItem(key, value) {
-      values.set(key, String(value))
-    },
-    removeItem(key) {
-      values.delete(key)
-    },
-    clear() {
-      values.clear()
-    }
-  }
-
-  if (globalThis.window) {
-    Object.defineProperty(globalThis.window, 'localStorage', {
-      value: storage,
-      configurable: true
-    })
-  }
-
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: storage,
-    configurable: true
-  })
-
-  return storage
-}
+import { SELECTED_CAPTURE_SESSIONS_STORAGE_KEY, installStorage } from './operatorTestUtils'
 
 async function loadRouter() {
   vi.resetModules()
