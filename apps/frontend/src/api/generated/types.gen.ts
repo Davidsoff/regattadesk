@@ -30,12 +30,75 @@ export type Cookie = {
     domain?: string;
 };
 
+export type ErrorBody = {
+    code?: string;
+    message?: string;
+    details?: {
+        [key: string]: unknown;
+    };
+};
+
+export type ErrorResponse = {
+    error?: ErrorBody;
+};
+
 export type HealthStatus = {
     status?: string;
     version?: string;
 };
 
 export type Instant = string;
+
+export type InvoiceEntryLineResponse = {
+    entry_id?: Uuid;
+    amount?: number;
+};
+
+export type InvoiceGenerateRequest = {
+    club_ids?: Array<string>;
+    idempotency_key?: string;
+};
+
+export type InvoiceGenerationJobResponse = {
+    job_id?: Uuid;
+    status?: 'pending' | 'running' | 'completed' | 'failed';
+    invoice_ids?: Array<string>;
+    error_message?: string;
+    created_at?: Instant;
+    completed_at?: Instant;
+};
+
+export type InvoiceListPaginationResponse = {
+    has_more?: boolean;
+    next_cursor?: string;
+};
+
+export type InvoiceListResponse = {
+    data?: Array<InvoiceResponse>;
+    pagination?: InvoiceListPaginationResponse;
+};
+
+export type InvoiceMarkPaidRequest = {
+    paid_by: string;
+    paid_at?: Instant;
+    payment_reference?: string;
+};
+
+export type InvoiceResponse = {
+    id?: Uuid;
+    regatta_id?: Uuid;
+    club_id?: Uuid;
+    invoice_number?: string;
+    entries?: Array<InvoiceEntryLineResponse>;
+    total_amount?: number;
+    currency?: string;
+    status?: 'draft' | 'sent' | 'paid' | 'cancelled';
+    generated_at?: Instant;
+    sent_at?: Instant;
+    paid_at?: Instant;
+    paid_by?: string;
+    payment_reference?: string;
+};
 
 export type LineScanManifestUpsertRequest = {
     capture_session_id: Uuid;
@@ -357,6 +420,157 @@ export type PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses = 
      */
     200: unknown;
 };
+
+export type GetApiV1RegattasByRegattaIdInvoicesData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        club_id?: Uuid;
+        cursor?: string;
+        limit?: number;
+        status?: 'draft' | 'sent' | 'paid' | 'cancelled';
+    };
+    url: '/api/v1/regattas/{regatta_id}/invoices';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesError = GetApiV1RegattasByRegattaIdInvoicesErrors[keyof GetApiV1RegattasByRegattaIdInvoicesErrors];
+
+export type GetApiV1RegattasByRegattaIdInvoicesResponses = {
+    /**
+     * OK
+     */
+    200: InvoiceListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesResponse = GetApiV1RegattasByRegattaIdInvoicesResponses[keyof GetApiV1RegattasByRegattaIdInvoicesResponses];
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateData = {
+    body: InvoiceGenerateRequest;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/generate';
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateError = PostApiV1RegattasByRegattaIdInvoicesGenerateErrors[keyof PostApiV1RegattasByRegattaIdInvoicesGenerateErrors];
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateResponses = {
+    /**
+     * Accepted
+     */
+    202: InvoiceGenerationJobResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateResponse = PostApiV1RegattasByRegattaIdInvoicesGenerateResponses[keyof PostApiV1RegattasByRegattaIdInvoicesGenerateResponses];
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdData = {
+    body?: never;
+    path: {
+        job_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/jobs/{job_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdError = GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdErrors[keyof GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdErrors];
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses = {
+    /**
+     * OK
+     */
+    200: InvoiceGenerationJobResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponse = GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses[keyof GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses];
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdData = {
+    body?: never;
+    path: {
+        invoice_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/{invoice_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdError = GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdErrors[keyof GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdErrors];
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses = {
+    /**
+     * OK
+     */
+    200: InvoiceResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponse = GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses[keyof GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses];
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidData = {
+    body: InvoiceMarkPaidRequest;
+    path: {
+        invoice_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid';
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidError = PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors[keyof PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors];
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses = {
+    /**
+     * OK
+     */
+    200: InvoiceResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponse = PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses[keyof PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses];
 
 export type PostApiV1RegattasByRegattaIdLineScanManifestsData = {
     body: LineScanManifestUpsertRequest;

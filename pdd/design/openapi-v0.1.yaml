@@ -54,6 +54,21 @@ components:
           type: string
         domain:
           type: string
+    ErrorBody:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: {}
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorBody"
     HealthStatus:
       type: object
       properties:
@@ -66,6 +81,119 @@ components:
       format: date-time
       examples:
       - 2022-03-10T16:15:50Z
+    InvoiceEntryLineResponse:
+      type: object
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        amount:
+          type: number
+          minimum: 0
+    InvoiceGenerateRequest:
+      type: object
+      properties:
+        club_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+          minItems: 1
+        idempotency_key:
+          type: string
+          maxLength: 128
+    InvoiceGenerationJobResponse:
+      type: object
+      properties:
+        job_id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+          - pending
+          - running
+          - completed
+          - failed
+        invoice_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+            pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+        error_message:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/Instant"
+        completed_at:
+          $ref: "#/components/schemas/Instant"
+    InvoiceListPaginationResponse:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    InvoiceListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvoiceResponse"
+        pagination:
+          $ref: "#/components/schemas/InvoiceListPaginationResponse"
+    InvoiceMarkPaidRequest:
+      type: object
+      required:
+      - paid_by
+      properties:
+        paid_by:
+          type: string
+          pattern: .*\S.*
+          maxLength: 255
+        paid_at:
+          $ref: "#/components/schemas/Instant"
+        payment_reference:
+          type: string
+          maxLength: 255
+    InvoiceResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        invoice_number:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvoiceEntryLineResponse"
+        total_amount:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        status:
+          type: string
+          enum:
+          - draft
+          - sent
+          - paid
+          - cancelled
+        generated_at:
+          $ref: "#/components/schemas/Instant"
+        sent_at:
+          $ref: "#/components/schemas/Instant"
+        paid_at:
+          $ref: "#/components/schemas/Instant"
+        paid_by:
+          type: string
+        payment_reference:
+          type: string
     LineScanManifestUpsertRequest:
       type: object
       required:
@@ -568,6 +696,189 @@ paths:
       summary: Get Entry Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/invoices:
+    get:
+      summary: List invoices
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: club_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 20
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - draft
+          - sent
+          - paid
+          - cancelled
+        name: status
+        in: query
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Invoice Resource
+  /api/v1/regattas/{regatta_id}/invoices/generate:
+    post:
+      summary: Generate invoices
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvoiceGenerateRequest"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceGenerationJobResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Invoice Resource
+  /api/v1/regattas/{regatta_id}/invoices/jobs/{job_id}:
+    get:
+      summary: Get invoice generation job
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceGenerationJobResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Invoice Resource
+  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}:
+    get:
+      summary: Get invoice
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Invoice Resource
+  /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid:
+    post:
+      summary: Mark invoice paid
+      parameters:
+      - name: invoice_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvoiceMarkPaidRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Invoice Resource
   /api/v1/regattas/{regatta_id}/line_scan/manifests:
     post:
       parameters:

@@ -202,6 +202,13 @@ services:
       - "traefik.http.routers.backend-athletes.middlewares=authelia@docker"
       - "traefik.http.services.backend-athletes.loadbalancer.server.port=8080"
       - "traefik.http.services.backend-athletes.loadbalancer.serverstransport=default-transport@file"
+      # Finance endpoints under /api/v1/regattas with ForwardAuth and staff hardening
+      - "traefik.http.routers.backend-finance.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && (PathRegexp(`/api/v1/regattas/[^/]+/entries/[^/]+/payment_status$$`) || PathRegexp(`/api/v1/regattas/[^/]+/clubs/[^/]+/payment_status$$`) || PathRegexp(`/api/v1/regattas/[^/]+/payments/mark_bulk$$`) || PathRegexp(`/api/v1/regattas/[^/]+/invoices(/.*)?$$`))"
+      - "traefik.http.routers.backend-finance.entrypoints=web,websecure"
+      - "traefik.http.routers.backend-finance.tls=true"
+      - "traefik.http.routers.backend-finance.middlewares=staff-chain@file,authelia@docker"
+      - "traefik.http.services.backend-finance.loadbalancer.server.port=8080"
+      - "traefik.http.services.backend-finance.loadbalancer.serverstransport=default-transport@file"
       # Operator endpoints with ForwardAuth and edge hardening (BC09-002)
       # Note: $$ escapes to single $ in Docker Compose YAML for regex end-of-string anchor
       - "traefik.http.routers.backend-operator.rule=Host(`${DOMAIN:-localhost.local}`) && PathPrefix(`/api/v1/regattas`) && PathRegexp(`/api/v1/regattas/[^/]+/operator(/.*)?$$`)"
