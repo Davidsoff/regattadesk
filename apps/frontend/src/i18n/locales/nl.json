@@ -141,11 +141,72 @@
     "setup": "Instelling",
     "draw": "Loting",
     "finance": "Financiën",
+    "operator_access": "Operator toegang",
     "blocks": "Blokken",
     "printables": "Afdrukken",
     "line_scan": "Fotolijn",
     "schedule": "Schema",
     "results": "Resultaten"
+  },
+  "breadcrumb": {
+    "regattas": "Regatta's",
+    "operator_access": "Operator toegang"
+  },
+  "operator_access": {
+    "title": "Operator toegang",
+    "description": "Beheer operatortokens, PDF-terugvalinstructies en staff-zicht op station-overdrachten voor deze regatta.",
+    "authorization_denied": "Je bent niet gemachtigd om operator-toegang voor deze regatta aan te maken, in te trekken of de PIN te tonen.",
+    "messages": {
+      "token_created": "Operatortoken aangemaakt.",
+      "token_revoked": "Operatortoken ingetrokken.",
+      "token_exported": "Operatortoken-pdf voorbereid: {filename}"
+    },
+    "errors": {
+      "load_tokens": "Laden van operatortokens mislukt.",
+      "create_token": "Aanmaken van operatortoken mislukt.",
+      "revoke_token": "Intrekken van operatortoken mislukt.",
+      "export_token": "Exporteren van operatortoken-pdf mislukt.",
+      "load_handoff": "Laden van stationsoverdracht mislukt.",
+      "reveal_pin": "Tonen van overdrachts-PIN mislukt."
+    },
+    "confirmation": {
+      "title": "Bevestig tokenactie",
+      "export": "PDF exporteren voor station {station}?",
+      "revoke": "Operator-toegang intrekken voor station {station}?"
+    },
+    "create": {
+      "title": "Operatortoken aanmaken",
+      "station": "Station",
+      "block_id": "Blok-ID",
+      "valid_from": "Geldig vanaf",
+      "valid_until": "Geldig tot",
+      "submit": "Token aanmaken"
+    },
+    "tokens": {
+      "title": "Uitgegeven tokens",
+      "station": "Station",
+      "validity": "Geldigheid",
+      "status": "Status",
+      "actions": "Acties",
+      "active": "Actief",
+      "revoked": "Ingetrokken",
+      "export_pdf": "PDF exporteren",
+      "revoke": "Intrekken",
+      "fallback_instructions": "Terugval: als de QR-scan faalt, open de operator-url handmatig en gebruik de station-PIN uit de geëxporteerde pdf.",
+      "validity_window": "Geldig: {start} tot {end}"
+    },
+    "handoff": {
+      "title": "Overdrachtsinzicht",
+      "description": "Bekijk een stationsoverdracht op id en toon de PIN op afstand wanneer de backend het admin-terugvalendpoint ondersteunt.",
+      "lookup_label": "Overdracht-ID",
+      "lookup_submit": "Overdracht laden",
+      "station": "Station",
+      "status": "Status",
+      "requesting_device": "Aanvragend apparaat",
+      "expires_at": "Verloopt om",
+      "admin_reveal_pin": "PIN tonen",
+      "revealed_pin": "PIN: {pin}"
+    }
   },
   "staff": {
     "regattas": {

@@ -30,6 +30,11 @@ function createTestRouter(extraRoutes = []) {
         component: { template: '<div>Staff Finance</div>' },
       },
       {
+        path: '/staff/regattas/:regattaId/operator-access',
+        name: 'staff-regatta-operator-access',
+        component: { template: '<div>Staff Operator Access</div>' },
+      },
+      {
         path: '/staff/regattas/:regattaId/blocks',
         name: 'staff-blocks-management',
         component: { template: '<div>Staff Blocks</div>' },
@@ -260,12 +265,14 @@ describe('Layout Components', () => {
     })
 
     it('renders subnav with draw, finance, blocks, and printables links inside a regatta', async () => {
+  it('renders subnav with draw, finance, operator access, blocks, and printables links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
       expect(links).toContain('/staff/regattas/test-id-123')
       expect(links).toContain('/staff/regattas/test-id-123/draw')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
+      expect(links).toContain('/staff/regattas/test-id-123/operator-access')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
       expect(links).toContain('/staff/regattas/test-id-123/printables')
     })
@@ -280,6 +287,14 @@ describe('Layout Components', () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
       const navItems = wrapper.findAll('.staff-layout__nav-item').map((n) => n.attributes('href'))
       expect(navItems).toContain('/staff/rulesets')
+    })
+
+    it('renders a shared breadcrumb trail for operator access routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/operator-access', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Operator Access')
     })
 
     it('sets aria-current on the active primary nav item', async () => {

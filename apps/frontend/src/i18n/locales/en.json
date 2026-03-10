@@ -141,11 +141,72 @@
     "setup": "Setup",
     "draw": "Draw",
     "finance": "Finance",
+    "operator_access": "Operator Access",
     "blocks": "Blocks",
     "printables": "Printables",
     "line_scan": "Line Scan",
     "schedule": "Schedule",
     "results": "Results"
+  },
+  "breadcrumb": {
+    "regattas": "Regattas",
+    "operator_access": "Operator Access"
+  },
+  "operator_access": {
+    "title": "Operator access",
+    "description": "Manage operator tokens, PDF fallback instructions, and staff-visible handoff oversight for this regatta.",
+    "authorization_denied": "You are not authorized to create, revoke, or reveal operator access for this regatta.",
+    "messages": {
+      "token_created": "Operator token created.",
+      "token_revoked": "Operator token revoked.",
+      "token_exported": "Operator token PDF prepared: {filename}"
+    },
+    "errors": {
+      "load_tokens": "Failed to load operator tokens.",
+      "create_token": "Failed to create operator token.",
+      "revoke_token": "Failed to revoke operator token.",
+      "export_token": "Failed to export operator token PDF.",
+      "load_handoff": "Failed to load station handoff.",
+      "reveal_pin": "Failed to reveal station handoff PIN."
+    },
+    "confirmation": {
+      "title": "Confirm token action",
+      "export": "Export PDF for station {station}?",
+      "revoke": "Revoke operator access for station {station}?"
+    },
+    "create": {
+      "title": "Create operator token",
+      "station": "Station",
+      "block_id": "Block ID",
+      "valid_from": "Valid from",
+      "valid_until": "Valid until",
+      "submit": "Create token"
+    },
+    "tokens": {
+      "title": "Issued tokens",
+      "station": "Station",
+      "validity": "Validity",
+      "status": "Status",
+      "actions": "Actions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "export_pdf": "Export PDF",
+      "revoke": "Revoke",
+      "fallback_instructions": "Fallback: if QR scan fails, open the operator access URL manually and provide the station PIN from the exported PDF.",
+      "validity_window": "Valid: {start} to {end}"
+    },
+    "handoff": {
+      "title": "Handoff oversight",
+      "description": "Inspect a station handoff by id and reveal the PIN remotely when the backend supports the admin fallback endpoint.",
+      "lookup_label": "Handoff ID",
+      "lookup_submit": "Load handoff",
+      "station": "Station",
+      "status": "Status",
+      "requesting_device": "Requesting device",
+      "expires_at": "Expires at",
+      "admin_reveal_pin": "Reveal PIN",
+      "revealed_pin": "PIN: {pin}"
+    }
   },
   "staff": {
     "regattas": {
