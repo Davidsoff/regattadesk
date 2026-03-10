@@ -1,5 +1,9 @@
 export const SELECTED_CAPTURE_SESSIONS_STORAGE_KEY = 'rd_operator_selected_capture_sessions'
 
+function normalizeStorageKeyPart(value) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
+}
+
 function getStorage() {
   const storage = globalThis.window?.localStorage ?? globalThis.localStorage
   if (
@@ -32,44 +36,42 @@ function writeSelectionMap(selectionMap) {
 }
 
 export function getSelectedCaptureSessionId(regattaId) {
-  if (typeof regattaId !== 'string' || regattaId.trim().length === 0) {
+  const normalizedRegattaId = normalizeStorageKeyPart(regattaId)
+  if (!normalizedRegattaId) {
     return null
   }
 
-  const sessionId = readSelectionMap()[regattaId]
-  return typeof sessionId === 'string' && sessionId.trim().length > 0 ? sessionId : null
+  return normalizeStorageKeyPart(readSelectionMap()[normalizedRegattaId])
 }
 
 export function setSelectedCaptureSessionId(regattaId, captureSessionId) {
-  if (
-    typeof regattaId !== 'string' ||
-    regattaId.trim().length === 0 ||
-    typeof captureSessionId !== 'string' ||
-    captureSessionId.trim().length === 0
-  ) {
+  const normalizedRegattaId = normalizeStorageKeyPart(regattaId)
+  const normalizedCaptureSessionId = normalizeStorageKeyPart(captureSessionId)
+  if (!normalizedRegattaId || !normalizedCaptureSessionId) {
     return
   }
 
   const selectionMap = readSelectionMap()
-  selectionMap[regattaId] = captureSessionId
+  selectionMap[normalizedRegattaId] = normalizedCaptureSessionId
   writeSelectionMap(selectionMap)
 }
 
 export function clearSelectedCaptureSessionId(regattaId, captureSessionId) {
-  if (typeof regattaId !== 'string' || regattaId.trim().length === 0) {
+  const normalizedRegattaId = normalizeStorageKeyPart(regattaId)
+  if (!normalizedRegattaId) {
     return
   }
 
   const selectionMap = readSelectionMap()
+  const normalizedCaptureSessionId = normalizeStorageKeyPart(captureSessionId)
   if (
-    typeof captureSessionId === 'string' &&
-    captureSessionId.trim().length > 0 &&
-    selectionMap[regattaId] !== captureSessionId
+    normalizedCaptureSessionId &&
+    normalizeStorageKeyPart(selectionMap[normalizedRegattaId]) !== normalizedCaptureSessionId
   ) {
     return
   }
 
-  delete selectionMap[regattaId]
+  delete selectionMap[normalizedRegattaId]
   writeSelectionMap(selectionMap)
 }
 

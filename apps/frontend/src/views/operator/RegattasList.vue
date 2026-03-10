@@ -6,6 +6,14 @@ import { resolveOperatorStation, resolveOperatorToken } from '../../operatorCont
 const { t } = useI18n()
 const operatorToken = computed(() => resolveOperatorToken())
 const operatorStation = computed(() => resolveOperatorStation())
+const maskedOperatorToken = computed(() => {
+  const token = operatorToken.value
+  if (!token) {
+    return ''
+  }
+
+  return token.length <= 4 ? `••••${token}` : `••••${token.slice(-4)}`
+})
 </script>
 
 <template>
@@ -13,7 +21,7 @@ const operatorStation = computed(() => resolveOperatorStation())
     <h2>{{ t('operator.regattas.title') }}</h2>
     <p>{{ t('operator.regattas.description') }}</p>
     <p v-if="operatorToken" class="operator-regattas-list__status">
-      {{ t('operator.regattas.token_status', { token: operatorToken, station: operatorStation }) }}
+      {{ t('operator.regattas.token_status', { token: maskedOperatorToken, station: operatorStation }) }}
     </p>
     <p class="operator-regattas-list__hint">{{ t('operator.regattas.access_hint') }}</p>
   </div>

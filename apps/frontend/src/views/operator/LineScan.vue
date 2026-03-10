@@ -187,7 +187,7 @@ async function completeHandoff() {
     applyAccessModeFromResponse(response)
     if (typeof response?.capture_session_id === 'string' && response.capture_session_id.trim()) {
       setSelectedCaptureSessionId(String(route.params.regattaId), response.capture_session_id.trim())
-      router.replace({
+      await router.replace({
         name: 'operator-session-line-scan',
         params: {
           regattaId: String(route.params.regattaId),

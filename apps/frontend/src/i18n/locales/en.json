@@ -413,6 +413,11 @@
       "create_session": "Create Capture Session",
       "create_failed": "Failed to create capture session.",
       "close_failed": "Failed to close capture session.",
+      "errors": {
+        "load_sessions_failed": "Failed to load capture sessions.",
+        "create_failed": "Failed to create capture session.",
+        "close_failed": "Failed to close capture session."
+      },
       "missing_block_scope": "Operator token must include a block scope before starting a capture session.",
       "loading_sessions": "Loading capture sessions...",
       "open_session": "Open Session",

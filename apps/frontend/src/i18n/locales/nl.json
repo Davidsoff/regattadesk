@@ -413,6 +413,11 @@
       "create_session": "Opnamesessie maken",
       "create_failed": "Opnamesessie maken mislukt.",
       "close_failed": "Opnamesessie sluiten mislukt.",
+      "errors": {
+        "load_sessions_failed": "Opnamesessies laden mislukt.",
+        "create_failed": "Opnamesessie maken mislukt.",
+        "close_failed": "Opnamesessie sluiten mislukt."
+      },
       "missing_block_scope": "Het operator-token moet een blokscope bevatten voordat een opnamesessie kan starten.",
       "loading_sessions": "Opnamesessies laden...",
       "open_session": "Sessie openen",

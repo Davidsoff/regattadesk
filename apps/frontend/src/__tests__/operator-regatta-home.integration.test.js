@@ -68,6 +68,11 @@ function createTestI18n() {
             loading_sessions: 'Loading capture sessions...',
             create_failed: 'Failed to create capture session.',
             close_failed: 'Failed to close capture session.',
+            errors: {
+              load_sessions_failed: 'Failed to load capture sessions.',
+              create_failed: 'Failed to create capture session.',
+              close_failed: 'Failed to close capture session.'
+            },
             open_session: 'Open Session',
             close_session: 'Close Session',
             session_summary: '{station} · {session_type} · {state}',

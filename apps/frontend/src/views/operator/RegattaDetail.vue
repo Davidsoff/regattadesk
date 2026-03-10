@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { createApiClient, createOperatorApi } from '../../api'
@@ -49,8 +49,7 @@ async function loadCaptureSessions() {
   try {
     captureSessions.value = normalizeCaptureSessionList(await operatorApi.listCaptureSessions(regattaId.value))
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to load capture sessions.'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.regatta.errors.load_sessions_failed')
   } finally {
     isLoading.value = false
   }
@@ -87,8 +86,7 @@ async function createCaptureSession() {
     captureSessions.value = [normalizedSession, ...captureSessions.value]
     await openCaptureSession(normalizedSession.id)
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : t('operator.regatta.create_failed')
+    errorMessage.value = error instanceof Error ? error.message : t('operator.regatta.errors.create_failed')
   }
 }
 
@@ -113,14 +111,17 @@ async function closeCaptureSession(captureSessionId) {
 
     await router.push(buildOperatorSessionsPath(regattaId.value))
   } catch (error) {
-    errorMessage.value =
-      error instanceof Error ? error.message : t('operator.regatta.close_failed')
+    errorMessage.value = error instanceof Error ? error.message : t('operator.regatta.errors.close_failed')
   }
 }
 
-onMounted(() => {
-  loadCaptureSessions()
-})
+watch(
+  () => regattaId.value,
+  () => {
+    loadCaptureSessions()
+  },
+  { immediate: true }
+)
 </script>
 
 <template>

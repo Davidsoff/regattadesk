@@ -74,6 +74,11 @@ function createTestI18n() {
             loading_sessions: 'Loading capture sessions...',
             create_failed: 'Failed to create capture session.',
             close_failed: 'Failed to close capture session.',
+            errors: {
+              load_sessions_failed: 'Failed to load capture sessions.',
+              create_failed: 'Failed to create capture session.',
+              close_failed: 'Failed to close capture session.'
+            },
             missing_block_scope: 'Operator token must include a block scope before starting a capture session.',
             open_session: 'Open Session',
             close_session: 'Close Session',
@@ -246,5 +251,43 @@ describe('Operator regatta home for issue #138', () => {
       expect.any(Object)
     )
     expect(router.currentRoute.value.fullPath).toBe('/operator/regattas/regatta-138/sessions')
+  })
+
+  it('reloads capture sessions when the route regatta changes on the same component instance', async () => {
+    listCaptureSessions
+      .mockResolvedValueOnce({
+        capture_sessions: [
+          {
+            capture_session_id: 'session-138-a',
+            block_id: 'block-138',
+            station: 'finish-line',
+            session_type: 'finish',
+            state: 'open',
+            is_synced: true
+          }
+        ]
+      })
+      .mockResolvedValueOnce({
+        capture_sessions: [
+          {
+            capture_session_id: 'session-139-a',
+            block_id: 'block-139',
+            station: 'finish-line',
+            session_type: 'finish',
+            state: 'open',
+            is_synced: true
+          }
+        ]
+      })
+
+    const { router, wrapper } = await mountAtRegattaHome()
+
+    await router.push('/operator/regattas/regatta-139')
+    await flushPromises()
+
+    expect(listCaptureSessions).toHaveBeenNthCalledWith(1, 'regatta-138')
+    expect(listCaptureSessions).toHaveBeenNthCalledWith(2, 'regatta-139')
+    expect(wrapper.text()).toContain('session-139-a')
+    expect(wrapper.text()).not.toContain('session-138-a')
   })
 })
