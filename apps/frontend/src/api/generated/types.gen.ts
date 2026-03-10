@@ -36,35 +36,35 @@ export type CaptureSessionCreateRequest = {
     fps: number;
 };
 
+export type CaptureSessionListResponse = {
+    capture_sessions?: Array<CaptureSessionResponse>;
+};
+
+export type CaptureSessionResponse = {
+    capture_session_id?: Uuid;
+    regatta_id?: Uuid;
+    block_id?: Uuid;
+    station?: string;
+    device_id?: string;
+    session_type?: string;
+    state?: string;
+    server_time_at_start?: Instant;
+    device_monotonic_offset_ms?: number;
+    fps?: number;
+    is_synced?: boolean;
+    drift_exceeded_threshold?: boolean;
+    unsynced_reason?: string;
+    closed_at?: Instant;
+    close_reason?: string;
+    created_at?: Instant;
+    updated_at?: Instant;
+};
+
 export type CaptureSessionSyncStateRequest = {
     is_synced: boolean;
     drift_exceeded_threshold: boolean;
     unsynced_reason?: string;
     observed_at?: Instant;
-};
-
-export type CaptureSessionResponse = {
-    capture_session_id: Uuid;
-    regatta_id: Uuid;
-    block_id: Uuid;
-    station: string;
-    device_id: string;
-    session_type: 'start' | 'finish';
-    state: 'open' | 'closed';
-    server_time_at_start: Instant;
-    device_monotonic_offset_ms?: number;
-    fps: number;
-    is_synced: boolean;
-    drift_exceeded_threshold: boolean;
-    unsynced_reason?: string;
-    closed_at?: Instant;
-    close_reason?: string;
-    created_at: Instant;
-    updated_at: Instant;
-};
-
-export type CaptureSessionListResponse = {
-    capture_sessions: Array<CaptureSessionResponse>;
 };
 
 export type Cookie = {
@@ -726,8 +726,10 @@ export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors = {
     /**
      * Unauthorized
      */
-    401: unknown;
+    401: ErrorResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsError = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors];
 
 export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses = {
     /**
@@ -754,12 +756,14 @@ export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors = {
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
     /**
      * Unauthorized
      */
-    401: unknown;
+    401: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses = {
     /**
@@ -788,12 +792,14 @@ export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionId
     /**
      * Unauthorized
      */
-    401: unknown;
+    401: ErrorResponse;
     /**
      * Not Found
      */
-    404: unknown;
+    404: ErrorResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdError = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors];
 
 export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses = {
     /**
@@ -821,20 +827,22 @@ export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionI
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
     /**
      * Unauthorized
      */
-    401: unknown;
+    401: ErrorResponse;
     /**
      * Not Found
      */
-    404: unknown;
+    404: ErrorResponse;
     /**
      * Conflict
      */
-    409: unknown;
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses = {
     /**
@@ -862,20 +870,22 @@ export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionI
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
     /**
      * Unauthorized
      */
-    401: unknown;
+    401: ErrorResponse;
     /**
      * Not Found
      */
-    404: unknown;
+    404: ErrorResponse;
     /**
      * Conflict
      */
-    409: unknown;
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses = {
     /**

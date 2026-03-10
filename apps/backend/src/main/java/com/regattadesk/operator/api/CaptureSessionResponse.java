@@ -3,6 +3,7 @@ package com.regattadesk.operator.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.operator.CaptureSession;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import java.util.UUID;
 /**
  * Response DTO for a single capture session.
  */
+@Schema(name = "CaptureSessionResponse")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CaptureSessionResponse {
 

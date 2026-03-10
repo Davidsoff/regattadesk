@@ -1,12 +1,14 @@
 package com.regattadesk.operator.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
 
 /**
  * Response DTO wrapping a list of capture sessions.
  */
+@Schema(name = "CaptureSessionListResponse")
 public class CaptureSessionListResponse {
 
     @JsonProperty("capture_sessions")

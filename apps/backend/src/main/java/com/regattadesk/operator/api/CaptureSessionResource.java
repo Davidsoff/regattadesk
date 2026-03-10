@@ -11,6 +11,11 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +61,15 @@ public class CaptureSessionResource {
      * <p>Auth: OperatorTokenAuth only — requires {@code X-Operator-Token} header.
      */
     @POST
+    @Operation(summary = "Start Session")
+    @APIResponses({
+            @APIResponse(responseCode = "201", description = "Created",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionResponse.class))),
+            @APIResponse(responseCode = "400", description = "Bad Request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response startSession(
             @PathParam("regatta_id") UUID regattaId,
             @HeaderParam("X-Operator-Token") String operatorToken,
@@ -110,6 +124,13 @@ public class CaptureSessionResource {
      * </ul>
      */
     @GET
+    @Operation(summary = "List Sessions")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionListResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response listSessions(
             @PathParam("regatta_id") UUID regattaId,
             @HeaderParam("X-Operator-Token") String operatorToken,
@@ -159,6 +180,15 @@ public class CaptureSessionResource {
      */
     @GET
     @Path("/{capture_session_id}")
+    @Operation(summary = "Get Session")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Not Found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response getSession(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("capture_session_id") UUID captureSessionId,
@@ -186,6 +216,19 @@ public class CaptureSessionResource {
      */
     @POST
     @Path("/{capture_session_id}/sync_state")
+    @Operation(summary = "Update Sync State")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionResponse.class))),
+            @APIResponse(responseCode = "400", description = "Bad Request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Not Found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "409", description = "Conflict",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response updateSyncState(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("capture_session_id") UUID captureSessionId,
@@ -240,6 +283,19 @@ public class CaptureSessionResource {
      */
     @POST
     @Path("/{capture_session_id}/close")
+    @Operation(summary = "Close Session")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionResponse.class))),
+            @APIResponse(responseCode = "400", description = "Bad Request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Not Found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "409", description = "Conflict",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response closeSession(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("capture_session_id") UUID captureSessionId,

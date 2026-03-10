@@ -74,36 +74,15 @@ components:
           type: integer
           format: int32
           minimum: 1
-    CaptureSessionSyncStateRequest:
+    CaptureSessionListResponse:
       type: object
-      required:
-      - is_synced
-      - drift_exceeded_threshold
       properties:
-        is_synced:
-          type: boolean
-        drift_exceeded_threshold:
-          type: boolean
-        unsynced_reason:
-          type: string
-        observed_at:
-          $ref: "#/components/schemas/Instant"
+        capture_sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaptureSessionResponse"
     CaptureSessionResponse:
       type: object
-      required:
-      - capture_session_id
-      - regatta_id
-      - block_id
-      - station
-      - device_id
-      - session_type
-      - state
-      - server_time_at_start
-      - fps
-      - is_synced
-      - drift_exceeded_threshold
-      - created_at
-      - updated_at
       properties:
         capture_session_id:
           $ref: "#/components/schemas/UUID"
@@ -117,14 +96,8 @@ components:
           type: string
         session_type:
           type: string
-          enum:
-          - start
-          - finish
         state:
           type: string
-          enum:
-          - open
-          - closed
         server_time_at_start:
           $ref: "#/components/schemas/Instant"
         device_monotonic_offset_ms:
@@ -133,7 +106,6 @@ components:
         fps:
           type: integer
           format: int32
-          minimum: 1
         is_synced:
           type: boolean
         drift_exceeded_threshold:
@@ -148,15 +120,20 @@ components:
           $ref: "#/components/schemas/Instant"
         updated_at:
           $ref: "#/components/schemas/Instant"
-    CaptureSessionListResponse:
+    CaptureSessionSyncStateRequest:
       type: object
       required:
-      - capture_sessions
+      - is_synced
+      - drift_exceeded_threshold
       properties:
-        capture_sessions:
-          type: array
-          items:
-            $ref: "#/components/schemas/CaptureSessionResponse"
+        is_synced:
+          type: boolean
+        drift_exceeded_threshold:
+          type: boolean
+        unsynced_reason:
+          type: string
+        observed_at:
+          $ref: "#/components/schemas/Instant"
     Cookie:
       type: object
       properties:
@@ -1124,6 +1101,7 @@ paths:
       - Line Scan Tile Resource
   /api/v1/regattas/{regatta_id}/operator/capture_sessions:
     post:
+      summary: Start Session
       parameters:
       - name: regatta_id
         in: path
@@ -1149,12 +1127,20 @@ paths:
                 $ref: "#/components/schemas/CaptureSessionResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
-      summary: Start Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Capture Session Resource
     get:
+      summary: List Sessions
       parameters:
       - name: regatta_id
         in: path
@@ -1190,11 +1176,15 @@ paths:
                 $ref: "#/components/schemas/CaptureSessionListResponse"
         "401":
           description: Unauthorized
-      summary: List Sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Capture Session Resource
   /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}:
     get:
+      summary: Get Session
       parameters:
       - name: capture_session_id
         in: path
@@ -1223,13 +1213,21 @@ paths:
                 $ref: "#/components/schemas/CaptureSessionResponse"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not Found
-      summary: Get Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Capture Session Resource
   /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close:
     post:
+      summary: Close Session
       parameters:
       - name: capture_session_id
         in: path
@@ -1260,17 +1258,33 @@ paths:
                 $ref: "#/components/schemas/CaptureSessionResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: Conflict
-      summary: Close Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Capture Session Resource
   /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state:
     post:
+      summary: Update Sync State
       parameters:
       - name: capture_session_id
         in: path
@@ -1301,13 +1315,28 @@ paths:
                 $ref: "#/components/schemas/CaptureSessionResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: Conflict
-      summary: Update Sync State
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Capture Session Resource
   /api/v1/regattas/{regatta_id}/operator/markers:
