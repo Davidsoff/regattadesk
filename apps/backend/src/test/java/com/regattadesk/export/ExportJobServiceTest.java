@@ -3,13 +3,13 @@ package com.regattadesk.export;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,15 +29,18 @@ class ExportJobServiceTest {
     private ExportJobRepository repository;
     private ExportRegattaRepository regattaRepository;
     private ExportJobService service;
+    private ExecutorService executorService;
 
     @BeforeEach
     void setUp() {
         repository = mock(ExportJobRepository.class);
         regattaRepository = mock(ExportRegattaRepository.class);
+        executorService = mock(ExecutorService.class);
         service = new ExportJobService();
         service.repository = repository;
         service.regattaRepository = regattaRepository;
         service.clock = FIXED_CLOCK;
+        service.executorService = executorService;
     }
 
     // -------------------------------------------------------------------------
@@ -73,6 +76,14 @@ class ExportJobServiceTest {
     }
 
     @Test
+    void createJob_requiresRequestedBy() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.createJob(UUID.randomUUID(), null));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.createJob(UUID.randomUUID(), "   "));
+    }
+
+    @Test
     void createJob_propagatesRepositoryException() throws SQLException {
         doThrow(new SQLException("DB error")).when(repository).save(any());
         assertThrows(ExportJobException.class,
@@ -89,6 +100,7 @@ class ExportJobServiceTest {
         UUID jobId = UUID.randomUUID();
         ExportJob pendingJob = pendingJob(jobId, regattaId);
 
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(true);
         when(repository.findById(jobId)).thenReturn(Optional.of(pendingJob));
         when(regattaRepository.findMetadata(regattaId)).thenReturn(Optional.empty());
 
@@ -115,6 +127,7 @@ class ExportJobServiceTest {
         UUID jobId = UUID.randomUUID();
         ExportJob pendingJob = pendingJob(jobId, regattaId);
 
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(true);
         when(repository.findById(jobId))
                 .thenReturn(Optional.of(pendingJob))
                 // second call (in catch) should not be needed on happy path
@@ -144,6 +157,7 @@ class ExportJobServiceTest {
         UUID jobId = UUID.randomUUID();
         ExportJob pendingJob = pendingJob(jobId, regattaId);
 
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(true);
         when(repository.findById(jobId)).thenReturn(Optional.of(pendingJob));
         when(regattaRepository.findMetadata(regattaId))
                 .thenReturn(Optional.of(new ExportRegattaRepository.RegattaMetadata(
@@ -157,9 +171,7 @@ class ExportJobServiceTest {
 
         service.processJob(jobId);
 
-        assertTrue(statusSequence.size() >= 2,
-                "Should have at least PROCESSING and COMPLETED updates");
-        assertEquals(ExportJobStatus.PROCESSING, statusSequence.get(0));
+        assertFalse(statusSequence.isEmpty(), "Should write at least one final update");
         assertEquals(ExportJobStatus.COMPLETED, statusSequence.get(statusSequence.size() - 1));
     }
 
@@ -170,11 +182,12 @@ class ExportJobServiceTest {
     @Test
     void processJob_skipsAlreadyProcessingJob() throws SQLException {
         UUID jobId = UUID.randomUUID();
-        ExportJob processingJob = new ExportJob(jobId, UUID.randomUUID(), ExportJob.TYPE_PRINTABLE,
-                ExportJobStatus.PROCESSING, null, null, null,
-                FIXED_INSTANT, FIXED_INSTANT, null);
-
-        when(repository.findById(jobId)).thenReturn(Optional.of(processingJob));
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(false);
+        when(repository.findJobMetadataById(jobId)).thenReturn(Optional.of(
+                new ExportJob(jobId, UUID.randomUUID(), ExportJob.TYPE_PRINTABLE,
+                        ExportJobStatus.PROCESSING, null, null, null,
+                        FIXED_INSTANT, FIXED_INSTANT, null)
+        ));
 
         service.processJob(jobId);
 
@@ -184,13 +197,13 @@ class ExportJobServiceTest {
     @Test
     void processJob_skipsCompletedJob() throws SQLException {
         UUID jobId = UUID.randomUUID();
-        byte[] artifact = new byte[]{1, 2, 3};
-        ExportJob completedJob = new ExportJob(jobId, UUID.randomUUID(), ExportJob.TYPE_PRINTABLE,
-                ExportJobStatus.COMPLETED, artifact, null, null,
-                FIXED_INSTANT, FIXED_INSTANT,
-                FIXED_INSTANT.plusSeconds(ExportJob.ARTIFACT_TTL_SECONDS));
-
-        when(repository.findById(jobId)).thenReturn(Optional.of(completedJob));
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(false);
+        when(repository.findJobMetadataById(jobId)).thenReturn(Optional.of(
+                new ExportJob(jobId, UUID.randomUUID(), ExportJob.TYPE_PRINTABLE,
+                        ExportJobStatus.COMPLETED, null, null, null,
+                        FIXED_INSTANT, FIXED_INSTANT,
+                        FIXED_INSTANT.plusSeconds(ExportJob.ARTIFACT_TTL_SECONDS))
+        ));
 
         service.processJob(jobId);
 
@@ -200,7 +213,8 @@ class ExportJobServiceTest {
     @Test
     void processJob_gracefullyHandlesMissingJob() throws SQLException {
         UUID jobId = UUID.randomUUID();
-        when(repository.findById(jobId)).thenReturn(Optional.empty());
+        when(repository.markProcessingIfPending(eq(jobId), any())).thenReturn(false);
+        when(repository.findJobMetadataById(jobId)).thenReturn(Optional.empty());
 
         assertDoesNotThrow(() -> service.processJob(jobId));
         verify(repository, never()).update(any());
@@ -238,6 +252,25 @@ class ExportJobServiceTest {
         when(repository.findById(jobId)).thenThrow(new SQLException("DB error"));
 
         assertThrows(ExportJobException.class, () -> service.getJob(jobId));
+    }
+
+    @Test
+    void getJobMetadata_delegatesToRepository() throws SQLException {
+        UUID jobId = UUID.randomUUID();
+        ExportJob job = pendingJob(jobId, UUID.randomUUID());
+        when(repository.findJobMetadataById(jobId)).thenReturn(Optional.of(job));
+
+        Optional<ExportJob> result = service.getJobMetadata(jobId);
+
+        assertTrue(result.isPresent());
+        assertEquals(jobId, result.get().getId());
+    }
+
+    @Test
+    void startProcessingAsync_submitsToExecutor() {
+        UUID jobId = UUID.randomUUID();
+        service.startProcessingAsync(jobId);
+        verify(executorService).execute(any(Runnable.class));
     }
 
     // -------------------------------------------------------------------------

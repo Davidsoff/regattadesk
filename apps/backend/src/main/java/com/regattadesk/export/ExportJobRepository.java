@@ -79,6 +79,54 @@ public class ExportJobRepository {
     }
 
     /**
+     * Atomically transitions a job to PROCESSING if and only if it is currently PENDING.
+     *
+     * @param jobId job UUID
+     * @param updatedAt timestamp for updated_at
+     * @return true when a row was updated; false when status was not PENDING or row not found
+     * @throws SQLException on persistence failure
+     */
+    public boolean markProcessingIfPending(UUID jobId, Instant updatedAt) throws SQLException {
+        String sql = """
+                UPDATE export_jobs
+                SET status = ?, updated_at = ?
+                WHERE id = ? AND status = ?
+                """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, ExportJobStatus.PROCESSING.value());
+            stmt.setTimestamp(2, Timestamp.from(updatedAt));
+            stmt.setObject(3, jobId);
+            stmt.setString(4, ExportJobStatus.PENDING.value());
+            return stmt.executeUpdate() == 1;
+        }
+    }
+
+    /**
+     * Marks a job as FAILED regardless of current status.
+     *
+     * @param jobId job UUID
+     * @param errorMessage human-readable failure reason
+     * @param updatedAt update timestamp
+     * @throws SQLException on persistence failure
+     */
+    public void markFailed(UUID jobId, String errorMessage, Instant updatedAt) throws SQLException {
+        String sql = """
+                UPDATE export_jobs
+                SET status = ?, artifact = NULL, error_message = ?, expires_at = NULL, updated_at = ?
+                WHERE id = ?
+                """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, ExportJobStatus.FAILED.value());
+            stmt.setString(2, errorMessage);
+            stmt.setTimestamp(3, Timestamp.from(updatedAt));
+            stmt.setObject(4, jobId);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
      * Finds a job by its unique identifier.
      *
      * @param jobId job UUID
@@ -104,6 +152,56 @@ public class ExportJobRepository {
         }
     }
 
+    /**
+     * Finds a job by ID without loading artifact bytes.
+     *
+     * @param jobId job UUID
+     * @return optional job metadata
+     * @throws SQLException on query failure
+     */
+    public Optional<ExportJob> findJobMetadataById(UUID jobId) throws SQLException {
+        String sql = """
+                SELECT id, regatta_id, type, status, error_message,
+                       requested_by, created_at, updated_at, expires_at
+                FROM export_jobs
+                WHERE id = ?
+                """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, jobId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapMetadataRow(rs));
+                }
+                return Optional.empty();
+            }
+        }
+    }
+
+    /**
+     * Deletes expired completed jobs and stale failed jobs.
+     *
+     * @param now current timestamp for completed-job expiry checks
+     * @param failedBefore cutoff for failed job retention
+     * @return number of deleted rows
+     * @throws SQLException on persistence failure
+     */
+    public int purgeExpiredAndFailed(Instant now, Instant failedBefore) throws SQLException {
+        String sql = """
+                DELETE FROM export_jobs
+                WHERE (status = ? AND expires_at IS NOT NULL AND expires_at < ?)
+                   OR (status = ? AND updated_at < ?)
+                """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, ExportJobStatus.COMPLETED.value());
+            stmt.setTimestamp(2, Timestamp.from(now));
+            stmt.setString(3, ExportJobStatus.FAILED.value());
+            stmt.setTimestamp(4, Timestamp.from(failedBefore));
+            return stmt.executeUpdate();
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Mapping helpers
     // -------------------------------------------------------------------------
@@ -116,6 +214,22 @@ public class ExportJobRepository {
                 rs.getString("type"),
                 ExportJobStatus.fromValue(rs.getString("status")),
                 rs.getBytes("artifact"),
+                rs.getString("error_message"),
+                rs.getString("requested_by"),
+                rs.getTimestamp("created_at").toInstant(),
+                rs.getTimestamp("updated_at").toInstant(),
+                expiresTs != null ? expiresTs.toInstant() : null
+        );
+    }
+
+    private ExportJob mapMetadataRow(ResultSet rs) throws SQLException {
+        Timestamp expiresTs = rs.getTimestamp("expires_at");
+        return new ExportJob(
+                (UUID) rs.getObject("id"),
+                (UUID) rs.getObject("regatta_id"),
+                rs.getString("type"),
+                ExportJobStatus.fromValue(rs.getString("status")),
+                null,
                 rs.getString("error_message"),
                 rs.getString("requested_by"),
                 rs.getTimestamp("created_at").toInstant(),

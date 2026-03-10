@@ -1,13 +1,13 @@
 package com.regattadesk.export.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
+import com.regattadesk.export.ExportJobException;
 import com.regattadesk.export.ExportJobService;
 import com.regattadesk.export.ExportRegattaRepository;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.Role;
 import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -25,11 +25,12 @@ import java.util.UUID;
  *
  * <p>Endpoint: {@code POST /api/v1/regattas/{regatta_id}/export/printables}</p>
  *
- * <p>Creates an async export job and starts PDF generation on a virtual thread.
+ * <p>Creates an async export job and starts PDF generation on a bounded worker pool.
  * The caller should immediately begin polling
  * {@code GET /api/v1/jobs/{job_id}} for status.</p>
  *
- * <p>Required role: {@code REGATTA_ADMIN}, {@code HEAD_OF_JURY}, or {@code INFO_DESK}.</p>
+ * <p>Required role: {@code SUPER_ADMIN}, {@code REGATTA_ADMIN}, {@code HEAD_OF_JURY},
+ * or {@code INFO_DESK}.</p>
  */
 @Path("/api/v1/regattas/{regatta_id}/export/printables")
 public class PrintableExportResource {
@@ -53,8 +54,7 @@ public class PrintableExportResource {
      */
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @RequireRole({Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
     public Response requestPrintableExport(@PathParam("regatta_id") UUID regattaId) {
         // Verify regatta exists before creating job
         try {
@@ -75,12 +75,21 @@ public class PrintableExportResource {
         String requestedBy = securityContext.getPrincipal() != null
                 ? securityContext.getPrincipal().getUsername()
                 : null;
-
-        UUID jobId = exportJobService.createJob(regattaId, requestedBy);
-
-        // Process asynchronously using a virtual thread
-        Thread.ofVirtual().name("export-job-" + jobId).start(() -> exportJobService.processJob(jobId));
-
-        return Response.accepted(new ExportJobCreatedResponse(jobId)).build();
+        if (requestedBy == null || requestedBy.isBlank()) {
+            LOG.errorf("Requester identity missing for regatta export %s", regattaId);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Requester identity is required"))
+                    .build();
+        }
+        try {
+            UUID jobId = exportJobService.createJob(regattaId, requestedBy);
+            exportJobService.startProcessingAsync(jobId);
+            return Response.accepted(new ExportJobCreatedResponse(jobId)).build();
+        } catch (ExportJobException e) {
+            LOG.errorf(e, "Failed to create printable export job for regatta %s", regattaId);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Failed to create export job"))
+                    .build();
+        }
     }
 }

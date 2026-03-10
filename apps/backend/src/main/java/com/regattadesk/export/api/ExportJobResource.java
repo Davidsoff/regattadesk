@@ -2,6 +2,7 @@ package com.regattadesk.export.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.export.ExportJob;
+import com.regattadesk.export.ExportJobException;
 import com.regattadesk.export.ExportJobStatus;
 import com.regattadesk.export.ExportJobService;
 import com.regattadesk.security.RequireRole;
@@ -29,7 +30,8 @@ import java.util.UUID;
  *   <li>{@code GET /api/v1/jobs/{job_id}/download}  – download completed PDF</li>
  * </ul>
  *
- * <p>Required role: {@code REGATTA_ADMIN}, {@code HEAD_OF_JURY}, or {@code INFO_DESK}.</p>
+ * <p>Required role: {@code SUPER_ADMIN}, {@code REGATTA_ADMIN}, {@code HEAD_OF_JURY},
+ * or {@code INFO_DESK}.</p>
  */
 @Path("/api/v1/jobs/{job_id}")
 public class ExportJobResource {
@@ -37,7 +39,7 @@ public class ExportJobResource {
     private static final Logger LOG = Logger.getLogger(ExportJobResource.class);
 
     /** Relative URL template for artifact download links. */
-    private static final String DOWNLOAD_URL_TEMPLATE = "/api/v1/jobs/%s/download";
+    private static final String DOWNLOAD_URL_TEMPLATE = "api/v1/jobs/%s/download";
 
     @Inject
     ExportJobService exportJobService;
@@ -53,27 +55,34 @@ public class ExportJobResource {
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RequireRole({Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
     public Response getJobStatus(@PathParam("job_id") UUID jobId) {
-        Optional<ExportJob> opt = exportJobService.getJob(jobId);
-        if (opt.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(ErrorResponse.notFound("Export job not found"))
+        try {
+            Optional<ExportJob> opt = exportJobService.getJobMetadata(jobId);
+            if (opt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(ErrorResponse.notFound("Export job not found"))
+                        .build();
+            }
+
+            ExportJob job = opt.get();
+            String downloadUrl = null;
+            if (job.getStatus() == ExportJobStatus.COMPLETED && job.isDownloadable(clock.instant())) {
+                downloadUrl = String.format(DOWNLOAD_URL_TEMPLATE, jobId);
+            }
+
+            ExportJobStatusResponse body = new ExportJobStatusResponse(
+                    job.getStatus().value(),
+                    downloadUrl,
+                    job.getErrorMessage()
+            );
+            return Response.ok(body).build();
+        } catch (ExportJobException e) {
+            LOG.errorf(e, "Failed to retrieve export job %s", jobId);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Failed to retrieve export job"))
                     .build();
         }
-
-        ExportJob job = opt.get();
-        String downloadUrl = null;
-        if (job.getStatus() == ExportJobStatus.COMPLETED && job.isDownloadable(clock.instant())) {
-            downloadUrl = String.format(DOWNLOAD_URL_TEMPLATE, jobId);
-        }
-
-        ExportJobStatusResponse body = new ExportJobStatusResponse(
-                job.getStatus().value(),
-                downloadUrl,
-                job.getErrorMessage()
-        );
-        return Response.ok(body).build();
     }
 
     /**
@@ -85,37 +94,45 @@ public class ExportJobResource {
     @GET
     @Path("/download")
     @Produces("application/pdf")
-    @RequireRole({Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
+    @RequireRole({Role.SUPER_ADMIN, Role.REGATTA_ADMIN, Role.HEAD_OF_JURY, Role.INFO_DESK})
     public Response downloadArtifact(@PathParam("job_id") UUID jobId) {
-        Optional<ExportJob> opt = exportJobService.getJob(jobId);
-        if (opt.isEmpty()) {
-            return Response.status(Response.Status.NOT_FOUND)
+        try {
+            Optional<ExportJob> opt = exportJobService.getJob(jobId);
+            if (opt.isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .type(MediaType.APPLICATION_JSON)
+                        .entity(ErrorResponse.notFound("Export job not found"))
+                        .build();
+            }
+
+            ExportJob job = opt.get();
+            Instant now = clock.instant();
+
+            if (job.getStatus() != ExportJobStatus.COMPLETED || job.getArtifact() == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .type(MediaType.APPLICATION_JSON)
+                        .entity(ErrorResponse.notFound("Export artifact not available"))
+                        .build();
+            }
+
+            if (!job.isDownloadable(now)) {
+                return Response.status(Response.Status.GONE)
+                        .type(MediaType.APPLICATION_JSON)
+                        .entity(ErrorResponse.gone("ARTIFACT_EXPIRED", "Export artifact has expired"))
+                        .build();
+            }
+
+            String filename = "export-" + jobId + ".pdf";
+            return Response.ok(job.getArtifact())
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .header("Content-Type", "application/pdf")
+                    .build();
+        } catch (ExportJobException e) {
+            LOG.errorf(e, "Failed to download export artifact for job %s", jobId);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .type(MediaType.APPLICATION_JSON)
-                    .entity(ErrorResponse.notFound("Export job not found"))
+                    .entity(ErrorResponse.internalError("Failed to retrieve export job"))
                     .build();
         }
-
-        ExportJob job = opt.get();
-        Instant now = clock.instant();
-
-        if (job.getStatus() != ExportJobStatus.COMPLETED || job.getArtifact() == null) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(ErrorResponse.notFound("Export artifact not available"))
-                    .build();
-        }
-
-        if (!job.isDownloadable(now)) {
-            return Response.status(Response.Status.GONE)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(ErrorResponse.gone("ARTIFACT_EXPIRED", "Export artifact has expired"))
-                    .build();
-        }
-
-        String filename = "export-" + jobId + ".pdf";
-        return Response.ok(job.getArtifact())
-                .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
-                .header("Content-Type", "application/pdf")
-                .build();
     }
 }

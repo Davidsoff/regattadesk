@@ -1,16 +1,26 @@
 package com.regattadesk.export;
 
 import com.regattadesk.pdf.PdfGenerator;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.UUID;
 
 /**
@@ -26,12 +36,8 @@ import java.util.UUID;
  * </ol>
  *
  * <h2>Caller responsibility</h2>
- * The caller (typically a REST resource) is responsible for invoking
- * {@link #processJob(UUID)} on a background thread so that the POST endpoint
- * returns immediately.  Using Java 25 virtual threads is recommended:
- * <pre>{@code
- *   Thread.ofVirtual().start(() -> exportJobService.processJob(jobId));
- * }</pre>
+ * The service exposes {@link #startProcessingAsync(UUID)} so callers can enqueue
+ * processing work without managing executor lifecycle.
  */
 @ApplicationScoped
 public class ExportJobService {
@@ -47,7 +53,32 @@ public class ExportJobService {
     @Inject
     ExportRegattaRepository regattaRepository;
 
+    @ConfigProperty(name = "regattadesk.export.max-concurrency", defaultValue = "4")
+    int maxConcurrency;
+
     Clock clock = Clock.systemUTC();
+    ExecutorService executorService;
+
+    @PostConstruct
+    void initExecutor() {
+        int poolSize = Math.max(1, maxConcurrency);
+        executorService = new ThreadPoolExecutor(
+                poolSize,
+                poolSize,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(poolSize * 8),
+                new ExportThreadFactory(),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
+    }
+
+    @PreDestroy
+    void shutdownExecutor() {
+        if (executorService != null) {
+            executorService.shutdown();
+        }
+    }
 
     /**
      * Creates a new printable export job in {@code PENDING} state.
@@ -61,6 +92,9 @@ public class ExportJobService {
     public UUID createJob(UUID regattaId, String requestedBy) {
         if (regattaId == null) {
             throw new IllegalArgumentException("regattaId is required");
+        }
+        if (requestedBy == null || requestedBy.isBlank()) {
+            throw new IllegalArgumentException("requestedBy is required");
         }
         Instant now = clock.instant();
         UUID jobId = UUID.randomUUID();
@@ -86,6 +120,28 @@ public class ExportJobService {
     }
 
     /**
+     * Enqueues asynchronous processing for the given job.
+     *
+     * @param jobId job UUID
+     * @throws ExportJobException if the job cannot be enqueued
+     */
+    public void startProcessingAsync(UUID jobId) {
+        if (jobId == null) {
+            throw new IllegalArgumentException("jobId is required");
+        }
+        if (executorService == null) {
+            initExecutor();
+        }
+        try {
+            executorService.execute(() -> processJob(jobId));
+        } catch (RejectedExecutionException e) {
+            LOG.errorf(e, "Failed to enqueue export job %s", jobId);
+            failJobById(jobId, "Failed to enqueue export processing");
+            throw new ExportJobException("Failed to enqueue export job " + jobId, e);
+        }
+    }
+
+    /**
      * Processes a pending export job.
      *
      * <p>This method is intended to run on a background thread.  It will:</p>
@@ -102,19 +158,22 @@ public class ExportJobService {
     public void processJob(UUID jobId) {
         LOG.infof("Starting processing for export job %s", jobId);
         try {
+            if (!repository.markProcessingIfPending(jobId, clock.instant())) {
+                Optional<ExportJob> current = repository.findJobMetadataById(jobId);
+                if (current.isEmpty()) {
+                    LOG.warnf("Export job %s not found for processing", jobId);
+                    return;
+                }
+                LOG.warnf("Export job %s is in unexpected state %s, skipping",
+                        jobId, current.get().getStatus());
+                return;
+            }
             Optional<ExportJob> opt = repository.findById(jobId);
             if (opt.isEmpty()) {
                 LOG.warnf("Export job %s not found for processing", jobId);
                 return;
             }
             ExportJob job = opt.get();
-            if (job.getStatus() != ExportJobStatus.PENDING) {
-                LOG.warnf("Export job %s is in unexpected state %s, skipping", jobId, job.getStatus());
-                return;
-            }
-
-            // Transition to PROCESSING
-            updateStatus(job, ExportJobStatus.PROCESSING, null, null, null);
 
             // Fetch regatta metadata
             Optional<ExportRegattaRepository.RegattaMetadata> metaOpt =
@@ -145,12 +204,7 @@ public class ExportJobService {
 
         } catch (Exception e) {
             LOG.errorf(e, "Export job %s failed", jobId);
-            try {
-                Optional<ExportJob> opt = repository.findById(jobId);
-                opt.ifPresent(job -> failJob(job, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()));
-            } catch (SQLException sqlEx) {
-                LOG.errorf(sqlEx, "Failed to persist failure state for export job %s", jobId);
-            }
+            failJobById(jobId, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
         }
     }
 
@@ -166,6 +220,21 @@ public class ExportJobService {
             return repository.findById(jobId);
         } catch (SQLException e) {
             throw new ExportJobException("Failed to retrieve export job " + jobId, e);
+        }
+    }
+
+    /**
+     * Retrieves a job by ID without loading the artifact payload.
+     *
+     * @param jobId job UUID
+     * @return optional job metadata
+     * @throws ExportJobException on persistence failure
+     */
+    public Optional<ExportJob> getJobMetadata(UUID jobId) {
+        try {
+            return repository.findJobMetadataById(jobId);
+        } catch (SQLException e) {
+            throw new ExportJobException("Failed to retrieve export job metadata " + jobId, e);
         }
     }
 
@@ -199,6 +268,29 @@ public class ExportJobService {
             updateStatus(job, ExportJobStatus.FAILED, null, errorMessage, null);
         } catch (ExportJobException e) {
             LOG.errorf(e, "Failed to persist FAILED state for job %s", job.getId());
+        }
+    }
+
+    private void failJobById(UUID jobId, String errorMessage) {
+        try {
+            repository.markFailed(jobId, errorMessage, clock.instant());
+        } catch (SQLException e) {
+            LOG.errorf(e, "Failed to persist FAILED state for export job %s", jobId);
+        }
+    }
+
+    private static final class ExportThreadFactory implements ThreadFactory {
+        private final AtomicInteger index = new AtomicInteger(1);
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread thread = Thread.ofPlatform()
+                    .name("export-job-worker-" + index.getAndIncrement())
+                    .daemon(true)
+                    .unstarted(r);
+            thread.setUncaughtExceptionHandler(
+                    (t, e) -> LOG.errorf(e, "Unhandled exception in %s", t.getName()));
+            return thread;
         }
     }
 }

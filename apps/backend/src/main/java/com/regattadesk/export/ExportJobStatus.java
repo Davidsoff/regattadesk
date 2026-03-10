@@ -1,5 +1,7 @@
 package com.regattadesk.export;
 
+import java.util.Locale;
+
 /**
  * Job status states for export jobs.
  *
@@ -31,6 +33,6 @@ public enum ExportJobStatus {
      * @throws IllegalArgumentException if the value is not recognised
      */
     public static ExportJobStatus fromValue(String value) {
-        return valueOf(value.toUpperCase());
+        return valueOf(value.toUpperCase(Locale.ROOT));
     }
 }

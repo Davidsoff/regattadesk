@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @QuarkusTest
 @Tag("contract")
-class PrintableExportResourceIT {
+class PrintableExportResourceIntegrationTest {
 
     @Inject
     DataSource dataSource;
@@ -65,7 +65,19 @@ class PrintableExportResourceIT {
         given()
                 .header("Remote-User", "test-admin")
                 .header("Remote-Groups", "regatta_admin")
+        .when()
+                .post("/api/v1/regattas/" + regattaId + "/export/printables")
+        .then()
+                .statusCode(202)
                 .contentType("application/json")
+                .body("job_id", notNullValue());
+    }
+
+    @Test
+    void requestExport_acceptsEmptyBodyWithoutContentType() {
+        given()
+                .header("Remote-User", "test-admin")
+                .header("Remote-Groups", "regatta_admin")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
@@ -80,7 +92,6 @@ class PrintableExportResourceIT {
         given()
                 .header("Remote-User", "test-admin")
                 .header("Remote-Groups", "regatta_admin")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + unknownId + "/export/printables")
         .then()
@@ -94,7 +105,6 @@ class PrintableExportResourceIT {
         given()
                 .header("Remote-User", "operator-user")
                 .header("Remote-Groups", "operator")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
@@ -105,11 +115,23 @@ class PrintableExportResourceIT {
     void requestExport_returns403WithoutAnyRole() {
         given()
                 .header("Remote-User", "anonymous")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
                 .statusCode(403);
+    }
+
+    @Test
+    void requestExport_allowedForSuperAdminRole() {
+        given()
+                .header("Remote-User", "super-admin")
+                .header("Remote-Groups", "super_admin")
+        .when()
+                .post("/api/v1/regattas/" + regattaId + "/export/printables")
+        .then()
+                .statusCode(202)
+                .contentType("application/json")
+                .body("job_id", notNullValue());
     }
 
     // -------------------------------------------------------------------------
@@ -154,7 +176,6 @@ class PrintableExportResourceIT {
         String jobIdStr = given()
                 .header("Remote-User", "test-admin")
                 .header("Remote-Groups", "regatta_admin")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
@@ -185,7 +206,6 @@ class PrintableExportResourceIT {
         String jobIdStr = given()
                 .header("Remote-User", "test-admin")
                 .header("Remote-Groups", "regatta_admin")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
@@ -215,7 +235,7 @@ class PrintableExportResourceIT {
                 .get("/api/v1/jobs/" + jobId)
         .then()
                 .statusCode(200)
-                .body("download_url", containsString("/api/v1/jobs/"))
+                .body("download_url", containsString("api/v1/jobs/"))
                 .body("download_url", containsString("/download"));
     }
 
@@ -239,6 +259,19 @@ class PrintableExportResourceIT {
         given()
                 .header("Remote-User", "jury-user")
                 .header("Remote-Groups", "head_of_jury")
+        .when()
+                .get("/api/v1/jobs/" + jobId)
+        .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void getJobStatus_allowedForSuperAdminRole() {
+        UUID jobId = exportJobService.createJob(regattaId, "super-admin-user");
+
+        given()
+                .header("Remote-User", "super-admin-user")
+                .header("Remote-Groups", "super_admin")
         .when()
                 .get("/api/v1/jobs/" + jobId)
         .then()
@@ -279,7 +312,6 @@ class PrintableExportResourceIT {
         String jobIdStr = given()
                 .header("Remote-User", "test-admin")
                 .header("Remote-Groups", "regatta_admin")
-                .contentType("application/json")
         .when()
                 .post("/api/v1/regattas/" + regattaId + "/export/printables")
         .then()
@@ -335,5 +367,41 @@ class PrintableExportResourceIT {
                 .get("/api/v1/jobs/" + jobId + "/download")
         .then()
                 .statusCode(403);
+    }
+
+    @Test
+    void downloadArtifact_allowedForSuperAdminRole() {
+        String jobIdStr = given()
+                .header("Remote-User", "super-admin")
+                .header("Remote-Groups", "super_admin")
+        .when()
+                .post("/api/v1/regattas/" + regattaId + "/export/printables")
+        .then()
+                .statusCode(202)
+                .extract().path("job_id");
+
+        UUID jobId = UUID.fromString(jobIdStr);
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(200, TimeUnit.MILLISECONDS)
+                .until(() -> {
+                    String status = given()
+                            .header("Remote-User", "super-admin")
+                            .header("Remote-Groups", "super_admin")
+                    .when()
+                            .get("/api/v1/jobs/" + jobId)
+                    .then()
+                            .statusCode(200)
+                            .extract().path("status");
+                    return "completed".equals(status);
+                });
+
+        given()
+                .header("Remote-User", "super-admin")
+                .header("Remote-Groups", "super_admin")
+        .when()
+                .get("/api/v1/jobs/" + jobId + "/download")
+        .then()
+                .statusCode(200)
+                .contentType("application/pdf");
     }
 }
