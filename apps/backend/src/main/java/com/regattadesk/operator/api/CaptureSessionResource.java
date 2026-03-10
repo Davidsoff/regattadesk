@@ -125,7 +125,12 @@ public class CaptureSessionResource {
         try {
             List<CaptureSession> sessions;
 
-            if ("open".equals(state)) {
+            if ("open".equals(state) && blockId != null) {
+                sessions = captureSessionService.listSessionsByBlock(regattaId, blockId).stream()
+                        .filter(CaptureSession::isOpen)
+                        .filter(session -> station == null || station.isBlank() || station.equals(session.getStation()))
+                        .collect(Collectors.toList());
+            } else if ("open".equals(state)) {
                 sessions = captureSessionService.listOpenSessions(regattaId, station);
             } else if (blockId != null) {
                 sessions = captureSessionService.listSessionsByBlock(regattaId, blockId);
@@ -187,7 +192,15 @@ public class CaptureSessionResource {
             @HeaderParam("X-Operator-Token") String operatorToken,
             @Valid @NotNull(message = "request body is required") CaptureSessionSyncStateRequest request) {
 
-        if (!isValidOperatorToken(operatorToken, regattaId, null)) {
+        Optional<CaptureSession> sessionOpt = captureSessionService.getSession(captureSessionId, regattaId);
+        if (sessionOpt.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Capture session not found"))
+                    .build();
+        }
+
+        CaptureSession session = sessionOpt.get();
+        if (!isValidOperatorToken(operatorToken, regattaId, session.getStation())) {
             return unauthorizedResponse();
         }
 
@@ -233,7 +246,15 @@ public class CaptureSessionResource {
             @HeaderParam("X-Operator-Token") String operatorToken,
             CaptureSessionCloseRequest request) {
 
-        if (!isValidOperatorToken(operatorToken, regattaId, null)) {
+        Optional<CaptureSession> sessionOpt = captureSessionService.getSession(captureSessionId, regattaId);
+        if (sessionOpt.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Capture session not found"))
+                    .build();
+        }
+
+        CaptureSession session = sessionOpt.get();
+        if (!isValidOperatorToken(operatorToken, regattaId, session.getStation())) {
             return unauthorizedResponse();
         }
 

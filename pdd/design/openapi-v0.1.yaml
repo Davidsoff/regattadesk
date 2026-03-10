@@ -69,6 +69,9 @@ components:
           minimum: 1
     CaptureSessionSyncStateRequest:
       type: object
+      required:
+      - is_synced
+      - drift_exceeded_threshold
       properties:
         is_synced:
           type: boolean
@@ -1327,9 +1330,13 @@ paths:
           type: string
       - name: state
         in: query
+        description: >
+          Optional filter for capture session state. When set to "open", only open
+          capture sessions are returned. When omitted, all sessions are returned.
+          Filtering specifically for closed sessions is not currently supported.
         schema:
           type: string
-          enum: [open, closed]
+          enum: [open]
       responses:
         "200":
           description: OK

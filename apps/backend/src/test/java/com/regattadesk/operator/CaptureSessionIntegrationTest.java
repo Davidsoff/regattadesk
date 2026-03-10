@@ -33,6 +33,7 @@ class CaptureSessionIntegrationTest {
     private UUID regattaId;
     private UUID blockId;
     private String operatorToken;
+    private String otherStationOperatorToken;
     private String station;
 
     @BeforeEach
@@ -55,6 +56,7 @@ class CaptureSessionIntegrationTest {
                 now.plus(8, ChronoUnit.HOURS)
         );
         operatorToken = token.getToken();
+        otherStationOperatorToken = issueOperatorToken("start-line");
     }
 
     // ---- POST (start) -------------------------------------------------------
@@ -157,6 +159,46 @@ class CaptureSessionIntegrationTest {
                 .statusCode(401);
     }
 
+    @Test
+    void listSessions_stateOpenAndBlockId_shouldApplyBothFilters() throws Exception {
+        UUID secondBlockId = UUID.randomUUID();
+        seedBlock(regattaId, secondBlockId);
+
+        String sessionInPrimaryBlock = createSessionAndGetId("device-open-target");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body(buildCreateRequest(secondBlockId, station, "device-open-other-block", "finish", 25))
+        .when()
+                .post("/api/v1/regattas/" + regattaId + "/operator/capture_sessions")
+        .then()
+                .statusCode(201);
+
+        String closedSessionInPrimaryBlock = createSessionAndGetId("device-closed-target-block");
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("{}")
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + closedSessionInPrimaryBlock + "/close")
+        .then()
+                .statusCode(200);
+
+        given()
+                .header("X-Operator-Token", operatorToken)
+                .queryParam("state", "open")
+                .queryParam("block_id", blockId)
+        .when()
+                .get("/api/v1/regattas/" + regattaId + "/operator/capture_sessions")
+        .then()
+                .statusCode(200)
+                .body("capture_sessions.capture_session_id", hasItem(sessionInPrimaryBlock))
+                .body("capture_sessions.capture_session_id", not(hasItem(closedSessionInPrimaryBlock)))
+                .body("capture_sessions", hasSize(1));
+    }
+
     // ---- GET single session -------------------------------------------------
 
     @Test
@@ -207,6 +249,55 @@ class CaptureSessionIntegrationTest {
                 .body("drift_exceeded_threshold", equalTo(true))
                 .body("unsynced_reason", equalTo("NTP server unreachable"))
                 .body("state", equalTo("open"));
+    }
+
+    @Test
+    void updateSyncState_shouldReturn401ForTokenFromDifferentStation() {
+        String sessionId = createSessionAndGetId("device-sync-station-scope");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", otherStationOperatorToken)
+                .body("""
+                        {"is_synced": true, "drift_exceeded_threshold": false}
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/sync_state")
+        .then()
+                .statusCode(401);
+    }
+
+    @Test
+    void updateSyncState_shouldReturn404ForUnknownSessionBeforeTokenValidation() {
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", otherStationOperatorToken)
+                .body("""
+                        {"is_synced": true, "drift_exceeded_threshold": false}
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + UUID.randomUUID() + "/sync_state")
+        .then()
+                .statusCode(404);
+    }
+
+    @Test
+    void updateSyncState_shouldReturn400WhenRequiredBooleanFieldsAreMissing() {
+        String sessionId = createSessionAndGetId("device-sync-missing-fields");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {"unsynced_reason": "clock skew"}
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/sync_state")
+        .then()
+                .statusCode(400);
     }
 
     @Test
@@ -299,6 +390,34 @@ class CaptureSessionIntegrationTest {
                 .statusCode(409);
     }
 
+    @Test
+    void closeSession_shouldReturn401ForTokenFromDifferentStation() {
+        String sessionId = createSessionAndGetId("device-close-station-scope");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", otherStationOperatorToken)
+                .body("{}")
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/close")
+        .then()
+                .statusCode(401);
+    }
+
+    @Test
+    void closeSession_shouldReturn404ForUnknownSessionBeforeTokenValidation() {
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", otherStationOperatorToken)
+                .body("{}")
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + UUID.randomUUID() + "/close")
+        .then()
+                .statusCode(404);
+    }
+
     // ---- Helpers ------------------------------------------------------------
 
     private String createSessionAndGetId(String deviceId) {
@@ -324,6 +443,18 @@ class CaptureSessionIntegrationTest {
                     "fps": %d
                 }
                 """.formatted(blockId, station, deviceId, sessionType, fps);
+    }
+
+    private String issueOperatorToken(String tokenStation) {
+        Instant now = Instant.now();
+        OperatorToken token = tokenService.issueToken(
+                regattaId,
+                null,
+                tokenStation,
+                now,
+                now.plus(8, ChronoUnit.HOURS)
+        );
+        return token.getToken();
     }
 
     private void seedRegatta(UUID id) throws Exception {

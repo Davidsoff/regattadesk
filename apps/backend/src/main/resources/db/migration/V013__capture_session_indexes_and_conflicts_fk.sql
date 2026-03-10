@@ -1,4 +1,5 @@
 -- Add missing capture_sessions indexes (BC06 V01GAP-003)
+-- Note: despite "conflicts_fk" in this filename, this migration only adds indexes.
 
 -- Missing index on device_id for fast session lookup by device.
 CREATE INDEX idx_capture_sessions_device ON capture_sessions(device_id);
