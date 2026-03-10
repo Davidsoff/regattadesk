@@ -5,6 +5,8 @@ import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -42,7 +44,10 @@ public class AdjudicationResource {
     @POST
     @Path("/investigations")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY})
-    public Response openInvestigation(@PathParam("regatta_id") UUID regattaId, OpenInvestigationRequest request) {
+    public Response openInvestigation(
+        @PathParam("regatta_id") UUID regattaId,
+        @Valid @NotNull(message = "request body is required") OpenInvestigationRequest request
+    ) {
         try {
             return Response.ok(adjudicationService.openInvestigation(regattaId, request, actor())).build();
         } catch (IllegalArgumentException e) {
@@ -64,28 +69,44 @@ public class AdjudicationResource {
     @POST
     @Path("/entries/{entry_id}/penalty")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY})
-    public Response applyPenalty(@PathParam("regatta_id") UUID regattaId, @PathParam("entry_id") UUID entryId, AdjudicationActionRequest request) {
+    public Response applyPenalty(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("entry_id") UUID entryId,
+        @Valid @NotNull(message = "request body is required") AdjudicationActionRequest request
+    ) {
         return mutate(() -> adjudicationService.applyPenalty(regattaId, entryId, request, actor()));
     }
 
     @POST
     @Path("/entries/{entry_id}/dsq")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY})
-    public Response applyDsq(@PathParam("regatta_id") UUID regattaId, @PathParam("entry_id") UUID entryId, AdjudicationActionRequest request) {
+    public Response applyDsq(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("entry_id") UUID entryId,
+        @Valid @NotNull(message = "request body is required") AdjudicationActionRequest request
+    ) {
         return mutate(() -> adjudicationService.applyDsq(regattaId, entryId, request, actor()));
     }
 
     @POST
     @Path("/entries/{entry_id}/exclude")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY})
-    public Response applyExclusion(@PathParam("regatta_id") UUID regattaId, @PathParam("entry_id") UUID entryId, AdjudicationActionRequest request) {
+    public Response applyExclusion(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("entry_id") UUID entryId,
+        @Valid @NotNull(message = "request body is required") AdjudicationActionRequest request
+    ) {
         return mutate(() -> adjudicationService.applyExclusion(regattaId, entryId, request, actor()));
     }
 
     @POST
     @Path("/entries/{entry_id}/revert_dsq")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY})
-    public Response revertDsq(@PathParam("regatta_id") UUID regattaId, @PathParam("entry_id") UUID entryId, AdjudicationActionRequest request) {
+    public Response revertDsq(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("entry_id") UUID entryId,
+        @Valid @NotNull(message = "request body is required") AdjudicationActionRequest request
+    ) {
         return mutate(() -> adjudicationService.revertDsq(regattaId, entryId, request, actor()));
     }
 

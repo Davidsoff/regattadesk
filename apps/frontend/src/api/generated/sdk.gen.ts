@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiV1AthletesByAthleteIdData, DeleteApiV1AthletesByAthleteIdResponses, DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdData, DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors, DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses, DeleteApiV1RegattasByRegattaIdBlocksByBlockIdData, DeleteApiV1RegattasByRegattaIdBlocksByBlockIdResponses, DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData, DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses, GetApiHealthData, GetApiHealthResponses, GetApiV1AthletesByAthleteIdData, GetApiV1AthletesByAthleteIdResponses, GetApiV1AthletesData, GetApiV1AthletesResponses, GetApiV1EntriesByIdData, GetApiV1EntriesByIdResponses, GetApiV1JobsByJobIdData, GetApiV1JobsByJobIdDownloadData, GetApiV1JobsByJobIdDownloadErrors, GetApiV1JobsByJobIdDownloadResponses, GetApiV1JobsByJobIdErrors, GetApiV1JobsByJobIdResponses, GetApiV1RegattasByRegattaIdBibPoolsData, GetApiV1RegattasByRegattaIdBibPoolsResponses, GetApiV1RegattasByRegattaIdBlocksData, GetApiV1RegattasByRegattaIdBlocksResponses, GetApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusData, GetApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusResponses, GetApiV1RegattasByRegattaIdData, GetApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusData, GetApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdData, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdErrors, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses, GetApiV1RegattasByRegattaIdInvoicesData, GetApiV1RegattasByRegattaIdInvoicesErrors, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdData, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdErrors, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses, GetApiV1RegattasByRegattaIdInvoicesResponses, GetApiV1RegattasByRegattaIdLineScanManifestsByManifestIdData, GetApiV1RegattasByRegattaIdLineScanManifestsByManifestIdResponses, GetApiV1RegattasByRegattaIdLineScanTilesByTileIdData, GetApiV1RegattasByRegattaIdLineScanTilesByTileIdResponses, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdData, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsData, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses, GetApiV1RegattasByRegattaIdOperatorMarkersData, GetApiV1RegattasByRegattaIdOperatorMarkersResponses, GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdData, GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponses, GetApiV1RegattasByRegattaIdOperatorTokensByTokenIdExportPdfData, GetApiV1RegattasByRegattaIdOperatorTokensByTokenIdExportPdfResponses, GetApiV1RegattasByRegattaIdOperatorTokensData, GetApiV1RegattasByRegattaIdOperatorTokensResponses, GetApiV1RegattasByRegattaIdResponses, GetApiV1RulesetsByRulesetIdData, GetApiV1RulesetsByRulesetIdResponses, GetApiV1RulesetsData, GetApiV1RulesetsResponses, GetPublicRegattasByRegattaIdEventsData, GetPublicRegattasByRegattaIdEventsResponses, GetPublicRegattasByRegattaIdVersionsData, GetPublicRegattasByRegattaIdVersionsResponses, GetPublicVbyDrawByResultsRegattasByRegattaIdResultsData, GetPublicVbyDrawByResultsRegattasByRegattaIdResultsResponses, GetPublicVbyDrawByResultsRegattasByRegattaIdScheduleData, GetPublicVbyDrawByResultsRegattasByRegattaIdScheduleResponses, PatchApiV1AthletesByAthleteIdData, PatchApiV1AthletesByAthleteIdResponses, PatchApiV1EntriesByIdPaymentStatusData, PatchApiV1EntriesByIdPaymentStatusResponses, PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdData, PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors, PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses, PatchApiV1RegattasByRegattaIdBlocksByBlockIdData, PatchApiV1RegattasByRegattaIdBlocksByBlockIdResponses, PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData, PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses, PatchApiV1RulesetsByRulesetIdData, PatchApiV1RulesetsByRulesetIdResponses, PostApiV1AthletesData, PostApiV1AthletesErrors, PostApiV1AthletesResponses, PostApiV1RegattasByRegattaIdBibPoolsData, PostApiV1RegattasByRegattaIdBibPoolsErrors, PostApiV1RegattasByRegattaIdBibPoolsReorderData, PostApiV1RegattasByRegattaIdBibPoolsReorderErrors, PostApiV1RegattasByRegattaIdBibPoolsReorderResponses, PostApiV1RegattasByRegattaIdBibPoolsResponses, PostApiV1RegattasByRegattaIdBlocksData, PostApiV1RegattasByRegattaIdBlocksErrors, PostApiV1RegattasByRegattaIdBlocksReorderData, PostApiV1RegattasByRegattaIdBlocksReorderErrors, PostApiV1RegattasByRegattaIdBlocksReorderResponses, PostApiV1RegattasByRegattaIdBlocksResponses, PostApiV1RegattasByRegattaIdDrawGenerateData, PostApiV1RegattasByRegattaIdDrawGenerateErrors, PostApiV1RegattasByRegattaIdDrawGenerateResponses, PostApiV1RegattasByRegattaIdDrawPublishData, PostApiV1RegattasByRegattaIdDrawPublishResponses, PostApiV1RegattasByRegattaIdDrawUnpublishData, PostApiV1RegattasByRegattaIdDrawUnpublishResponses, PostApiV1RegattasByRegattaIdExportPrintablesData, PostApiV1RegattasByRegattaIdExportPrintablesErrors, PostApiV1RegattasByRegattaIdExportPrintablesResponses, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidData, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses, PostApiV1RegattasByRegattaIdInvoicesGenerateData, PostApiV1RegattasByRegattaIdInvoicesGenerateErrors, PostApiV1RegattasByRegattaIdInvoicesGenerateResponses, PostApiV1RegattasByRegattaIdLineScanManifestsData, PostApiV1RegattasByRegattaIdLineScanManifestsErrors, PostApiV1RegattasByRegattaIdLineScanManifestsResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkData, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkErrors, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponses, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkData, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses, PostApiV1RegattasByRegattaIdOperatorMarkersData, PostApiV1RegattasByRegattaIdOperatorMarkersErrors, PostApiV1RegattasByRegattaIdOperatorMarkersResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteErrors, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsErrors, PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponses, PostApiV1RegattasByRegattaIdOperatorTokensByTokenIdRevokeData, PostApiV1RegattasByRegattaIdOperatorTokensByTokenIdRevokeResponses, PostApiV1RegattasByRegattaIdOperatorTokensData, PostApiV1RegattasByRegattaIdOperatorTokensErrors, PostApiV1RegattasByRegattaIdOperatorTokensResponses, PostApiV1RegattasByRegattaIdPaymentsMarkBulkData, PostApiV1RegattasByRegattaIdPaymentsMarkBulkErrors, PostApiV1RegattasByRegattaIdPaymentsMarkBulkResponses, PostApiV1RulesetsByRulesetIdDuplicateData, PostApiV1RulesetsByRulesetIdDuplicateErrors, PostApiV1RulesetsByRulesetIdDuplicateResponses, PostApiV1RulesetsByRulesetIdPromoteData, PostApiV1RulesetsByRulesetIdPromoteResponses, PostApiV1RulesetsData, PostApiV1RulesetsErrors, PostApiV1RulesetsResponses, PostPublicSessionData, PostPublicSessionResponses, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusData, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusErrors, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusResponses, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusData, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusErrors, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses, PutApiV1RegattasByRegattaIdLineScanTilesByTileIdData, PutApiV1RegattasByRegattaIdLineScanTilesByTileIdResponses } from './types.gen';
+import type { DeleteApiV1AthletesByAthleteIdData, DeleteApiV1AthletesByAthleteIdResponses, DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData, DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses, GetApiHealthData, GetApiHealthResponses, GetApiV1AthletesByAthleteIdData, GetApiV1AthletesByAthleteIdResponses, GetApiV1AthletesData, GetApiV1AthletesResponses, GetApiV1EntriesByIdData, GetApiV1EntriesByIdResponses, GetApiV1JobsByJobIdData, GetApiV1JobsByJobIdDownloadData, GetApiV1JobsByJobIdDownloadErrors, GetApiV1JobsByJobIdDownloadResponses, GetApiV1JobsByJobIdErrors, GetApiV1JobsByJobIdResponses, GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdData, GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdResponses, GetApiV1RegattasByRegattaIdAdjudicationInvestigationsData, GetApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses, GetApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusData, GetApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusResponses, GetApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusData, GetApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdData, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdErrors, GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses, GetApiV1RegattasByRegattaIdInvoicesData, GetApiV1RegattasByRegattaIdInvoicesErrors, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdData, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdErrors, GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses, GetApiV1RegattasByRegattaIdInvoicesResponses, GetApiV1RegattasByRegattaIdLineScanManifestsByManifestIdData, GetApiV1RegattasByRegattaIdLineScanManifestsByManifestIdResponses, GetApiV1RegattasByRegattaIdLineScanTilesByTileIdData, GetApiV1RegattasByRegattaIdLineScanTilesByTileIdResponses, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdData, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsData, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors, GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses, GetApiV1RegattasByRegattaIdOperatorMarkersData, GetApiV1RegattasByRegattaIdOperatorMarkersResponses, GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdData, GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponses, GetApiV1RegattasByRegattaIdOperatorTokensByTokenIdExportPdfData, GetApiV1RegattasByRegattaIdOperatorTokensByTokenIdExportPdfResponses, GetApiV1RegattasByRegattaIdOperatorTokensData, GetApiV1RegattasByRegattaIdOperatorTokensResponses, GetApiV1RulesetsByRulesetIdData, GetApiV1RulesetsByRulesetIdResponses, GetApiV1RulesetsData, GetApiV1RulesetsResponses, GetPublicRegattasByRegattaIdEventsData, GetPublicRegattasByRegattaIdEventsResponses, GetPublicRegattasByRegattaIdVersionsData, GetPublicRegattasByRegattaIdVersionsResponses, GetPublicVbyDrawByResultsRegattasByRegattaIdResultsData, GetPublicVbyDrawByResultsRegattasByRegattaIdResultsResponses, GetPublicVbyDrawByResultsRegattasByRegattaIdScheduleData, GetPublicVbyDrawByResultsRegattasByRegattaIdScheduleResponses, PatchApiV1AthletesByAthleteIdData, PatchApiV1AthletesByAthleteIdResponses, PatchApiV1EntriesByIdPaymentStatusData, PatchApiV1EntriesByIdPaymentStatusResponses, PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData, PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses, PatchApiV1RulesetsByRulesetIdData, PatchApiV1RulesetsByRulesetIdResponses, PostApiV1AthletesData, PostApiV1AthletesErrors, PostApiV1AthletesResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqData, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqErrors, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeData, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeErrors, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyData, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyErrors, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqData, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqErrors, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqResponses, PostApiV1RegattasByRegattaIdAdjudicationInvestigationsData, PostApiV1RegattasByRegattaIdAdjudicationInvestigationsErrors, PostApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses, PostApiV1RegattasByRegattaIdExportPrintablesData, PostApiV1RegattasByRegattaIdExportPrintablesErrors, PostApiV1RegattasByRegattaIdExportPrintablesResponses, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidData, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors, PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses, PostApiV1RegattasByRegattaIdInvoicesGenerateData, PostApiV1RegattasByRegattaIdInvoicesGenerateErrors, PostApiV1RegattasByRegattaIdInvoicesGenerateResponses, PostApiV1RegattasByRegattaIdLineScanManifestsData, PostApiV1RegattasByRegattaIdLineScanManifestsErrors, PostApiV1RegattasByRegattaIdLineScanManifestsResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsData, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors, PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkData, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkErrors, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponses, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkData, PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses, PostApiV1RegattasByRegattaIdOperatorMarkersData, PostApiV1RegattasByRegattaIdOperatorMarkersErrors, PostApiV1RegattasByRegattaIdOperatorMarkersResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteErrors, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponses, PostApiV1RegattasByRegattaIdOperatorStationHandoffsData, PostApiV1RegattasByRegattaIdOperatorStationHandoffsErrors, PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponses, PostApiV1RegattasByRegattaIdOperatorTokensByTokenIdRevokeData, PostApiV1RegattasByRegattaIdOperatorTokensByTokenIdRevokeResponses, PostApiV1RegattasByRegattaIdOperatorTokensData, PostApiV1RegattasByRegattaIdOperatorTokensErrors, PostApiV1RegattasByRegattaIdOperatorTokensResponses, PostApiV1RegattasByRegattaIdPaymentsMarkBulkData, PostApiV1RegattasByRegattaIdPaymentsMarkBulkErrors, PostApiV1RegattasByRegattaIdPaymentsMarkBulkResponses, PostApiV1RulesetsByRulesetIdDuplicateData, PostApiV1RulesetsByRulesetIdDuplicateErrors, PostApiV1RulesetsByRulesetIdDuplicateResponses, PostApiV1RulesetsByRulesetIdPromoteData, PostApiV1RulesetsByRulesetIdPromoteResponses, PostApiV1RulesetsData, PostApiV1RulesetsErrors, PostApiV1RulesetsResponses, PostPublicSessionData, PostPublicSessionResponses, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusData, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusErrors, PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusResponses, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusData, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusErrors, PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses, PutApiV1RegattasByRegattaIdLineScanTilesByTileIdData, PutApiV1RegattasByRegattaIdLineScanTilesByTileIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -90,20 +90,15 @@ export const getApiV1JobsByJobId = <ThrowOnError extends boolean = false>(option
 export const getApiV1JobsByJobIdDownload = <ThrowOnError extends boolean = false>(options: Options<GetApiV1JobsByJobIdDownloadData, ThrowOnError>) => (options.client ?? client).get<GetApiV1JobsByJobIdDownloadResponses, GetApiV1JobsByJobIdDownloadErrors, ThrowOnError>({ url: '/api/v1/jobs/{job_id}/download', ...options });
 
 /**
- * Get Regatta
+ * Get Entry Detail
  */
-export const getApiV1RegattasByRegattaId = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}', ...options });
+export const getApiV1RegattasByRegattaIdAdjudicationEntriesByEntryId = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}', ...options });
 
 /**
- * List bib pools
+ * Apply Dsq
  */
-export const getApiV1RegattasByRegattaIdBibPools = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdBibPoolsData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdBibPoolsResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/bib_pools', ...options });
-
-/**
- * Create bib pool
- */
-export const postApiV1RegattasByRegattaIdBibPools = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdBibPoolsData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdBibPoolsResponses, PostApiV1RegattasByRegattaIdBibPoolsErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/bib_pools',
+export const postApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsq = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqErrors, ThrowOnError>({
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/dsq',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -112,10 +107,10 @@ export const postApiV1RegattasByRegattaIdBibPools = <ThrowOnError extends boolea
 });
 
 /**
- * Reorder bib pools
+ * Apply Exclusion
  */
-export const postApiV1RegattasByRegattaIdBibPoolsReorder = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdBibPoolsReorderData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdBibPoolsReorderResponses, PostApiV1RegattasByRegattaIdBibPoolsReorderErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/bib_pools/reorder',
+export const postApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExclude = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeErrors, ThrowOnError>({
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/exclude',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -124,15 +119,10 @@ export const postApiV1RegattasByRegattaIdBibPoolsReorder = <ThrowOnError extends
 });
 
 /**
- * Delete bib pool
+ * Apply Penalty
  */
-export const deleteApiV1RegattasByRegattaIdBibPoolsByPoolId = <ThrowOnError extends boolean = false>(options: Options<DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses, DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}', ...options });
-
-/**
- * Update bib pool
- */
-export const patchApiV1RegattasByRegattaIdBibPoolsByPoolId = <ThrowOnError extends boolean = false>(options: Options<PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses, PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}',
+export const postApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenalty = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyErrors, ThrowOnError>({
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/penalty',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -141,15 +131,10 @@ export const patchApiV1RegattasByRegattaIdBibPoolsByPoolId = <ThrowOnError exten
 });
 
 /**
- * List Blocks
+ * Revert Dsq
  */
-export const getApiV1RegattasByRegattaIdBlocks = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdBlocksData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdBlocksResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/blocks', ...options });
-
-/**
- * Create Block
- */
-export const postApiV1RegattasByRegattaIdBlocks = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdBlocksData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdBlocksResponses, PostApiV1RegattasByRegattaIdBlocksErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/blocks',
+export const postApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsq = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqResponses, PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqErrors, ThrowOnError>({
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/revert_dsq',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -158,27 +143,15 @@ export const postApiV1RegattasByRegattaIdBlocks = <ThrowOnError extends boolean 
 });
 
 /**
- * Reorder Blocks
+ * List Investigations
  */
-export const postApiV1RegattasByRegattaIdBlocksReorder = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdBlocksReorderData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdBlocksReorderResponses, PostApiV1RegattasByRegattaIdBlocksReorderErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/blocks/reorder',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+export const getApiV1RegattasByRegattaIdAdjudicationInvestigations = <ThrowOnError extends boolean = false>(options: Options<GetApiV1RegattasByRegattaIdAdjudicationInvestigationsData, ThrowOnError>) => (options.client ?? client).get<GetApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/adjudication/investigations', ...options });
 
 /**
- * Delete Block
+ * Open Investigation
  */
-export const deleteApiV1RegattasByRegattaIdBlocksByBlockId = <ThrowOnError extends boolean = false>(options: Options<DeleteApiV1RegattasByRegattaIdBlocksByBlockIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiV1RegattasByRegattaIdBlocksByBlockIdResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/blocks/{block_id}', ...options });
-
-/**
- * Update Block
- */
-export const patchApiV1RegattasByRegattaIdBlocksByBlockId = <ThrowOnError extends boolean = false>(options: Options<PatchApiV1RegattasByRegattaIdBlocksByBlockIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiV1RegattasByRegattaIdBlocksByBlockIdResponses, unknown, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/blocks/{block_id}',
+export const postApiV1RegattasByRegattaIdAdjudicationInvestigations = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdAdjudicationInvestigationsData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses, PostApiV1RegattasByRegattaIdAdjudicationInvestigationsErrors, ThrowOnError>({
+    url: '/api/v1/regattas/{regatta_id}/adjudication/investigations',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -202,28 +175,6 @@ export const putApiV1RegattasByRegattaIdClubsByClubIdPaymentStatus = <ThrowOnErr
         ...options.headers
     }
 });
-
-/**
- * Generate Draw
- */
-export const postApiV1RegattasByRegattaIdDrawGenerate = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdDrawGenerateData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdDrawGenerateResponses, PostApiV1RegattasByRegattaIdDrawGenerateErrors, ThrowOnError>({
-    url: '/api/v1/regattas/{regatta_id}/draw/generate',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Publish Draw
- */
-export const postApiV1RegattasByRegattaIdDrawPublish = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdDrawPublishData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdDrawPublishResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/draw/publish', ...options });
-
-/**
- * Unpublish Draw
- */
-export const postApiV1RegattasByRegattaIdDrawUnpublish = <ThrowOnError extends boolean = false>(options: Options<PostApiV1RegattasByRegattaIdDrawUnpublishData, ThrowOnError>) => (options.client ?? client).post<PostApiV1RegattasByRegattaIdDrawUnpublishResponses, unknown, ThrowOnError>({ url: '/api/v1/regattas/{regatta_id}/draw/unpublish', ...options });
 
 /**
  * Get Entry Payment Status

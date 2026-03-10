@@ -185,6 +185,7 @@
       "open_required": "Inschrijvings-ID en beschrijving zijn verplicht om een onderzoek te openen.",
       "open_failed": "Onderzoek openen mislukt.",
       "action_required": "Een reden is verplicht voordat je een juryactie toepast.",
+      "invalid_penalty_seconds": "Strafseconden moeten een geheel getal groter dan nul zijn.",
       "action_failed": "Juryactie toepassen mislukt."
     }
   },

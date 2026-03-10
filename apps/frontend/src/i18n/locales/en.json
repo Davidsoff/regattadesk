@@ -185,6 +185,7 @@
       "open_required": "Entry ID and description are required to open an investigation.",
       "open_failed": "Failed to open investigation.",
       "action_required": "A reason is required before applying an adjudication action.",
+      "invalid_penalty_seconds": "Penalty seconds must be a whole number greater than zero.",
       "action_failed": "Failed to apply adjudication action."
     }
   },

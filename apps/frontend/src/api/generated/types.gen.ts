@@ -4,6 +4,12 @@ export type ClientOptions = {
     baseUrl: 'https://localhost:8080' | 'https://0.0.0.0:8080' | (string & {});
 };
 
+export type AdjudicationActionRequest = {
+    reason: string;
+    note?: string;
+    penalty_seconds?: number;
+};
+
 export type AthleteCreateRequest = {
     first_name: string;
     middle_name?: string;
@@ -20,58 +26,6 @@ export type AthleteUpdateRequest = {
     date_of_birth?: LocalDate;
     gender?: string;
     club_id?: Uuid;
-};
-
-export type BibPoolListResponse = {
-    data?: Array<BibPoolResponse>;
-};
-
-export type BibPoolMutationRequest = {
-    block_id?: Uuid;
-    name?: string;
-    allocation_mode?: string;
-    start_bib?: number;
-    end_bib?: number;
-    bib_numbers?: Array<number>;
-    is_overflow?: boolean;
-};
-
-export type BibPoolReorderItem = {
-    bib_pool_id?: Uuid;
-    priority?: number;
-};
-
-export type BibPoolReorderRequest = {
-    items?: Array<BibPoolReorderItem>;
-};
-
-export type BibPoolResponse = {
-    id?: Uuid;
-    regatta_id?: Uuid;
-    block_id?: Uuid;
-    name?: string;
-    allocation_mode?: string;
-    start_bib?: number;
-    end_bib?: number;
-    bib_numbers?: Array<number>;
-    priority?: number;
-    is_overflow?: boolean;
-};
-
-export type BlockMutationRequest = {
-    name?: string;
-    start_time?: string;
-    event_interval_seconds?: number;
-    crew_interval_seconds?: number;
-};
-
-export type BlockReorderItem = {
-    block_id?: Uuid;
-    display_order?: number;
-};
-
-export type BlockReorderRequest = {
-    items?: Array<BlockReorderItem>;
 };
 
 export type CaptureSessionCloseRequest = {
@@ -162,10 +116,6 @@ export type ExportJobStatusResponse = {
      * Human-readable error description. Present only when status is "failed".
      */
     error?: string;
-};
-
-export type GenerateDrawRequest = {
-    seed?: number;
 };
 
 export type HealthStatus = {
@@ -260,6 +210,11 @@ export type MarkerUpdateRequest = {
     tile_x?: number;
     tile_y?: number;
     is_approved?: boolean;
+};
+
+export type OpenInvestigationRequest = {
+    entry_id: Uuid;
+    description: string;
 };
 
 export type OperatorTokenCreateRequest = {
@@ -531,268 +486,152 @@ export type GetApiV1JobsByJobIdDownloadResponses = {
 
 export type GetApiV1JobsByJobIdDownloadResponse = GetApiV1JobsByJobIdDownloadResponses[keyof GetApiV1JobsByJobIdDownloadResponses];
 
-export type GetApiV1RegattasByRegattaIdData = {
+export type GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdData = {
     body?: never;
     path: {
+        entry_id: Uuid;
         regatta_id: Uuid;
     };
     query?: never;
-    url: '/api/v1/regattas/{regatta_id}';
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}';
 };
 
-export type GetApiV1RegattasByRegattaIdResponses = {
+export type GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiV1RegattasByRegattaIdBibPoolsData = {
-    body?: never;
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqData = {
+    body: AdjudicationActionRequest;
     path: {
+        entry_id: Uuid;
         regatta_id: Uuid;
     };
     query?: never;
-    url: '/api/v1/regattas/{regatta_id}/bib_pools';
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/dsq';
 };
 
-export type GetApiV1RegattasByRegattaIdBibPoolsResponses = {
-    /**
-     * OK
-     */
-    200: BibPoolListResponse;
-};
-
-export type GetApiV1RegattasByRegattaIdBibPoolsResponse = GetApiV1RegattasByRegattaIdBibPoolsResponses[keyof GetApiV1RegattasByRegattaIdBibPoolsResponses];
-
-export type PostApiV1RegattasByRegattaIdBibPoolsData = {
-    body: BibPoolMutationRequest;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/bib_pools';
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsErrors = {
-    /**
-     * Validation error, including overlapping bibs
-     */
-    400: ErrorResponse;
-    /**
-     * Regatta not found
-     */
-    404: ErrorResponse;
-    /**
-     * Draw is published; setup is immutable
-     */
-    409: ErrorResponse;
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsError = PostApiV1RegattasByRegattaIdBibPoolsErrors[keyof PostApiV1RegattasByRegattaIdBibPoolsErrors];
-
-export type PostApiV1RegattasByRegattaIdBibPoolsResponses = {
-    /**
-     * Created
-     */
-    201: BibPoolResponse;
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsResponse = PostApiV1RegattasByRegattaIdBibPoolsResponses[keyof PostApiV1RegattasByRegattaIdBibPoolsResponses];
-
-export type PostApiV1RegattasByRegattaIdBibPoolsReorderData = {
-    body: BibPoolReorderRequest;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/bib_pools/reorder';
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsReorderErrors = {
-    /**
-     * Validation error
-     */
-    400: ErrorResponse;
-    /**
-     * Regatta or bib pool not found
-     */
-    404: ErrorResponse;
-    /**
-     * Draw is published; setup is immutable
-     */
-    409: ErrorResponse;
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsReorderError = PostApiV1RegattasByRegattaIdBibPoolsReorderErrors[keyof PostApiV1RegattasByRegattaIdBibPoolsReorderErrors];
-
-export type PostApiV1RegattasByRegattaIdBibPoolsReorderResponses = {
-    /**
-     * OK
-     */
-    200: BibPoolListResponse;
-};
-
-export type PostApiV1RegattasByRegattaIdBibPoolsReorderResponse = PostApiV1RegattasByRegattaIdBibPoolsReorderResponses[keyof PostApiV1RegattasByRegattaIdBibPoolsReorderResponses];
-
-export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
-    body?: never;
-    path: {
-        pool_id: Uuid;
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}';
-};
-
-export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors = {
-    /**
-     * Regatta or bib pool not found
-     */
-    404: ErrorResponse;
-    /**
-     * Draw is published; setup is immutable
-     */
-    409: ErrorResponse;
-};
-
-export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdError = DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors[keyof DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors];
-
-export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses = {
-    /**
-     * No Content
-     */
-    204: void;
-};
-
-export type DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponse = DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses[keyof DeleteApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses];
-
-export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdData = {
-    body: BibPoolMutationRequest;
-    path: {
-        pool_id: Uuid;
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/bib_pools/{pool_id}';
-};
-
-export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors = {
-    /**
-     * Validation error, including overlapping bibs
-     */
-    400: ErrorResponse;
-    /**
-     * Regatta or bib pool not found
-     */
-    404: ErrorResponse;
-    /**
-     * Draw is published; setup is immutable
-     */
-    409: ErrorResponse;
-};
-
-export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdError = PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors[keyof PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdErrors];
-
-export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses = {
-    /**
-     * OK
-     */
-    200: BibPoolResponse;
-};
-
-export type PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponse = PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses[keyof PatchApiV1RegattasByRegattaIdBibPoolsByPoolIdResponses];
-
-export type GetApiV1RegattasByRegattaIdBlocksData = {
-    body?: never;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/blocks';
-};
-
-export type GetApiV1RegattasByRegattaIdBlocksResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type PostApiV1RegattasByRegattaIdBlocksData = {
-    body: BlockMutationRequest;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/blocks';
-};
-
-export type PostApiV1RegattasByRegattaIdBlocksErrors = {
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqErrors = {
     /**
      * Bad Request
      */
     400: unknown;
 };
 
-export type PostApiV1RegattasByRegattaIdBlocksResponses = {
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type PostApiV1RegattasByRegattaIdBlocksReorderData = {
-    body: BlockReorderRequest;
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeData = {
+    body: AdjudicationActionRequest;
     path: {
+        entry_id: Uuid;
         regatta_id: Uuid;
     };
     query?: never;
-    url: '/api/v1/regattas/{regatta_id}/blocks/reorder';
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/exclude';
 };
 
-export type PostApiV1RegattasByRegattaIdBlocksReorderErrors = {
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeErrors = {
     /**
      * Bad Request
      */
     400: unknown;
 };
 
-export type PostApiV1RegattasByRegattaIdBlocksReorderResponses = {
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type DeleteApiV1RegattasByRegattaIdBlocksByBlockIdData = {
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/penalty';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/revert_dsq';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdAdjudicationInvestigationsData = {
     body?: never;
     path: {
-        block_id: Uuid;
         regatta_id: Uuid;
     };
     query?: never;
-    url: '/api/v1/regattas/{regatta_id}/blocks/{block_id}';
+    url: '/api/v1/regattas/{regatta_id}/adjudication/investigations';
 };
 
-export type DeleteApiV1RegattasByRegattaIdBlocksByBlockIdResponses = {
+export type GetApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type PatchApiV1RegattasByRegattaIdBlocksByBlockIdData = {
-    body: BlockMutationRequest;
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsData = {
+    body: OpenInvestigationRequest;
     path: {
-        block_id: Uuid;
         regatta_id: Uuid;
     };
     query?: never;
-    url: '/api/v1/regattas/{regatta_id}/blocks/{block_id}';
+    url: '/api/v1/regattas/{regatta_id}/adjudication/investigations';
 };
 
-export type PatchApiV1RegattasByRegattaIdBlocksByBlockIdResponses = {
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses = {
     /**
      * OK
      */
@@ -834,61 +673,6 @@ export type PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusErrors = {
 };
 
 export type PutApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type PostApiV1RegattasByRegattaIdDrawGenerateData = {
-    body: GenerateDrawRequest;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/draw/generate';
-};
-
-export type PostApiV1RegattasByRegattaIdDrawGenerateErrors = {
-    /**
-     * Bad Request
-     */
-    400: unknown;
-};
-
-export type PostApiV1RegattasByRegattaIdDrawGenerateResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type PostApiV1RegattasByRegattaIdDrawPublishData = {
-    body?: never;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/draw/publish';
-};
-
-export type PostApiV1RegattasByRegattaIdDrawPublishResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type PostApiV1RegattasByRegattaIdDrawUnpublishData = {
-    body?: never;
-    path: {
-        regatta_id: Uuid;
-    };
-    query?: never;
-    url: '/api/v1/regattas/{regatta_id}/draw/unpublish';
-};
-
-export type PostApiV1RegattasByRegattaIdDrawUnpublishResponses = {
     /**
      * OK
      */

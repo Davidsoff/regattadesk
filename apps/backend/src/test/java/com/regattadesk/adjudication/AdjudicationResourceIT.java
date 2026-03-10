@@ -39,7 +39,8 @@ class AdjudicationResourceIT {
             .body("entry.result_label", equalTo("provisional"))
             .body("investigations", hasSize(0))
             .body("revision_impact.current_results_revision", equalTo(0))
-            .body("revision_impact.next_results_revision", equalTo(1));
+            .body("revision_impact.next_results_revision", equalTo(1))
+            .body("revision_impact.message", equalTo("Next adjudication change will advance results revision to 1."));
     }
 
     @Test
@@ -66,6 +67,17 @@ class AdjudicationResourceIT {
             .body("revision_impact.current_results_revision", equalTo(1))
             .body("revision_impact.message", equalTo("Results revision advanced to 1 after DSQ."))
             .body("history", hasSize(1));
+
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+        .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/adjudication/entries/" + data.entryId)
+        .then()
+            .statusCode(200)
+            .body("revision_impact.current_results_revision", equalTo(1))
+            .body("revision_impact.next_results_revision", equalTo(2))
+            .body("revision_impact.message", equalTo("Results revision is 1 after DSQ. Next adjudication change will advance it to 2."));
 
         given()
             .header("Remote-User", "jury-user")

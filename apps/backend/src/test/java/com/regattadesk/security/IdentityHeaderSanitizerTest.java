@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.nullValue;
  * from untrusted (public) paths to prevent authentication bypass.
  *
  * This test suite validates that the trust boundary is correctly enforced:
- * - Trusted paths: /api/v1/staff/*, /api/v1/regattas/{id}/operator/*, /test/auth/*
+ * - Trusted paths: /api/v1/staff/*, /api/v1/regattas/{id}/operator/*, protected regatta staff subpaths, /test/auth/*
  * - Untrusted paths: Everything else (public, health, and non-operator regatta paths)
  */
 @QuarkusTest

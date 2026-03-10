@@ -32,6 +32,8 @@ public class AdjudicationService {
             }
 
             int revision = getResultsRevision(conn, regattaId);
+            List<AdjudicationEntryDetailResponse.InvestigationSummary> investigations = fetchInvestigations(conn, regattaId, entryId);
+            List<AdjudicationEntryDetailResponse.HistoryItem> history = fetchHistory(conn, regattaId, entryId);
             return Optional.of(new AdjudicationEntryDetailResponse(
                 new AdjudicationEntryDetailResponse.EntrySummary(
                     entry.entryId(),
@@ -40,9 +42,9 @@ public class AdjudicationService {
                     entry.resultLabel(),
                     entry.penaltySeconds()
                 ),
-                fetchInvestigations(conn, regattaId, entryId),
-                fetchHistory(conn, regattaId, entryId),
-                revisionImpact(revision, revision, "No adjudication change has been applied yet.")
+                investigations,
+                history,
+                revisionImpact(revision, revision, buildDetailRevisionMessage(revision, history))
             ));
         } catch (Exception e) {
             throw new RuntimeException("Failed to load adjudication detail", e);
@@ -259,6 +261,26 @@ public class AdjudicationService {
 
     private AdjudicationEntryDetailResponse.RevisionImpact revisionImpact(int currentRevision, int previewBaseRevision, String message) {
         return new AdjudicationEntryDetailResponse.RevisionImpact(currentRevision, previewBaseRevision + 1, message);
+    }
+
+    private String buildDetailRevisionMessage(int currentRevision, List<AdjudicationEntryDetailResponse.HistoryItem> history) {
+        if (history.isEmpty()) {
+            return "Next adjudication change will advance results revision to %d.".formatted(currentRevision + 1);
+        }
+
+        AdjudicationEntryDetailResponse.HistoryItem latest = history.get(history.size() - 1);
+        return "Results revision is %d after %s. Next adjudication change will advance it to %d."
+            .formatted(currentRevision, describeAction(latest.action()), currentRevision + 1);
+    }
+
+    private String describeAction(String action) {
+        return switch (action) {
+            case "dsq" -> "DSQ";
+            case "dsq_reverted" -> "DSQ revert";
+            case "penalty" -> "penalty";
+            case "exclusion" -> "exclusion";
+            default -> action;
+        };
     }
 
     private EntryState requireEntry(Connection conn, UUID regattaId, UUID entryId) throws Exception {

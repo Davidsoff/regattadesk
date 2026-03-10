@@ -35,13 +35,14 @@ async function loadInvestigations() {
   }
 }
 
-async function refreshInvestigations() {
+async function refreshInvestigations(options = {}) {
+  const { preserveRevisionImpact = null } = options
   try {
     const response = await api.listInvestigations(regattaId.value)
     investigations.value = response || []
     const nextEntryId = selectedEntryId.value || investigations.value[0]?.entry_id
     if (nextEntryId) {
-      await selectEntry(nextEntryId)
+      await selectEntry(nextEntryId, { resetFeedback: false, preserveRevisionImpact })
     } else {
       detail.value = null
     }
@@ -50,17 +51,31 @@ async function refreshInvestigations() {
   }
 }
 
-async function selectEntry(entryId) {
+async function selectEntry(entryId, options = {}) {
+  const { resetFeedback = true, preserveRevisionImpact = null } = options
   if (!entryId) {
     detail.value = null
     selectedEntryId.value = ''
+    openForm.value.entry_id = ''
     return
   }
-  resetMessages()
+  if (resetFeedback) {
+    resetMessages()
+  }
   selectedEntryId.value = entryId
-  detail.value = await api.getEntryDetail(regattaId.value, entryId)
-  if (!openForm.value.entry_id) {
-    openForm.value.entry_id = entryId
+  const nextDetail = await api.getEntryDetail(regattaId.value, entryId)
+  if (preserveRevisionImpact) {
+    nextDetail.revision_impact = preserveRevisionImpact
+  }
+  detail.value = nextDetail
+  openForm.value.entry_id = entryId
+}
+
+async function handleEntrySelection(entryId) {
+  try {
+    await selectEntry(entryId)
+  } catch (err) {
+    error.value = err.message || t('adjudication.errors.load')
   }
 }
 
@@ -99,7 +114,12 @@ async function submitAction(action) {
     note: actionForm.value.note.trim() || undefined
   }
   if (action === 'penalty') {
-    payload.penalty_seconds = Number(actionForm.value.penalty_seconds)
+    const seconds = Number(actionForm.value.penalty_seconds)
+    if (!Number.isFinite(seconds) || !Number.isInteger(seconds) || seconds <= 0) {
+      error.value = t('adjudication.errors.invalid_penalty_seconds')
+      return
+    }
+    payload.penalty_seconds = seconds
   }
 
   const actionMap = {
@@ -112,9 +132,14 @@ async function submitAction(action) {
   saving.value = true
   resetMessages()
   try {
-    detail.value = await actionMap[action](regattaId.value, selectedEntryId.value, payload)
-    success.value = detail.value.revision_impact.message
-    await refreshInvestigations()
+    const result = await actionMap[action](regattaId.value, selectedEntryId.value, payload)
+    detail.value = result
+    success.value = result.revision_impact.message
+    const revisionImpact = result.revision_impact ? { ...result.revision_impact } : null
+    await refreshInvestigations({ preserveRevisionImpact: revisionImpact })
+    if (revisionImpact && detail.value) {
+      detail.value.revision_impact = revisionImpact
+    }
   } catch (err) {
     error.value = err.message || t('adjudication.errors.action_failed')
   } finally {
@@ -152,7 +177,7 @@ onMounted(loadInvestigations)
         <form class="stack" @submit.prevent="submitInvestigation">
           <label>
             <span>{{ t('adjudication.open.entry_id') }}</span>
-            <input v-model="openForm.entry_id" type="text" />
+            <input v-model="openForm.entry_id" data-testid="open-entry-id" type="text" />
           </label>
           <label>
             <span>{{ t('adjudication.open.description') }}</span>
@@ -168,7 +193,7 @@ onMounted(loadInvestigations)
               type="button"
               class="investigation-item"
               :class="{ active: selectedEntryId === item.entry_id }"
-              @click="selectEntry(item.entry_id)"
+              @click="handleEntrySelection(item.entry_id)"
             >
               <strong>{{ item.crew_name }}</strong>
               <span>{{ item.description }}</span>
@@ -190,10 +215,10 @@ onMounted(loadInvestigations)
             </span>
           </div>
 
-          <form class="stack" @submit.prevent="submitAction('penalty')">
+          <form class="stack" data-testid="penalty-form" @submit.prevent="submitAction('penalty')">
             <label>
               <span>{{ t('adjudication.actions.reason') }}</span>
-              <input v-model="actionForm.reason" type="text" />
+              <input v-model="actionForm.reason" data-testid="action-reason" type="text" />
             </label>
             <label>
               <span>{{ t('adjudication.actions.note') }}</span>
@@ -201,7 +226,7 @@ onMounted(loadInvestigations)
             </label>
             <label>
               <span>{{ t('adjudication.actions.penalty_seconds') }}</span>
-              <input v-model="actionForm.penalty_seconds" type="number" min="1" />
+              <input v-model="actionForm.penalty_seconds" data-testid="penalty-seconds" type="number" min="1" />
             </label>
             <div class="button-row">
               <button type="submit" :disabled="saving">{{ t('adjudication.actions.penalty') }}</button>
