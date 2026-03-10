@@ -1,0 +1,191 @@
+bounded_context:
+  id: V01GAP
+  name: v0.1 Completion Gap Remediation
+  source_spec: pdd/design/detailed-design.md
+
+tickets:
+  - id: V01GAP-001
+    title: "[API] Implement missing regatta-scoped entry and crew bulk-read endpoints"
+    labels:
+      - type:feature
+      - area:api
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC03-004
+    plan_coverage:
+      - Step 6
+      - Step 7
+    nfr_coverage:
+      - Stable paginated read contracts for high-traffic staff views
+    body: |
+      ## Summary
+      Add missing bulk-read endpoints for entries and crews scoped to a regatta so that the
+      staff list views can load data without issuing one request per record.
+
+      ## Scope
+      - Add paginated list endpoint for entries within a regatta.
+      - Add paginated list endpoint for crews within a regatta.
+      - Support cursor-based pagination and basic filter parameters (status, event_id).
+
+      ## Out of Scope
+      - Write operations on entries or crews.
+
+      ## Implementation Tasks
+      1. Define request/response contracts in OpenAPI.
+      2. Implement query handlers with cursor-based pagination.
+      3. Add integration tests for list and filter behavior.
+
+      ## Acceptance Criteria
+      - Clients can list entries and crews for a regatta with cursor pagination.
+      - Filtering by status and event_id returns correct subsets.
+
+      ## Test Requirements
+      - Pagination boundary tests.
+      - Filter correctness tests.
+
+      ## References
+      - pdd/implementation/bc03-core-regatta-management.md
+      - pdd/design/openapi-v0.1.yaml
+
+  - id: V01GAP-002
+    title: "[API] Implement operator token lifecycle endpoints (revoke, list active)"
+    labels:
+      - type:feature
+      - area:api
+      - area:operator
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC02-002
+    plan_coverage:
+      - Step 4
+    nfr_coverage:
+      - Revocable operator access for security hardening
+    body: |
+      ## Summary
+      Extend the operator token API to support listing active tokens and revoking individual
+      tokens so that station management can be done without database access.
+
+      ## Scope
+      - Add list-active-tokens endpoint for a regatta.
+      - Add revoke-token endpoint with audit event.
+
+      ## Out of Scope
+      - Token rotation or automatic expiry workflows.
+
+      ## Implementation Tasks
+      1. Define list and revoke contracts in OpenAPI.
+      2. Implement command handlers with role guards.
+      3. Add integration tests for revocation and visibility.
+
+      ## Acceptance Criteria
+      - Finance/admin staff can list and revoke operator tokens via API.
+      - Revoked tokens are rejected on subsequent operator requests.
+
+      ## Test Requirements
+      - Unit tests for revocation domain logic.
+      - Integration tests for token rejection after revocation.
+
+      ## References
+      - pdd/implementation/bc02-identity-and-access.md
+      - pdd/design/openapi-v0.1.yaml
+
+  - id: V01GAP-003
+    title: "[API] Implement results adjudication and penalty endpoints"
+    labels:
+      - type:feature
+      - area:api
+      - area:results
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC07-001
+    plan_coverage:
+      - Step 18
+      - Step 19
+    nfr_coverage:
+      - Auditable adjudication decisions with immutable history
+    body: |
+      ## Summary
+      Add investigation, penalty, and DSQ endpoints that allow jury staff to record
+      adjudication decisions against entries without leaving an API gap between the
+      results projection and the jury workflow.
+
+      ## Scope
+      - Add investigation open/close endpoints.
+      - Add penalty and DSQ recording endpoints.
+      - Ensure adjudication decisions are stored as immutable events.
+
+      ## Out of Scope
+      - Public results display changes.
+      - Automated penalty calculation rules.
+
+      ## Implementation Tasks
+      1. Define investigation and penalty contracts in OpenAPI.
+      2. Implement event-sourced command handlers.
+      3. Add integration tests for lifecycle and immutability.
+
+      ## Acceptance Criteria
+      - Jury staff can open investigations and record penalties or DSQs.
+      - Adjudication events are immutable once approved.
+
+      ## Test Requirements
+      - Unit tests for adjudication state machine.
+      - Integration tests for full lifecycle from investigation to decision.
+
+      ## References
+      - pdd/implementation/bc07-results-and-adjudication.md
+      - pdd/design/openapi-v0.1.yaml
+
+  - id: V01GAP-004
+    title: "[API] Implement invoice lifecycle and async generation endpoints"
+    labels:
+      - type:feature
+      - area:finance
+      - area:api
+      - priority:p1
+      - milestone:v0.1
+    depends_on:
+      - BC08-001
+    plan_coverage:
+      - Step 15
+    nfr_coverage:
+      - Auditable invoice-state transitions
+      - Stable async generation and mark-paid behavior
+    body: |
+      ## Summary
+      Add invoice generation, listing, detail, and mark-paid contracts so the finance UI
+      can support a complete invoice workflow.
+
+      ## Background
+      The frontend already contains invoice views, but the finance bounded-context backlog
+      does not currently define invoice APIs or generation behavior.
+
+      ## Scope
+      - Add invoice list and detail endpoints.
+      - Add invoice generation request and status behavior.
+      - Add mark-paid behavior and response contract.
+      - Define pagination, filtering, and async generation semantics.
+
+      ## Out of Scope
+      - General ledger or external accounting integrations.
+
+      ## Implementation Tasks
+      1. Define invoice data model and REST contracts.
+      2. Implement invoice generation and retrieval endpoints.
+      3. Implement mark-paid endpoint with auditable state change rules.
+      4. Add contract and integration tests for lifecycle and edge cases.
+
+      ## Acceptance Criteria
+      - Clients can list, inspect, generate, and mark invoices paid.
+      - Async generation semantics are explicit and testable.
+      - Mark-paid behavior is auditable and machine-readable.
+
+      ## Test Requirements
+      - Contract tests for list, detail, generate, and mark-paid endpoints.
+      - Integration tests for generation and status edge cases.
+
+      ## References
+      - pdd/implementation/bc08-finance-and-payments.md
+      - pdd/implementation/plan.md

@@ -30,6 +30,15 @@ If implementation and docs diverge, update docs in the same change.
 - Define acceptance criteria and tests up front.
 - Finish one concern fully (code + tests + docs) before moving on.
 
+## Local command reference
+- Install dependencies: `make install`
+- Build all apps: `make build`
+- Run CI-equivalent checks: `make test`
+- Run lint only: `make lint`
+- Backend unit tests only: `cd apps/backend && ./mvnw test`
+- Frontend lint only: `cd apps/frontend && npm run lint`
+- Regenerate frontend API client: `cd apps/frontend && npm run api:generate`
+
 ## Architecture guardrails
 - Follow API-first development for staff and operator surfaces.
 - Treat event history as append-only; do not mutate audit/event records.

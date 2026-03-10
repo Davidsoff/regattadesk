@@ -21,7 +21,8 @@ import java.util.regex.Pattern;
  * identity extraction occurs.
  * 
  * Trust model:
- * - Trusted paths: Routes protected by Traefik ForwardAuth middleware (e.g., /api/v1/staff, /api/v1/regattas/{id}/operator/*)
+ * - Trusted paths: Routes protected by Traefik ForwardAuth middleware (e.g., /api/v1/staff,
+ *   /api/v1/regattas/{id}/operator/*, and explicit staff finance routes under /api/v1/regattas/{id})
  * - Untrusted paths: Public routes without ForwardAuth (e.g., /api/health, /api/v1/public, /q/health, /api/v1/regattas/{id}/events)
  * 
  * On untrusted paths, identity headers are stripped to prevent forgery attacks.
@@ -53,6 +54,14 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
     private static final Pattern OPERATOR_PATH_PATTERN = Pattern.compile(
         "^api/v1/regattas/[^/]+/operator(/.*)?$"
     );
+
+    /**
+     * Staff finance paths under /api/v1/regattas/{id}.
+     * These are backend role-protected staff endpoints even though they do not live under /api/v1/staff.
+     */
+    private static final Pattern STAFF_FINANCE_PATH_PATTERN = Pattern.compile(
+        "^api/v1/regattas/[^/]+/(entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?)$"
+    );
     
     /**
      * Identity header names that must be stripped from untrusted requests.
@@ -73,6 +82,9 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
         boolean isTrustedPath = TRUSTED_PATH_PREFIXES.stream()
             .anyMatch(normalizedPath::startsWith)
             || OPERATOR_PATH_PATTERN.matcher(normalizedPath).matches();
+        if (!isTrustedPath) {
+            isTrustedPath = STAFF_FINANCE_PATH_PATTERN.matcher(normalizedPath).matches();
+        }
         
         if (!isTrustedPath) {
             // Untrusted path - strip identity headers to prevent forgery

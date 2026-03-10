@@ -50,7 +50,7 @@ async function loadInvoices() {
   error.value = null
   try {
     const result = await financeApi.listInvoices(regattaId)
-    invoices.value = result.invoices || []
+    invoices.value = result.data || []
   } catch (err) {
     error.value = err.message || t('common.error')
   } finally {

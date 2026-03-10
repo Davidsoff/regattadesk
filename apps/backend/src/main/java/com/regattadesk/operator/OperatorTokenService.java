@@ -226,6 +226,28 @@ public class OperatorTokenService {
         return revokeTokenForRegatta(tokenId, null) == RevokeResult.REVOKED;
     }
 
+    /**
+     * Checks whether a token string is valid for a given regatta, without
+     * enforcing station scope.
+     *
+     * <p>Use this for operations where the requesting device is already identified
+     * by the regatta context alone (e.g., listing all sessions for a regatta).
+     *
+     * @param tokenString the raw token string
+     * @param regattaId   the regatta the token must belong to
+     * @return {@code true} if the token is currently valid for the regatta
+     */
+    public boolean isTokenActiveForRegatta(String tokenString, UUID regattaId) {
+        if (tokenString == null || tokenString.isBlank()) return false;
+        if (regattaId == null) return false;
+
+        Optional<OperatorToken> tokenOpt = repository.findByToken(tokenString);
+        if (tokenOpt.isEmpty()) return false;
+
+        OperatorToken token = tokenOpt.get();
+        return token.isCurrentlyValid() && regattaId.equals(token.getRegattaId());
+    }
+
     public RevokeResult revokeTokenForRegatta(UUID tokenId, UUID regattaId) {
         if (tokenId == null) {
             throw new IllegalArgumentException("Token ID cannot be null");
