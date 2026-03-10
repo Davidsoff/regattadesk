@@ -124,6 +124,7 @@ describe('ExportJobStatus', () => {
       })
 
       expect(wrapper.find('[data-testid="export-download-link"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="export-expiration-notice"]').exists()).toBe(false)
 
       const regenerateButton = wrapper.find('[data-testid="export-regenerate-button"]')
       expect(regenerateButton.exists()).toBe(true)
