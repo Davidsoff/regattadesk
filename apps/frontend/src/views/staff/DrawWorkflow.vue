@@ -128,7 +128,6 @@ async function generateDraw() {
     
     drawStatus.value.generated = true
     generatedSeed.value = result.seed
-    revisions.value.draw += 1
     
     // Reset seed input
     showSeedInput.value = false

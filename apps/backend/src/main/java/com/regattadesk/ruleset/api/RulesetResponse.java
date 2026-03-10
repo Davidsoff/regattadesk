@@ -27,6 +27,9 @@ public class RulesetResponse {
     
     @JsonProperty("is_global")
     private boolean isGlobal;
+
+    @JsonProperty("draw_published")
+    private boolean drawPublished;
     
     public RulesetResponse() {
     }
@@ -38,6 +41,7 @@ public class RulesetResponse {
         this.description = ruleset.getDescription();
         this.ageCalculationType = ruleset.getAgeCalculationType();
         this.isGlobal = ruleset.isGlobal();
+        this.drawPublished = ruleset.isDrawPublished();
     }
     
     public UUID getId() {
@@ -86,5 +90,13 @@ public class RulesetResponse {
     
     public void setGlobal(boolean global) {
         isGlobal = global;
+    }
+
+    public boolean isDrawPublished() {
+        return drawPublished;
+    }
+
+    public void setDrawPublished(boolean drawPublished) {
+        this.drawPublished = drawPublished;
     }
 }

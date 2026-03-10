@@ -13,7 +13,8 @@ const mockRuleset = {
   version: '2024',
   description: 'Test description',
   age_calculation_type: 'actual_at_start',
-  is_global: false
+  is_global: false,
+  draw_published: false
 }
 
 // Mock the draw API
@@ -246,6 +247,37 @@ describe('RulesetDetail view (FEGAP-008-A)', () => {
           age_calculation_type: 'actual_at_start'
         })
       })
+    })
+  })
+
+  describe('Published ruleset immutability', () => {
+    it('shows clear read-only messaging and disables save/duplicate controls', async () => {
+      mockDrawApi.getRuleset.mockResolvedValue({ ...mockRuleset, draw_published: true })
+
+      const wrapper = await mountPage()
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalled()
+      })
+
+      expect(wrapper.find('[data-testid="ruleset-read-only-message"]').text()).toMatch(/published|read-only|gepubliceerd/i)
+      expect(wrapper.find('input[name="name"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('button[data-testid="save-button"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('button[data-testid="duplicate-button"]').attributes('disabled')).toBeDefined()
+    })
+
+    it('does not attempt to save a published ruleset', async () => {
+      mockDrawApi.getRuleset.mockResolvedValue({ ...mockRuleset, draw_published: true })
+
+      const wrapper = await mountPage()
+
+      await vi.waitFor(() => {
+        expect(mockDrawApi.getRuleset).toHaveBeenCalled()
+      })
+
+      await wrapper.find('button[data-testid="save-button"]').trigger('click')
+
+      expect(mockDrawApi.updateRuleset).not.toHaveBeenCalled()
     })
   })
 

@@ -380,7 +380,8 @@
       "promote_success": "Ruleset promoted to global successfully",
       "promote_error": "Failed to promote ruleset",
       "promote_forbidden": "You do not have permission to promote rulesets. Only super administrators can perform this action.",
-      "load_error": "Failed to load ruleset"
+      "load_error": "Failed to load ruleset",
+      "read_only_after_publish": "This ruleset is read-only because the draw has been published."
     }
   },
   "validation": {

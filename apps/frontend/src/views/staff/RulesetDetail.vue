@@ -60,6 +60,9 @@ const canPromote = computed(() => {
   return isSuperAdmin.value && ruleset.value && !ruleset.value.is_global
 })
 
+const isPublished = computed(() => Boolean(ruleset.value?.draw_published))
+const isEditable = computed(() => !isPublished.value)
+
 // Load ruleset data
 async function loadRuleset() {
   loading.value = true
@@ -118,6 +121,11 @@ function getFirstErrorMessage() {
 
 // Save ruleset
 async function saveRuleset() {
+  if (!isEditable.value) {
+    errorMessage.value = t('ruleset.messages.read_only_after_publish')
+    return
+  }
+
   if (!validateForm()) {
     return
   }
@@ -155,6 +163,11 @@ async function saveRuleset() {
 
 // Duplicate dialog management
 function openDuplicateDialog() {
+  if (!isEditable.value) {
+    errorMessage.value = t('ruleset.messages.read_only_after_publish')
+    return
+  }
+
   duplicateForm.value = {
     new_name: '',
     new_version: ''
@@ -390,6 +403,14 @@ onMounted(() => {
       <div data-testid="global-status" class="status-badge">
         {{ ruleset.is_global ? t('ruleset.status.global') : t('ruleset.status.regatta_owned') }}
       </div>
+
+      <div
+        v-if="isPublished"
+        data-testid="ruleset-read-only-message"
+        class="immutability-message"
+      >
+        {{ t('ruleset.messages.read_only_after_publish') }}
+      </div>
       
       <!-- Form -->
       <form @submit.prevent="saveRuleset">
@@ -401,6 +422,7 @@ onMounted(() => {
               v-model="formData.name"
               name="name"
               type="text"
+              :disabled="!isEditable"
               :aria-invalid="formErrors.name ? 'true' : undefined"
             />
           </label>
@@ -414,6 +436,7 @@ onMounted(() => {
               v-model="formData.version"
               name="version"
               type="text"
+              :disabled="!isEditable"
               :aria-invalid="formErrors.version ? 'true' : undefined"
             />
           </label>
@@ -427,6 +450,7 @@ onMounted(() => {
               v-model="formData.description"
               name="description"
               rows="3"
+              :disabled="!isEditable"
             />
           </label>
         </div>
@@ -438,6 +462,7 @@ onMounted(() => {
               id="ruleset-age-calc"
               v-model="formData.age_calculation_type"
               name="age_calculation_type"
+              :disabled="!isEditable"
               :aria-invalid="formErrors.age_calculation_type ? 'true' : undefined"
             >
               <option value="">{{ t('staff.regatta_detail.form.selectPlaceholder') }}</option>
@@ -461,7 +486,7 @@ onMounted(() => {
           <button
             type="submit"
             data-testid="save-button"
-            :disabled="saving"
+            :disabled="saving || !isEditable"
           >
             {{ saving ? t('common.loading') : t('common.save') }}
           </button>
@@ -470,6 +495,7 @@ onMounted(() => {
             type="button"
             data-testid="duplicate-button"
             ref="duplicateTriggerButton"
+            :disabled="!isEditable"
             @click="openDuplicateDialog"
           >
             {{ t('ruleset.actions.duplicate') }}
