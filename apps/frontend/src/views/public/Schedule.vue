@@ -55,15 +55,31 @@ function formatScheduleTime(value) {
   return formatted || '-'
 }
 
-function savedRegattaId() {
+function readSessionStorage(key) {
   if (typeof sessionStorage === 'undefined') {
     return ''
   }
 
   try {
-    return String(sessionStorage.getItem(REGATTA_ID_STORAGE_KEY) ?? '')
+    return String(sessionStorage.getItem(key) ?? '')
   } catch {
     return ''
+  }
+}
+
+function savedRegattaId() {
+  return readSessionStorage(REGATTA_ID_STORAGE_KEY)
+}
+
+function writeSessionStorage(key, value) {
+  if (!value || typeof sessionStorage === 'undefined') {
+    return
+  }
+
+  try {
+    sessionStorage.setItem(key, value)
+  } catch {
+    // Some browsers can throw on sessionStorage access in private modes.
   }
 }
 
@@ -77,15 +93,7 @@ function syncRecoveredRegattaId() {
 }
 
 function persistRegattaId(value) {
-  if (!value || typeof sessionStorage === 'undefined') {
-    return
-  }
-
-  try {
-    sessionStorage.setItem(REGATTA_ID_STORAGE_KEY, value)
-  } catch {
-    // Some browsers can throw on sessionStorage access in private modes.
-  }
+  writeSessionStorage(REGATTA_ID_STORAGE_KEY, value)
 }
 
 async function applyRecoveredRegatta() {
@@ -254,14 +262,11 @@ onMounted(loadSchedule)
 
   :deep(.rd-table-head) {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
+    inset-inline-start: 0;
+    inline-size: 1px;
+    block-size: 1px;
     overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+    clip-path: inset(50%);
   }
 
   :deep(.rd-table-body tr) {
