@@ -135,6 +135,7 @@
   },
   "navigation": {
     "regattas": "Regattas",
+    "sessions": "Sessions",
     "rulesets": "Rulesets",
     "setup": "Setup",
     "draw": "Draw",
@@ -380,7 +381,8 @@
       "promote_success": "Ruleset promoted to global successfully",
       "promote_error": "Failed to promote ruleset",
       "promote_forbidden": "You do not have permission to promote rulesets. Only super administrators can perform this action.",
-      "load_error": "Failed to load ruleset"
+      "load_error": "Failed to load ruleset",
+      "read_only_after_publish": "This ruleset is read-only because the draw has been published."
     }
   },
   "validation": {
@@ -398,11 +400,33 @@
     "regattas": {
       "title": "Regattas",
       "description": "Select a regatta to work with",
+      "token_status": "Active token {token} at station {station}.",
       "access_hint": "Open the link provided by your regatta administrator to access your assigned regatta."
     },
     "regatta": {
       "title": "Regatta",
-      "id": "Regatta ID"
+      "id": "Regatta ID",
+      "token_status": "Operator token: {token}",
+      "no_token": "Unavailable",
+      "station_context": "Station: {station}",
+      "session_label": "Session: {id}",
+      "create_session": "Create Capture Session",
+      "create_failed": "Failed to create capture session.",
+      "close_failed": "Failed to close capture session.",
+      "errors": {
+        "load_sessions_failed": "Failed to load capture sessions.",
+        "create_failed": "Failed to create capture session.",
+        "close_failed": "Failed to close capture session."
+      },
+      "missing_block_scope": "Operator token must include a block scope before starting a capture session.",
+      "loading_sessions": "Loading capture sessions...",
+      "open_session": "Open Session",
+      "close_session": "Close Session",
+      "session_summary": "{station} · {session_type} · {state}",
+      "sync_synced": "Sync status: synced",
+      "sync_pending": "Sync status: pending ({reason})",
+      "sync_pending_default": "awaiting upload",
+      "sync_attention": "Sync status: attention required"
     },
     "line_scan": {
       "title": "Line Scan",

@@ -40,6 +40,107 @@ components:
           type: string
         club_id:
           $ref: "#/components/schemas/UUID"
+    BibPoolListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/BibPoolResponse"
+    BibPoolMutationRequest:
+      type: object
+      properties:
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        allocation_mode:
+          type: string
+        start_bib:
+          type: integer
+          format: int32
+        end_bib:
+          type: integer
+          format: int32
+        bib_numbers:
+          type: array
+          items:
+            type: integer
+            format: int32
+        is_overflow:
+          type: boolean
+    BibPoolReorderItem:
+      type: object
+      properties:
+        bib_pool_id:
+          $ref: "#/components/schemas/UUID"
+        priority:
+          type: integer
+          format: int32
+    BibPoolReorderRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BibPoolReorderItem"
+    BibPoolResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        allocation_mode:
+          type: string
+        start_bib:
+          type: integer
+          format: int32
+        end_bib:
+          type: integer
+          format: int32
+        bib_numbers:
+          type: array
+          items:
+            type: integer
+            format: int32
+        priority:
+          type: integer
+          format: int32
+        is_overflow:
+          type: boolean
+    BlockMutationRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        start_time:
+          type: string
+        event_interval_seconds:
+          type: integer
+          format: int32
+        crew_interval_seconds:
+          type: integer
+          format: int32
+    BlockReorderItem:
+      type: object
+      properties:
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        display_order:
+          type: integer
+          format: int32
+    BlockReorderRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BlockReorderItem"
     CaptureSessionCloseRequest:
       type: object
       properties:
@@ -193,6 +294,12 @@ components:
           type: string
           description: Human-readable error description. Present only when status
             is "failed".
+    GenerateDrawRequest:
+      type: object
+      properties:
+        seed:
+          type: integer
+          format: int64
     HealthStatus:
       type: object
       properties:
@@ -787,6 +894,316 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Export Job Resource
+  /api/v1/regattas/{regatta_id}:
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Get Regatta
+      tags:
+      - Regatta Resource
+  /api/v1/regattas/{regatta_id}/bib_pools:
+    get:
+      summary: List bib pools
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BibPoolListResponse"
+      tags:
+      - Bib Pool Resource
+    post:
+      summary: Create bib pool
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BibPoolMutationRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BibPoolResponse"
+        "400":
+          description: "Validation error, including overlapping bibs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Bib Pool Resource
+  /api/v1/regattas/{regatta_id}/bib_pools/reorder:
+    post:
+      summary: Reorder bib pools
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BibPoolReorderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BibPoolListResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta or bib pool not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Bib Pool Resource
+  /api/v1/regattas/{regatta_id}/bib_pools/{pool_id}:
+    patch:
+      summary: Update bib pool
+      parameters:
+      - name: pool_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BibPoolMutationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BibPoolResponse"
+        "400":
+          description: "Validation error, including overlapping bibs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta or bib pool not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Bib Pool Resource
+    delete:
+      summary: Delete bib pool
+      parameters:
+      - name: pool_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Regatta or bib pool not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Draw is published; setup is immutable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Bib Pool Resource
+  /api/v1/regattas/{regatta_id}/blocks:
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: List Blocks
+      tags:
+      - Block Resource
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockMutationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Create Block
+      tags:
+      - Block Resource
+  /api/v1/regattas/{regatta_id}/blocks/reorder:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockReorderRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Reorder Blocks
+      tags:
+      - Block Resource
+  /api/v1/regattas/{regatta_id}/blocks/{block_id}:
+    patch:
+      parameters:
+      - name: block_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlockMutationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Update Block
+      tags:
+      - Block Resource
+    delete:
+      parameters:
+      - name: block_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Delete Block
+      tags:
+      - Block Resource
   /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status:
     put:
       parameters:
@@ -838,6 +1255,65 @@ paths:
       summary: Get Club Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/draw/generate:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDrawRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Generate Draw
+      tags:
+      - Draw Resource
+  /api/v1/regattas/{regatta_id}/draw/publish:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Publish Draw
+      tags:
+      - Draw Resource
+  /api/v1/regattas/{regatta_id}/draw/unpublish:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Unpublish Draw
+      tags:
+      - Draw Resource
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/payment_status:
     put:
       parameters:

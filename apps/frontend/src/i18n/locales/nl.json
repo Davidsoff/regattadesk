@@ -135,6 +135,7 @@
   },
   "navigation": {
     "regattas": "Regatta's",
+    "sessions": "Sessies",
     "rulesets": "Reglementen",
     "setup": "Instelling",
     "draw": "Loting",
@@ -380,7 +381,8 @@
       "promote_success": "Regelset succesvol gepromoveerd naar globaal",
       "promote_error": "Regelset promoveren mislukt",
       "promote_forbidden": "Je hebt geen toestemming om regelsets te promoveren. Alleen super administrators kunnen deze actie uitvoeren.",
-      "load_error": "Regelset laden mislukt"
+      "load_error": "Regelset laden mislukt",
+      "read_only_after_publish": "Deze regelset is alleen-lezen omdat de loting is gepubliceerd."
     }
   },
   "validation": {
@@ -398,11 +400,33 @@
     "regattas": {
       "title": "Regatta's",
       "description": "Selecteer een regatta om mee te werken",
+      "token_status": "Actief token {token} op station {station}.",
       "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",
-      "id": "Regatta ID"
+      "id": "Regatta ID",
+      "token_status": "Operator-token: {token}",
+      "no_token": "Niet beschikbaar",
+      "station_context": "Station: {station}",
+      "session_label": "Sessie: {id}",
+      "create_session": "Opnamesessie maken",
+      "create_failed": "Opnamesessie maken mislukt.",
+      "close_failed": "Opnamesessie sluiten mislukt.",
+      "errors": {
+        "load_sessions_failed": "Opnamesessies laden mislukt.",
+        "create_failed": "Opnamesessie maken mislukt.",
+        "close_failed": "Opnamesessie sluiten mislukt."
+      },
+      "missing_block_scope": "Het operator-token moet een blokscope bevatten voordat een opnamesessie kan starten.",
+      "loading_sessions": "Opnamesessies laden...",
+      "open_session": "Sessie openen",
+      "close_session": "Sessie sluiten",
+      "session_summary": "{station} · {session_type} · {state}",
+      "sync_synced": "Syncstatus: gesynchroniseerd",
+      "sync_pending": "Syncstatus: in wachtrij ({reason})",
+      "sync_pending_default": "wacht op upload",
+      "sync_attention": "Syncstatus: aandacht vereist"
     },
     "line_scan": {
       "title": "Line Scan",

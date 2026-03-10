@@ -25,6 +25,8 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
     private String currency;
     private int drawRevision;
     private int resultsRevision;
+    private Long drawSeed;
+    private boolean drawPublished;
     private Integer defaultPenaltySeconds;
     private Boolean allowCustomPenaltySeconds;
     
@@ -36,6 +38,7 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
         this.status = "draft";
         this.drawRevision = 0;
         this.resultsRevision = 0;
+        this.drawPublished = false;
         this.defaultPenaltySeconds = 60; // Default 60 seconds
         this.allowCustomPenaltySeconds = false; // Default false
     }
@@ -89,12 +92,35 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
     }
     
     /**
+     * Generates a draw seed without publishing it.
+     */
+    public void generateDraw(long drawSeed) {
+        if (drawPublished) {
+            throw new IllegalStateException("Cannot generate draw while a draw is published");
+        }
+        raiseEvent(new DrawGeneratedEvent(getId(), drawSeed));
+    }
+
+    /**
      * Publishes the draw with the given seed.
      * Increments the draw revision.
      */
     public void publishDraw(long drawSeed) {
+        if (drawPublished) {
+            throw new IllegalStateException("Draw is already published");
+        }
         int newDrawRevision = this.drawRevision + 1;
         raiseEvent(new DrawPublishedEvent(getId(), drawSeed, newDrawRevision));
+    }
+
+    /**
+     * Unpublishes the current draw and restores editability for setup resources.
+     */
+    public void unpublishDraw() {
+        if (!drawPublished && drawSeed == null) {
+            return;
+        }
+        raiseEvent(new DrawUnpublishedEvent(getId()));
     }
     
     /**
@@ -102,7 +128,7 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
      * In v0.1, this is prohibited after draw publication.
      */
     public void addEntry(UUID entryId, UUID eventId, UUID blockId, UUID crewId, UUID billingClubId) {
-        if (drawRevision > 0) {
+        if (drawPublished) {
             throw new IllegalStateException("Cannot add entry after draw publication in v0.1");
         }
         if (entryId == null) throw new IllegalArgumentException("Entry ID cannot be null");
@@ -161,14 +187,24 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
             this.entryFee = created.getEntryFee();
             this.currency = created.getCurrency();
             this.status = "draft";
+            this.drawSeed = null;
+            this.drawPublished = false;
             this.defaultPenaltySeconds = created.getDefaultPenaltySeconds() != null
                 ? created.getDefaultPenaltySeconds()
                 : 60;
             this.allowCustomPenaltySeconds = created.getAllowCustomPenaltySeconds() != null
                 ? created.getAllowCustomPenaltySeconds()
                 : false;
+        } else if (event instanceof DrawGeneratedEvent generated) {
+            this.drawSeed = generated.getDrawSeed();
+            this.drawPublished = false;
         } else if (event instanceof DrawPublishedEvent published) {
             this.drawRevision = published.getDrawRevision();
+            this.drawSeed = published.getDrawSeed();
+            this.drawPublished = true;
+        } else if (event instanceof DrawUnpublishedEvent) {
+            this.drawSeed = null;
+            this.drawPublished = false;
         } else if (event instanceof EntryAddedEvent) {
             // Entry tracking would be handled in a separate projection
             // This aggregate only needs to track if draw has been published
@@ -218,6 +254,14 @@ public class RegattaAggregate extends AggregateRoot<RegattaAggregate> {
     
     public int getResultsRevision() {
         return resultsRevision;
+    }
+
+    public Long getDrawSeed() {
+        return drawSeed;
+    }
+
+    public boolean isDrawPublished() {
+        return drawPublished;
     }
     
     public Integer getDefaultPenaltySeconds() {

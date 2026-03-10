@@ -43,7 +43,7 @@ class RegattaDrawPublicationTest {
     }
     
     @Test
-    void testPublishDrawMultipleTimes() {
+    void testPublishDrawRequiresUnpublishBeforeRepublish() {
         UUID regattaId = UUID.randomUUID();
         RegattaAggregate regatta = RegattaAggregate.create(
             regattaId,
@@ -58,13 +58,9 @@ class RegattaDrawPublicationTest {
         // First publication
         regatta.publishDraw(111L);
         regatta.markEventsAsCommitted();
-        
-        // Second publication
-        regatta.publishDraw(222L);
-        
-        DrawPublishedEvent event = (DrawPublishedEvent) regatta.getUncommittedEvents().get(0);
-        assertEquals(2, event.getDrawRevision());
-        assertEquals(222L, event.getDrawSeed());
+
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> regatta.publishDraw(222L));
+        assertEquals("Draw is already published", exception.getMessage());
     }
     
     @Test
@@ -143,7 +139,7 @@ class RegattaDrawPublicationTest {
     }
     
     @Test
-    void testDrawRevisionTracking() {
+    void testDrawRevisionTrackingAcrossPublishUnpublishCycles() {
         UUID regattaId = UUID.randomUUID();
         RegattaAggregate regatta = RegattaAggregate.create(
             regattaId,
@@ -162,16 +158,18 @@ class RegattaDrawPublicationTest {
         regatta.publishDraw(111L);
         regatta.markEventsAsCommitted();
         assertEquals(1, regatta.getDrawRevision());
-        
-        // After second publication
+
+        // After unpublish, the setup returns to editable draft state.
+        regatta.unpublishDraw();
+        regatta.markEventsAsCommitted();
+        assertEquals(1, regatta.getDrawRevision());
+        assertFalse(regatta.isDrawPublished());
+
+        // Re-publish advances the public revision instead of reusing v1.
         regatta.publishDraw(222L);
         regatta.markEventsAsCommitted();
         assertEquals(2, regatta.getDrawRevision());
-        
-        // After third publication
-        regatta.publishDraw(333L);
-        regatta.markEventsAsCommitted();
-        assertEquals(3, regatta.getDrawRevision());
+        assertTrue(regatta.isDrawPublished());
     }
     
     @Test

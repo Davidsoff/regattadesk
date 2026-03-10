@@ -63,6 +63,13 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
     private static final Pattern STAFF_FINANCE_PATH_PATTERN = Pattern.compile(
         "^api/v1/regattas/[^/]+/(entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables)$"
     );
+
+    /**
+     * Staff draw-management paths under /api/v1/regattas/{id}.
+     */
+    private static final Pattern STAFF_DRAW_PATH_PATTERN = Pattern.compile(
+        "^api/v1/regattas/[^/]+($|/blocks(/.*)?|/bib_pools(/.*)?|/draw(/.*)?)$"
+    );
     
     /**
      * Identity header names that must be stripped from untrusted requests.
@@ -85,6 +92,9 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
             || OPERATOR_PATH_PATTERN.matcher(normalizedPath).matches();
         if (!isTrustedPath) {
             isTrustedPath = STAFF_FINANCE_PATH_PATTERN.matcher(normalizedPath).matches();
+        }
+        if (!isTrustedPath) {
+            isTrustedPath = STAFF_DRAW_PATH_PATTERN.matcher(normalizedPath).matches();
         }
         
         if (!isTrustedPath) {

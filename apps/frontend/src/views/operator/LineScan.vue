@@ -1,12 +1,15 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
 import LineScanCapture from '../../components/operator/LineScanCapture.vue'
+import { resolveOperatorDeviceId, resolveOperatorStation, resolveOperatorToken } from '../../operatorContext'
+import { setSelectedCaptureSessionId } from '../../operatorSessionSelection'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 
 const handoff = ref(null)
 const handoffPin = ref('')
@@ -16,39 +19,9 @@ const conflictError = ref(false)
 const handoffErrorMessage = ref('')
 const operatorAccessMode = ref('active')
 const isSubmitting = ref(false)
-const DEVICE_ID_STORAGE_KEY = 'rd_operator_device_id'
-const STATION_STORAGE_KEY = 'rd_operator_station'
-
-function resolveOperatorDeviceId() {
-  const storage = globalThis.window?.localStorage
-  if (typeof storage?.getItem !== 'function' || typeof storage?.setItem !== 'function') {
-    return 'operator-device'
-  }
-
-  const existing = (storage.getItem(DEVICE_ID_STORAGE_KEY) || '').trim()
-  if (existing) {
-    return existing
-  }
-
-  const generated =
-    typeof globalThis.crypto?.randomUUID === 'function'
-      ? globalThis.crypto.randomUUID()
-      : 'operator-device'
-  storage.setItem(DEVICE_ID_STORAGE_KEY, generated)
-  return generated
-}
 
 const operatorToken = computed(() => {
-  const contextToken =
-    typeof globalThis.__REGATTADESK_AUTH__?.operatorToken === 'string'
-      ? globalThis.__REGATTADESK_AUTH__.operatorToken.trim()
-      : ''
-  const storageToken =
-    typeof globalThis.window?.localStorage?.getItem === 'function'
-      ? (globalThis.window.localStorage.getItem('rd_operator_token') || '').trim()
-      : ''
-
-  return contextToken || storageToken
+  return resolveOperatorToken()
 })
 
 const operatorApi = createOperatorApi(createApiClient(), {
@@ -56,48 +29,19 @@ const operatorApi = createOperatorApi(createApiClient(), {
 })
 const currentDeviceId = ref(resolveOperatorDeviceId())
 const operatorStation = computed(() => {
-  const contextStation =
-    typeof globalThis.__REGATTADESK_AUTH__?.operatorStation === 'string'
-      ? globalThis.__REGATTADESK_AUTH__.operatorStation.trim()
-      : ''
-  const storageStation =
-    typeof globalThis.window?.localStorage?.getItem === 'function'
-      ? (globalThis.window.localStorage.getItem(STATION_STORAGE_KEY) || '').trim()
-      : ''
-
-  return contextStation || storageStation || 'finish-line'
+  return resolveOperatorStation()
 })
 
 const showHandoffToast = computed(() => handoff.value?.status === 'pending')
 const showReadOnlyBanner = computed(() => operatorAccessMode.value === 'read_only')
 const isCaptureDisabled = computed(() => operatorAccessMode.value === 'read_only')
-function resolveCaptureSessionFromQuery() {
-  let queryValue = ''
-  if (typeof route.query?.capture_session_id === 'string') {
-    queryValue = route.query.capture_session_id
-  } else if (typeof route.query?.captureSessionId === 'string') {
-    queryValue = route.query.captureSessionId
-  }
-
-  return queryValue.trim()
-}
-
-function resolveCaptureSessionId() {
-  const contextSessionId =
-    typeof globalThis.__REGATTADESK_AUTH__?.captureSessionId === 'string'
-      ? globalThis.__REGATTADESK_AUTH__.captureSessionId.trim()
-      : ''
-  const querySessionId = resolveCaptureSessionFromQuery()
-  const storageSessionId =
-    typeof globalThis.window?.localStorage?.getItem === 'function'
-      ? (globalThis.window.localStorage.getItem('rd_capture_session_id') || '').trim()
-      : ''
-
-  return contextSessionId || querySessionId || storageSessionId || null
-}
-
-const captureSessionId = ref(resolveCaptureSessionId())
-const showCaptureWorkspace = ref(false) // Toggle for showing capture workspace
+const captureSessionId = computed(() =>
+  typeof route.params.captureSessionId === 'string' && route.params.captureSessionId.trim()
+    ? route.params.captureSessionId.trim()
+    : null
+)
+const showCaptureWorkspace = ref(false)
+const isCaptureWorkspaceVisible = computed(() => showCaptureWorkspace.value || Boolean(captureSessionId.value))
 
 function applyAccessModeFromResponse(response) {
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
@@ -242,7 +186,14 @@ async function completeHandoff() {
     handoff.value = response
     applyAccessModeFromResponse(response)
     if (typeof response?.capture_session_id === 'string' && response.capture_session_id.trim()) {
-      captureSessionId.value = response.capture_session_id.trim()
+      setSelectedCaptureSessionId(String(route.params.regattaId), response.capture_session_id.trim())
+      await router.replace({
+        name: 'operator-session-line-scan',
+        params: {
+          regattaId: String(route.params.regattaId),
+          captureSessionId: response.capture_session_id.trim()
+        }
+      })
     }
   } catch (error) {
     handleCompleteHandoffError(error)
@@ -266,6 +217,18 @@ function toggleCaptureWorkspace() {
   handoffErrorMessage.value = ''
   showCaptureWorkspace.value = true
 }
+
+watch(
+  () => captureSessionId.value,
+  (nextCaptureSessionId) => {
+    if (!nextCaptureSessionId) {
+      return
+    }
+
+    setSelectedCaptureSessionId(String(route.params.regattaId), nextCaptureSessionId)
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -329,14 +292,15 @@ function toggleCaptureWorkspace() {
         @click="toggleCaptureWorkspace"
         :disabled="!operatorToken"
       >
-        {{ showCaptureWorkspace ? 'Hide' : 'Show' }} Capture Workspace
+        {{ isCaptureWorkspaceVisible ? 'Hide' : 'Show' }} Capture Workspace
       </button>
       <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
+      <span v-if="captureSessionId" class="operator-session-state">Session {{ captureSessionId }}</span>
     </div>
 
     <!-- Capture Workspace -->
     <LineScanCapture
-      v-if="showCaptureWorkspace && operatorToken && captureSessionId"
+      v-if="isCaptureWorkspaceVisible && operatorToken && captureSessionId"
       :capture-session-id="captureSessionId"
       :regatta-id="route.params.regattaId"
     />

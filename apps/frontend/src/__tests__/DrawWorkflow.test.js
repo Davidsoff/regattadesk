@@ -9,15 +9,22 @@ import DrawWorkflow from '../views/staff/DrawWorkflow.vue'
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
 
 function jsonResponse(body, status = 200) {
-  return {
-    ok: status >= 200 && status < 300,
+  return new Response(JSON.stringify(body), {
     status,
     headers: {
-      get(name) {
-        return name.toLowerCase() === 'content-type' ? 'application/json' : null
-      }
-    },
-    json: vi.fn().mockResolvedValue(body)
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+async function expectPostedRequest(call, expectedPath, expectedBody) {
+  const request = globalThis.fetch.mock.calls[call][0]
+  expect(request).toBeInstanceOf(Request)
+  expect(new URL(request.url).pathname).toBe(expectedPath)
+  expect(request.method).toBe('POST')
+
+  if (expectedBody !== undefined) {
+    await expect(request.clone().json()).resolves.toEqual(expectedBody)
   }
 }
 
@@ -112,19 +119,14 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await wrapper.find('[data-testid="generate-draw-button"]').trigger('click')
       await nextTick()
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `/api/v1/regattas/${REGATTA_ID}/draw/generate`,
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ seed: 12345 })
-        })
-      )
+      await expectPostedRequest(0, `/api/v1/regattas/${REGATTA_ID}/draw/generate`, { seed: 12345 })
 
       await flushPromises()
+      await nextTick()
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Generated')
       expect(wrapper.find('[data-testid="generated-seed"]').text()).toContain('12345')
-      expect(wrapper.find('[data-testid="revisions"]').text()).toContain('Current: 1')
+      expect(wrapper.find('[data-testid="revisions"]').text()).toContain('Current: 0')
     })
 
     it('shows validation error for invalid custom seed', async () => {
@@ -207,11 +209,9 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
       await wrapper.find('[data-testid="publish-draw-button"]').trigger('click')
       await wrapper.find('[data-testid="publish-confirm-dialog"] button').trigger('click')
       await flushPromises()
+      await nextTick()
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `/api/v1/regattas/${REGATTA_ID}/draw/publish`,
-        expect.objectContaining({ method: 'POST' })
-      )
+      await expectPostedRequest(0, `/api/v1/regattas/${REGATTA_ID}/draw/publish`)
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Published')
       const revisionsText = wrapper.find('[data-testid="revisions"]').text()
@@ -221,7 +221,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
     it('unpublishes and updates draw/results revisions', async () => {
       globalThis.fetch.mockResolvedValueOnce(
-        jsonResponse({ draw_revision: 5, results_revision: 3 })
+        jsonResponse({ draw_revision: 2, results_revision: 3 })
       )
 
       const wrapper = await mountPage({
@@ -238,15 +238,13 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
       await unpublishDialog.find('button').trigger('click')
       await flushPromises()
+      await nextTick()
 
-      expect(globalThis.fetch).toHaveBeenCalledWith(
-        `/api/v1/regattas/${REGATTA_ID}/draw/unpublish`,
-        expect.objectContaining({ method: 'POST' })
-      )
+      await expectPostedRequest(0, `/api/v1/regattas/${REGATTA_ID}/draw/unpublish`)
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Not Generated')
       const revisionsText = wrapper.find('[data-testid="revisions"]').text()
-      expect(revisionsText).toContain('Current: 5')
+      expect(revisionsText).toContain('Current: 2')
       expect(revisionsText).toContain('Current: 3')
       expect(wrapper.find('[data-testid="generated-seed"]').exists()).toBe(false)
     })

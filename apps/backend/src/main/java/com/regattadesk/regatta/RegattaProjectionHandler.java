@@ -39,6 +39,8 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     @Override
     public boolean canHandle(EventEnvelope event) {
         return "RegattaCreated".equals(event.getEventType()) ||
+               "DrawGenerated".equals(event.getEventType()) ||
+               "DrawUnpublished".equals(event.getEventType()) ||
                "DrawPublished".equals(event.getEventType());
     }
     
@@ -46,6 +48,10 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     public void handle(EventEnvelope event) {
         if ("RegattaCreated".equals(event.getEventType())) {
             handleRegattaCreated(event);
+        } else if ("DrawGenerated".equals(event.getEventType())) {
+            handleDrawGenerated(event);
+        } else if ("DrawUnpublished".equals(event.getEventType())) {
+            handleDrawUnpublished(event);
         } else if ("DrawPublished".equals(event.getEventType())) {
             handleDrawPublished(event);
         }
@@ -83,6 +89,28 @@ public class RegattaProjectionHandler implements ProjectionHandler {
             throw new RuntimeException("Failed to handle DrawPublished event", e);
         }
     }
+
+    private void handleDrawGenerated(EventEnvelope envelope) {
+        try {
+            DrawGeneratedEvent event = parseEvent(envelope, DrawGeneratedEvent.class);
+            updateGeneratedSeed(event);
+            LOG.debug("Projected DrawGenerated event for regatta {}", event.getRegattaId());
+        } catch (Exception e) {
+            LOG.error("Failed to handle DrawGenerated event", e);
+            throw new RuntimeException("Failed to handle DrawGenerated event", e);
+        }
+    }
+
+    private void handleDrawUnpublished(EventEnvelope envelope) {
+        try {
+            DrawUnpublishedEvent event = parseEvent(envelope, DrawUnpublishedEvent.class);
+            resetDrawState(event);
+            LOG.debug("Projected DrawUnpublished event for regatta {}", event.getRegattaId());
+        } catch (Exception e) {
+            LOG.error("Failed to handle DrawUnpublished event", e);
+            throw new RuntimeException("Failed to handle DrawUnpublished event", e);
+        }
+    }
     
     private void insertRegatta(RegattaCreatedEvent event) {
         try (Connection conn = dataSource.getConnection();
@@ -118,6 +146,31 @@ public class RegattaProjectionHandler implements ProjectionHandler {
             
         } catch (SQLException e) {
             throw new RuntimeException("Failed to update draw revision in read model", e);
+        }
+    }
+
+    private void updateGeneratedSeed(DrawGeneratedEvent event) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE regattas SET draw_seed = ?, updated_at = now() WHERE id = ?")) {
+
+            stmt.setLong(1, event.getDrawSeed());
+            stmt.setObject(2, event.getRegattaId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to update draw seed in read model", e);
+        }
+    }
+
+    private void resetDrawState(DrawUnpublishedEvent event) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                 "UPDATE regattas SET draw_seed = NULL, updated_at = now() WHERE id = ?")) {
+
+            stmt.setObject(1, event.getRegattaId());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to reset draw state in read model", e);
         }
     }
     

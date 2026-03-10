@@ -1,0 +1,28 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  SELECTED_CAPTURE_SESSIONS_STORAGE_KEY,
+  clearSelectedCaptureSessionId,
+  getSelectedCaptureSessionId,
+  setSelectedCaptureSessionId
+} from '../operatorSessionSelection'
+import { installStorage } from './operatorTestUtils'
+
+describe('operatorSessionSelection', () => {
+  beforeEach(() => {
+    installStorage().clear()
+  })
+
+  it('normalizes regatta and session ids for storage, lookup, and clearing', () => {
+    setSelectedCaptureSessionId(' regatta-138 ', ' session-138 ')
+
+    expect(getSelectedCaptureSessionId('regatta-138')).toBe('session-138')
+    expect(JSON.parse(globalThis.localStorage.getItem(SELECTED_CAPTURE_SESSIONS_STORAGE_KEY))).toEqual({
+      'regatta-138': 'session-138'
+    })
+
+    clearSelectedCaptureSessionId('regatta-138 ', ' session-138')
+
+    expect(getSelectedCaptureSessionId('regatta-138')).toBeNull()
+    expect(JSON.parse(globalThis.localStorage.getItem(SELECTED_CAPTURE_SESSIONS_STORAGE_KEY))).toEqual({})
+  })
+})
