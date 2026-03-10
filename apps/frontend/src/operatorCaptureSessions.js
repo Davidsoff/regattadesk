@@ -3,12 +3,12 @@ export function normalizeCaptureSession(session) {
     return null
   }
 
-  const captureSessionId =
-    typeof session.capture_session_id === 'string' && session.capture_session_id.trim().length > 0
-      ? session.capture_session_id.trim()
-      : typeof session.id === 'string' && session.id.trim().length > 0
-        ? session.id.trim()
-        : null
+  let captureSessionId = null
+  if (typeof session.capture_session_id === 'string' && session.capture_session_id.trim().length > 0) {
+    captureSessionId = session.capture_session_id.trim()
+  } else if (typeof session.id === 'string' && session.id.trim().length > 0) {
+    captureSessionId = session.id.trim()
+  }
 
   if (!captureSessionId) {
     return null
