@@ -22,6 +22,7 @@ const hasConnected = ref(false)
 const isDataStale = ref(false)
 const resultRows = ref([])
 const recoveryState = ref(null)
+const hasLoadedResults = ref(false)
 
 let connection = null
 let latestResultsRequestId = 0
@@ -94,6 +95,13 @@ async function fetchResults(
 
   const requestId = ++latestResultsRequestId
   const requestUrl = `/public/v${drawRevisionOverride}-${resultsRevisionOverride}/regattas/${regattaId.value}/results`
+  const isStaleRequest = () => {
+    if (drawRevision.value !== expectedDrawRevision || resultsRevision.value !== expectedResultsRevision) {
+      return true
+    }
+
+    return requestId !== latestResultsRequestId
+  }
 
   try {
     const response = await fetch(requestUrl, {
@@ -101,20 +109,24 @@ async function fetchResults(
     })
 
     if (!response || !response.ok || !isJsonResponse(response)) {
+      if (isStaleRequest()) {
+        return
+      }
       recoveryState.value = 'bootstrap_failed'
       return
     }
 
     const data = await response.json()
-    if (drawRevision.value !== expectedDrawRevision || resultsRevision.value !== expectedResultsRevision) {
-      return
-    }
-    if (requestId !== latestResultsRequestId) {
+    if (isStaleRequest()) {
       return
     }
     resultRows.value = Array.isArray(data?.data) ? data.data : []
+    hasLoadedResults.value = true
     recoveryState.value = null
   } catch (error) {
+    if (isStaleRequest()) {
+      return
+    }
     console.warn('Failed to fetch public results', error)
     recoveryState.value = 'bootstrap_failed'
   }
@@ -233,7 +245,7 @@ function formatDeltaValue(value) {
 }
 
 function formatPenaltySeconds(value) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
+  if (typeof value !== 'number' || Number.isNaN(value) || value === 0) {
     return null
   }
 
@@ -331,10 +343,13 @@ onUnmounted(() => {
         {{ t('public.results.version_link') }}
       </a>
     </div>
-    <p v-if="resultRows.length === 0" class="results-empty">
+    <p
+      v-if="hasLoadedResults && !hasRecoveryAlert && resultRows.length === 0"
+      class="results-empty"
+    >
       {{ t('public.results.empty') }}
     </p>
-    <ul v-else data-testid="public-results-list" class="results-list">
+    <ul v-else-if="resultRows.length > 0" data-testid="public-results-list" class="results-list">
       <li
         v-for="row in resultRows"
         :key="row.entry_id"

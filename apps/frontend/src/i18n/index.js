@@ -2,7 +2,7 @@ import { createI18n } from 'vue-i18n';
 import en from './locales/en.json';
 import nl from './locales/nl.json';
 
-function normalizeLocale(value) {
+export function normalizeLocale(value) {
   if (typeof value !== 'string') {
     return null;
   }
@@ -63,24 +63,38 @@ const i18n = createI18n({
 
 export default i18n;
 
-/**
- * Update the locale and persist it to localStorage
- */
-export function setLocale(locale) {
+function persistLocale(locale) {
+  try {
+    localStorage.setItem('regattadesk-locale', locale);
+  } catch {
+    // Storage may be unavailable in some environments.
+  }
+}
+
+function applyDocumentLocale(locale) {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', locale);
+  }
+}
+
+export function applyLocalePreference(locale, applyLocale) {
   let normalizedLocale = normalizeLocale(locale);
   if (!normalizedLocale) {
     console.warn(`Unsupported locale: ${locale}. Using 'nl' instead.`);
     normalizedLocale = 'nl';
   }
-  
-  i18n.global.locale.value = normalizedLocale;
-  try {
-    localStorage.setItem('regattadesk-locale', normalizedLocale);
-  } catch {
-    // Storage may be unavailable in some environments.
-  }
 
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('lang', normalizedLocale);
-  }
+  applyLocale(normalizedLocale);
+  persistLocale(normalizedLocale);
+  applyDocumentLocale(normalizedLocale);
+  return normalizedLocale;
+}
+
+/**
+ * Update the locale and persist it to localStorage
+ */
+export function setLocale(locale) {
+  applyLocalePreference(locale, (normalizedLocale) => {
+    i18n.global.locale.value = normalizedLocale;
+  });
 }

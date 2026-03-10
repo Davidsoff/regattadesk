@@ -21,6 +21,7 @@
   },
   "status": {
     "entered": "Entered",
+    "official": "Official",
     "withdrawn_before_draw": "Withdrawn Before Draw",
     "withdrawn_after_draw": "Withdrawn After Draw"
   },
@@ -472,7 +473,7 @@
       "description": "Live race results",
       "empty": "No results published for this revision yet.",
       "version_banner": "Draw v{drawRevision}, Results v{resultsRevision}",
-      "version_link": "Copy canonical results link",
+      "version_link": "Canonical results link",
       "fields": {
         "rank": "Rank",
         "crew": "Crew",
