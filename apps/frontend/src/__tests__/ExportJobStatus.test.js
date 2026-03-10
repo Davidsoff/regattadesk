@@ -115,6 +115,22 @@ describe('ExportJobStatus', () => {
       expect(expiration.exists()).toBe(true)
       expect(expiration.text()).toContain('available for 1 hour')
     })
+
+    it('offers retry when completed artifact is no longer downloadable', async () => {
+      const wrapper = mountStatus({
+        status: 'completed',
+        jobId: '123',
+        downloadUrl: null
+      })
+
+      expect(wrapper.find('[data-testid="export-download-link"]').exists()).toBe(false)
+
+      const regenerateButton = wrapper.find('[data-testid="export-regenerate-button"]')
+      expect(regenerateButton.exists()).toBe(true)
+
+      await regenerateButton.trigger('click')
+      expect(mockStartExport).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('failed state', () => {

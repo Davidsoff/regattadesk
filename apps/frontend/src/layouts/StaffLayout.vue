@@ -70,6 +70,13 @@ const regattaId = computed(() => route.params.regattaId)
       >
         {{ t('navigation.blocks') }}
       </router-link>
+      <router-link
+        :to="`/staff/regattas/${regattaId}/printables`"
+        class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-regatta-printables' ? 'page' : undefined"
+      >
+        {{ t('navigation.printables') }}
+      </router-link>
     </nav>
     
     <main id="main-content" class="staff-layout__main">
