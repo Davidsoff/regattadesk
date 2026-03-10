@@ -1,9 +1,11 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { useLocale } from '../composables/useLocale'
 
 const { t } = useI18n()
 const route = useRoute()
+const { currentLocale, supportedLocales, switchLocale, getLocaleName } = useLocale()
 </script>
 
 <template>
@@ -35,6 +37,19 @@ const route = useRoute()
           {{ t('navigation.results') }}
         </router-link>
       </nav>
+
+      <fieldset class="public-layout__locale" role="group">
+        <legend class="rd-sr-only">Language</legend>
+        <button
+          v-for="locale in supportedLocales"
+          :key="locale"
+          class="public-layout__locale-btn"
+          :aria-pressed="currentLocale === locale"
+          @click="switchLocale(locale)"
+        >
+          {{ getLocaleName(locale) }}
+        </button>
+      </fieldset>
     </header>
     
     <main id="main-content" class="public-layout__main">
@@ -75,7 +90,11 @@ const route = useRoute()
   padding: var(--rd-space-3) var(--rd-space-4);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--rd-space-4);
+}
+
+.public-layout__brand {
+  flex: 1;
 }
 
 .public-layout__brand h1 {
@@ -104,6 +123,36 @@ const route = useRoute()
 .public-layout__nav-item.router-link-active {
   background: var(--rd-accent);
   color: white;
+}
+
+.public-layout__locale {
+  border: 0;
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+  display: flex;
+  gap: var(--rd-space-2);
+}
+
+.public-layout__locale-btn {
+  padding: var(--rd-space-1) var(--rd-space-3);
+  border: 1px solid var(--rd-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--rd-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.public-layout__locale-btn[aria-pressed="true"] {
+  background: var(--rd-accent);
+  color: white;
+  border-color: var(--rd-accent);
+}
+
+.public-layout__locale-btn:hover:not([aria-pressed="true"]) {
+  background: var(--rd-surface-2);
 }
 
 .public-layout__main {
