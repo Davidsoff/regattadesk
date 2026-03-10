@@ -971,6 +971,48 @@ export type PostApiV1RegattasByRegattaIdExportPrintablesResponses = {
 
 export type PostApiV1RegattasByRegattaIdExportPrintablesResponse = PostApiV1RegattasByRegattaIdExportPrintablesResponses[keyof PostApiV1RegattasByRegattaIdExportPrintablesResponses];
 
+export type GetApiV1RegattasByRegattaIdFinanceClubsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        cursor?: string;
+        limit?: number;
+        payment_status?: string;
+        search?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/finance/clubs';
+};
+
+export type GetApiV1RegattasByRegattaIdFinanceClubsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdFinanceEntriesData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        cursor?: string;
+        limit?: number;
+        payment_status?: string;
+        search?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/finance/entries';
+};
+
+export type GetApiV1RegattasByRegattaIdFinanceEntriesResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetApiV1RegattasByRegattaIdInvoicesData = {
     body?: never;
     path: {
