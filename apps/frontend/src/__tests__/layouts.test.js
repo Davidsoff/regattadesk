@@ -41,6 +41,11 @@ function createTestRouter(extraRoutes = []) {
         name: 'staff-blocks-management',
         component: { template: '<div>Staff Blocks</div>' },
       },
+      {
+        path: '/staff/regattas/:regattaId/adjudication',
+        name: 'staff-regatta-adjudication',
+        component: { template: '<div>Staff Adjudication</div>' },
+      },
       { path: '/operator/regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
       {
         path: '/operator/regattas/:regattaId',
@@ -102,6 +107,7 @@ function createTestI18n() {
           draw: 'Draw',
           finance: 'Finance',
           blocks: 'Blocks',
+          adjudication: 'Adjudication',
           line_scan: 'Line Scan',
           schedule: 'Schedule',
           results: 'Results',
@@ -248,12 +254,13 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-    it('renders subnav with draw, finance, blocks links inside a regatta', async () => {
+    it('renders subnav with draw, adjudication, finance, blocks links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
       expect(links).toContain('/staff/regattas/test-id-123')
       expect(links).toContain('/staff/regattas/test-id-123/draw')
+      expect(links).toContain('/staff/regattas/test-id-123/adjudication')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
     })

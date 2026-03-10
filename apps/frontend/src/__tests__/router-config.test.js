@@ -24,6 +24,11 @@ function createTestRouter() {
             name: 'staff-regatta-finance',
             component: { template: '<div>Staff Finance</div>' },
           },
+          {
+            path: 'regattas/:regattaId/adjudication',
+            name: 'staff-regatta-adjudication',
+            component: { template: '<div>Staff Adjudication</div>' },
+          },
         ],
       },
       {
@@ -127,6 +132,12 @@ describe('Router Configuration', () => {
       value: 'test-uuid-123',
     },
     {
+      path: '/staff/regattas/test-uuid-123/adjudication',
+      name: 'staff-regatta-adjudication',
+      param: 'regattaId',
+      value: 'test-uuid-123',
+    },
+    {
       path: '/operator/regattas/operator-test-id',
       name: 'operator-regatta-home',
       param: 'regattaId',
@@ -176,11 +187,11 @@ describe('Router Configuration', () => {
   })
 
   it('supports direct navigation across protected and public surfaces', async () => {
-    const staff = await navigate(router, '/staff/regattas/direct-test/finance')
+    const staff = await navigate(router, '/staff/regattas/direct-test/adjudication')
     const operator = await navigate(router, '/operator/regattas/direct-test/sessions/session-direct/line-scan')
     const publicRoute = await navigate(router, '/public/v42-99/results')
 
-    expect(staff.name).toBe('staff-regatta-finance')
+    expect(staff.name).toBe('staff-regatta-adjudication')
     expect(operator.name).toBe('operator-session-line-scan')
     expect(publicRoute.name).toBe('public-results')
   })

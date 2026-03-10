@@ -112,6 +112,22 @@ class IdentityHeaderSanitizerTest {
     }
 
     @Test
+    void testRegattaAdjudicationPath_TrustsIdentityHeaders() {
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+            .header("Remote-Name", "Jury User")
+            .header("Remote-Email", "jury@regattadesk.local")
+            .when().get("/api/v1/regattas/" + REGATTA_ID + "/adjudication/echo-identity")
+            .then()
+            .statusCode(200)
+            .body("authenticated", equalTo(true))
+            .body("username", equalTo("jury-user"))
+            .body("remoteUser", equalTo("jury-user"))
+            .body("remoteGroups", equalTo("head_of_jury"));
+    }
+
+    @Test
     void testOperatorPathVariations_OnlyExactOperatorPathsTrusted() {
         // Trusted exact operator path.
         given()

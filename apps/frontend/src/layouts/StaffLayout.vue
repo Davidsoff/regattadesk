@@ -57,6 +57,13 @@ const regattaId = computed(() => route.params.regattaId)
         {{ t('navigation.draw') }}
       </router-link>
       <router-link
+        :to="`/staff/regattas/${regattaId}/adjudication`"
+        class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-regatta-adjudication' ? 'page' : undefined"
+      >
+        {{ t('navigation.adjudication') }}
+      </router-link>
+      <router-link
         :to="`/staff/regattas/${regattaId}/finance`"
         class="staff-layout__subnav-item"
         :aria-current="route.name === 'staff-regatta-finance' ? 'page' : undefined"
