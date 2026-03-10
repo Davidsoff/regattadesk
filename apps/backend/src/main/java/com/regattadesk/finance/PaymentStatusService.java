@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +28,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PaymentStatusService {
+    private static final int DEFAULT_DISCOVERY_LIMIT = 100;
+    private static final int MAX_DISCOVERY_LIMIT = 100;
 
     @Inject
     EventStore eventStore;
@@ -78,10 +81,18 @@ public class PaymentStatusService {
         }
     }
 
-    public List<FinanceEntrySummary> listFinanceEntries(UUID regattaId, String search, String paymentStatus) {
+    public FinanceEntryListResult listFinanceEntries(
+        UUID regattaId,
+        String search,
+        String paymentStatus,
+        Integer limit,
+        String cursor
+    ) {
         List<FinanceEntrySummary> entries = new ArrayList<>();
         String normalizedSearch = normalizeLikeFilter(search);
-        String normalizedStatus = normalizeText(paymentStatus);
+        String normalizedStatus = normalizeLowercaseText(paymentStatus);
+        int normalizedLimit = normalizeDiscoveryLimit(limit);
+        int offset = parseCursor(cursor);
         String sql = """
             SELECT
                 e.id AS entry_id,
@@ -100,6 +111,7 @@ public class PaymentStatusService {
               )
               AND (? IS NULL OR e.payment_status = ?)
             ORDER BY LOWER(c.display_name), e.id
+            LIMIT ? OFFSET ?
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -109,6 +121,8 @@ public class PaymentStatusService {
             stmt.setString(4, normalizedSearch);
             stmt.setString(5, normalizedStatus);
             stmt.setString(6, normalizedStatus);
+            stmt.setInt(7, normalizedLimit + 1);
+            stmt.setInt(8, offset);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     entries.add(new FinanceEntrySummary(
@@ -123,7 +137,15 @@ public class PaymentStatusService {
             throw new RuntimeException("Failed to list finance entries", e);
         }
 
-        return List.copyOf(entries);
+        boolean hasMore = entries.size() > normalizedLimit;
+        if (hasMore) {
+            entries.remove(entries.size() - 1);
+        }
+
+        return new FinanceEntryListResult(
+            List.copyOf(entries),
+            hasMore ? String.valueOf(offset + normalizedLimit) : null
+        );
     }
 
     @Transactional
@@ -218,10 +240,18 @@ public class PaymentStatusService {
         }
     }
 
-    public List<FinanceClubSummary> listFinanceClubs(UUID regattaId, String search, String paymentStatus) {
+    public FinanceClubListResult listFinanceClubs(
+        UUID regattaId,
+        String search,
+        String paymentStatus,
+        Integer limit,
+        String cursor
+    ) {
         List<FinanceClubSummary> clubs = new ArrayList<>();
         String normalizedSearch = normalizeLikeFilter(search);
-        String normalizedStatus = normalizeText(paymentStatus);
+        String normalizedStatus = normalizeLowercaseText(paymentStatus);
+        int normalizedLimit = normalizeDiscoveryLimit(limit);
+        int offset = parseCursor(cursor);
         String sql = """
             WITH club_totals AS (
                 SELECT
@@ -260,6 +290,7 @@ public class PaymentStatusService {
                     END = ?
               )
             ORDER BY LOWER(club_name), club_id
+            LIMIT ? OFFSET ?
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -268,6 +299,8 @@ public class PaymentStatusService {
             stmt.setString(3, normalizedSearch);
             stmt.setString(4, normalizedStatus);
             stmt.setString(5, normalizedStatus);
+            stmt.setInt(6, normalizedLimit + 1);
+            stmt.setInt(7, offset);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     clubs.add(new FinanceClubSummary(
@@ -283,7 +316,15 @@ public class PaymentStatusService {
             throw new RuntimeException("Failed to list finance clubs", e);
         }
 
-        return List.copyOf(clubs);
+        boolean hasMore = clubs.size() > normalizedLimit;
+        if (hasMore) {
+            clubs.remove(clubs.size() - 1);
+        }
+
+        return new FinanceClubListResult(
+            List.copyOf(clubs),
+            hasMore ? String.valueOf(offset + normalizedLimit) : null
+        );
     }
 
     @Transactional
@@ -825,9 +866,40 @@ public class PaymentStatusService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private String normalizeLowercaseText(String value) {
+        String normalized = normalizeText(value);
+        return normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
+    }
+
     private String normalizeLikeFilter(String value) {
         String normalized = normalizeText(value);
-        return normalized == null ? null : "%" + normalized.toLowerCase() + "%";
+        return normalized == null ? null : "%" + normalized.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private int normalizeDiscoveryLimit(Integer limit) {
+        if (limit == null) {
+            return DEFAULT_DISCOVERY_LIMIT;
+        }
+        if (limit < 1 || limit > MAX_DISCOVERY_LIMIT) {
+            throw new IllegalArgumentException("limit must be between 1 and " + MAX_DISCOVERY_LIMIT);
+        }
+        return limit;
+    }
+
+    private int parseCursor(String cursor) {
+        String normalizedCursor = normalizeText(cursor);
+        if (normalizedCursor == null) {
+            return 0;
+        }
+        try {
+            int offset = Integer.parseInt(normalizedCursor);
+            if (offset < 0) {
+                throw new IllegalArgumentException("cursor must be a non-negative integer");
+            }
+            return offset;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("cursor must be a non-negative integer");
+        }
     }
 
     private Instant toInstant(Timestamp timestamp) {
@@ -855,6 +927,18 @@ public class PaymentStatusService {
         String paidBy,
         String paymentReference,
         UUID effectiveClubId
+    ) {
+    }
+
+    public record FinanceEntryListResult(
+        List<FinanceEntrySummary> entries,
+        String nextCursor
+    ) {
+    }
+
+    public record FinanceClubListResult(
+        List<FinanceClubSummary> clubs,
+        String nextCursor
     ) {
     }
 }

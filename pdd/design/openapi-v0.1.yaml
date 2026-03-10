@@ -581,16 +581,30 @@ components:
           type: string
         payment_status:
           type: string
-          pattern: paid|unpaid
+          enum:
+          - paid
+          - unpaid
+    FinanceListPagination:
+      type: object
+      required:
+      - has_more
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     FinanceEntryListResponse:
       type: object
       required:
       - entries
+      - pagination
       properties:
         entries:
           type: array
           items:
             $ref: "#/components/schemas/FinanceEntrySummary"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPagination"
     FinanceClubSummary:
       type: object
       required:
@@ -606,7 +620,10 @@ components:
           type: string
         payment_status:
           type: string
-          pattern: paid|unpaid|partial
+          enum:
+          - paid
+          - unpaid
+          - partial
         paid_entries:
           type: integer
           format: int32
@@ -619,11 +636,14 @@ components:
       type: object
       required:
       - clubs
+      - pagination
       properties:
         clubs:
           type: array
           items:
             $ref: "#/components/schemas/FinanceClubSummary"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPagination"
     RulesetCreateRequest:
       type: object
       properties:
@@ -1330,7 +1350,22 @@ paths:
         in: query
         schema:
           type: string
-          pattern: paid|unpaid|partial
+          enum:
+          - paid
+          - unpaid
+          - partial
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
+          maximum: 100
       responses:
         "200":
           description: OK
@@ -1467,7 +1502,21 @@ paths:
         in: query
         schema:
           type: string
-          pattern: paid|unpaid
+          enum:
+          - paid
+          - unpaid
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 100
+          minimum: 1
+          maximum: 100
       responses:
         "200":
           description: OK

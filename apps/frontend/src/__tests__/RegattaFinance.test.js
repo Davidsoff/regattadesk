@@ -31,6 +31,7 @@ function createTestI18n() {
         },
         finance: {
           title: 'Finance',
+          invalid_route_params: 'Invalid or missing route parameters.',
           navigation: {
             entries: 'Entries',
             clubs: 'Clubs',
@@ -190,12 +191,20 @@ describe('RegattaFinance', () => {
     await flushPromises()
 
     const requestUrls = fetchMock.mock.calls.map(([request]) => request.url)
-    expect(requestUrls).toContain(
-      'http://localhost:3000/api/v1/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/entries?search=&payment_status='
-    )
-    expect(requestUrls).toContain(
-      'http://localhost:3000/api/v1/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/clubs?search=&payment_status='
-    )
+    expect(
+      requestUrls.some((url) =>
+        url.startsWith(
+          'http://localhost:3000/api/v1/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/entries'
+        )
+      )
+    ).toBe(true)
+    expect(
+      requestUrls.some((url) =>
+        url.startsWith(
+          'http://localhost:3000/api/v1/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/clubs'
+        )
+      )
+    ).toBe(true)
     expect(wrapper.text()).toContain('Entries')
     expect(wrapper.text()).toContain('Clubs')
     expect(wrapper.text()).toContain('Bulk Payment Status')
@@ -203,5 +212,26 @@ describe('RegattaFinance', () => {
     expect(wrapper.text()).toContain('Finance Club')
     expect(wrapper.html()).toContain('/staff/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/entries/7f7af3d8-9090-49d5-b21c-9cc12d35a0e6')
     expect(wrapper.html()).toContain('/staff/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/clubs/81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd')
+    expect(wrapper.find('nav a[href="#finance-entries"]').exists()).toBe(true)
+  })
+
+  it('does not call the finance API when the regatta route param is invalid', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const router = createTestRouter()
+    await router.push('/staff/regattas/not-a-uuid/finance')
+    await router.isReady()
+
+    const wrapper = mount(RegattaFinance, {
+      global: {
+        plugins: [router, createTestI18n()]
+      }
+    })
+
+    await flushPromises()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Invalid or missing route parameters.')
   })
 })

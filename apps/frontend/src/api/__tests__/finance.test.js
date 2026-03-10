@@ -257,6 +257,7 @@ describe('finance', () => {
             club_id: '81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd',
             club_name: 'Finance Club',
             payment_status: 'partial',
+            paid_entries: 0,
             unpaid_entries: 1
           }
         ]

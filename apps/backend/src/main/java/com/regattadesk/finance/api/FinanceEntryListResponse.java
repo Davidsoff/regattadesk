@@ -6,6 +6,9 @@ import java.util.List;
 
 public record FinanceEntryListResponse(
     @JsonProperty("entries")
-    List<FinanceEntrySummaryResponse> entries
+    List<FinanceEntrySummaryResponse> entries,
+
+    @JsonProperty("pagination")
+    FinanceListPaginationResponse pagination
 ) {
 }

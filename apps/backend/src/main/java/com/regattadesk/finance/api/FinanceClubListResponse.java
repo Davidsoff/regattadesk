@@ -6,6 +6,9 @@ import java.util.List;
 
 public record FinanceClubListResponse(
     @JsonProperty("clubs")
-    List<FinanceClubSummaryResponse> clubs
+    List<FinanceClubSummaryResponse> clubs,
+
+    @JsonProperty("pagination")
+    FinanceListPaginationResponse pagination
 ) {
 }
