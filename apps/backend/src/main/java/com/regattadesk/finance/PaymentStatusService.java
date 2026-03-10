@@ -78,6 +78,54 @@ public class PaymentStatusService {
         }
     }
 
+    public List<FinanceEntrySummary> listFinanceEntries(UUID regattaId, String search, String paymentStatus) {
+        List<FinanceEntrySummary> entries = new ArrayList<>();
+        String normalizedSearch = normalizeLikeFilter(search);
+        String normalizedStatus = normalizeText(paymentStatus);
+        String sql = """
+            SELECT
+                e.id AS entry_id,
+                c.display_name AS crew_name,
+                COALESCE(billing_club.name, crew_club.name, 'Composite / Unassigned') AS club_name,
+                e.payment_status
+            FROM entries e
+            JOIN crews c ON c.id = e.crew_id
+            LEFT JOIN clubs billing_club ON billing_club.id = e.billing_club_id
+            LEFT JOIN clubs crew_club ON crew_club.id = c.club_id
+            WHERE e.regatta_id = ?
+              AND (
+                    ? IS NULL
+                 OR LOWER(c.display_name) LIKE ?
+                 OR LOWER(COALESCE(billing_club.name, crew_club.name, '')) LIKE ?
+              )
+              AND (? IS NULL OR e.payment_status = ?)
+            ORDER BY LOWER(c.display_name), e.id
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, normalizedSearch);
+            stmt.setString(3, normalizedSearch);
+            stmt.setString(4, normalizedSearch);
+            stmt.setString(5, normalizedStatus);
+            stmt.setString(6, normalizedStatus);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    entries.add(new FinanceEntrySummary(
+                        (UUID) rs.getObject("entry_id"),
+                        rs.getString("crew_name"),
+                        rs.getString("club_name"),
+                        rs.getString("payment_status")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list finance entries", e);
+        }
+
+        return List.copyOf(entries);
+    }
+
     @Transactional
     public EntryPaymentStatusDetails updateEntryPaymentStatus(
         UUID regattaId,
@@ -168,6 +216,74 @@ public class PaymentStatusService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load club payment status", e);
         }
+    }
+
+    public List<FinanceClubSummary> listFinanceClubs(UUID regattaId, String search, String paymentStatus) {
+        List<FinanceClubSummary> clubs = new ArrayList<>();
+        String normalizedSearch = normalizeLikeFilter(search);
+        String normalizedStatus = normalizeText(paymentStatus);
+        String sql = """
+            WITH club_totals AS (
+                SELECT
+                    COALESCE(e.billing_club_id, CASE WHEN c.is_composite = FALSE THEN c.club_id END) AS club_id,
+                    COALESCE(billing_club.name, crew_club.name) AS club_name,
+                    SUM(CASE WHEN e.payment_status = 'paid' THEN 1 ELSE 0 END) AS paid_entries,
+                    SUM(CASE WHEN e.payment_status = 'unpaid' THEN 1 ELSE 0 END) AS unpaid_entries
+                FROM entries e
+                JOIN crews c ON c.id = e.crew_id
+                LEFT JOIN clubs billing_club ON billing_club.id = e.billing_club_id
+                LEFT JOIN clubs crew_club ON crew_club.id = c.club_id
+                WHERE e.regatta_id = ?
+                GROUP BY
+                    COALESCE(e.billing_club_id, CASE WHEN c.is_composite = FALSE THEN c.club_id END),
+                    COALESCE(billing_club.name, crew_club.name)
+            )
+            SELECT
+                club_id,
+                club_name,
+                CASE
+                    WHEN paid_entries = 0 THEN 'unpaid'
+                    WHEN unpaid_entries = 0 THEN 'paid'
+                    ELSE 'partial'
+                END AS payment_status,
+                paid_entries,
+                unpaid_entries
+            FROM club_totals
+            WHERE club_id IS NOT NULL
+              AND (? IS NULL OR LOWER(club_name) LIKE ?)
+              AND (
+                    ? IS NULL
+                 OR CASE
+                        WHEN paid_entries = 0 THEN 'unpaid'
+                        WHEN unpaid_entries = 0 THEN 'paid'
+                        ELSE 'partial'
+                    END = ?
+              )
+            ORDER BY LOWER(club_name), club_id
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, normalizedSearch);
+            stmt.setString(3, normalizedSearch);
+            stmt.setString(4, normalizedStatus);
+            stmt.setString(5, normalizedStatus);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    clubs.add(new FinanceClubSummary(
+                        (UUID) rs.getObject("club_id"),
+                        rs.getString("club_name"),
+                        rs.getString("payment_status"),
+                        rs.getInt("paid_entries"),
+                        rs.getInt("unpaid_entries")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list finance clubs", e);
+        }
+
+        return List.copyOf(clubs);
     }
 
     @Transactional
@@ -707,6 +823,11 @@ public class PaymentStatusService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeLikeFilter(String value) {
+        String normalized = normalizeText(value);
+        return normalized == null ? null : "%" + normalized.toLowerCase() + "%";
     }
 
     private Instant toInstant(Timestamp timestamp) {

@@ -81,6 +81,32 @@ export function createFinanceApi(client) {
     },
 
     /**
+     * List finance entries for discovery and drilldown workflows.
+     *
+     * @param {string} regattaId - Regatta UUID
+     * @param {object} params - Optional finance filters
+     * @param {string} params.search - Crew or club search term
+     * @param {string} params.payment_status - Optional payment status filter
+     * @returns {Promise<object>} Finance entry list
+     */
+    async listFinanceEntries(regattaId, params = {}) {
+      return client.get(`/regattas/${regattaId}/finance/entries`, { params })
+    },
+
+    /**
+     * List finance clubs for discovery and drilldown workflows.
+     *
+     * @param {string} regattaId - Regatta UUID
+     * @param {object} params - Optional finance filters
+     * @param {string} params.search - Club search term
+     * @param {string} params.payment_status - Optional payment status filter
+     * @returns {Promise<object>} Finance club list
+     */
+    async listFinanceClubs(regattaId, params = {}) {
+      return client.get(`/regattas/${regattaId}/finance/clubs`, { params })
+    },
+
+    /**
      * List invoices for a regatta.
      * 
      * @param {string} regattaId - Regatta UUID

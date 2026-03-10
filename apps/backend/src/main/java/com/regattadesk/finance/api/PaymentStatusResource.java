@@ -13,6 +13,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -34,6 +35,48 @@ public class PaymentStatusResource {
 
     @Inject
     SecurityContext securityContext;
+
+    @GET
+    @Path("/finance/entries")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    public Response listFinanceEntries(
+        @PathParam("regatta_id") UUID regattaId,
+        @QueryParam("search") String search,
+        @QueryParam("payment_status") String paymentStatus
+    ) {
+        try {
+            var entries = paymentStatusService.listFinanceEntries(regattaId, search, paymentStatus)
+                .stream()
+                .map(FinanceEntrySummaryResponse::from)
+                .toList();
+            return Response.ok(new FinanceEntryListResponse(entries)).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(ErrorResponse.internalError("Failed to list finance entries"))
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/finance/clubs")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    public Response listFinanceClubs(
+        @PathParam("regatta_id") UUID regattaId,
+        @QueryParam("search") String search,
+        @QueryParam("payment_status") String paymentStatus
+    ) {
+        try {
+            var clubs = paymentStatusService.listFinanceClubs(regattaId, search, paymentStatus)
+                .stream()
+                .map(FinanceClubSummaryResponse::from)
+                .toList();
+            return Response.ok(new FinanceClubListResponse(clubs)).build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(ErrorResponse.internalError("Failed to list finance clubs"))
+                .build();
+        }
+    }
 
     @GET
     @Path("/entries/{entry_id}/payment_status")

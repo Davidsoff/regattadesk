@@ -565,6 +565,65 @@ components:
           type: string
         payment_reference:
           type: string
+    FinanceEntrySummary:
+      type: object
+      required:
+      - entry_id
+      - crew_name
+      - club_name
+      - payment_status
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        crew_name:
+          type: string
+        club_name:
+          type: string
+        payment_status:
+          type: string
+          pattern: paid|unpaid
+    FinanceEntryListResponse:
+      type: object
+      required:
+      - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceEntrySummary"
+    FinanceClubSummary:
+      type: object
+      required:
+      - club_id
+      - club_name
+      - payment_status
+      - paid_entries
+      - unpaid_entries
+      properties:
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        club_name:
+          type: string
+        payment_status:
+          type: string
+          pattern: paid|unpaid|partial
+        paid_entries:
+          type: integer
+          format: int32
+          minimum: 0
+        unpaid_entries:
+          type: integer
+          format: int32
+          minimum: 0
+    FinanceClubListResponse:
+      type: object
+      required:
+      - clubs
+      properties:
+        clubs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceClubSummary"
     RulesetCreateRequest:
       type: object
       properties:
@@ -1255,6 +1314,33 @@ paths:
       summary: Get Club Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/finance/clubs:
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: payment_status
+        in: query
+        schema:
+          type: string
+          pattern: paid|unpaid|partial
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceClubListResponse"
+      summary: List Finance Clubs
+      tags:
+      - Payment Status Resource
   /api/v1/regattas/{regatta_id}/draw/generate:
     post:
       parameters:
@@ -1363,6 +1449,33 @@ paths:
             application/json:
               schema: {}
       summary: Get Entry Payment Status
+      tags:
+      - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/finance/entries:
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: payment_status
+        in: query
+        schema:
+          type: string
+          pattern: paid|unpaid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceEntryListResponse"
+      summary: List Finance Entries
       tags:
       - Payment Status Resource
   /api/v1/regattas/{regatta_id}/export/printables:

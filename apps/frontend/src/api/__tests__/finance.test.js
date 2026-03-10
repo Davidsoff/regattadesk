@@ -214,6 +214,66 @@ describe('finance', () => {
     })
   })
 
+  describe('listFinanceEntries', () => {
+    it('calls the finance entry discovery endpoint with filters', async () => {
+      const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
+      const params = {
+        search: 'crew one',
+        payment_status: 'unpaid'
+      }
+      const mockResponse = {
+        entries: [
+          {
+            entry_id: '7f7af3d8-9090-49d5-b21c-9cc12d35a0e6',
+            crew_name: 'Crew One',
+            club_name: 'Finance Club',
+            payment_status: 'unpaid'
+          }
+        ]
+      }
+
+      mockClient.get.mockResolvedValue(mockResponse)
+
+      const result = await api.listFinanceEntries(regattaId, params)
+
+      expect(mockClient.get).toHaveBeenCalledWith(
+        `/regattas/${regattaId}/finance/entries`,
+        { params }
+      )
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('listFinanceClubs', () => {
+    it('calls the finance club discovery endpoint with filters', async () => {
+      const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
+      const params = {
+        search: 'finance',
+        payment_status: 'partial'
+      }
+      const mockResponse = {
+        clubs: [
+          {
+            club_id: '81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd',
+            club_name: 'Finance Club',
+            payment_status: 'partial',
+            unpaid_entries: 1
+          }
+        ]
+      }
+
+      mockClient.get.mockResolvedValue(mockResponse)
+
+      const result = await api.listFinanceClubs(regattaId, params)
+
+      expect(mockClient.get).toHaveBeenCalledWith(
+        `/regattas/${regattaId}/finance/clubs`,
+        { params }
+      )
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
   describe('listInvoices', () => {
     it('calls correct endpoint for invoice list', async () => {
       const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
