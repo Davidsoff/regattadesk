@@ -6,6 +6,7 @@ import com.regattadesk.entry.EntryNotFoundException;
 import com.regattadesk.entry.EntryService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -16,10 +17,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
 public class RegattaSetupService {
+    private static final Set<String> WITHDRAW_STATUSES = Set.of("withdrawn_before_draw", "withdrawn_after_draw");
 
     @Inject
     DataSource dataSource;
@@ -141,7 +144,8 @@ public class RegattaSetupService {
         return new ListResponse<>(data, new Pagination(false, null));
     }
 
-    public CrewResponse createCrew(CrewCreateRequest request) {
+    @Transactional
+    public CrewResponse createCrew(UUID regattaId, CrewCreateRequest request) {
         UUID crewId = UUID.randomUUID();
         Instant now = Instant.now();
         List<CrewMemberResponse> members = new ArrayList<>();
@@ -157,6 +161,16 @@ public class RegattaSetupService {
                 statement.setObject(4, request.club_id());
                 statement.setTimestamp(5, Timestamp.from(now));
                 statement.setTimestamp(6, Timestamp.from(now));
+                statement.executeUpdate();
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement("""
+                INSERT INTO regatta_crews (regatta_id, crew_id, created_at)
+                VALUES (?, ?, ?)
+                """)) {
+                statement.setObject(1, regattaId);
+                statement.setObject(2, crewId);
+                statement.setTimestamp(3, Timestamp.from(now));
                 statement.executeUpdate();
             }
 
@@ -181,17 +195,20 @@ public class RegattaSetupService {
         }
     }
 
-    public ListResponse<CrewResponse> listCrews() {
+    public ListResponse<CrewResponse> listCrews(UUID regattaId) {
         List<CrewResponse> data = new ArrayList<>();
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                  SELECT c.id, c.display_name, c.club_id, c.is_composite,
                         ca.athlete_id, ca.seat_position
-                 FROM crews c
+                 FROM regatta_crews rc
+                 JOIN crews c ON c.id = rc.crew_id
                  LEFT JOIN crew_athletes ca ON ca.crew_id = c.id
+                 WHERE rc.regatta_id = ?
                  ORDER BY c.display_name, c.id, ca.seat_position
                  """)) {
+            statement.setObject(1, regattaId);
             try (ResultSet rs = statement.executeQuery()) {
                 UUID currentId = null;
                 String currentDisplayName = null;
@@ -284,52 +301,67 @@ public class RegattaSetupService {
         return new ListResponse<>(data, new Pagination(false, null));
     }
 
+    @Transactional
     public WithdrawResponse withdrawEntry(UUID regattaId, UUID entryId, WithdrawEntryRequest request, String actor) {
-        EntryState state = requireEntry(regattaId, entryId);
-        if (!state.status().equals(request.expected_status())) {
-            throw new ConflictException("Entry status changed before withdraw could be applied", Map.of("current_status", state.status()));
-        }
+        validateWithdrawStatus(request.status());
 
         Instant now = Instant.now();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                  UPDATE entries
                  SET status = ?, updated_at = ?
-                 WHERE id = ? AND regatta_id = ?
+                 WHERE id = ? AND regatta_id = ? AND status = ?
                  """)) {
             statement.setString(1, request.status());
             statement.setTimestamp(2, Timestamp.from(now));
             statement.setObject(3, entryId);
             statement.setObject(4, regattaId);
-            statement.executeUpdate();
+            statement.setString(5, request.expected_status());
+            if (statement.executeUpdate() == 0) {
+                throwConflictOrNotFound(regattaId, entryId, "Entry status changed before withdraw could be applied");
+            }
             return new WithdrawResponse(entryId, request.status(), new AuditResponse(actor, now, request.reason()));
+        } catch (ConflictException | EntryNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to withdraw entry", e);
         }
     }
 
+    @Transactional
     public WithdrawResponse reinstateEntry(UUID regattaId, UUID entryId, ReinstateEntryRequest request, String actor) {
-        EntryState state = requireEntry(regattaId, entryId);
-        if (!state.status().equals(request.expected_status())) {
-            throw new ConflictException("Entry status changed before reinstate could be applied", Map.of("current_status", state.status()));
-        }
-
         Instant now = Instant.now();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement("""
                  UPDATE entries
                  SET status = ?, updated_at = ?
-                 WHERE id = ? AND regatta_id = ?
+                 WHERE id = ? AND regatta_id = ? AND status = ?
                  """)) {
             statement.setString(1, "entered");
             statement.setTimestamp(2, Timestamp.from(now));
             statement.setObject(3, entryId);
             statement.setObject(4, regattaId);
-            statement.executeUpdate();
+            statement.setString(5, request.expected_status());
+            if (statement.executeUpdate() == 0) {
+                throwConflictOrNotFound(regattaId, entryId, "Entry status changed before reinstate could be applied");
+            }
             return new WithdrawResponse(entryId, "entered", new AuditResponse(actor, now, null));
+        } catch (ConflictException | EntryNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to reinstate entry", e);
         }
+    }
+
+    private void validateWithdrawStatus(String status) {
+        if (!WITHDRAW_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Unsupported withdraw status: " + status);
+        }
+    }
+
+    private void throwConflictOrNotFound(UUID regattaId, UUID entryId, String message) {
+        EntryState state = requireEntry(regattaId, entryId);
+        throw new ConflictException(message, Map.of("current_status", state.status()));
     }
 
     private EntryState requireEntry(UUID regattaId, UUID entryId) {

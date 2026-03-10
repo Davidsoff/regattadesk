@@ -14,6 +14,7 @@ const pageError = ref('')
 const saving = ref(false)
 const showWithdrawDialog = ref(false)
 const withdrawReason = ref('')
+const withdrawStatus = ref('withdrawn_before_draw')
 const selectedEntry = ref(null)
 const conflictMessage = ref('')
 const formErrors = ref({})
@@ -224,12 +225,14 @@ function startWithdraw(entry, event) {
   selectedEntry.value = entry
   showWithdrawDialog.value = true
   withdrawReason.value = ''
+  withdrawStatus.value = 'withdrawn_before_draw'
   conflictMessage.value = ''
   withdrawTriggerButton.value = event?.currentTarget ?? null
 }
 
 function closeWithdrawDialog() {
   showWithdrawDialog.value = false
+  withdrawStatus.value = 'withdrawn_before_draw'
   nextTick(() => {
     withdrawTriggerButton.value?.focus?.()
   })
@@ -286,7 +289,7 @@ async function confirmWithdraw() {
 
   try {
     await api.withdrawEntry(route.params.regattaId, selectedEntry.value.id, {
-      status: 'withdrawn_before_draw',
+      status: withdrawStatus.value,
       reason: withdrawReason.value,
       expected_status: selectedEntry.value.status
     })
@@ -428,7 +431,7 @@ onMounted(async () => {
               Withdraw
             </button>
             <button
-              v-else-if="item.status === 'withdrawn_before_draw'"
+              v-else-if="item.status === 'withdrawn_before_draw' || item.status === 'withdrawn_after_draw'"
               type="button"
               data-action="set-status-entered"
               @click="reinstateEntry(item)"
@@ -442,14 +445,6 @@ onMounted(async () => {
               disabled
             >
               Invalid transition
-            </button>
-            <button
-              v-if="item.status !== 'entered'"
-              type="button"
-              data-action="set-status-withdrawn-before-draw"
-              :disabled="item.status !== 'entered'"
-            >
-              {{ item.status === 'entered' ? 'Withdraw before draw' : 'Invalid transition' }}
             </button>
           </td>
         </tr>
@@ -467,6 +462,11 @@ onMounted(async () => {
       @keydown="onDialogKeydown"
     >
       <p id="withdraw-dialog-title">Withdraw entry</p>
+      <label for="withdraw-status">Withdrawal timing</label>
+      <select id="withdraw-status" v-model="withdrawStatus" name="status">
+        <option value="withdrawn_before_draw">Before draw publication</option>
+        <option value="withdrawn_after_draw">After draw publication</option>
+      </select>
       <label for="withdraw-reason">Reason</label>
       <textarea id="withdraw-reason" v-model="withdrawReason" name="reason" />
       <div data-testid="audit-actor">Actor recorded from staff identity</div>

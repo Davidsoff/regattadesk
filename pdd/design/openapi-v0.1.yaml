@@ -425,6 +425,163 @@ components:
           type: string
         payment_reference:
           type: string
+    RegattaSetupAuditResponse:
+      type: object
+      properties:
+        actor:
+          type: string
+        at:
+          $ref: "#/components/schemas/Instant"
+        reason:
+          type: string
+    RegattaSetupCrewMemberResponse:
+      type: object
+      properties:
+        athlete_id:
+          $ref: "#/components/schemas/UUID"
+        seat_position:
+          type: integer
+          format: int32
+    RegattaSetupCrewResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        display_name:
+          type: string
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        is_composite:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegattaSetupCrewMemberResponse"
+    RegattaSetupCrewListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegattaSetupCrewResponse"
+        pagination:
+          $ref: "#/components/schemas/InvoiceListPaginationResponse"
+    RegattaSetupEntryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        event_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        crew_id:
+          $ref: "#/components/schemas/UUID"
+        billing_club_id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+          - entered
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+          - dns
+          - dnf
+          - excluded
+          - dsq
+        payment_status:
+          type: string
+          enum:
+          - unpaid
+          - paid
+        paid_at:
+          $ref: "#/components/schemas/Instant"
+        paid_by:
+          type: string
+        payment_reference:
+          type: string
+        marker_start_time_ms:
+          type: integer
+          format: int64
+        marker_finish_time_ms:
+          type: integer
+          format: int64
+        completion_status:
+          type: string
+    RegattaSetupEntryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegattaSetupEntryResponse"
+        pagination:
+          $ref: "#/components/schemas/InvoiceListPaginationResponse"
+    RegattaSetupEventGroupResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        description:
+          type: string
+        display_order:
+          type: integer
+          format: int32
+    RegattaSetupEventGroupListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegattaSetupEventGroupResponse"
+        pagination:
+          $ref: "#/components/schemas/InvoiceListPaginationResponse"
+    RegattaSetupEventResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        event_group_id:
+          $ref: "#/components/schemas/UUID"
+        category_id:
+          $ref: "#/components/schemas/UUID"
+        boat_type_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        display_order:
+          type: integer
+          format: int32
+    RegattaSetupEventListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegattaSetupEventResponse"
+        pagination:
+          $ref: "#/components/schemas/InvoiceListPaginationResponse"
+    RegattaSetupWithdrawResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+          - entered
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+        audit:
+          $ref: "#/components/schemas/RegattaSetupAuditResponse"
     LineScanManifestUpsertRequest:
       type: object
       required:
@@ -854,7 +1011,8 @@ paths:
           description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEventGroupResponse"
       summary: Create Event Group
       tags:
       - Regatta Setup Resource
@@ -874,7 +1032,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEventGroupListResponse"
       summary: List Event Groups
       tags:
       - Regatta Setup Resource
@@ -914,7 +1073,8 @@ paths:
           description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEventResponse"
       summary: Create Event
       tags:
       - Regatta Setup Resource
@@ -930,7 +1090,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEventListResponse"
       summary: List Events
       tags:
       - Regatta Setup Resource
@@ -976,7 +1137,8 @@ paths:
           description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupCrewResponse"
       summary: Create Crew
       tags:
       - Regatta Setup Resource
@@ -992,7 +1154,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupCrewListResponse"
       summary: List Crews
       tags:
       - Regatta Setup Resource
@@ -1028,7 +1191,8 @@ paths:
           description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEntryResponse"
       summary: Create Entry
       tags:
       - Regatta Setup Resource
@@ -1048,7 +1212,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupEntryListResponse"
       summary: List Entries
       tags:
       - Regatta Setup Resource
@@ -1078,16 +1243,28 @@ paths:
               properties:
                 status:
                   type: string
+                  enum:
+                  - withdrawn_before_draw
+                  - withdrawn_after_draw
                 reason:
                   type: string
                 expected_status:
                   type: string
+                  enum:
+                  - entered
+                  - withdrawn_before_draw
+                  - withdrawn_after_draw
+                  - dns
+                  - dnf
+                  - excluded
+                  - dsq
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupWithdrawResponse"
         "409":
           description: Conflict
           content:
@@ -1121,12 +1298,16 @@ paths:
               properties:
                 expected_status:
                   type: string
+                  enum:
+                  - withdrawn_before_draw
+                  - withdrawn_after_draw
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RegattaSetupWithdrawResponse"
         "409":
           description: Conflict
           content:

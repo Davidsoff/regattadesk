@@ -3,11 +3,11 @@ package com.regattadesk.regatta.api;
 import com.regattadesk.api.dto.ErrorResponse;
 import com.regattadesk.entry.EntryNotFoundException;
 import com.regattadesk.security.RequireRole;
-import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.ForbiddenException;
@@ -23,7 +23,6 @@ import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.regattadesk.security.Role.INFO_DESK;
@@ -70,14 +69,14 @@ public class RegattaSetupResource {
     @Path("/crews")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
     public Response createCrew(@PathParam("regatta_id") UUID regattaId, @Valid CrewCreateRequest request) {
-        return Response.status(Response.Status.CREATED).entity(service.createCrew(request)).build();
+        return Response.status(Response.Status.CREATED).entity(service.createCrew(regattaId, request)).build();
     }
 
     @GET
     @Path("/crews")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
     public Response listCrews(@PathParam("regatta_id") UUID regattaId) {
-        return Response.ok(service.listCrews()).build();
+        return Response.ok(service.listCrews(regattaId)).build();
     }
 
     @POST
@@ -119,28 +118,31 @@ public class RegattaSetupResource {
     }
 
     @jakarta.ws.rs.ext.Provider
-    public static class SetupExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<RuntimeException> {
+    public static class SetupConflictExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<RegattaSetupService.ConflictException> {
         @Override
-        public Response toResponse(RuntimeException exception) {
-            if (exception instanceof EntryNotFoundException) {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity(ErrorResponse.notFound(exception.getMessage()))
-                    .build();
-            }
-            if (exception instanceof ForbiddenException) {
-                return Response.status(Response.Status.FORBIDDEN)
-                    .entity(new ErrorResponse("FORBIDDEN", exception.getMessage()))
-                    .build();
-            }
-            if (exception instanceof RegattaSetupService.ConflictException conflict) {
-                return Response.status(Response.Status.CONFLICT)
-                    .entity(new ErrorResponse("CONFLICT", conflict.getMessage(), conflict.details()))
-                    .build();
-            }
+        public Response toResponse(RegattaSetupService.ConflictException conflict) {
+            return Response.status(Response.Status.CONFLICT)
+                .entity(new ErrorResponse("CONFLICT", conflict.getMessage(), conflict.details()))
+                .build();
+        }
+    }
 
-            Log.error("Unhandled regatta setup error", exception);
-            return Response.serverError()
-                .entity(ErrorResponse.internalError("Failed to process regatta setup request"))
+    @jakarta.ws.rs.ext.Provider
+    public static class SetupEntryNotFoundExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<EntryNotFoundException> {
+        @Override
+        public Response toResponse(EntryNotFoundException exception) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(ErrorResponse.notFound(exception.getMessage()))
+                .build();
+        }
+    }
+
+    @jakarta.ws.rs.ext.Provider
+    public static class SetupForbiddenExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<ForbiddenException> {
+        @Override
+        public Response toResponse(ForbiddenException exception) {
+            return Response.status(Response.Status.FORBIDDEN)
+                .entity(new ErrorResponse("FORBIDDEN", exception.getMessage()))
                 .build();
         }
     }
@@ -185,14 +187,14 @@ record EntryCreateRequest(
 }
 
 record WithdrawEntryRequest(
-    @NotBlank String status,
+    @NotBlank @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$") String status,
     @NotBlank String reason,
-    @NotBlank String expected_status
+    @NotBlank @Pattern(regexp = "^(entered|withdrawn_before_draw|withdrawn_after_draw|dns|dnf|excluded|dsq)$") String expected_status
 ) {
 }
 
 record ReinstateEntryRequest(
-    @NotBlank String expected_status
+    @NotBlank @Pattern(regexp = "^(withdrawn_before_draw|withdrawn_after_draw)$") String expected_status
 ) {
 }
 

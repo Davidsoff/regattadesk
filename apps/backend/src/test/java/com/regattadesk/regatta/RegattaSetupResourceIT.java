@@ -14,6 +14,7 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
@@ -25,6 +26,7 @@ class RegattaSetupResourceIT {
     @Test
     void regattaSetupEndpoints_supportCrudRoundTripAcrossSetupEntities() throws Exception {
         SeedData seed = seedBaseData();
+        SeedData otherSeed = seedBaseData();
 
         String eventGroupId = given()
             .header("Remote-User", "staff-admin")
@@ -106,6 +108,19 @@ class RegattaSetupResourceIT {
             .body("members[0].athlete_id", equalTo(seed.athleteId.toString()))
             .extract()
             .path("id");
+
+        UUID otherCrewId = seedCrew(otherSeed);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/crews")
+            .then()
+            .statusCode(200)
+            .body("data.id", hasItem(crewId))
+            .body("data.display_name", hasItem("Amstel Crew"))
+            .body("data.id", not(hasItem(otherCrewId.toString())));
 
         String entryId = given()
             .header("Remote-User", "staff-admin")
@@ -199,6 +214,30 @@ class RegattaSetupResourceIT {
             .body("status", equalTo("entered"));
     }
 
+    @Test
+    void withdrawEndpoint_rejectsUnsupportedStatuses() throws Exception {
+        SeedData seed = seedBaseData();
+        UUID eventId = seedEvent(seed);
+        UUID crewId = seedCrew(seed);
+        UUID entryId = seedEntry(seed, eventId, crewId);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "status": "dns",
+                  "reason": "Invalid transition",
+                  "expected_status": "entered"
+                }
+                """)
+            .when()
+            .post("/api/v1/regattas/" + seed.regattaId + "/entries/" + entryId + "/withdraw")
+            .then()
+            .statusCode(400);
+    }
+
     private SeedData seedBaseData() throws Exception {
         UUID regattaId = UUID.randomUUID();
         UUID clubId = UUID.randomUUID();
@@ -270,6 +309,11 @@ class RegattaSetupResourceIT {
                 connection,
                 "INSERT INTO crew_athletes (id, crew_id, athlete_id, seat_position) VALUES (?, ?, ?, ?)",
                 crewAthleteId, crewId, seed.athleteId, 1
+            );
+            insert(
+                connection,
+                "INSERT INTO regatta_crews (regatta_id, crew_id, created_at) VALUES (?, ?, ?)",
+                seed.regattaId, crewId, Timestamp.from(Instant.parse("2026-03-10T12:00:00Z"))
             );
         }
         return crewId;

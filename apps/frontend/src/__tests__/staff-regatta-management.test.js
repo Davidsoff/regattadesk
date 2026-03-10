@@ -42,7 +42,7 @@ const mockSetupApi = {
   createAthlete: vi.fn(async () => ({})),
   listCrews: vi.fn(async () => ({ data: [] })),
   createCrew: vi.fn(async () => ({})),
-  listEntries: vi.fn(async ({}, params) => ({ data: params?.status ? entryStore.filter((entry) => entry.status === params.status) : entryStore })),
+  listEntries: vi.fn(async (regattaId, params) => ({ data: params?.status ? entryStore.filter((entry) => entry.status === params.status) : entryStore })),
   createEntry: vi.fn(async (regattaId, payload) => {
     entryStore.push({
       id: 'entry-new',
@@ -252,6 +252,7 @@ describe('Staff regatta management workflows (issue #134)', () => {
     expect(dialog.attributes('aria-modal')).toBe('true')
     expect(dialog.attributes('aria-labelledby')).toBe('withdraw-dialog-title')
 
+    expect(wrapper.find('[data-testid="destructive-action-dialog"] select[name="status"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-actor"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-timestamp"]').exists()).toBe(true)
@@ -303,7 +304,7 @@ describe('Staff regatta management workflows (issue #134)', () => {
     expect(wrapper.find('[data-testid="entry-conflict-reload"]').exists()).toBe(true)
   })
 
-  it('regresses withdrawal transitions so invalid status changes are blocked in UI', async () => {
+  it('only renders meaningful entry actions for each supported status', async () => {
     const wrapper = await mountEntriesSection()
     await settle()
 
@@ -313,16 +314,31 @@ describe('Staff regatta management workflows (issue #134)', () => {
     expect(beforeDrawRow.exists()).toBe(true)
     expect(afterDrawRow.exists()).toBe(true)
 
-    expect(
-      beforeDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').attributes('disabled')
-    ).toBeDefined()
+    expect(beforeDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').exists()).toBe(false)
+    expect(afterDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').exists()).toBe(false)
 
-    expect(
-      afterDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').attributes('disabled')
-    ).toBeDefined()
+    expect(beforeDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')).toBeUndefined()
+    expect(afterDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')).toBeUndefined()
+  })
 
-    expect(
-      afterDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')
-    ).toBeDefined()
+  it('submits the selected withdrawal timing instead of a hardcoded status', async () => {
+    const wrapper = await mountEntriesSection()
+    await settle()
+
+    await wrapper.find('button[data-action="withdraw-entry"]').trigger('click')
+    await wrapper.find('[data-testid="destructive-action-dialog"] select[name="status"]').setValue('withdrawn_after_draw')
+    await wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]').setValue('Late scratch')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-withdraw"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.withdrawEntry).toHaveBeenCalledWith(
+      REGATTA_ID,
+      'entry-entered',
+      expect.objectContaining({
+        status: 'withdrawn_after_draw',
+        reason: 'Late scratch',
+        expected_status: 'entered'
+      })
+    )
   })
 })
