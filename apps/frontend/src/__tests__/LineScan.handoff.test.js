@@ -119,9 +119,11 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
       operatorToken: 'token-97',
       operatorStation: 'finish-line'
     })
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('operator-device')
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 

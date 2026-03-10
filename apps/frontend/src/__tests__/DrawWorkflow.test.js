@@ -9,25 +9,12 @@ import DrawWorkflow from '../views/staff/DrawWorkflow.vue'
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
 
 function jsonResponse(body, status = 200) {
-  const payload = JSON.stringify(body)
-  return {
-    ok: status >= 200 && status < 300,
+  return new Response(JSON.stringify(body), {
     status,
     headers: {
-      get(name) {
-        const key = name.toLowerCase()
-        if (key === 'content-type') {
-          return 'application/json'
-        }
-        if (key === 'content-length') {
-          return String(payload.length)
-        }
-        return null
-      }
-    },
-    json: vi.fn().mockResolvedValue(body),
-    text: vi.fn().mockResolvedValue(payload)
-  }
+      'Content-Type': 'application/json'
+    }
+  })
 }
 
 async function expectPostedRequest(call, expectedPath, expectedBody) {
