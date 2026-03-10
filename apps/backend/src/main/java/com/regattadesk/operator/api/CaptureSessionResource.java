@@ -208,7 +208,7 @@ public class CaptureSessionResource {
             CaptureSession updated = captureSessionService.updateSyncState(
                     captureSessionId,
                     regattaId,
-                    request.isSynced(),
+                    request.getIsSynced(),
                     request.isDriftExceededThreshold(),
                     request.getUnsyncedReason(),
                     "operator"

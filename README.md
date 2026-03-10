@@ -104,6 +104,7 @@ regattadesk/
 | `make backend-dev` | Start backend in dev mode |
 | `make frontend-dev` | Start frontend in dev mode |
 | `make backend-image` | Build backend container image via Quarkus Jib |
+| `cd apps/frontend && npm run api:generate` | Regenerate the frontend API client from `pdd/design/openapi-v0.1.yaml` |
 
 ## Backend (Quarkus)
 
@@ -154,6 +155,9 @@ npm run dev
 
 # Build for production
 npm run build
+
+# Regenerate the frontend API client from the OpenAPI spec
+npm run api:generate
 
 # Preview production build
 npm run preview

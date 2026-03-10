@@ -30,8 +30,8 @@ public class CaptureSessionSyncStateRequest {
     public CaptureSessionSyncStateRequest() {
     }
 
-    public Boolean isSynced() { return isSynced; }
-    public void setSynced(Boolean synced) { this.isSynced = synced; }
+    public Boolean getIsSynced() { return isSynced; }
+    public void setIsSynced(Boolean synced) { this.isSynced = synced; }
 
     public Boolean isDriftExceededThreshold() { return driftExceededThreshold; }
     public void setDriftExceededThreshold(Boolean driftExceededThreshold) {
