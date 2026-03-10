@@ -119,6 +119,8 @@ class ProjectionIntegrationTest {
     @Test
     @Transactional
     void testProjectionWorkerProcessesEvents() {
+        seedCheckpointAtCurrentEnd();
+
         // Create test events in event store
         UUID aggregateId = UUID.randomUUID();
         TestEvent event1 = new TestEvent("TestEventType", aggregateId, "data1");
@@ -145,6 +147,8 @@ class ProjectionIntegrationTest {
     @Test
     @Transactional
     void testIdempotentReplay() {
+        seedCheckpointAtCurrentEnd();
+
         // Create test event
         UUID aggregateId = UUID.randomUUID();
         TestEvent event = new TestEvent("TestEventType", aggregateId, "data");
@@ -174,6 +178,8 @@ class ProjectionIntegrationTest {
     @Test
     @Transactional
     void testCheckpointAdvancesForUnhandledEvents() {
+        seedCheckpointAtCurrentEnd();
+
         UUID aggregateId = UUID.randomUUID();
         TestEvent unhandledEvent = new TestEvent("UnhandledEventType", aggregateId, "ignored");
 
@@ -194,6 +200,20 @@ class ProjectionIntegrationTest {
 
         // Second run must not reread the same unhandled event forever.
         assertEquals(0, projectionWorker.processProjection(handler));
+    }
+
+    private void seedCheckpointAtCurrentEnd() {
+        List<EventEnvelope> existingEvents = eventStore.readGlobal(10_000, 0);
+        if (existingEvents.isEmpty()) {
+            return;
+        }
+
+        EventEnvelope lastExistingEvent = existingEvents.getLast();
+        checkpointRepository.saveCheckpoint(new ProjectionCheckpoint(
+            testProjectionName,
+            lastExistingEvent.getEventId(),
+            lastExistingEvent.getCreatedAt()
+        ));
     }
     
     // Test event implementation

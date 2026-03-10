@@ -78,62 +78,68 @@ describe('Draw Lifecycle Integration', () => {
 
       // Step 4: Generate draw
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 1,
-        results_revision: 0,
-        seed: 'generated-seed'
+        seed: 12345,
+        generated: true,
+        published: false
       })
       const drawGenerated = await api.generateDraw(regattaId)
-      expect(drawGenerated.draw_revision).toBe(1)
-      expect(drawGenerated.seed).toBeTruthy()
+      expect(drawGenerated.seed).toBe(12345)
+      expect(drawGenerated.generated).toBe(true)
 
       // Step 5: Publish draw (increments draw_revision)
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 2,
-        results_revision: 0
+        draw_revision: 1,
+        results_revision: 0,
+        generated: true,
+        published: true
       })
       const published = await api.publishDraw(regattaId)
-      expect(published.draw_revision).toBe(2)
+      expect(published.draw_revision).toBe(1)
 
       // Verify all API calls were made in correct order
       expect(mockClient.post).toHaveBeenCalledTimes(5)
       expect(mockClient.post).toHaveBeenNthCalledWith(1, '/rulesets', rulesetPayload)
       expect(mockClient.post).toHaveBeenNthCalledWith(2, `/regattas/${regattaId}/blocks`, blockPayload)
       expect(mockClient.post).toHaveBeenNthCalledWith(3, `/regattas/${regattaId}/bib_pools`, bibPoolPayload)
-      expect(mockClient.post).toHaveBeenNthCalledWith(4, `/regattas/${regattaId}/draw/generate`, undefined)
+      expect(mockClient.post).toHaveBeenNthCalledWith(4, `/regattas/${regattaId}/draw/generate`, {})
       expect(mockClient.post).toHaveBeenNthCalledWith(5, `/regattas/${regattaId}/draw/publish`)
     })
 
     it('allows unpublishing draw to enable regeneration', async () => {
       // Publish draw first
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 2,
-        results_revision: 0
+        draw_revision: 1,
+        results_revision: 0,
+        generated: true,
+        published: true
       })
       await api.publishDraw(regattaId)
 
       // Unpublish to allow regeneration
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 1,
-        results_revision: 0
+        draw_revision: 0,
+        results_revision: 0,
+        generated: false,
+        published: false
       })
       const unpublished = await api.unpublishDraw(regattaId)
-      expect(unpublished.draw_revision).toBe(1)
+      expect(unpublished.draw_revision).toBe(0)
 
       // Can now regenerate with new seed
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 1,
-        results_revision: 0,
-        seed: 'new-seed'
+        seed: 67890,
+        generated: true,
+        published: false
       })
-      const regenerated = await api.generateDraw(regattaId, { seed: 'new-seed' })
-      expect(regenerated.seed).toBe('new-seed')
+      const regenerated = await api.generateDraw(regattaId, { seed: 67890 })
+      expect(regenerated.seed).toBe(67890)
     })
 
     it('allows reproducible draw with custom seed', async () => {
-      const customSeed = 'reproducible-seed-12345'
+      const customSeed = 12345
       mockClient.post.mockResolvedValue({
-        draw_revision: 1,
-        results_revision: 0,
+        generated: true,
+        published: false,
         seed: customSeed
       })
 
