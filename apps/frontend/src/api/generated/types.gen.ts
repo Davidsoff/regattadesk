@@ -37,6 +37,17 @@ export type HealthStatus = {
 
 export type Instant = string;
 
+export type InvoiceGenerateRequest = {
+    club_ids?: Array<string>;
+    idempotency_key?: string;
+};
+
+export type InvoiceMarkPaidRequest = {
+    paid_by: string;
+    paid_at?: Instant;
+    payment_reference?: string;
+};
+
 export type LineScanManifestUpsertRequest = {
     capture_session_id: Uuid;
     tile_size_px: number;
@@ -352,6 +363,108 @@ export type PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusErrors = {
 };
 
 export type PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        club_id?: Uuid;
+        cursor?: string;
+        limit?: number;
+        status?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/invoices';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateData = {
+    body: InvoiceGenerateRequest;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/generate';
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesGenerateResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdData = {
+    body?: never;
+    path: {
+        job_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/jobs/{job_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesJobsByJobIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdData = {
+    body?: never;
+    path: {
+        invoice_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/{invoice_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdInvoicesByInvoiceIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidData = {
+    body: InvoiceMarkPaidRequest;
+    path: {
+        invoice_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid';
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdInvoicesByInvoiceIdMarkPaidResponses = {
     /**
      * OK
      */

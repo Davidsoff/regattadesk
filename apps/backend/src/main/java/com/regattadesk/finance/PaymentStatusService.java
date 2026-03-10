@@ -561,46 +561,39 @@ public class PaymentStatusService {
         PaymentStatus targetStatus,
         String requestFingerprint
     ) {
-        // Query directly by idempotency key fields including a request fingerprint
-        // (sorted entry/club IDs + payment reference) to prevent incorrect replay
-        // when the same actor reuses a key with a different request payload.
         String sql = """
             SELECT payload
             FROM event_store
             WHERE aggregate_id = ?
               AND event_type = 'BulkPaymentStatusMarked'
-              AND payload->>'idempotencyKey' = ?
-              AND payload->>'requestedBy' = ?
-              AND payload->>'targetStatus' = ?
-              AND payload->>'requestFingerprint' = ?
             ORDER BY created_at DESC
-            LIMIT 1
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, regattaId);
-            stmt.setString(2, idempotencyKey);
-            stmt.setString(3, actor);
-            stmt.setString(4, targetStatus.value());
-            stmt.setString(5, requestFingerprint);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
+                while (rs.next()) {
                     BulkPaymentStatusMarkedEvent event = objectMapper.readValue(
                         rs.getString("payload"),
                         BulkPaymentStatusMarkedEvent.class
                     );
-                    return Optional.of(new BulkPaymentMarkResult(
-                        event.getFailedCount() == 0,
-                        "Replayed previous bulk payment update",
-                        event.getTotalRequested(),
-                        event.getProcessedCount(),
-                        event.getUpdatedCount(),
-                        event.getUnchangedCount(),
-                        event.getFailedCount(),
-                        event.getFailures() == null ? List.of() : List.copyOf(event.getFailures()),
-                        event.getIdempotencyKey(),
-                        true
-                    ));
+                    if (idempotencyKey.equals(event.getIdempotencyKey())
+                        && actor.equals(event.getRequestedBy())
+                        && targetStatus.value().equals(event.getTargetStatus())
+                        && requestFingerprint.equals(event.getRequestFingerprint())) {
+                        return Optional.of(new BulkPaymentMarkResult(
+                            event.getFailedCount() == 0,
+                            "Replayed previous bulk payment update",
+                            event.getTotalRequested(),
+                            event.getProcessedCount(),
+                            event.getUpdatedCount(),
+                            event.getUnchangedCount(),
+                            event.getFailedCount(),
+                            event.getFailures() == null ? List.of() : List.copyOf(event.getFailures()),
+                            event.getIdempotencyKey(),
+                            true
+                        ));
+                    }
                 }
             }
         } catch (Exception e) {

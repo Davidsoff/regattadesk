@@ -101,6 +101,23 @@ access_control:
         - ["group:info_desk"]
         - ["group:financial_manager"]
 
+    # Finance endpoints under regatta-scoped API (require authentication, any staff role;
+    # backend still enforces endpoint-specific role requirements)
+    - domain:
+        - "localhost.local"
+      policy: one_factor
+      resources:
+        - "^/api/v1/regattas/[^/]+/entries/[^/]+/payment_status$"
+        - "^/api/v1/regattas/[^/]+/clubs/[^/]+/payment_status$"
+        - "^/api/v1/regattas/[^/]+/payments/mark_bulk$"
+        - "^/api/v1/regattas/[^/]+/invoices(/.*)?$"
+      subject:
+        - ["group:super_admin"]
+        - ["group:regatta_admin"]
+        - ["group:head_of_jury"]
+        - ["group:info_desk"]
+        - ["group:financial_manager"]
+
     # Ruleset API endpoints (require authentication; backend enforces roles)
     - domain:
         - "localhost.local"

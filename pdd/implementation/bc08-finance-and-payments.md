@@ -19,7 +19,7 @@ Payment-status operations for entries and clubs, and invoice lifecycle managemen
 - `POST /api/v1/regattas/{regatta_id}/invoices/generate`
 - `GET /api/v1/regattas/{regatta_id}/invoices/jobs/{job_id}`
 - `GET /api/v1/regattas/{regatta_id}/invoices/{invoice_id}`
-- `POST /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark-paid`
+- `POST /api/v1/regattas/{regatta_id}/invoices/{invoice_id}/mark_paid`
 
 ## Non-Functional Features to Implement
 - Enforce role-based access for financial operations.
