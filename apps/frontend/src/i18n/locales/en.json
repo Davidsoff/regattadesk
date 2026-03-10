@@ -142,6 +142,7 @@
     "draw": "Draw",
     "finance": "Finance",
     "blocks": "Blocks",
+    "printables": "Printables",
     "line_scan": "Line Scan",
     "schedule": "Schedule",
     "results": "Results"
@@ -206,6 +207,11 @@
         "currentAction": "Current action",
         "nextAction": "Next action"
       }
+    },
+    "printables": {
+      "title": "Regatta Printables",
+      "description": "Export printable regatta documents and verify the print header metadata before downloading.",
+      "header_preview": "Print header preview"
     },
     "draw_workflow": {
       "title": "Draw Workflow",

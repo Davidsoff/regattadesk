@@ -142,6 +142,7 @@
     "draw": "Loting",
     "finance": "Financiën",
     "blocks": "Blokken",
+    "printables": "Printables",
     "line_scan": "Fotolijn",
     "schedule": "Schema",
     "results": "Resultaten"
@@ -206,6 +207,11 @@
         "currentAction": "Huidige actie",
         "nextAction": "Volgende actie"
       }
+    },
+    "printables": {
+      "title": "Regatta printables",
+      "description": "Exporteer printbare regatta-documenten en controleer de kopmetadata voordat je downloadt.",
+      "header_preview": "Voorbeeld printkop"
     },
     "draw_workflow": {
       "title": "Loting Workflow",
