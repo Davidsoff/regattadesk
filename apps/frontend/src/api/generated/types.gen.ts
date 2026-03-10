@@ -226,6 +226,86 @@ export type InvoiceResponse = {
     payment_reference?: string;
 };
 
+export type RegattaSetupAuditResponse = {
+    actor?: string;
+    at?: Instant;
+    reason?: string;
+};
+
+export type RegattaSetupCrewMemberResponse = {
+    athlete_id?: Uuid;
+    seat_position?: number;
+};
+
+export type RegattaSetupCrewResponse = {
+    id?: Uuid;
+    display_name?: string;
+    club_id?: Uuid;
+    is_composite?: boolean;
+    members?: Array<RegattaSetupCrewMemberResponse>;
+};
+
+export type RegattaSetupCrewListResponse = {
+    data?: Array<RegattaSetupCrewResponse>;
+    pagination?: InvoiceListPaginationResponse;
+};
+
+export type RegattaSetupEntryResponse = {
+    id?: Uuid;
+    regatta_id?: Uuid;
+    event_id?: Uuid;
+    block_id?: Uuid;
+    crew_id?: Uuid;
+    billing_club_id?: Uuid;
+    status?: 'entered' | 'withdrawn_before_draw' | 'withdrawn_after_draw' | 'dns' | 'dnf' | 'excluded' | 'dsq';
+    payment_status?: 'unpaid' | 'paid';
+    paid_at?: Instant;
+    paid_by?: string;
+    payment_reference?: string;
+    marker_start_time_ms?: number;
+    marker_finish_time_ms?: number;
+    completion_status?: string;
+};
+
+export type RegattaSetupEntryListResponse = {
+    data?: Array<RegattaSetupEntryResponse>;
+    pagination?: InvoiceListPaginationResponse;
+};
+
+export type RegattaSetupEventGroupResponse = {
+    id?: Uuid;
+    regatta_id?: Uuid;
+    name?: string;
+    description?: string;
+    display_order?: number;
+};
+
+export type RegattaSetupEventGroupListResponse = {
+    data?: Array<RegattaSetupEventGroupResponse>;
+    pagination?: InvoiceListPaginationResponse;
+};
+
+export type RegattaSetupEventResponse = {
+    id?: Uuid;
+    regatta_id?: Uuid;
+    event_group_id?: Uuid;
+    category_id?: Uuid;
+    boat_type_id?: Uuid;
+    name?: string;
+    display_order?: number;
+};
+
+export type RegattaSetupEventListResponse = {
+    data?: Array<RegattaSetupEventResponse>;
+    pagination?: InvoiceListPaginationResponse;
+};
+
+export type RegattaSetupWithdrawResponse = {
+    id?: Uuid;
+    status?: 'entered' | 'withdrawn_before_draw' | 'withdrawn_after_draw';
+    audit?: RegattaSetupAuditResponse;
+};
+
 export type LineScanManifestUpsertRequest = {
     capture_session_id: Uuid;
     tile_size_px: number;
@@ -464,6 +544,239 @@ export type PatchApiV1EntriesByIdPaymentStatusResponses = {
      */
     200: unknown;
 };
+
+export type GetApiV1RegattasByRegattaIdEventGroupsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        search?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/event-groups';
+};
+
+export type GetApiV1RegattasByRegattaIdEventGroupsResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupEventGroupListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdEventGroupsResponse = GetApiV1RegattasByRegattaIdEventGroupsResponses[keyof GetApiV1RegattasByRegattaIdEventGroupsResponses];
+
+export type PostApiV1RegattasByRegattaIdEventGroupsData = {
+    body: {
+        name: string;
+        description?: string;
+        display_order?: number;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/event-groups';
+};
+
+export type PostApiV1RegattasByRegattaIdEventGroupsResponses = {
+    /**
+     * Created
+     */
+    201: RegattaSetupEventGroupResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEventGroupsResponse = PostApiV1RegattasByRegattaIdEventGroupsResponses[keyof PostApiV1RegattasByRegattaIdEventGroupsResponses];
+
+export type GetApiV1RegattasByRegattaIdEventsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/events';
+};
+
+export type GetApiV1RegattasByRegattaIdEventsResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupEventListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdEventsResponse = GetApiV1RegattasByRegattaIdEventsResponses[keyof GetApiV1RegattasByRegattaIdEventsResponses];
+
+export type PostApiV1RegattasByRegattaIdEventsData = {
+    body: {
+        event_group_id: Uuid;
+        category_id: Uuid;
+        boat_type_id: Uuid;
+        name: string;
+        display_order?: number;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/events';
+};
+
+export type PostApiV1RegattasByRegattaIdEventsResponses = {
+    /**
+     * Created
+     */
+    201: RegattaSetupEventResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEventsResponse = PostApiV1RegattasByRegattaIdEventsResponses[keyof PostApiV1RegattasByRegattaIdEventsResponses];
+
+export type GetApiV1RegattasByRegattaIdCrewsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/crews';
+};
+
+export type GetApiV1RegattasByRegattaIdCrewsResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupCrewListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdCrewsResponse = GetApiV1RegattasByRegattaIdCrewsResponses[keyof GetApiV1RegattasByRegattaIdCrewsResponses];
+
+export type PostApiV1RegattasByRegattaIdCrewsData = {
+    body: {
+        display_name: string;
+        club_id?: Uuid;
+        is_composite?: boolean;
+        members: Array<{
+            athlete_id: Uuid;
+            seat_position: number;
+        }>;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/crews';
+};
+
+export type PostApiV1RegattasByRegattaIdCrewsResponses = {
+    /**
+     * Created
+     */
+    201: RegattaSetupCrewResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdCrewsResponse = PostApiV1RegattasByRegattaIdCrewsResponses[keyof PostApiV1RegattasByRegattaIdCrewsResponses];
+
+export type GetApiV1RegattasByRegattaIdEntriesData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        status?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/entries';
+};
+
+export type GetApiV1RegattasByRegattaIdEntriesResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupEntryListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdEntriesResponse = GetApiV1RegattasByRegattaIdEntriesResponses[keyof GetApiV1RegattasByRegattaIdEntriesResponses];
+
+export type PostApiV1RegattasByRegattaIdEntriesData = {
+    body: {
+        event_id: Uuid;
+        block_id: Uuid;
+        crew_id: Uuid;
+        billing_club_id?: Uuid;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/entries';
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesResponses = {
+    /**
+     * Created
+     */
+    201: RegattaSetupEntryResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesResponse = PostApiV1RegattasByRegattaIdEntriesResponses[keyof PostApiV1RegattasByRegattaIdEntriesResponses];
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawData = {
+    body: {
+        status: 'withdrawn_before_draw' | 'withdrawn_after_draw';
+        reason: string;
+        expected_status: 'entered' | 'withdrawn_before_draw' | 'withdrawn_after_draw' | 'dns' | 'dnf' | 'excluded' | 'dsq';
+    };
+    path: {
+        regatta_id: Uuid;
+        entry_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/entries/{entry_id}/withdraw';
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawError = PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawErrors[keyof PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawErrors];
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupWithdrawResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawResponse = PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawResponses[keyof PostApiV1RegattasByRegattaIdEntriesByEntryIdWithdrawResponses];
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateData = {
+    body: {
+        expected_status: 'withdrawn_before_draw' | 'withdrawn_after_draw';
+    };
+    path: {
+        regatta_id: Uuid;
+        entry_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/entries/{entry_id}/reinstate';
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateError = PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateErrors[keyof PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateErrors];
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateResponses = {
+    /**
+     * OK
+     */
+    200: RegattaSetupWithdrawResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateResponse = PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateResponses[keyof PostApiV1RegattasByRegattaIdEntriesByEntryIdReinstateResponses];
 
 export type GetApiV1JobsByJobIdData = {
     body?: never;
