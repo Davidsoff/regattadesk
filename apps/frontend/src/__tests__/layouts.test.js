@@ -85,6 +85,7 @@ function createTestI18n() {
     },
     navigation: {
       regattas: 'Regattas',
+      sessions: 'Sessions',
       rulesets: 'Rulesets',
       setup: 'Setup',
       draw: 'Draw',
@@ -93,6 +94,17 @@ function createTestI18n() {
       line_scan: 'Line Scan',
       schedule: 'Schedule',
       results: 'Results',
+    },
+    operator: {
+      regatta: {
+        station_context: 'Station: {station}',
+        session_label: 'Session: {id}',
+        title: 'Regatta',
+        sync_synced: 'Sync status: synced',
+        sync_pending: 'Sync status: pending ({reason})',
+        sync_pending_default: 'awaiting upload',
+        sync_attention: 'Sync status: attention required',
+      },
     },
   }
 
