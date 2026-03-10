@@ -17,6 +17,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.UUID;
 
@@ -40,11 +46,20 @@ public class PaymentStatusResource {
     @GET
     @Path("/finance/entries")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "List Finance Entries")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = FinanceEntryListResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response listFinanceEntries(
         @PathParam("regatta_id") UUID regattaId,
         @QueryParam("search") String search,
+        @Parameter(schema = @Schema(enumeration = {"paid", "unpaid"}))
         @QueryParam("payment_status") String paymentStatus,
         @QueryParam("cursor") String cursor,
+        @Parameter(schema = @Schema(implementation = Integer.class, defaultValue = "100", minimum = "1", maximum = "100"))
         @QueryParam("limit") @DefaultValue("100") Integer limit
     ) {
         try {
@@ -72,11 +87,20 @@ public class PaymentStatusResource {
     @GET
     @Path("/finance/clubs")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "List Finance Clubs")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = FinanceClubListResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response listFinanceClubs(
         @PathParam("regatta_id") UUID regattaId,
         @QueryParam("search") String search,
+        @Parameter(schema = @Schema(enumeration = {"paid", "unpaid", "partial"}))
         @QueryParam("payment_status") String paymentStatus,
         @QueryParam("cursor") String cursor,
+        @Parameter(schema = @Schema(implementation = Integer.class, defaultValue = "100", minimum = "1", maximum = "100"))
         @QueryParam("limit") @DefaultValue("100") Integer limit
     ) {
         try {
