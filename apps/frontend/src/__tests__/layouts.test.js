@@ -14,6 +14,12 @@ function createTestRouter(extraRoutes = []) {
     routes: [
       { path: '/staff/regattas', name: 'staff-regattas', component: { template: '<div>Staff Regattas</div>' } },
       { path: '/staff/rulesets', name: 'staff-rulesets', component: { template: '<div>Staff Rulesets</div>' } },
+      { path: '/staff/rulesets/new', name: 'staff-ruleset-create', component: { template: '<div>Staff Ruleset Create</div>' } },
+      {
+        path: '/staff/rulesets/:rulesetId',
+        name: 'staff-ruleset-detail',
+        component: { template: '<div>Staff Ruleset Detail</div>' },
+      },
       {
         path: '/staff/regattas/:regattaId',
         name: 'staff-regatta-detail',
@@ -28,6 +34,26 @@ function createTestRouter(extraRoutes = []) {
         path: '/staff/regattas/:regattaId/finance',
         name: 'staff-regatta-finance',
         component: { template: '<div>Staff Finance</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/entries/:entryId',
+        name: 'staff-regatta-finance-entry',
+        component: { template: '<div>Staff Finance Entry</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/clubs/:clubId',
+        name: 'staff-regatta-finance-club',
+        component: { template: '<div>Staff Finance Club</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/invoices',
+        name: 'staff-regatta-finance-invoices',
+        component: { template: '<div>Staff Finance Invoices</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/invoices/:invoiceId',
+        name: 'staff-regatta-finance-invoice',
+        component: { template: '<div>Staff Finance Invoice</div>' },
       },
       {
         path: '/staff/regattas/:regattaId/operator-access',
@@ -100,6 +126,7 @@ function createTestI18n() {
       setup: 'Setup',
       draw: 'Draw',
       finance: 'Finance',
+      operator_access: 'Operator Access',
       blocks: 'Blocks',
       printables: 'Printables',
       line_scan: 'Line Scan',
@@ -116,6 +143,10 @@ function createTestI18n() {
         sync_pending_default: 'awaiting upload',
         sync_attention: 'Sync status: attention required',
       },
+    },
+    breadcrumb: {
+      regattas: 'Regattas',
+      operator_access: 'Operator Access',
     },
   }
 
@@ -314,6 +345,24 @@ describe('Layout Components', () => {
         .find((node) => node.attributes('href') === '/staff/regattas/test-id-123/printables')
 
       expect(printablesLink?.attributes('aria-current')).toBe('page')
+    })
+
+    it('keeps rulesets primary nav active on ruleset subroutes', async () => {
+      const createWrapper = await mountAtRoute(router, '/staff/rulesets/new', StaffLayout)
+      expect(createWrapper.findAll('.staff-layout__nav-item')[1].attributes('aria-current')).toBe('page')
+
+      const detailWrapper = await mountAtRoute(router, '/staff/rulesets/ruleset-123', StaffLayout)
+      expect(detailWrapper.findAll('.staff-layout__nav-item')[1].attributes('aria-current')).toBe('page')
+    })
+
+    it('keeps finance subnav active on finance subroutes', async () => {
+      const wrapper = await mountAtRoute(
+        router,
+        '/staff/regattas/test-id-123/finance/invoices/invoice-123',
+        StaffLayout
+      )
+      const financeLink = wrapper.findAll('.staff-layout__subnav-item')[2]
+      expect(financeLink.attributes('aria-current')).toBe('page')
     })
   })
 

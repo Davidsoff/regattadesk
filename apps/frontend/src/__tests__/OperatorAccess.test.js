@@ -42,11 +42,11 @@ function createHandoff(overrides = {}) {
     regatta_id: REGATTA_ID,
     token_id: TOKEN_ID,
     station: 'Finish Tower',
-    requesting_device_id: 'pixel-operator-2',
+    requestingDeviceId: 'pixel-operator-2',
     status: 'PENDING',
-    created_at: '2026-03-10T08:45:00Z',
-    expires_at: '2026-03-10T08:50:00Z',
-    completed_at: null,
+    createdAt: '2026-03-10T08:45:00Z',
+    expiresAt: '2026-03-10T08:50:00Z',
+    completedAt: null,
     pin: null,
     ...overrides,
   }
@@ -85,9 +85,16 @@ async function mountPage(options = {}) {
 }
 
 describe('OperatorAccess view (issue #137)', () => {
+  let createObjectUrlSpy
+  let revokeObjectUrlSpy
+  let anchorClickSpy
+
   beforeEach(() => {
     vi.clearAllMocks()
     document.body.innerHTML = ''
+    createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:download-token')
+    revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     mockStaffOperatorAccessApi.listTokens.mockResolvedValue({
       data: [createToken()],
     })
@@ -100,6 +107,7 @@ describe('OperatorAccess view (issue #137)', () => {
     )
     mockStaffOperatorAccessApi.revokeToken.mockResolvedValue({ message: 'Token revoked successfully' })
     mockStaffOperatorAccessApi.exportTokenPdf.mockResolvedValue({
+      blob: new Blob(['pdf-content'], { type: 'application/pdf' }),
       filename: 'operator-token-finish-tower.pdf',
       contentType: 'application/pdf',
       size: 4096,
@@ -113,6 +121,9 @@ describe('OperatorAccess view (issue #137)', () => {
   afterEach(() => {
     document.body.innerHTML = ''
     delete globalThis.__REGATTADESK_AUTH__
+    createObjectUrlSpy.mockRestore()
+    revokeObjectUrlSpy.mockRestore()
+    anchorClickSpy.mockRestore()
   })
 
   it('loads token administration data and renders token lifecycle actions with fallback instructions', async () => {
@@ -176,6 +187,10 @@ describe('OperatorAccess view (issue #137)', () => {
     await vi.waitFor(() => {
       expect(mockStaffOperatorAccessApi.exportTokenPdf).toHaveBeenCalledWith(REGATTA_ID, TOKEN_ID)
     })
+    expect(createObjectUrlSpy).toHaveBeenCalledTimes(1)
+    expect(anchorClickSpy).toHaveBeenCalledTimes(1)
+    expect(revokeObjectUrlSpy).toHaveBeenCalledWith('blob:download-token')
+    expect(wrapper.text()).toContain('operator-token-finish-tower.pdf')
 
     await wrapper.find(`[data-testid="revoke-token-${TOKEN_ID}"]`).trigger('click')
 
@@ -205,6 +220,8 @@ describe('OperatorAccess view (issue #137)', () => {
 
     const revealButton = wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`)
     expect(revealButton.exists()).toBe(true)
+    expect(wrapper.text()).toContain('pixel-operator-2')
+    expect(wrapper.text()).toContain('2026-03-10T08:50:00Z')
 
     await revealButton.trigger('click')
 
@@ -224,6 +241,7 @@ describe('OperatorAccess view (issue #137)', () => {
 
     expect(wrapper.find('[data-testid="operator-access-authorization"]').text()).toContain('not authorized')
     expect(wrapper.find('[data-testid="create-token-form"]').exists()).toBe(false)
+    expect(wrapper.find(`[data-testid="export-token-${TOKEN_ID}"]`).exists()).toBe(false)
     expect(wrapper.find(`[data-testid="revoke-token-${TOKEN_ID}"]`).exists()).toBe(false)
     expect(wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`).exists()).toBe(false)
   })

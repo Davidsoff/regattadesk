@@ -43,6 +43,17 @@ function toIsoString(value) {
   return new Date(value).toISOString()
 }
 
+function downloadBlob(blob, filename) {
+  const objectUrl = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(objectUrl)
+}
+
 async function loadTokens() {
   loading.value = true
   errorMessage.value = ''
@@ -94,6 +105,10 @@ async function exportTokenPdf(tokenId) {
 
   try {
     const result = await operatorAccessApi.exportTokenPdf(regattaId.value, tokenId)
+    if (!(result?.blob instanceof Blob)) {
+      throw new Error(t('operator_access.errors.export_token'))
+    }
+    downloadBlob(result.blob, result.filename)
     actionMessage.value = t('operator_access.messages.token_exported', { filename: result.filename })
   } catch (error) {
     errorMessage.value = error?.message || t('operator_access.errors.export_token')
@@ -258,6 +273,7 @@ onMounted(async () => {
             <td>{{ token.is_active ? t('operator_access.tokens.active') : t('operator_access.tokens.revoked') }}</td>
             <td class="operator-access__actions">
               <button
+                v-if="canManageOperatorAccess"
                 :data-testid="`export-token-${token.id}`"
                 type="button"
                 @click="requestTokenAction('export', token)"
@@ -296,8 +312,8 @@ onMounted(async () => {
       <article v-if="handoff" class="operator-access__handoff-card" :data-testid="`handoff-card-${handoff.id}`">
         <p>{{ t('operator_access.handoff.station') }}: {{ handoff.station }}</p>
         <p>{{ t('operator_access.handoff.status') }}: {{ handoff.status }}</p>
-        <p>{{ t('operator_access.handoff.requesting_device') }}: {{ handoff.requesting_device_id }}</p>
-        <p>{{ t('operator_access.handoff.expires_at') }}: {{ handoff.expires_at }}</p>
+        <p>{{ t('operator_access.handoff.requesting_device') }}: {{ handoff.requestingDeviceId }}</p>
+        <p>{{ t('operator_access.handoff.expires_at') }}: {{ handoff.expiresAt }}</p>
         <button
           v-if="canManageOperatorAccess"
           :data-testid="`admin-reveal-pin-${handoff.id}`"
