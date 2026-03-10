@@ -37,6 +37,11 @@ function createTestRouter(extraRoutes = []) {
         component: { template: '<div>Staff Finance</div>' },
       },
       {
+        path: '/staff/regattas/:regattaId/operator-access',
+        name: 'staff-regatta-operator-access',
+        component: { template: '<div>Staff Operator Access</div>' },
+      },
+      {
         path: '/staff/regattas/:regattaId/blocks',
         name: 'staff-blocks-management',
         component: { template: '<div>Staff Blocks</div>' },
@@ -101,6 +106,7 @@ function createTestI18n() {
           setup: 'Setup',
           draw: 'Draw',
           finance: 'Finance',
+          operator_access: 'Operator Access',
           blocks: 'Blocks',
           line_scan: 'Line Scan',
           schedule: 'Schedule',
@@ -116,6 +122,10 @@ function createTestI18n() {
             sync_pending_default: 'awaiting upload',
             sync_attention: 'Sync status: attention required'
           },
+        },
+        breadcrumb: {
+          regattas: 'Regattas',
+          operator_access: 'Operator Access',
         },
       },
     },
@@ -248,13 +258,14 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-    it('renders subnav with draw, finance, blocks links inside a regatta', async () => {
+    it('renders subnav with draw, finance, operator access, and blocks links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
       expect(links).toContain('/staff/regattas/test-id-123')
       expect(links).toContain('/staff/regattas/test-id-123/draw')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
+      expect(links).toContain('/staff/regattas/test-id-123/operator-access')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
     })
 
@@ -268,6 +279,14 @@ describe('Layout Components', () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
       const navItems = wrapper.findAll('.staff-layout__nav-item').map((n) => n.attributes('href'))
       expect(navItems).toContain('/staff/rulesets')
+    })
+
+    it('renders a shared breadcrumb trail for operator access routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/operator-access', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Operator Access')
     })
 
     it('sets aria-current on the active primary nav item', async () => {
