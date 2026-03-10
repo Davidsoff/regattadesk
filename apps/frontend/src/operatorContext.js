@@ -1,6 +1,7 @@
 const OPERATOR_TOKEN_STORAGE_KEY = 'rd_operator_token'
 const OPERATOR_STATION_STORAGE_KEY = 'rd_operator_station'
 const OPERATOR_DEVICE_ID_STORAGE_KEY = 'rd_operator_device_id'
+const OPERATOR_BLOCK_ID_STORAGE_KEY = 'rd_operator_block_id'
 
 function getStorage() {
   const storage = globalThis.window?.localStorage ?? globalThis.localStorage
@@ -56,4 +57,13 @@ export function resolveOperatorDeviceId() {
       : 'operator-device'
   storage.setItem(OPERATOR_DEVICE_ID_STORAGE_KEY, generated)
   return generated
+}
+
+export function resolveOperatorBlockId() {
+  const contextBlockId = readContextValue('operatorBlockId')
+  if (contextBlockId) {
+    return contextBlockId
+  }
+
+  return getStorage()?.getItem(OPERATOR_BLOCK_ID_STORAGE_KEY)?.trim() ?? ''
 }

@@ -3,7 +3,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { createApiClient, createOperatorApi } from '../../api'
-import { resolveOperatorDeviceId, resolveOperatorStation, resolveOperatorToken } from '../../operatorContext'
+import {
+  resolveOperatorBlockId,
+  resolveOperatorDeviceId,
+  resolveOperatorStation,
+  resolveOperatorToken
+} from '../../operatorContext'
+import {
+  normalizeCaptureSession,
+  normalizeCaptureSessionList,
+  summarizeCaptureSessionSyncState
+} from '../../operatorCaptureSessions'
 import {
   buildOperatorSessionWorkspacePath,
   buildOperatorSessionsPath,
@@ -29,8 +39,7 @@ const operatorApi = createOperatorApi(createApiClient(), {
 })
 
 function summarizeSyncState(session) {
-  const syncState = session?.sync_state ?? {}
-  return t('operator.regatta.sync_summary', syncState)
+  return summarizeCaptureSessionSyncState(session, t)
 }
 
 async function loadCaptureSessions() {
@@ -38,7 +47,7 @@ async function loadCaptureSessions() {
   errorMessage.value = ''
 
   try {
-    captureSessions.value = await operatorApi.listCaptureSessions(regattaId.value)
+    captureSessions.value = normalizeCaptureSessionList(await operatorApi.listCaptureSessions(regattaId.value))
   } catch (error) {
     errorMessage.value =
       error instanceof Error ? error.message : 'Failed to load capture sessions.'
@@ -56,16 +65,30 @@ async function createCaptureSession() {
   errorMessage.value = ''
 
   try {
+    const blockId = resolveOperatorBlockId()
+    if (!blockId) {
+      errorMessage.value = t('operator.regatta.missing_block_scope')
+      return
+    }
+
     const createdSession = await operatorApi.createCaptureSession(regattaId.value, {
+      block_id: blockId,
       station: operatorStation.value,
       device_id: resolveOperatorDeviceId(),
-      session_type: 'finish'
+      session_type: 'finish',
+      fps: 25
     })
-    captureSessions.value = [createdSession, ...captureSessions.value]
-    await openCaptureSession(createdSession.id)
+    const normalizedSession = normalizeCaptureSession(createdSession)
+    if (!normalizedSession) {
+      errorMessage.value = t('operator.regatta.create_failed')
+      return
+    }
+
+    captureSessions.value = [normalizedSession, ...captureSessions.value]
+    await openCaptureSession(normalizedSession.id)
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to create capture session.'
+      error instanceof Error ? error.message : t('operator.regatta.create_failed')
   }
 }
 
@@ -73,9 +96,13 @@ async function closeCaptureSession(captureSessionId) {
   errorMessage.value = ''
 
   try {
-    const updatedSession = await operatorApi.closeCaptureSession(regattaId.value, captureSessionId, {
+    const updatedSession = normalizeCaptureSession(await operatorApi.closeCaptureSession(regattaId.value, captureSessionId, {
       close_reason: 'capture_complete'
-    })
+    }))
+    if (!updatedSession) {
+      errorMessage.value = t('operator.regatta.close_failed')
+      return
+    }
     captureSessions.value = captureSessions.value.map((session) =>
       session.id === captureSessionId ? updatedSession : session
     )
@@ -87,7 +114,7 @@ async function closeCaptureSession(captureSessionId) {
     await router.push(buildOperatorSessionsPath(regattaId.value))
   } catch (error) {
     errorMessage.value =
-      error instanceof Error ? error.message : 'Failed to close capture session.'
+      error instanceof Error ? error.message : t('operator.regatta.close_failed')
   }
 }
 

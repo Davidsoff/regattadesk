@@ -6,6 +6,15 @@ import RegattaDetail from '../views/operator/RegattaDetail.vue'
 
 const SELECTED_CAPTURE_SESSIONS_STORAGE_KEY = 'rd_operator_selected_capture_sessions'
 
+function jsonResponse(status, body) {
+  return new Response(body === null ? '' : JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
+
 function installStorage() {
   const values = new Map()
   const storage = {
@@ -38,28 +47,12 @@ function installStorage() {
   return storage
 }
 
-const listCaptureSessions = vi.fn()
-const createCaptureSession = vi.fn()
-const closeCaptureSession = vi.fn()
-
-vi.mock('../api', () => ({
-  createApiClient: vi.fn(() => ({})),
-  createOperatorApi: vi.fn(() => ({
-    listCaptureSessions,
-    createCaptureSession,
-    closeCaptureSession
-  }))
-}))
-
 function createTestI18n() {
   return createI18n({
     legacy: false,
     locale: 'en',
     messages: {
       en: {
-        common: {
-          operator: 'Operator'
-        },
         navigation: {
           line_scan: 'Line Scan'
         },
@@ -70,11 +63,11 @@ function createTestI18n() {
             token_status: 'Operator token: {token}',
             no_token: 'Unavailable',
             station_context: 'Station: {station}',
+            missing_block_scope: 'Operator token must include a block scope before starting a capture session.',
             create_session: 'Create Capture Session',
             loading_sessions: 'Loading capture sessions...',
             create_failed: 'Failed to create capture session.',
             close_failed: 'Failed to close capture session.',
-            missing_block_scope: 'Operator token must include a block scope before starting a capture session.',
             open_session: 'Open Session',
             close_session: 'Close Session',
             session_summary: '{station} · {session_type} · {state}',
@@ -129,73 +122,40 @@ async function mountAtRegattaHome() {
   return { router, wrapper }
 }
 
-describe('Operator regatta home for issue #138', () => {
+describe('Operator regatta home integration for issue #138', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-    const storage = installStorage()
-    storage.clear()
+    installStorage().clear()
+    vi.stubGlobal('fetch', vi.fn())
     globalThis.__REGATTADESK_AUTH__ = {
       operatorToken: 'token-138',
       operatorStation: 'finish-line',
       operatorBlockId: 'block-138'
     }
-
-    listCaptureSessions.mockResolvedValue({
-      capture_sessions: [
-        {
-          capture_session_id: 'session-138-a',
-          block_id: 'block-138',
-          station: 'finish-line',
-          session_type: 'finish',
-          state: 'open',
-          is_synced: false,
-          unsynced_reason: 'awaiting upload'
-        },
-        {
-          capture_session_id: 'session-138-b',
-          block_id: 'block-138',
-          station: 'finish-line',
-          session_type: 'finish',
-          state: 'closed',
-          is_synced: true
-        }
-      ]
-    })
-    createCaptureSession.mockResolvedValue({
-      capture_session_id: 'session-138-c',
-      block_id: 'block-138',
-      station: 'finish-line',
-      session_type: 'finish',
-      state: 'open',
-      is_synced: true
-    })
-    closeCaptureSession.mockResolvedValue({
-      capture_session_id: 'session-138-a',
-      block_id: 'block-138',
-      station: 'finish-line',
-      session_type: 'finish',
-      state: 'closed',
-      is_synced: true
-    })
   })
 
-  it('loads capture sessions and renders token status, station context, sync-state summary, and lifecycle controls', async () => {
-    const { wrapper } = await mountAtRegattaHome()
-
-    expect(listCaptureSessions).toHaveBeenCalledWith('regatta-138')
-    expect(wrapper.find('[data-testid="operator-token-status"]').text()).toContain('token-138')
-    expect(wrapper.find('[data-testid="operator-station-context"]').text()).toContain('finish-line')
-    expect(wrapper.find('[data-testid="capture-session-list"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="capture-session-sync-summary-session-138-a"]').text()).toContain(
-      'awaiting upload'
+  it('loads capture sessions through the real API layer and routes selection through the canonical workspace path', async () => {
+    globalThis.fetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        capture_sessions: [
+          {
+            capture_session_id: 'session-138-a',
+            block_id: 'block-138',
+            station: 'finish-line',
+            session_type: 'finish',
+            state: 'open',
+            is_synced: false,
+            unsynced_reason: 'awaiting upload'
+          }
+        ]
+      })
     )
-    expect(wrapper.find('[data-testid="capture-session-create"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="capture-session-select-session-138-a"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="capture-session-close-session-138-a"]').exists()).toBe(true)
-  })
 
-  it('selects a capture session through normal navigation and persists the selected session by regatta', async () => {
     const { router, wrapper } = await mountAtRegattaHome()
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+    expect(globalThis.fetch.mock.calls[0][0].url).toBe(
+      'http://localhost:3000/api/v1/regattas/regatta-138/operator/capture_sessions'
+    )
 
     await wrapper.find('[data-testid="capture-session-select-session-138-a"]').trigger('click')
     await flushPromises()
@@ -208,42 +168,75 @@ describe('Operator regatta home for issue #138', () => {
     })
   })
 
-  it('creates a capture session and routes into the canonical session workspace', async () => {
+  it('creates and closes capture sessions through the real API layer', async () => {
+    globalThis.fetch
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          capture_sessions: [
+            {
+              capture_session_id: 'session-138-a',
+              block_id: 'block-138',
+              station: 'finish-line',
+              session_type: 'finish',
+              state: 'open',
+              is_synced: false,
+              unsynced_reason: 'awaiting upload'
+            }
+          ]
+        })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(201, {
+          capture_session_id: 'session-138-b',
+          block_id: 'block-138',
+          station: 'finish-line',
+          session_type: 'finish',
+          state: 'open',
+          is_synced: true
+        })
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          capture_session_id: 'session-138-a',
+          block_id: 'block-138',
+          station: 'finish-line',
+          session_type: 'finish',
+          state: 'closed',
+          is_synced: true
+        })
+      )
+
     const { router, wrapper } = await mountAtRegattaHome()
 
     await wrapper.find('[data-testid="capture-session-create"]').trigger('click')
     await flushPromises()
 
-    expect(createCaptureSession).toHaveBeenCalledWith(
-      'regatta-138',
-      expect.objectContaining({
-        block_id: 'block-138',
-        station: 'finish-line',
-        fps: 25
-      })
+    expect(globalThis.fetch.mock.calls[1][0].method).toBe('POST')
+    expect(globalThis.fetch.mock.calls[1][0].url).toBe(
+      'http://localhost:3000/api/v1/regattas/regatta-138/operator/capture_sessions'
     )
+    const createBody = await globalThis.fetch.mock.calls[1][0].clone().text()
+    expect(createBody).toContain('"block_id":"block-138"')
+    expect(createBody).toContain('"fps":25')
     expect(router.currentRoute.value.fullPath).toBe(
-      '/operator/regattas/regatta-138/sessions/session-138-c/line-scan'
+      '/operator/regattas/regatta-138/sessions/session-138-b/line-scan'
     )
-  })
 
-  it('closes the selected capture session and returns to the sessions list', async () => {
     globalThis.localStorage.setItem(
       SELECTED_CAPTURE_SESSIONS_STORAGE_KEY,
-      JSON.stringify({
-        'regatta-138': 'session-138-a'
-      })
+      JSON.stringify({ 'regatta-138': 'session-138-a' })
     )
 
-    const { router, wrapper } = await mountAtRegattaHome()
+    await router.push('/operator/regattas/regatta-138')
+    await router.isReady()
+    await flushPromises()
 
     await wrapper.find('[data-testid="capture-session-close-session-138-a"]').trigger('click')
     await flushPromises()
 
-    expect(closeCaptureSession).toHaveBeenCalledWith(
-      'regatta-138',
-      'session-138-a',
-      expect.any(Object)
+    expect(globalThis.fetch.mock.calls[2][0].method).toBe('POST')
+    expect(globalThis.fetch.mock.calls[2][0].url).toBe(
+      'http://localhost:3000/api/v1/regattas/regatta-138/operator/capture_sessions/session-138-a/close'
     )
     expect(router.currentRoute.value.fullPath).toBe('/operator/regattas/regatta-138/sessions')
   })

@@ -1,10 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import OperatorLayout from '../layouts/OperatorLayout.vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import StaffLayout from '../layouts/StaffLayout.vue'
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+}
 
 function createTestRouter(extraRoutes = []) {
   return createRouter({
@@ -36,16 +45,26 @@ function createTestRouter(extraRoutes = []) {
       {
         path: '/operator/regattas/:regattaId',
         name: 'operator-regatta-home',
+        meta: { breadcrumb: ['operator-regattas', 'operator-regatta-home'] },
         component: { template: '<div>Operator Regatta Detail</div>' },
       },
       {
         path: '/operator/regattas/:regattaId/sessions',
         name: 'operator-regatta-sessions',
+        meta: { breadcrumb: ['operator-regattas', 'operator-regatta-home', 'operator-regatta-sessions'] },
         component: { template: '<div>Operator Sessions</div>' },
       },
       {
         path: '/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan',
         name: 'operator-session-line-scan',
+        meta: {
+          breadcrumb: [
+            'operator-regattas',
+            'operator-regatta-home',
+            'operator-regatta-sessions',
+            'operator-session-line-scan'
+          ]
+        },
         component: { template: '<div>Operator Line Scan</div>' },
       },
       {
@@ -87,6 +106,17 @@ function createTestI18n() {
           schedule: 'Schedule',
           results: 'Results',
         },
+        operator: {
+          regatta: {
+            station_context: 'Station: {station}',
+            session_label: 'Session: {id}',
+            title: 'Regatta',
+            sync_synced: 'Sync status: synced',
+            sync_pending: 'Sync status: pending ({reason})',
+            sync_pending_default: 'awaiting upload',
+            sync_attention: 'Sync status: attention required'
+          },
+        },
       },
     },
   })
@@ -107,6 +137,18 @@ describe('Layout Components', () => {
 
   beforeEach(() => {
     router = createTestRouter()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      jsonResponse({
+        capture_session_id: 'my-session-id',
+        station: 'finish-line',
+        is_synced: false,
+        unsynced_reason: 'awaiting upload'
+      })
+    ))
+    globalThis.__REGATTADESK_AUTH__ = {
+      operatorToken: 'operator-token',
+      operatorStation: 'finish-line'
+    }
   })
 
   const layoutCases = [
@@ -280,6 +322,25 @@ describe('Layout Components', () => {
       )
       const lineScanLink = lineScanWrapper.findAll('.operator-layout__nav-item')[2]
       expect(lineScanLink.attributes('aria-current')).toBe('page')
+    })
+
+    it('renders breadcrumbs and shell-level sync context on deep links', async () => {
+      const wrapper = await mountAtRoute(
+        router,
+        '/operator/regattas/my-regatta-id/sessions/my-session-id/line-scan',
+        OperatorLayout
+      )
+      await flushPromises()
+
+      const breadcrumbLinks = wrapper
+        .findAll('.operator-layout__breadcrumbs-link')
+        .map((node) => node.text())
+
+      expect(wrapper.find('[data-testid="operator-breadcrumbs"]').exists()).toBe(true)
+      expect(breadcrumbLinks).toEqual(['Regattas', 'Regatta', 'Sessions'])
+      expect(wrapper.find('[data-testid="operator-shell-station"]').text()).toContain('finish-line')
+      expect(wrapper.find('[data-testid="operator-shell-session"]').text()).toContain('my-session-id')
+      expect(wrapper.find('[data-testid="operator-shell-sync-summary"]').text()).toContain('awaiting upload')
     })
   })
 

@@ -409,12 +409,20 @@
       "token_status": "Operator-token: {token}",
       "no_token": "Niet beschikbaar",
       "station_context": "Station: {station}",
+      "session_label": "Sessie: {id}",
       "create_session": "Opnamesessie maken",
+      "create_failed": "Opnamesessie maken mislukt.",
+      "close_failed": "Opnamesessie sluiten mislukt.",
+      "missing_block_scope": "Het operator-token moet een blokscope bevatten voordat een opnamesessie kan starten.",
       "loading_sessions": "Opnamesessies laden...",
       "open_session": "Sessie openen",
       "close_session": "Sessie sluiten",
       "session_summary": "{station} · {session_type} · {state}",
-      "sync_summary": "Openstaand {pending_operations}, mislukt {failed_operations}"
+      "sync_summary": "Openstaand {pending_operations}, mislukt {failed_operations}",
+      "sync_synced": "Syncstatus: gesynchroniseerd",
+      "sync_pending": "Syncstatus: in wachtrij ({reason})",
+      "sync_pending_default": "wacht op upload",
+      "sync_attention": "Syncstatus: aandacht vereist"
     },
     "line_scan": {
       "title": "Line Scan",

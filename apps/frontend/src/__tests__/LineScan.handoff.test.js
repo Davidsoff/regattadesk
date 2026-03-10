@@ -41,6 +41,11 @@ function createTestI18n() {
           line_scan: {
             title: 'Line Scan',
             description: 'Capture line scan images and mark finish times'
+          },
+          capture: {
+            title: 'Line Scan Capture',
+            create_marker: 'Create Marker',
+            no_markers: 'No markers yet'
           }
         }
       }

@@ -32,18 +32,20 @@ const staffRoutes = [
 
 const operatorRoutes = [
   redirectRoute('', '/operator/regattas'),
-  route('regattas', 'operator-regattas', () => import('../views/operator/RegattasList.vue')),
+  route('regattas', 'operator-regattas', () => import('../views/operator/RegattasList.vue'), {
+    breadcrumb: ['operator-regattas']
+  }),
   route(
     'regattas/:regattaId',
     'operator-regatta-home',
     () => import('../views/operator/RegattaDetail.vue'),
-    { breadcrumb: 'operator-regatta-home' }
+    { breadcrumb: ['operator-regattas', 'operator-regatta-home'] }
   ),
   route(
     'regattas/:regattaId/sessions',
     'operator-regatta-sessions',
     () => import('../views/operator/RegattaDetail.vue'),
-    { breadcrumb: 'operator-regatta-sessions' }
+    { breadcrumb: ['operator-regattas', 'operator-regatta-home', 'operator-regatta-sessions'] }
   ),
   {
     path: 'regattas/:regattaId/line-scan',
@@ -63,7 +65,14 @@ const operatorRoutes = [
     'regattas/:regattaId/sessions/:captureSessionId/line-scan',
     'operator-session-line-scan',
     () => import('../views/operator/LineScan.vue'),
-    { breadcrumb: 'operator-session-line-scan' }
+    {
+      breadcrumb: [
+        'operator-regattas',
+        'operator-regatta-home',
+        'operator-regatta-sessions',
+        'operator-session-line-scan'
+      ]
+    }
   )
 ]
 

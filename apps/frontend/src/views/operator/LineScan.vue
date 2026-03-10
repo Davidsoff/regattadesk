@@ -41,6 +41,7 @@ const captureSessionId = computed(() =>
     : null
 )
 const showCaptureWorkspace = ref(false)
+const isCaptureWorkspaceVisible = computed(() => showCaptureWorkspace.value || Boolean(captureSessionId.value))
 
 function applyAccessModeFromResponse(response) {
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
@@ -291,7 +292,7 @@ watch(
         @click="toggleCaptureWorkspace"
         :disabled="!operatorToken"
       >
-        {{ showCaptureWorkspace ? 'Hide' : 'Show' }} Capture Workspace
+        {{ isCaptureWorkspaceVisible ? 'Hide' : 'Show' }} Capture Workspace
       </button>
       <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
       <span v-if="captureSessionId" class="operator-session-state">Session {{ captureSessionId }}</span>
@@ -299,7 +300,7 @@ watch(
 
     <!-- Capture Workspace -->
     <LineScanCapture
-      v-if="showCaptureWorkspace && operatorToken && captureSessionId"
+      v-if="isCaptureWorkspaceVisible && operatorToken && captureSessionId"
       :capture-session-id="captureSessionId"
       :regatta-id="route.params.regattaId"
     />

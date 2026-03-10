@@ -59,13 +59,22 @@ describe('Operator routing for issue #138', () => {
     const lineScanWorkspace = routes.find((route) => route.name === 'operator-session-line-scan')
 
     expect(regattaHome?.path).toBe('/operator/regattas/:regattaId')
-    expect(regattaHome?.meta?.breadcrumb).toBeTruthy()
+    expect(regattaHome?.meta?.breadcrumb).toEqual(['operator-regattas', 'operator-regatta-home'])
 
     expect(captureSessions?.path).toBe('/operator/regattas/:regattaId/sessions')
-    expect(captureSessions?.meta?.breadcrumb).toBeTruthy()
+    expect(captureSessions?.meta?.breadcrumb).toEqual([
+      'operator-regattas',
+      'operator-regatta-home',
+      'operator-regatta-sessions'
+    ])
 
     expect(lineScanWorkspace?.path).toBe('/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan')
-    expect(lineScanWorkspace?.meta?.breadcrumb).toBeTruthy()
+    expect(lineScanWorkspace?.meta?.breadcrumb).toEqual([
+      'operator-regattas',
+      'operator-regatta-home',
+      'operator-regatta-sessions',
+      'operator-session-line-scan'
+    ])
   })
 
   it('redirects the ambiguous line-scan entry route to the selected capture session workspace for that regatta', async () => {

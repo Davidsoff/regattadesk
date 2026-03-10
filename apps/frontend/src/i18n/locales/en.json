@@ -409,12 +409,20 @@
       "token_status": "Operator token: {token}",
       "no_token": "Unavailable",
       "station_context": "Station: {station}",
+      "session_label": "Session: {id}",
       "create_session": "Create Capture Session",
+      "create_failed": "Failed to create capture session.",
+      "close_failed": "Failed to close capture session.",
+      "missing_block_scope": "Operator token must include a block scope before starting a capture session.",
       "loading_sessions": "Loading capture sessions...",
       "open_session": "Open Session",
       "close_session": "Close Session",
       "session_summary": "{station} · {session_type} · {state}",
-      "sync_summary": "Pending {pending_operations}, failed {failed_operations}"
+      "sync_summary": "Pending {pending_operations}, failed {failed_operations}",
+      "sync_synced": "Sync status: synced",
+      "sync_pending": "Sync status: pending ({reason})",
+      "sync_pending_default": "awaiting upload",
+      "sync_attention": "Sync status: attention required"
     },
     "line_scan": {
       "title": "Line Scan",
