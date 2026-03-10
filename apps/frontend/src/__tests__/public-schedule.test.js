@@ -198,8 +198,48 @@ describe('Public Schedule View', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Use saved regatta')
+    expect(wrapper.find('.recovery-banner__action').attributes('aria-label')).toBe('Use saved regatta')
     expect(apiGetMock).toHaveBeenCalledWith(
       '/public/v2-3/regattas/saved-regatta-42/schedule',
+    )
+  })
+
+  it('ignores private browsing storage failures when recovering or persisting regatta context', async () => {
+    const getItem = vi.fn(() => {
+      throw new Error('storage denied')
+    })
+    const setItem = vi.fn(() => {
+      throw new Error('storage denied')
+    })
+
+    vi.stubGlobal('sessionStorage', {
+      getItem,
+      setItem,
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(),
+      length: 0,
+    })
+
+    apiGetMock.mockResolvedValue({
+      draw_revision: 2,
+      results_revision: 3,
+      data: [],
+    })
+
+    const { wrapper } = await mountScheduleAt(
+      '/public/v2-3/schedule?regatta_id=94dce241-f82a-48c5-aa84-cd9f649cd878',
+    )
+    await flushPromises()
+
+    expect(getItem).not.toHaveBeenCalled()
+    expect(setItem).toHaveBeenCalledWith(
+      'regattadesk_public_regatta_id',
+      '94dce241-f82a-48c5-aa84-cd9f649cd878',
+    )
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+    expect(apiGetMock).toHaveBeenCalledWith(
+      '/public/v2-3/regattas/94dce241-f82a-48c5-aa84-cd9f649cd878/schedule',
     )
   })
 })

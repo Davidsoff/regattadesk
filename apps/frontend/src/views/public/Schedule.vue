@@ -60,7 +60,11 @@ function savedRegattaId() {
     return ''
   }
 
-  return String(sessionStorage.getItem(REGATTA_ID_STORAGE_KEY) ?? '')
+  try {
+    return String(sessionStorage.getItem(REGATTA_ID_STORAGE_KEY) ?? '')
+  } catch {
+    return ''
+  }
 }
 
 function syncRecoveredRegattaId() {
@@ -77,7 +81,11 @@ function persistRegattaId(value) {
     return
   }
 
-  sessionStorage.setItem(REGATTA_ID_STORAGE_KEY, value)
+  try {
+    sessionStorage.setItem(REGATTA_ID_STORAGE_KEY, value)
+  } catch {
+    // Some browsers can throw on sessionStorage access in private modes.
+  }
 }
 
 async function applyRecoveredRegatta() {
@@ -85,12 +93,16 @@ async function applyRecoveredRegatta() {
     return
   }
 
-  await router.replace({
-    query: {
-      ...route.query,
-      regatta_id: recoveredRegattaId.value,
-    },
-  })
+  try {
+    await router.replace({
+      query: {
+        ...route.query,
+        regatta_id: recoveredRegattaId.value,
+      },
+    })
+  } catch {
+    // Ignore failed navigation and leave the current recovery state intact.
+  }
 }
 
 async function loadSchedule() {
@@ -140,7 +152,12 @@ onMounted(loadSchedule)
     <p v-if="errorMessage" class="error-message" role="alert">{{ errorMessage }}</p>
     <div v-if="showSavedRegattaRecovery" class="recovery-banner">
       <p class="recovery-banner__text">{{ t('public.schedule.recovery.saved_regatta_hint') }}</p>
-      <button type="button" class="recovery-banner__action" @click="applyRecoveredRegatta">
+      <button
+        type="button"
+        class="recovery-banner__action"
+        :aria-label="t('public.schedule.recovery.use_saved_regatta')"
+        @click="applyRecoveredRegatta"
+      >
         {{ t('public.schedule.recovery.use_saved_regatta') }}
       </button>
     </div>
@@ -236,7 +253,15 @@ onMounted(loadSchedule)
   }
 
   :deep(.rd-table-head) {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   :deep(.rd-table-body tr) {
