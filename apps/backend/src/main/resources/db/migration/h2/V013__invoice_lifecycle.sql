@@ -6,6 +6,7 @@ CREATE TABLE invoice_generation_jobs (
     status CHARACTER VARYING(50) NOT NULL DEFAULT 'pending',
     requested_by CHARACTER VARYING(255) NOT NULL,
     idempotency_key CHARACTER VARYING(128),
+    request_fingerprint CHARACTER VARYING(64) NOT NULL,
     requested_club_ids_json CLOB,
     invoice_ids_json CLOB,
     error_message CLOB,
@@ -15,7 +16,7 @@ CREATE TABLE invoice_generation_jobs (
     CONSTRAINT chk_invoice_generation_job_status
         CHECK (status IN ('pending', 'running', 'completed', 'failed')),
     CONSTRAINT uq_invoice_generation_job_idempotency
-        UNIQUE (regatta_id, idempotency_key)
+        UNIQUE (regatta_id, requested_by, idempotency_key, request_fingerprint)
 );
 
 CREATE INDEX idx_invoice_generation_jobs_regatta

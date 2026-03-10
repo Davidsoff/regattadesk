@@ -11,12 +11,14 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import javax.sql.DataSource;
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +32,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.HexFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -158,9 +161,15 @@ public class InvoiceService {
         String normalizedActor = normalizeRequiredText(actor, "actor");
         String normalizedIdempotencyKey = normalizeNullableText(idempotencyKey);
         List<UUID> normalizedClubIds = normalizeClubIds(requestedClubIds);
+        String requestFingerprint = computeRequestFingerprint(normalizedClubIds);
 
         if (normalizedIdempotencyKey != null) {
-            Optional<InvoiceGenerationJob> replay = findJobByIdempotencyKey(regattaId, normalizedIdempotencyKey);
+            Optional<InvoiceGenerationJob> replay = findJobByIdempotencyKey(
+                regattaId,
+                normalizedActor,
+                normalizedIdempotencyKey,
+                requestFingerprint
+            );
             if (replay.isPresent()) {
                 return replay.get();
             }
@@ -174,8 +183,8 @@ public class InvoiceService {
              PreparedStatement stmt = conn.prepareStatement("""
                  INSERT INTO invoice_generation_jobs (
                      job_id, regatta_id, status, requested_by, idempotency_key,
-                     requested_club_ids_json, created_at, updated_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     request_fingerprint, requested_club_ids_json, created_at, updated_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                  """)) {
             stmt.setObject(1, jobId);
             stmt.setObject(2, regattaId);
@@ -186,13 +195,14 @@ public class InvoiceService {
             } else {
                 stmt.setString(5, normalizedIdempotencyKey);
             }
+            stmt.setString(6, requestFingerprint);
             if (clubIdsJson == null) {
-                stmt.setNull(6, Types.CLOB);
+                stmt.setNull(7, Types.CLOB);
             } else {
-                stmt.setString(6, clubIdsJson);
+                stmt.setString(7, clubIdsJson);
             }
-            stmt.setTimestamp(7, Timestamp.from(now));
             stmt.setTimestamp(8, Timestamp.from(now));
+            stmt.setTimestamp(9, Timestamp.from(now));
             stmt.executeUpdate();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create invoice generation job", e);
@@ -534,18 +544,28 @@ public class InvoiceService {
         }
     }
 
-    private Optional<InvoiceGenerationJob> findJobByIdempotencyKey(UUID regattaId, String idempotencyKey) {
+    private Optional<InvoiceGenerationJob> findJobByIdempotencyKey(
+        UUID regattaId,
+        String actor,
+        String idempotencyKey,
+        String requestFingerprint
+    ) {
         String sql = """
             SELECT job_id
             FROM invoice_generation_jobs
-            WHERE regatta_id = ? AND idempotency_key = ?
+            WHERE regatta_id = ?
+              AND requested_by = ?
+              AND idempotency_key = ?
+              AND request_fingerprint = ?
             ORDER BY created_at DESC
             LIMIT 1
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, regattaId);
-            stmt.setString(2, idempotencyKey);
+            stmt.setString(2, actor);
+            stmt.setString(3, idempotencyKey);
+            stmt.setString(4, requestFingerprint);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
                     return Optional.empty();
@@ -554,6 +574,21 @@ public class InvoiceService {
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to resolve invoice generation idempotency", e);
+        }
+    }
+
+    private String computeRequestFingerprint(List<UUID> requestedClubIds) {
+        String payload = requestedClubIds.stream()
+            .map(UUID::toString)
+            .sorted()
+            .reduce((left, right) -> left + "," + right)
+            .orElse("");
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to compute invoice request fingerprint", e);
         }
     }
 

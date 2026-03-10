@@ -18,6 +18,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,11 +47,20 @@ public class InvoiceResource {
 
     @GET
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "List invoices")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = InvoiceListResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response listInvoices(
         @PathParam("regatta_id") UUID regattaId,
         @QueryParam("cursor") String cursor,
+        @Parameter(schema = @Schema(implementation = Integer.class, defaultValue = "20", minimum = "1", maximum = "100"))
         @QueryParam("limit") @DefaultValue("20") Integer limit,
         @QueryParam("club_id") UUID clubId,
+        @Parameter(schema = @Schema(enumeration = {"draft", "sent", "paid", "cancelled"}))
         @QueryParam("status") String status
     ) {
         try {
@@ -69,6 +84,13 @@ public class InvoiceResource {
     @POST
     @Path("/generate")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, FINANCIAL_MANAGER})
+    @Operation(summary = "Generate invoices")
+    @APIResponses({
+        @APIResponse(responseCode = "202", description = "Accepted",
+            content = @Content(schema = @Schema(implementation = InvoiceGenerationJobResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response generateInvoices(
         @PathParam("regatta_id") UUID regattaId,
         @Valid InvoiceGenerateRequest request
@@ -96,6 +118,13 @@ public class InvoiceResource {
     @GET
     @Path("/jobs/{job_id}")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "Get invoice generation job")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = InvoiceGenerationJobResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response getGenerationJob(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("job_id") UUID jobId
@@ -117,6 +146,13 @@ public class InvoiceResource {
     @GET
     @Path("/{invoice_id}")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "Get invoice")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = InvoiceResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response getInvoice(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("invoice_id") UUID invoiceId
@@ -138,6 +174,17 @@ public class InvoiceResource {
     @POST
     @Path("/{invoice_id}/mark_paid")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, FINANCIAL_MANAGER})
+    @Operation(summary = "Mark invoice paid")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = InvoiceResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "409", description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public Response markInvoicePaid(
         @PathParam("regatta_id") UUID regattaId,
         @PathParam("invoice_id") UUID invoiceId,

@@ -53,7 +53,7 @@ class InvoiceResourceIT {
             .get("/api/v1/regattas/" + data.regattaId + "/invoices")
             .then()
             .statusCode(200)
-            .body("invoices", hasSize(1))
+            .body("data", hasSize(1))
             .body("pagination.has_more", equalTo(false));
 
         given()
@@ -139,7 +139,7 @@ class InvoiceResourceIT {
             .get("/api/v1/regattas/" + data.regattaId + "/invoices?limit=1")
             .then()
             .statusCode(200)
-            .body("invoices", hasSize(1))
+            .body("data", hasSize(1))
             .body("pagination.has_more", equalTo(true))
             .body("pagination.next_cursor", equalTo("1"));
 
@@ -150,8 +150,8 @@ class InvoiceResourceIT {
             .get("/api/v1/regattas/" + data.regattaId + "/invoices?club_id=" + data.clubTwoId)
             .then()
             .statusCode(200)
-            .body("invoices", hasSize(1))
-            .body("invoices[0].club_id", equalTo(data.clubTwoId.toString()));
+            .body("data", hasSize(1))
+            .body("data[0].club_id", equalTo(data.clubTwoId.toString()));
 
         given()
             .header("Remote-User", "fin-user")
@@ -174,8 +174,8 @@ class InvoiceResourceIT {
             .get("/api/v1/regattas/" + data.regattaId + "/invoices?status=paid")
             .then()
             .statusCode(200)
-            .body("invoices", hasSize(1))
-            .body("invoices[0].id", equalTo(clubOneInvoiceId));
+            .body("data", hasSize(1))
+            .body("data[0].id", equalTo(clubOneInvoiceId));
     }
 
     @Test
@@ -279,6 +279,66 @@ class InvoiceResourceIT {
             .post("/api/v1/regattas/" + data.regattaId + "/invoices/" + invoiceId + "/mark_paid")
             .then()
             .statusCode(400);
+    }
+
+    @Test
+    void generateInvoices_replaysOnlyMatchingActorAndPayload() throws Exception {
+        TestData data = seedInvoiceData();
+        String idempotencyKey = "invoice-job-31";
+
+        String initialJobId = given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "club_ids": ["%s"],
+                  "idempotency_key": "%s"
+                }
+                """.formatted(data.clubOneId, idempotencyKey))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/invoices/generate")
+            .then()
+            .statusCode(202)
+            .extract()
+            .path("job_id");
+
+        String replayedJobId = given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "club_ids": ["%s"],
+                  "idempotency_key": "%s"
+                }
+                """.formatted(data.clubOneId, idempotencyKey))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/invoices/generate")
+            .then()
+            .statusCode(202)
+            .extract()
+            .path("job_id");
+
+        String differentPayloadJobId = given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "club_ids": ["%s"],
+                  "idempotency_key": "%s"
+                }
+                """.formatted(data.clubTwoId, idempotencyKey))
+            .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/invoices/generate")
+            .then()
+            .statusCode(202)
+            .extract()
+            .path("job_id");
+
+        assertEquals(initialJobId, replayedJobId);
+        org.junit.jupiter.api.Assertions.assertNotEquals(initialJobId, differentPayloadJobId);
     }
 
     private String awaitCompletedJob(UUID regattaId, UUID jobId) throws Exception {

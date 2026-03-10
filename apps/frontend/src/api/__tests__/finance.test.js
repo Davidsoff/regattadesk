@@ -218,11 +218,11 @@ describe('finance', () => {
     it('calls correct endpoint for invoice list', async () => {
       const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
       const mockResponse = {
-        invoices: [
+        data: [
           { invoice_id: 'inv-1', status: 'unpaid' },
           { invoice_id: 'inv-2', status: 'paid' }
         ],
-        cursor: 'next-cursor'
+        pagination: { has_more: true, next_cursor: 'next-cursor' }
       }
 
       mockClient.get.mockResolvedValue(mockResponse)
@@ -240,7 +240,7 @@ describe('finance', () => {
       const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
       const params = { limit: 50, cursor: 'prev-cursor' }
 
-      mockClient.get.mockResolvedValue({ invoices: [], cursor: null })
+      mockClient.get.mockResolvedValue({ data: [], pagination: { has_more: false, next_cursor: null } })
 
       await api.listInvoices(regattaId, params)
 

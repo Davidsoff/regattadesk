@@ -2,14 +2,17 @@ package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.finance.InvoiceGenerationJob;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(name = "InvoiceGenerationJobResponse")
 public record InvoiceGenerationJobResponse(
     @JsonProperty("job_id")
     UUID jobId,
+    @Schema(enumeration = {"pending", "running", "completed", "failed"})
     String status,
     @JsonProperty("invoice_ids")
     List<UUID> invoiceIds,

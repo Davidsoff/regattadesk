@@ -7,6 +7,7 @@ CREATE TABLE invoice_generation_jobs (
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
     requested_by VARCHAR(255) NOT NULL,
     idempotency_key VARCHAR(128),
+    request_fingerprint VARCHAR(64) NOT NULL,
     requested_club_ids_json TEXT,
     invoice_ids_json TEXT,
     error_message TEXT,
@@ -14,7 +15,7 @@ CREATE TABLE invoice_generation_jobs (
     completed_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (status IN ('pending', 'running', 'completed', 'failed')),
-    UNIQUE (regatta_id, idempotency_key)
+    UNIQUE (regatta_id, requested_by, idempotency_key, request_fingerprint)
 );
 
 CREATE INDEX idx_invoice_generation_jobs_regatta

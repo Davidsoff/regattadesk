@@ -2,12 +2,14 @@ package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.finance.InvoiceRecord;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(name = "InvoiceResponse")
 public record InvoiceResponse(
     UUID id,
     @JsonProperty("regatta_id")
@@ -18,8 +20,11 @@ public record InvoiceResponse(
     String invoiceNumber,
     List<InvoiceEntryLineResponse> entries,
     @JsonProperty("total_amount")
+    @Schema(minimum = "0")
     BigDecimal totalAmount,
+    @Schema(pattern = "^[A-Z]{3}$")
     String currency,
+    @Schema(enumeration = {"draft", "sent", "paid", "cancelled"})
     String status,
     @JsonProperty("generated_at")
     Instant generatedAt,

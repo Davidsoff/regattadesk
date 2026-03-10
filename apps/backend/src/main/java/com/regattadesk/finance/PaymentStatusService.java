@@ -561,6 +561,63 @@ public class PaymentStatusService {
         PaymentStatus targetStatus,
         String requestFingerprint
     ) {
+        try (Connection conn = dataSource.getConnection()) {
+            if (isPostgres(conn)) {
+                return findBulkOperationReplayPostgres(conn, regattaId, actor, idempotencyKey, targetStatus, requestFingerprint);
+            }
+            return findBulkOperationReplayFallback(conn, regattaId, actor, idempotencyKey, targetStatus, requestFingerprint);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to resolve idempotency replay", e);
+        }
+    }
+
+    private Optional<BulkPaymentMarkResult> findBulkOperationReplayPostgres(
+        Connection conn,
+        UUID regattaId,
+        String actor,
+        String idempotencyKey,
+        PaymentStatus targetStatus,
+        String requestFingerprint
+    ) throws Exception {
+        String sql = """
+            SELECT payload
+            FROM event_store
+            WHERE aggregate_id = ?
+              AND event_type = 'BulkPaymentStatusMarked'
+              AND payload ->> 'idempotencyKey' = ?
+              AND payload ->> 'requestedBy' = ?
+              AND payload ->> 'targetStatus' = ?
+              AND payload ->> 'requestFingerprint' = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+            """;
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, idempotencyKey);
+            stmt.setString(3, actor);
+            stmt.setString(4, targetStatus.value());
+            stmt.setString(5, requestFingerprint);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                BulkPaymentStatusMarkedEvent event = objectMapper.readValue(
+                    rs.getString("payload"),
+                    BulkPaymentStatusMarkedEvent.class
+                );
+                return Optional.of(toReplayResult(event));
+            }
+        }
+    }
+
+    private Optional<BulkPaymentMarkResult> findBulkOperationReplayFallback(
+        Connection conn,
+        UUID regattaId,
+        String actor,
+        String idempotencyKey,
+        PaymentStatus targetStatus,
+        String requestFingerprint
+    ) throws Exception {
         String sql = """
             SELECT payload
             FROM event_store
@@ -568,8 +625,7 @@ public class PaymentStatusService {
               AND event_type = 'BulkPaymentStatusMarked'
             ORDER BY created_at DESC
             """;
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setObject(1, regattaId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -596,10 +652,27 @@ public class PaymentStatusService {
                     }
                 }
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to resolve idempotency replay", e);
         }
         return Optional.empty();
+    }
+
+    private BulkPaymentMarkResult toReplayResult(BulkPaymentStatusMarkedEvent event) {
+        return new BulkPaymentMarkResult(
+            event.getFailedCount() == 0,
+            "Replayed previous bulk payment update",
+            event.getTotalRequested(),
+            event.getProcessedCount(),
+            event.getUpdatedCount(),
+            event.getUnchangedCount(),
+            event.getFailedCount(),
+            event.getFailures() == null ? List.of() : List.copyOf(event.getFailures()),
+            event.getIdempotencyKey(),
+            true
+        );
+    }
+
+    private boolean isPostgres(Connection conn) throws Exception {
+        return conn.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres");
     }
 
     private Set<UUID> normalizeIds(List<UUID> ids) {
