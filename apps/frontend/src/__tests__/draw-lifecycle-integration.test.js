@@ -117,13 +117,13 @@ describe('Draw Lifecycle Integration', () => {
 
       // Unpublish to allow regeneration
       mockClient.post.mockResolvedValueOnce({
-        draw_revision: 0,
+        draw_revision: 1,
         results_revision: 0,
         generated: false,
         published: false
       })
       const unpublished = await api.unpublishDraw(regattaId)
-      expect(unpublished.draw_revision).toBe(0)
+      expect(unpublished.draw_revision).toBe(1)
 
       // Can now regenerate with new seed
       mockClient.post.mockResolvedValueOnce({

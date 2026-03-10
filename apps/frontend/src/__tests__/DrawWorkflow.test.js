@@ -139,7 +139,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
       expect(wrapper.find('[data-testid="draw-status"]').text()).toContain('Generated')
       expect(wrapper.find('[data-testid="generated-seed"]').text()).toContain('12345')
-      expect(wrapper.find('[data-testid="revisions"]').text()).toContain('Current: 1')
+      expect(wrapper.find('[data-testid="revisions"]').text()).toContain('Current: 0')
     })
 
     it('shows validation error for invalid custom seed', async () => {

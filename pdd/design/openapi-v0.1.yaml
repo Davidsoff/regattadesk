@@ -687,6 +687,30 @@ components:
         new_version:
           type: string
           pattern: \S
+    RulesetResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        age_calculation_type:
+          type: string
+        is_global:
+          type: boolean
+        draw_published:
+          type: boolean
+    RulesetListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/RulesetResponse"
     RulesetUpdateRequest:
       type: object
       properties:
@@ -1346,7 +1370,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
         "400":
           description: Bad Request
       summary: Update Club Payment Status
@@ -1369,7 +1394,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Get Club Payment Status
       tags:
       - Payment Status Resource
@@ -1397,7 +1423,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
         "400":
           description: Bad Request
       summary: Update Entry Payment Status
@@ -1420,7 +1447,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Get Entry Payment Status
       tags:
       - Payment Status Resource
@@ -1666,7 +1694,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
         "400":
           description: Bad Request
       summary: Upsert Manifest
@@ -1698,7 +1727,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Get Manifest
       tags:
       - Line Scan Manifest Resource
@@ -1735,7 +1765,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Upload Tile
       tags:
       - Line Scan Tile Resource
@@ -2451,7 +2482,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetListResponse"
       summary: List Rulesets
       tags:
       - Ruleset Resource
@@ -2467,7 +2499,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
         "400":
           description: Bad Request
       summary: Create Ruleset
@@ -2492,7 +2525,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Update Ruleset
       tags:
       - Ruleset Resource
@@ -2508,7 +2542,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Get Ruleset
       tags:
       - Ruleset Resource
@@ -2531,7 +2566,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
         "400":
           description: Bad Request
       summary: Duplicate Ruleset
@@ -2550,7 +2586,8 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/RulesetResponse"
       summary: Promote To Global
       tags:
       - Ruleset Resource

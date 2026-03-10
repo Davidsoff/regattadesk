@@ -44,6 +44,7 @@ class RulesetResourceIT {
             .body("id", equalTo(rulesetId.toString()))
             .body("name", equalTo("Initial Ruleset"))
             .body("version", equalTo("v1.0"))
+            .body("draw_published", equalTo(false))
             .body("description", equalTo("Initial description"))
             .body("age_calculation_type", equalTo("actual_at_start"));
 
@@ -56,7 +57,8 @@ class RulesetResourceIT {
             .statusCode(200)
             .body("id", equalTo(rulesetId.toString()))
             .body("name", equalTo("Initial Ruleset"))
-            .body("version", equalTo("v1.0"));
+            .body("version", equalTo("v1.0"))
+            .body("draw_published", equalTo(false));
 
         given()
             .header("Remote-User", "admin")
@@ -75,6 +77,7 @@ class RulesetResourceIT {
             .body("id", equalTo(rulesetId.toString()))
             .body("name", equalTo("Initial Ruleset"))
             .body("version", equalTo("v1.0"))
+            .body("draw_published", equalTo(false))
             .body("description", equalTo("Updated description"))
             .body("age_calculation_type", equalTo("age_as_of_jan_1"));
 
@@ -86,6 +89,7 @@ class RulesetResourceIT {
             .then()
             .statusCode(200)
             .body("id", equalTo(rulesetId.toString()))
+            .body("draw_published", equalTo(false))
             .body("description", equalTo("Updated description"))
             .body("age_calculation_type", equalTo("age_as_of_jan_1"));
 
@@ -106,6 +110,7 @@ class RulesetResourceIT {
             .body("id", notNullValue())
             .body("name", equalTo("Duplicated Ruleset"))
             .body("version", equalTo("v2.0"))
+            .body("draw_published", equalTo(false))
             .body("description", equalTo("Updated description"))
             .body("age_calculation_type", equalTo("age_as_of_jan_1"));
     }
@@ -354,6 +359,15 @@ class RulesetResourceIT {
             .statusCode(409)
             .body("error.code", equalTo("CONFLICT"))
             .body("error.message", equalTo("Cannot update ruleset after draw publication"));
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/rulesets/" + rulesetId)
+            .then()
+            .statusCode(200)
+            .body("draw_published", equalTo(true));
     }
 
     @Test

@@ -215,6 +215,80 @@ class DrawWorkflowResourceIT {
             .body("generated", equalTo(false));
     }
 
+    @Test
+    void publishedDraw_shouldBlockBlockAndBibPoolMutations() {
+        UUID regattaId = seedRegatta();
+
+        String blockId = given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "name": "Morning Session",
+                  "start_time": "2026-08-15T09:00:00Z",
+                  "event_interval_seconds": 300,
+                  "crew_interval_seconds": 60
+                }
+                """)
+            .when()
+            .post("/api/v1/regattas/" + regattaId + "/blocks")
+            .then()
+            .statusCode(201)
+            .extract()
+            .path("id");
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+            .when()
+            .post("/api/v1/regattas/" + regattaId + "/draw/publish")
+            .then()
+            .statusCode(200)
+            .body("draw_revision", equalTo(1));
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "name": "Afternoon Session",
+                  "start_time": "2026-08-15T13:00:00Z",
+                  "event_interval_seconds": 300,
+                  "crew_interval_seconds": 60
+                }
+                """)
+            .when()
+            .post("/api/v1/regattas/" + regattaId + "/blocks")
+            .then()
+            .statusCode(409)
+            .body("error.code", equalTo("CONFLICT"))
+            .body("error.message", equalTo("Cannot edit blocks after draw publication"));
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+            .contentType("application/json")
+            .body(String.format("""
+                {
+                  "name": "Pool After Publish",
+                  "block_id": "%s",
+                  "allocation_mode": "range",
+                  "start_bib": 1,
+                  "end_bib": 25,
+                  "priority": 1,
+                  "is_overflow": false
+                }
+                """, blockId))
+            .when()
+            .post("/api/v1/regattas/" + regattaId + "/bib_pools")
+            .then()
+            .statusCode(409)
+            .body("error.code", equalTo("CONFLICT"))
+            .body("error.message", equalTo("Cannot edit bib pools after draw publication"));
+    }
+
     private UUID seedRegatta() {
         UUID regattaId = UUID.randomUUID();
         RegattaCreatedEvent event = new RegattaCreatedEvent(
