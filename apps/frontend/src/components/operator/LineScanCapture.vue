@@ -367,6 +367,8 @@ function clearConflict(conflictId) {
 }
 
 function resolveConflictMine(conflictId) {
+  // Acknowledges the conflict and dismisses it.
+  // The operator must manually retry the original operation to push their version.
   clearConflict(conflictId)
 }
 
