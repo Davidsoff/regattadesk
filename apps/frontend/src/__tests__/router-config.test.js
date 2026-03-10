@@ -35,12 +35,17 @@ function createTestRouter() {
           { path: 'regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
           {
             path: 'regattas/:regattaId',
-            name: 'operator-regatta-detail',
+            name: 'operator-regatta-home',
             component: { template: '<div>Operator Regatta Detail</div>' },
           },
           {
-            path: 'regattas/:regattaId/line-scan',
-            name: 'operator-line-scan',
+            path: 'regattas/:regattaId/sessions',
+            name: 'operator-regatta-sessions',
+            component: { template: '<div>Operator Sessions</div>' },
+          },
+          {
+            path: 'regattas/:regattaId/sessions/:captureSessionId/line-scan',
+            name: 'operator-session-line-scan',
             component: { template: '<div>Operator Line Scan</div>' },
           },
         ],
@@ -123,15 +128,17 @@ describe('Router Configuration', () => {
     },
     {
       path: '/operator/regattas/operator-test-id',
-      name: 'operator-regatta-detail',
+      name: 'operator-regatta-home',
       param: 'regattaId',
       value: 'operator-test-id',
     },
     {
-      path: '/operator/regattas/scan-test-id/line-scan',
-      name: 'operator-line-scan',
+      path: '/operator/regattas/scan-test-id/sessions/session-test-id/line-scan',
+      name: 'operator-session-line-scan',
       param: 'regattaId',
       value: 'scan-test-id',
+      param2: 'captureSessionId',
+      value2: 'session-test-id',
     },
     {
       path: '/public/v999-1234/results',
@@ -170,11 +177,11 @@ describe('Router Configuration', () => {
 
   it('supports direct navigation across protected and public surfaces', async () => {
     const staff = await navigate(router, '/staff/regattas/direct-test/finance')
-    const operator = await navigate(router, '/operator/regattas/direct-test/line-scan')
+    const operator = await navigate(router, '/operator/regattas/direct-test/sessions/session-direct/line-scan')
     const publicRoute = await navigate(router, '/public/v42-99/results')
 
     expect(staff.name).toBe('staff-regatta-finance')
-    expect(operator.name).toBe('operator-line-scan')
+    expect(operator.name).toBe('operator-session-line-scan')
     expect(publicRoute.name).toBe('public-results')
   })
 

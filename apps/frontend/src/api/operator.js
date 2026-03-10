@@ -81,6 +81,13 @@ export function createOperatorApi(client, options = {}) {
       )
     },
 
+    async getCaptureSession(regattaId, captureSessionId) {
+      return client.get(
+        `/regattas/${regattaId}/operator/capture_sessions/${captureSessionId}`,
+        authOptions()
+      )
+    },
+
     // Marker Management
     async createMarker(regattaId, payload) {
       return client.post(`/regattas/${regattaId}/operator/markers`, payload, authOptions())

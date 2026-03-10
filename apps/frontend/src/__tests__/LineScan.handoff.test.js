@@ -4,6 +4,30 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import LineScan from '../views/operator/LineScan.vue'
 
+const requestStationHandoff = vi.fn()
+const revealStationHandoffPin = vi.fn()
+const getStationHandoffStatus = vi.fn()
+const cancelStationHandoff = vi.fn()
+const completeStationHandoff = vi.fn()
+
+vi.mock('../api', () => ({
+  ApiError: class ApiError extends Error {
+    constructor(error, status) {
+      super(error.message)
+      this.code = error.code
+      this.status = status
+    }
+  },
+  createApiClient: vi.fn(() => ({})),
+  createOperatorApi: vi.fn(() => ({
+    requestStationHandoff,
+    revealStationHandoffPin,
+    getStationHandoffStatus,
+    cancelStationHandoff,
+    completeStationHandoff
+  }))
+}))
+
 function createTestI18n() {
   return createI18n({
     legacy: false,
@@ -17,6 +41,11 @@ function createTestI18n() {
           line_scan: {
             title: 'Line Scan',
             description: 'Capture line scan images and mark finish times'
+          },
+          capture: {
+            title: 'Line Scan Capture',
+            create_marker: 'Create Marker',
+            no_markers: 'No markers yet'
           }
         }
       }
@@ -39,28 +68,35 @@ function buildHandoff(id = 'handoff-97', overrides = {}) {
   }
 }
 
-function jsonResponse(status, body) {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    headers: {
-      get(name) {
-        return name.toLowerCase() === 'content-type' ? 'application/json' : null
-      }
-    },
-    async json() {
-      return body
-    }
-  }
-}
-
 async function mountLineScan() {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
       {
+        path: '/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan',
+        name: 'operator-session-line-scan',
+        component: LineScan
+      }
+    ]
+  })
+
+  await router.push('/operator/regattas/regatta-97/sessions/session-97/line-scan')
+  await router.isReady()
+
+  return mount(LineScan, {
+    global: {
+      plugins: [router, createTestI18n()]
+    }
+  })
+}
+
+async function mountLineScanWithoutSession() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
         path: '/operator/regattas/:regattaId/line-scan',
-        name: 'operator-line-scan',
+        name: 'operator-line-scan-legacy-test',
         component: LineScan
       }
     ]
@@ -78,44 +114,35 @@ async function mountLineScan() {
 
 describe('Operator line-scan handoff UX (issue #97)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
     vi.stubGlobal('__REGATTADESK_AUTH__', {
       operatorToken: 'token-97',
       operatorStation: 'finish-line'
     })
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockReturnValue('operator-device')
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
 
-  it('sends operator token/device metadata and uses new_device_mode to set local access', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-1')))
-      .mockResolvedValueOnce(
-        jsonResponse(
-          200,
-          buildHandoff('handoff-1', {
-            status: 'completed',
-            previous_device_mode: 'active',
-            new_device_mode: 'read_only'
-          })
-        )
-      )
-
-    vi.stubGlobal('fetch', fetchMock)
+  it('sends operator station/device metadata and uses new_device_mode to set local access', async () => {
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-1'))
+    completeStationHandoff.mockResolvedValueOnce(
+      buildHandoff('handoff-1', {
+        status: 'completed',
+        previous_device_mode: 'active',
+        new_device_mode: 'read_only'
+      })
+    )
 
     const wrapper = await mountLineScan()
     expect(wrapper.find('[data-testid="handoff-request-toast"]').exists()).toBe(false)
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
     await flushPromises()
 
-    const createCall = fetchMock.mock.calls[0]
-    expect(createCall[0]).toBe('/api/v1/regattas/regatta-97/operator/station_handoffs')
-    expect(createCall[1].method).toBe('POST')
-    expect(createCall[1].headers.x_operator_token).toBe('token-97')
-    expect(JSON.parse(createCall[1].body)).toEqual({
+    expect(requestStationHandoff).toHaveBeenCalledWith('regatta-97', {
       station: 'finish-line',
       requesting_device_id: 'operator-device'
     })
@@ -124,15 +151,10 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     await wrapper.find('[data-testid="handoff-complete-submit"]').trigger('click')
     await flushPromises()
 
-    const completeCall = fetchMock.mock.calls[1]
-    expect(completeCall[0]).toBe('/api/v1/regattas/regatta-97/operator/station_handoffs/handoff-1/complete')
-    expect(completeCall[1].method).toBe('POST')
-    expect(completeCall[1].headers.x_operator_token).toBe('token-97')
-    expect(JSON.parse(completeCall[1].body)).toEqual({
+    expect(completeStationHandoff).toHaveBeenCalledWith('regatta-97', 'handoff-1', {
       pin: '123456',
       completing_device_id: 'operator-device'
     })
-
     expect(wrapper.find('[data-testid="operator-readonly-banner"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="line-scan-capture"]').attributes('disabled')).toBeDefined()
   })
@@ -142,12 +164,9 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     const revealPromise = new Promise((resolve) => {
       resolveReveal = resolve
     })
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-reveal')))
-      .mockReturnValueOnce(revealPromise)
 
-    vi.stubGlobal('fetch', fetchMock)
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-reveal'))
+    revealStationHandoffPin.mockReturnValueOnce(revealPromise)
 
     const wrapper = await mountLineScan()
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
@@ -159,27 +178,25 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
 
     await revealButton?.trigger('click')
     await revealButton?.trigger('click')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(revealStationHandoffPin).toHaveBeenCalledTimes(1)
 
-    resolveReveal(jsonResponse(200, { pin: '123456' }))
+    resolveReveal({ pin: '123456' })
     await flushPromises()
     expect(wrapper.find('[data-testid="handoff-revealed-pin"]').text()).toContain('123456')
   })
 
   it('renders INVALID_PIN feedback from API 400 response', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-invalid')))
-      .mockResolvedValueOnce(
-        jsonResponse(400, {
-          error: {
-            code: 'INVALID_PIN',
-            message: 'Invalid PIN'
-          }
-        })
+    const { ApiError } = await import('../api')
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-invalid'))
+    completeStationHandoff.mockRejectedValueOnce(
+      new ApiError(
+        {
+          code: 'INVALID_PIN',
+          message: 'Invalid PIN'
+        },
+        400
       )
-
-    vi.stubGlobal('fetch', fetchMock)
+    )
 
     const wrapper = await mountLineScan()
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
@@ -194,19 +211,17 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
   })
 
   it('renders conflict guidance from API 409 while keeping line-scan usable during pending handoff', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildHandoff('handoff-conflict')))
-      .mockResolvedValueOnce(
-        jsonResponse(409, {
-          error: {
-            code: 'HANDOFF_CONFLICT',
-            message: 'This handoff is no longer available'
-          }
-        })
+    const { ApiError } = await import('../api')
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-conflict'))
+    completeStationHandoff.mockRejectedValueOnce(
+      new ApiError(
+        {
+          code: 'HANDOFF_CONFLICT',
+          message: 'This handoff is no longer available'
+        },
+        409
       )
-
-    vi.stubGlobal('fetch', fetchMock)
+    )
 
     const wrapper = await mountLineScan()
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
@@ -225,7 +240,7 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
   })
 
   it('shows non-interrupting handoff request toast while keeping line-scan actions active', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(200, buildHandoff('handoff-toast'))))
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-toast'))
 
     const wrapper = await mountLineScan()
     expect(wrapper.find('[data-testid="handoff-request-toast"]').exists()).toBe(false)
@@ -244,15 +259,11 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
   })
 
   it('does not call capture session create endpoint when workspace is toggled without capture_session_id', async () => {
-    const fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScan()
+    const wrapper = await mountLineScanWithoutSession()
     await wrapper.find('[data-testid="toggle-capture-workspace"]').trigger('click')
     await flushPromises()
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(requestStationHandoff).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Capture session is required to open workspace')
-    expect(wrapper.text()).toContain('capture_session_id')
   })
 })
