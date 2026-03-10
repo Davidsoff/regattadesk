@@ -87,6 +87,31 @@ export type ErrorResponse = {
     error?: ErrorBody;
 };
 
+/**
+ * Response returned when a new printable export job is accepted.
+ */
+export type ExportJobCreatedResponse = {
+    job_id: Uuid;
+};
+
+/**
+ * Export job status response for polling clients.
+ */
+export type ExportJobStatusResponse = {
+    /**
+     * Current lifecycle state of the export job.
+     */
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    /**
+     * Absolute-path URL to download the PDF artifact. Present only when status is "completed" and the artifact has not expired.
+     */
+    download_url?: string;
+    /**
+     * Human-readable error description. Present only when status is "failed".
+     */
+    error?: string;
+};
+
 export type HealthStatus = {
     status?: string;
     version?: string;
@@ -384,6 +409,72 @@ export type PatchApiV1EntriesByIdPaymentStatusResponses = {
     200: unknown;
 };
 
+export type GetApiV1JobsByJobIdData = {
+    body?: never;
+    path: {
+        job_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/jobs/{job_id}';
+};
+
+export type GetApiV1JobsByJobIdErrors = {
+    /**
+     * Forbidden – insufficient role
+     */
+    403: ErrorResponse;
+    /**
+     * Job not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1JobsByJobIdError = GetApiV1JobsByJobIdErrors[keyof GetApiV1JobsByJobIdErrors];
+
+export type GetApiV1JobsByJobIdResponses = {
+    /**
+     * Job status response
+     */
+    200: ExportJobStatusResponse;
+};
+
+export type GetApiV1JobsByJobIdResponse = GetApiV1JobsByJobIdResponses[keyof GetApiV1JobsByJobIdResponses];
+
+export type GetApiV1JobsByJobIdDownloadData = {
+    body?: never;
+    path: {
+        job_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/jobs/{job_id}/download';
+};
+
+export type GetApiV1JobsByJobIdDownloadErrors = {
+    /**
+     * Forbidden – insufficient role
+     */
+    403: ErrorResponse;
+    /**
+     * Job not found or artifact not available
+     */
+    404: ErrorResponse;
+    /**
+     * Artifact has expired
+     */
+    410: ErrorResponse;
+};
+
+export type GetApiV1JobsByJobIdDownloadError = GetApiV1JobsByJobIdDownloadErrors[keyof GetApiV1JobsByJobIdDownloadErrors];
+
+export type GetApiV1JobsByJobIdDownloadResponses = {
+    /**
+     * PDF artifact
+     */
+    200: Blob | File;
+};
+
+export type GetApiV1JobsByJobIdDownloadResponse = GetApiV1JobsByJobIdDownloadResponses[keyof GetApiV1JobsByJobIdDownloadResponses];
+
 export type GetApiV1RegattasByRegattaIdClubsByClubIdPaymentStatusData = {
     body?: never;
     path: {
@@ -465,6 +556,41 @@ export type PutApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusResponses = 
      */
     200: unknown;
 };
+
+export type PostApiV1RegattasByRegattaIdExportPrintablesData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/export/printables';
+};
+
+export type PostApiV1RegattasByRegattaIdExportPrintablesErrors = {
+    /**
+     * Forbidden – insufficient role
+     */
+    403: ErrorResponse;
+    /**
+     * Regatta not found
+     */
+    404: ErrorResponse;
+    /**
+     * Internal server error
+     */
+    500: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdExportPrintablesError = PostApiV1RegattasByRegattaIdExportPrintablesErrors[keyof PostApiV1RegattasByRegattaIdExportPrintablesErrors];
+
+export type PostApiV1RegattasByRegattaIdExportPrintablesResponses = {
+    /**
+     * Export job accepted; processing in background
+     */
+    202: ExportJobCreatedResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdExportPrintablesResponse = PostApiV1RegattasByRegattaIdExportPrintablesResponses[keyof PostApiV1RegattasByRegattaIdExportPrintablesResponses];
 
 export type GetApiV1RegattasByRegattaIdInvoicesData = {
     body?: never;

@@ -163,6 +163,36 @@ components:
       properties:
         error:
           $ref: "#/components/schemas/ErrorBody"
+    ExportJobCreatedResponse:
+      description: Response returned when a new printable export job is accepted.
+      type: object
+      required:
+      - job_id
+      properties:
+        job_id:
+          $ref: "#/components/schemas/UUID"
+    ExportJobStatusResponse:
+      description: Export job status response for polling clients.
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          description: Current lifecycle state of the export job.
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
+        download_url:
+          type: string
+          description: Absolute-path URL to download the PDF artifact. Present only
+            when status is "completed" and the artifact has not expired.
+        error:
+          type: string
+          description: Human-readable error description. Present only when status
+            is "failed".
     HealthStatus:
       type: object
       properties:
@@ -688,6 +718,75 @@ paths:
       summary: Update Payment Status
       tags:
       - Entry Resource
+  /api/v1/jobs/{job_id}:
+    get:
+      summary: Get Export Job Status
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: Job status response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobStatusResponse"
+        "403":
+          description: Forbidden – insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Export Job Resource
+  /api/v1/jobs/{job_id}/download:
+    get:
+      summary: Download Export Artifact
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: PDF artifact
+          headers:
+            Content-Disposition:
+              description: "attachment; filename=\"export-{job_id}.pdf\""
+              schema:
+                type: string
+          content:
+            application/pdf: {}
+        "403":
+          description: Forbidden – insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Job not found or artifact not available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Artifact has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Export Job Resource
   /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status:
     put:
       parameters:
@@ -790,6 +889,42 @@ paths:
       summary: Get Entry Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/export/printables:
+    post:
+      summary: Request Printable Export
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "202":
+          description: Export job accepted; processing in background
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportJobCreatedResponse"
+        "403":
+          description: Forbidden – insufficient role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Regatta not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Printable Export Resource
   /api/v1/regattas/{regatta_id}/invoices:
     get:
       summary: List invoices
