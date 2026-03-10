@@ -22,6 +22,51 @@ export type AthleteUpdateRequest = {
     club_id?: Uuid;
 };
 
+export type CaptureSessionCloseRequest = {
+    close_reason?: string;
+};
+
+export type CaptureSessionCreateRequest = {
+    block_id: Uuid;
+    station: string;
+    device_id: string;
+    session_type: string;
+    server_time_at_start?: Instant;
+    device_monotonic_offset_ms?: number;
+    fps: number;
+};
+
+export type CaptureSessionListResponse = {
+    capture_sessions?: Array<CaptureSessionResponse>;
+};
+
+export type CaptureSessionResponse = {
+    capture_session_id?: Uuid;
+    regatta_id?: Uuid;
+    block_id?: Uuid;
+    station?: string;
+    device_id?: string;
+    session_type?: string;
+    state?: string;
+    server_time_at_start?: Instant;
+    device_monotonic_offset_ms?: number;
+    fps?: number;
+    is_synced?: boolean;
+    drift_exceeded_threshold?: boolean;
+    unsynced_reason?: string;
+    closed_at?: Instant;
+    close_reason?: string;
+    created_at?: Instant;
+    updated_at?: Instant;
+};
+
+export type CaptureSessionSyncStateRequest = {
+    is_synced: boolean;
+    drift_exceeded_threshold: boolean;
+    unsynced_reason?: string;
+    observed_at?: Instant;
+};
+
 export type Cookie = {
     name?: string;
     value?: string;
@@ -659,6 +704,197 @@ export type PutApiV1RegattasByRegattaIdLineScanTilesByTileIdResponses = {
      */
     200: unknown;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsData = {
+    body?: never;
+    headers?: {
+        'X-Forwarded-User'?: string;
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        block_id?: Uuid;
+        state?: string;
+        station?: string;
+    };
+    url: '/api/v1/regattas/{regatta_id}/operator/capture_sessions';
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsError = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors];
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses = {
+    /**
+     * OK
+     */
+    200: CaptureSessionListResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponse = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsData = {
+    body: CaptureSessionCreateRequest;
+    headers?: {
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/operator/capture_sessions';
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsErrors];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses = {
+    /**
+     * Created
+     */
+    201: CaptureSessionResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponse = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsResponses];
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdData = {
+    body?: never;
+    headers?: {
+        'X-Forwarded-User'?: string;
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        capture_session_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdError = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdErrors];
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses = {
+    /**
+     * OK
+     */
+    200: CaptureSessionResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponse = GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses[keyof GetApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdResponses];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseData = {
+    body: CaptureSessionCloseRequest;
+    headers?: {
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        capture_session_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close';
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseErrors];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses = {
+    /**
+     * OK
+     */
+    200: CaptureSessionResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponse = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdCloseResponses];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateData = {
+    body: CaptureSessionSyncStateRequest;
+    headers?: {
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        capture_session_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state';
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateError = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateErrors];
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses = {
+    /**
+     * OK
+     */
+    200: CaptureSessionResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponse = PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses[keyof PostApiV1RegattasByRegattaIdOperatorCaptureSessionsByCaptureSessionIdSyncStateResponses];
 
 export type GetApiV1RegattasByRegattaIdOperatorMarkersData = {
     body?: never;

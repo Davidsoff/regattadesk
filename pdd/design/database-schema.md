@@ -544,7 +544,7 @@ ALTER TABLE operator_conflicts
 
 Capture session lifecycle in API contract (`pdd/design/openapi-v0.1.yaml`):
 - Start/list: `POST|GET /api/v1/regattas/{regatta_id}/operator/capture_sessions`
-- Read/update: `GET|PATCH /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`
+- Read: `GET /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`
 - Sync state updates: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state`
 - Close: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/close`
 
