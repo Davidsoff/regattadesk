@@ -44,18 +44,21 @@ const regattaId = computed(() => route.params.regattaId)
       <router-link
         :to="`/staff/regattas/${regattaId}/draw`"
         class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-regatta-draw' ? 'page' : undefined"
       >
         {{ t('navigation.draw') }}
       </router-link>
       <router-link
         :to="`/staff/regattas/${regattaId}/finance`"
         class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-regatta-finance' ? 'page' : undefined"
       >
         {{ t('navigation.finance') }}
       </router-link>
       <router-link
         :to="`/staff/regattas/${regattaId}/blocks`"
         class="staff-layout__subnav-item"
+        :aria-current="route.name === 'staff-blocks-management' ? 'page' : undefined"
       >
         {{ t('navigation.blocks') }}
       </router-link>
@@ -158,7 +161,7 @@ const regattaId = computed(() => route.params.regattaId)
   background: var(--rd-surface-2);
 }
 
-.staff-layout__subnav-item.router-link-active {
+.staff-layout__subnav-item.router-link-exact-active {
   background: var(--rd-accent);
   color: white;
 }

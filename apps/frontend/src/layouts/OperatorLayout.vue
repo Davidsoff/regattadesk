@@ -116,7 +116,7 @@ const regattaId = computed(() => route.params.regattaId)
   background: var(--rd-surface-2);
 }
 
-.operator-layout__nav-item.router-link-active {
+.operator-layout__nav-item.router-link-exact-active {
   background: var(--rd-accent);
   color: white;
 }
