@@ -1,10 +1,4 @@
-function getBrowserWindow() {
-  if (globalThis.window === undefined) {
-    return null
-  }
-
-  return globalThis.window
-}
+import { getStorage, getStorageValue } from '../utils/storage.js'
 
 function getAuthContext() {
   if (!globalThis.__REGATTADESK_AUTH__) {
@@ -14,22 +8,13 @@ function getAuthContext() {
   return globalThis.__REGATTADESK_AUTH__
 }
 
-function getLocalStorageValue(key) {
-  const browserWindow = getBrowserWindow()
-  if (!browserWindow || typeof browserWindow.localStorage?.getItem !== 'function') {
-    return null
-  }
-
-  return browserWindow.localStorage.getItem(key)
-}
-
 function hasStaffAuth() {
   const context = getAuthContext()
   if (context.staffAuthenticated === true) {
     return true
   }
 
-  const authFlag = getLocalStorageValue('rd_staff_authenticated')
+  const authFlag = getStorageValue('rd_staff_authenticated')
   return authFlag === 'true' || authFlag === '1'
 }
 
@@ -46,10 +31,7 @@ function activateQueryToken(to) {
   const context = getAuthContext()
   context.operatorToken = queryToken
 
-  const browserWindow = getBrowserWindow()
-  if (browserWindow && typeof browserWindow.localStorage?.setItem === 'function') {
-    browserWindow.localStorage.setItem('rd_operator_token', queryToken)
-  }
+  getStorage()?.setItem('rd_operator_token', queryToken)
 }
 
 /** Pure predicate — reads auth state without mutating it. */
@@ -61,7 +43,7 @@ function hasOperatorToken(to) {
   const queryToken = typeof to.query?.token === 'string' ? to.query.token.trim() : ''
   if (queryToken.length > 0) return true
 
-  const storedToken = getLocalStorageValue('rd_operator_token')?.trim() ?? ''
+  const storedToken = getStorageValue('rd_operator_token')?.trim() ?? ''
   return storedToken.length > 0
 }
 

@@ -9,20 +9,7 @@
  */
 
 import { ref } from 'vue';
-
-/**
- * Parse a JSON string, returning fallback on any parse error.
- * @param {string} text
- * @param {*} fallback
- * @returns {*}
- */
-function safeJsonParse(text, fallback = null) {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return fallback
-  }
-}
+import { safeJsonParse } from '../utils/jsonUtils.js';
 
 const DEFAULT_MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff in ms
@@ -270,7 +257,6 @@ async function handleConflict(operation, conflictResult) {
       };
     }
 
-    case 'manual':
     default: {
       return {
         success: false,

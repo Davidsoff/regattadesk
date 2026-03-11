@@ -25,19 +25,7 @@
  */
 
 import { ref, onMounted, onUnmounted } from 'vue'
-
-/**
- * Parse a JSON string, returning null on any parse error.
- * @param {string} text
- * @returns {*}
- */
-function safeJsonParse(text) {
-  try {
-    return JSON.parse(text)
-  } catch {
-    return null
-  }
-}
+import { safeJsonParse } from '../utils/jsonUtils.js'
 
 const MIN_DELAY_MS = 100
 const BASE_DELAY_MS = 500
@@ -243,10 +231,8 @@ export function useSseConnection(url) {
       },
       onDrawRevision: (data) => {
         lastDrawRevision.value = data.draw_revision
-        lastResultsRevision.value = data.results_revision
       },
       onResultsRevision: (data) => {
-        lastDrawRevision.value = data.draw_revision
         lastResultsRevision.value = data.results_revision
       },
       onConnectionChange: (connected) => {

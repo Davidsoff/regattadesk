@@ -132,6 +132,7 @@ export function useServiceWorker() {
     } catch (err) {
       console.error('Service Worker update failed:', err);
       error.value = err;
+      throw err;
     }
   }
 
@@ -151,7 +152,7 @@ export function useServiceWorker() {
     } catch (err) {
       console.error('Service Worker unregistration failed:', err);
       error.value = err;
-      return false;
+      throw err;
     }
   }
 

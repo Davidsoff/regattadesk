@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { useFocusTrap, useSkipLink, useFocusManagement } from '../composables/useAccessibility'
+import { useFocusTrap } from '../composables/useFocusTrap'
+import { createSkipLink } from '../composables/useSkipLink'
+import { useFocusManagement } from '../composables/useFocusManagement'
 
 // ─── DOM helpers ──────────────────────────────────────────────────────────────
 
@@ -129,9 +131,9 @@ describe('useFocusTrap', () => {
   })
 })
 
-// ─── useSkipLink ──────────────────────────────────────────────────────────────
 
-describe('useSkipLink', () => {
+
+describe('createSkipLink', () => {
   afterEach(() => {
     document.body.innerHTML = ''
   })
@@ -143,7 +145,7 @@ describe('useSkipLink', () => {
 
     const focusSpy = vi.spyOn(main, 'focus')
 
-    const { skipToMain } = useSkipLink()
+    const { skipToMain } = createSkipLink()
     skipToMain()
 
     expect(focusSpy).toHaveBeenCalled()
@@ -151,7 +153,7 @@ describe('useSkipLink', () => {
 
   it('skipToMain does nothing when element does not exist', () => {
     // No main-content in DOM
-    const { skipToMain } = useSkipLink()
+    const { skipToMain } = createSkipLink()
     // Should not throw
     expect(() => skipToMain()).not.toThrow()
   })
@@ -163,7 +165,7 @@ describe('useSkipLink', () => {
 
     const focusSpy = vi.spyOn(custom, 'focus')
 
-    const { skipToMain } = useSkipLink()
+    const { skipToMain } = createSkipLink()
     skipToMain('custom-main')
 
     expect(focusSpy).toHaveBeenCalled()
