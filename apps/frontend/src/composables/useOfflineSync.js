@@ -97,7 +97,7 @@ async function parseResponseBody(response) {
 
   const contentType = response.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return safeJsonParse(text, text);
+    return safeJsonParse(text, null);
   }
 
   const parsed = safeJsonParse(text, undefined);

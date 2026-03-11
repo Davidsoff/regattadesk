@@ -172,10 +172,10 @@ export function useServiceWorker() {
       }
     });
     messageListeners = [];
-    registrationState = null;
-    isRegisteredState = null;
-    stateRef = null;
-    errorState = null;
+    _swRegistration = null;
+    _swIsRegistered = null;
+    _swLifecycleState = null;
+    _swError = null;
   }
 
   return {

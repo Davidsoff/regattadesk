@@ -1,12 +1,31 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fetch for sync operations
 function createMockFetch(responses = []) {
   let callCount = 0;
   return vi.fn(async (url, options) => {
-    const response = responses[callCount] || { ok: true, json: async () => ({}) };
+    const response = responses[callCount] || {};
     callCount++;
-    return response;
+    const payload =
+      response.body ??
+      (typeof response.json === 'function' ? await response.json() : response.json) ??
+      {};
+
+    return {
+      ok: response.ok ?? true,
+      status: response.status ?? 200,
+      statusText: response.statusText ?? 'OK',
+      headers: {
+        get: (name) => {
+          if (typeof response.headers?.get === 'function') {
+            return response.headers.get(name);
+          }
+
+          return response.headers?.[name] ?? response.headers?.[name.toLowerCase()] ?? 'application/json';
+        },
+      },
+      text: response.text ?? (async () => JSON.stringify(payload)),
+    };
   });
 }
 
@@ -79,11 +98,45 @@ describe('useOfflineSync basic sync', () => {
     expect(result.failed[0].error).toContain('500');
   });
 
+  it('treats malformed JSON bodies as empty when the response claims JSON', async () => {
+    const mockFetch = createMockFetch([
+      {
+        ok: true,
+        status: 200,
+        text: async () => '{not valid json',
+        headers: {
+          get: () => 'application/json',
+        },
+      },
+    ]);
+    vi.stubGlobal('fetch', mockFetch);
+
+    const { useOfflineSync } = await importFreshUseOfflineSync();
+    const { syncQueue } = useOfflineSync();
+
+    const result = await syncQueue([
+      {
+        id: 1,
+        endpoint: '/api/v1/markers',
+        method: 'POST',
+        data: { time: 123456, bib: '42' },
+        timestamp: Date.now(),
+      },
+    ]);
+
+    expect(result.synced).toHaveLength(1);
+    expect(result.synced[0].data).toBeNull();
+  });
+
   it('syncs operations in queue order', async () => {
     const syncedOps = [];
     const mockFetch = vi.fn(async (url, options) => {
       syncedOps.push({ url, method: options.method });
-      return { ok: true, json: async () => ({}) };
+      return {
+        ok: true,
+        text: async () => '{}',
+        headers: { get: () => 'application/json' },
+      };
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -338,6 +391,11 @@ describe('useOfflineSync conflict resolution', () => {
 describe('useOfflineSync retry logic', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('retries failed operations with exponential backoff', async () => {
@@ -347,7 +405,11 @@ describe('useOfflineSync retry logic', () => {
       if (attempts < 3) {
         throw new Error('Network error');
       }
-      return { ok: true, json: async () => ({}) };
+      return {
+        ok: true,
+        text: async () => '{}',
+        headers: { get: () => 'application/json' },
+      };
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -366,7 +428,9 @@ describe('useOfflineSync retry logic', () => {
       },
     ];
 
-    const result = await syncQueue(queue, { enableRetry: true });
+    const resultPromise = syncQueue(queue, { enableRetry: true });
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
 
     expect(attempts).toBe(3);
     expect(result.synced).toHaveLength(1);
@@ -391,7 +455,9 @@ describe('useOfflineSync retry logic', () => {
       },
     ];
 
-    const result = await syncQueue(queue, { enableRetry: true });
+    const resultPromise = syncQueue(queue, { enableRetry: true });
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
 
     expect(mockFetch).toHaveBeenCalledTimes(3); // initial + 2 retries
     expect(result.failed).toHaveLength(1);

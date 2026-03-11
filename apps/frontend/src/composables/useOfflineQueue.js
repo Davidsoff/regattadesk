@@ -36,6 +36,7 @@ function sanitizeOperation(operation) {
   }
 
   return {
+    ...operation,
     endpoint: operation.endpoint,
     method,
     data: operation.data ?? null,
@@ -115,7 +116,13 @@ async function withDbTransaction(mode, fn) {
   const db = await ensureDatabase();
   const transaction = db.transaction([STORE_NAME], mode);
   const store = transaction.objectStore(STORE_NAME);
-  return fn(store);
+  const result = fn(store);
+
+  if (result && typeof result === 'object' && 'onsuccess' in result && 'onerror' in result) {
+    return requestToPromise(result);
+  }
+
+  return await result;
 }
 
 async function getQueueInternal() {
