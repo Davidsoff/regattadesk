@@ -59,9 +59,6 @@ const i18n = createI18n({
           results: 'Results Revision'
         }
       },
-      live: {
-        offline: 'Offline'
-      },
       status: {
         active: 'Active',
         withdrawn: 'Withdrawn'
