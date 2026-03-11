@@ -21,6 +21,7 @@ const staffRoutes = [
   route('regattas/:regattaId/draw', 'staff-regatta-draw', () => import('../views/staff/DrawWorkflow.vue')),
   route('regattas/:regattaId/finance', 'staff-regatta-finance', () => import('../views/staff/RegattaFinance.vue')),
   route('regattas/:regattaId/blocks', 'staff-blocks-management', () => import('../views/staff/BlocksManagement.vue')),
+  route('regattas/:regattaId/printables', 'staff-regatta-printables', () => import('../views/staff/RegattaPrintables.vue')),
   route('regattas/:regattaId/finance/entries/:entryId', 'staff-regatta-finance-entry', () => import('../views/staff/EntryPaymentStatus.vue')),
   route('regattas/:regattaId/finance/clubs/:clubId', 'staff-regatta-finance-club', () => import('../views/staff/ClubPaymentStatus.vue')),
   route('regattas/:regattaId/finance/invoices', 'staff-regatta-finance-invoices', () => import('../views/staff/InvoiceList.vue')),

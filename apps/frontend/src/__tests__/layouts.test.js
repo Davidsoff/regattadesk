@@ -41,6 +41,11 @@ function createTestRouter(extraRoutes = []) {
         name: 'staff-blocks-management',
         component: { template: '<div>Staff Blocks</div>' },
       },
+      {
+        path: '/staff/regattas/:regattaId/printables',
+        name: 'staff-regatta-printables',
+        component: { template: '<div>Staff Printables</div>' },
+      },
       { path: '/operator/regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
       {
         path: '/operator/regattas/:regattaId',
@@ -102,6 +107,7 @@ function createTestI18n() {
           draw: 'Draw',
           finance: 'Finance',
           blocks: 'Blocks',
+          printables: 'Printables',
           line_scan: 'Line Scan',
           schedule: 'Schedule',
           results: 'Results',
@@ -248,7 +254,7 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-    it('renders subnav with draw, finance, blocks links inside a regatta', async () => {
+    it('renders subnav with draw, finance, blocks, and printables links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
@@ -256,6 +262,7 @@ describe('Layout Components', () => {
       expect(links).toContain('/staff/regattas/test-id-123/draw')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
+      expect(links).toContain('/staff/regattas/test-id-123/printables')
     })
 
     it('subnav is labelled for accessibility', async () => {
@@ -278,6 +285,15 @@ describe('Layout Components', () => {
       const rulesetsWrapper = await mountAtRoute(router, '/staff/rulesets', StaffLayout)
       const rulesetsLink = rulesetsWrapper.findAll('.staff-layout__nav-item')[1]
       expect(rulesetsLink.attributes('aria-current')).toBe('page')
+    })
+
+    it('sets aria-current on the active printables subnav item', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/printables', StaffLayout)
+      const printablesLink = wrapper
+        .findAll('.staff-layout__subnav-item')
+        .find((node) => node.attributes('href') === '/staff/regattas/test-id-123/printables')
+
+      expect(printablesLink?.attributes('aria-current')).toBe('page')
     })
   })
 
