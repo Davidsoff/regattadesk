@@ -29,3 +29,6 @@ Thumbs.db
 # Python cache artifacts
 __pycache__/
 *.pyc
+
+# Python virtual environment
+venv/

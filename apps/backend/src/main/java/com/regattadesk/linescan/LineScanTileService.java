@@ -6,7 +6,6 @@ import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
