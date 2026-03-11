@@ -430,7 +430,8 @@
     },
     "line_scan": {
       "title": "Line Scan",
-      "description": "Vastleggen van line scan foto's en finishtijden"
+      "description": "Vastleggen van line scan foto's en finishtijden",
+      "queued_operations": "{count} bewerking(en) in wachtrij voor synchronisatie"
     },
     "capture": {
       "title": "Line Scan Opname",
@@ -442,7 +443,20 @@
       "bib_number": "Startnr",
       "frame_offset": "Frame",
       "no_markers": "Nog geen markeringen",
-      "undo": "Ongedaan maken"
+      "undo": "Ongedaan maken",
+      "high_contrast_on": "Hoog contrast: Aan",
+      "high_contrast_off": "Hoog contrast: Uit",
+      "session_status": "Sessiestatus",
+      "session_status_refresh": "Vernieuwen",
+      "session_status_loading": "Laden...",
+      "tile_status": "Tegelstatus",
+      "tile_status_synced": "Gesynchroniseerd",
+      "tile_status_pending": "Synchronisatie in behandeling",
+      "conflicts_pending_title": "Conflicten vereisen oplossing",
+      "conflict_marker": "Conflict voor markering {id}",
+      "conflict_keep_mine": "Mijn versie bewaren",
+      "conflict_use_server": "Serverversie gebruiken",
+      "conflict_detected": "Er is een conflict gedetecteerd. Zie het conflictpaneel hieronder."
     }
   },
   "public": {

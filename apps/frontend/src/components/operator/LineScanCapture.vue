@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
+import { useOperatorTheme } from '../../composables/useOperatorTheme'
 
 const props = defineProps({
   captureSessionId: {
@@ -24,6 +25,17 @@ const editingFrameOffset = ref('')
 const linkingMarkerId = ref(null)
 const linkingEntryId = ref('')
 const undoStack = ref([])
+
+// Session status (supplementary — loaded on demand)
+const captureSession = ref(null)
+const isSessionLoading = ref(false)
+
+// Offline conflict tracking
+const pendingConflicts = ref([])
+let conflictSeq = 0
+
+// Operator theme controls
+const { isHighContrast, toggleContrast } = useOperatorTheme()
 
 // Follow-up: extract operator token retrieval into a shared composable
 // to avoid duplication with LineScan.vue and ensure consistency.
@@ -210,7 +222,18 @@ async function updateMarker(markerId) {
     editingMarkerId.value = null
     editingFrameOffset.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to update marker'
+    if (error instanceof ApiError && error.status === 409 && error.code !== 'MARKER_APPROVED') {
+      conflictSeq += 1
+      pendingConflicts.value.push({
+        id: `conflict-${markerId}-update-${conflictSeq}`,
+        markerId,
+        operation: 'update',
+        clientData: { frame_offset: Number.parseInt(editingFrameOffset.value, 10) }
+      })
+      errorMessage.value = t('operator.capture.conflict_detected')
+    } else {
+      errorMessage.value = error instanceof Error ? error.message : 'Failed to update marker'
+    }
   } finally {
     isLoading.value = false
   }
@@ -253,7 +276,18 @@ async function linkMarker(markerId) {
     linkingMarkerId.value = null
     linkingEntryId.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to link marker'
+    if (error instanceof ApiError && error.status === 409 && error.code !== 'MARKER_APPROVED') {
+      conflictSeq += 1
+      pendingConflicts.value.push({
+        id: `conflict-${markerId}-link-${conflictSeq}`,
+        markerId,
+        operation: 'link',
+        clientData: { entry_id: normalizedEntryId }
+      })
+      errorMessage.value = t('operator.capture.conflict_detected')
+    } else {
+      errorMessage.value = error instanceof Error ? error.message : 'Failed to link marker'
+    }
   } finally {
     isLoading.value = false
   }
@@ -312,12 +346,47 @@ async function undoLastChange() {
   }
 }
 
+async function loadCaptureSession() {
+  if (!hasCaptureSession() || isSessionLoading.value) {
+    return
+  }
+
+  isSessionLoading.value = true
+
+  try {
+    captureSession.value = await operatorApi.getCaptureSession(props.regattaId, props.captureSessionId)
+  } catch {
+    // Session status is supplementary; non-fatal
+  } finally {
+    isSessionLoading.value = false
+  }
+}
+
+function clearConflict(conflictId) {
+  pendingConflicts.value = pendingConflicts.value.filter((c) => c.id !== conflictId)
+}
+
+function resolveConflictMine(conflictId) {
+  // Acknowledges the conflict and dismisses it.
+  // The operator must manually retry the original operation to push their version.
+  clearConflict(conflictId)
+}
+
+function resolveConflictServer(conflictId) {
+  clearConflict(conflictId)
+  loadMarkers()
+}
+
 onMounted(() => {
   loadMarkers()
 })
 
 defineExpose({
-  deleteMarker // Exposed for testing error handling
+  deleteMarker, // Exposed for testing error handling
+  loadCaptureSession,
+  resolveConflictMine,
+  resolveConflictServer,
+  pendingConflicts
 })
 </script>
 
@@ -344,10 +413,81 @@ defineExpose({
       >
         {{ t('operator.capture.undo') }}
       </button>
+
+      <button
+        type="button"
+        data-testid="toggle-high-contrast"
+        @click="toggleContrast"
+        class="contrast-toggle"
+      >
+        {{ isHighContrast ? t('operator.capture.high_contrast_on') : t('operator.capture.high_contrast_off') }}
+      </button>
     </div>
 
     <div v-if="errorMessage" data-testid="error-message" class="error-message">
       {{ errorMessage }}
+    </div>
+
+    <!-- Offline conflict resolution pane -->
+    <div v-if="pendingConflicts.length > 0" data-testid="conflict-resolution-pane" class="conflict-pane">
+      <h3>{{ t('operator.capture.conflicts_pending_title') }}</h3>
+      <div
+        v-for="conflict in pendingConflicts"
+        :key="conflict.id"
+        :data-testid="`conflict-item-${conflict.id}`"
+        class="conflict-item"
+      >
+        <span class="conflict-label">{{ t('operator.capture.conflict_marker', { id: conflict.markerId }) }}</span>
+        <div class="conflict-actions">
+          <button
+            type="button"
+            :data-testid="`conflict-keep-mine-${conflict.id}`"
+            @click="resolveConflictMine(conflict.id)"
+          >
+            {{ t('operator.capture.conflict_keep_mine') }}
+          </button>
+          <button
+            type="button"
+            :data-testid="`conflict-use-server-${conflict.id}`"
+            @click="resolveConflictServer(conflict.id)"
+          >
+            {{ t('operator.capture.conflict_use_server') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session status pane -->
+    <div class="session-status-pane">
+      <div class="session-status-header">
+        <span class="session-status-label">{{ t('operator.capture.session_status') }}</span>
+        <button
+          type="button"
+          data-testid="load-session-status"
+          @click="loadCaptureSession"
+          :disabled="isSessionLoading"
+          class="session-status-refresh"
+        >
+          {{ isSessionLoading ? t('operator.capture.session_status_loading') : t('operator.capture.session_status_refresh') }}
+        </button>
+      </div>
+      <div v-if="captureSession" data-testid="session-status-detail" class="session-status-detail">
+        <span data-testid="session-sync-indicator" :class="captureSession.is_synced ? 'sync-ok' : 'sync-pending'">
+          {{ captureSession.is_synced ? t('operator.capture.tile_status_synced') : t('operator.capture.tile_status_pending') }}
+        </span>
+      </div>
+      <div v-if="hasMarkers" data-testid="tile-status-pane" class="tile-status-pane">
+        <h4>{{ t('operator.capture.tile_status') }}</h4>
+        <div
+          v-for="marker in markers"
+          :key="`tile-${marker.id}`"
+          :data-testid="`tile-item-${marker.id}`"
+          class="tile-item"
+        >
+          <span class="tile-id">{{ marker.tile_id }}</span>
+          <span class="tile-coords">{{ marker.tile_x }}, {{ marker.tile_y }}</span>
+        </div>
+      </div>
     </div>
 
     <div data-testid="capture-markers-list" class="markers-list">
@@ -571,5 +711,105 @@ input[type="text"] {
   border: 1px solid var(--rd-color-border, #ccc);
   border-radius: 4px;
   width: 120px;
+}
+
+.contrast-toggle {
+  margin-left: auto;
+}
+
+.conflict-pane {
+  margin: var(--rd-space-3, 1rem) 0;
+  padding: var(--rd-space-2, 0.5rem);
+  border: 2px solid var(--rd-color-danger, #b30000);
+  border-radius: 4px;
+  background: var(--rd-color-danger-soft, #fff5f5);
+}
+
+.conflict-pane h3 {
+  margin: 0 0 var(--rd-space-2, 0.5rem);
+  font-size: 1rem;
+  color: var(--rd-color-danger, #b30000);
+}
+
+.conflict-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--rd-space-1, 0.25rem) 0;
+  border-bottom: 1px solid var(--rd-color-danger-soft, #ffd7d7);
+}
+
+.conflict-item:last-child {
+  border-bottom: none;
+}
+
+.conflict-label {
+  font-size: 0.875rem;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: var(--rd-space-1, 0.25rem);
+}
+
+.session-status-pane {
+  margin: var(--rd-space-3, 1rem) 0;
+  padding: var(--rd-space-2, 0.5rem);
+  border: 1px solid var(--rd-color-border, #ccc);
+  border-radius: 4px;
+  background: var(--rd-color-surface-subtle, #f5f5f5);
+}
+
+.session-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--rd-space-1, 0.25rem);
+}
+
+.session-status-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.session-status-refresh {
+  font-size: 0.75rem;
+}
+
+.session-status-detail {
+  margin-top: var(--rd-space-1, 0.25rem);
+  font-size: 0.875rem;
+}
+
+.sync-ok {
+  color: var(--rd-color-success, #1a7a1a);
+}
+
+.sync-pending {
+  color: var(--rd-color-warning, #e1b100);
+}
+
+.tile-status-pane {
+  margin-top: var(--rd-space-2, 0.5rem);
+}
+
+.tile-status-pane h4 {
+  margin: 0 0 var(--rd-space-1, 0.25rem);
+  font-size: 0.875rem;
+}
+
+.tile-item {
+  display: flex;
+  gap: var(--rd-space-2, 0.5rem);
+  font-size: 0.8125rem;
+  padding: 2px 0;
+}
+
+.tile-id {
+  font-family: monospace;
+}
+
+.tile-coords {
+  color: var(--rd-color-text-secondary, #666);
 }
 </style>
