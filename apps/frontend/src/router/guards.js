@@ -29,7 +29,7 @@ function activateQueryToken(to) {
   if (!queryToken) return
 
   const context = getAuthContext()
-  context.operatorToken = queryToken
+  context.operatorAuth = queryToken
 
   getStorage()?.setItem('rd_operator_token', queryToken)
 }
@@ -37,7 +37,7 @@ function activateQueryToken(to) {
 /** Pure predicate — reads auth state without mutating it. */
 function hasOperatorToken(to) {
   const context = getAuthContext()
-  const contextToken = typeof context.operatorToken === 'string' ? context.operatorToken.trim() : ''
+  const contextToken = typeof context.operatorAuth === 'string' ? context.operatorAuth.trim() : ''
   if (contextToken.length > 0) return true
 
   const queryToken = typeof to.query?.token === 'string' ? to.query.token.trim() : ''

@@ -61,7 +61,7 @@ describe('Route Guards', () => {
   describe('operatorGuard', () => {
     it('allows access when operator token is present', () => {
       clearAuthState()
-      globalThis.__REGATTADESK_AUTH__.operatorToken = 'token-123'
+      globalThis.__REGATTADESK_AUTH__.operatorAuth = 'token-123'
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()
@@ -81,7 +81,7 @@ describe('Route Guards', () => {
       operatorGuard(to, from, next)
 
       expect(next).toHaveBeenCalledWith()
-      expect(globalThis.__REGATTADESK_AUTH__.operatorToken).toBe('query-token')
+      expect(globalThis.__REGATTADESK_AUTH__.operatorAuth).toBe('query-token')
     })
 
     it('redirects to unauthorized when operator token is missing', () => {

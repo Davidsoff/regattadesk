@@ -134,7 +134,7 @@ describe('LineScanCapture component - Marker CRUD', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
+      operatorAuth: 'token-97'
     })
   })
 
@@ -243,7 +243,7 @@ describe('LineScanCapture component - Marker Linking', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
+      operatorAuth: 'token-97'
     })
   })
 
@@ -345,7 +345,7 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
+      operatorAuth: 'token-97'
     })
   })
 
@@ -425,7 +425,7 @@ describe('LineScanCapture component - Marker State Transitions', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
+      operatorAuth: 'token-97'
     })
   })
 

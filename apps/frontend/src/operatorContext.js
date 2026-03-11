@@ -1,6 +1,6 @@
 import { getStorage } from './utils/storage.js'
 
-const OPERATOR_TOKEN_STORAGE_KEY = 'rd_operator_token'
+const OPERATOR_AUTH_STORAGE_KEY = 'rd_operator_token'
 const OPERATOR_STATION_STORAGE_KEY = 'rd_operator_station'
 const OPERATOR_DEVICE_ID_STORAGE_KEY = 'rd_operator_device_id'
 const OPERATOR_BLOCK_ID_STORAGE_KEY = 'rd_operator_block_id'
@@ -11,12 +11,12 @@ function readContextValue(key) {
 }
 
 export function resolveOperatorToken() {
-  const contextToken = readContextValue('operatorToken')
+  const contextToken = readContextValue('operatorAuth')
   if (contextToken) {
     return contextToken
   }
 
-  return getStorage()?.getItem(OPERATOR_TOKEN_STORAGE_KEY)?.trim() ?? ''
+  return getStorage()?.getItem(OPERATOR_AUTH_STORAGE_KEY)?.trim() ?? ''
 }
 
 export function resolveOperatorStation() {

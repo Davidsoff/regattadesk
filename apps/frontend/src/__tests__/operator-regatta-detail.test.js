@@ -26,7 +26,7 @@ describe('Operator regatta home for issue #138', () => {
     const storage = installStorage()
     storage.clear()
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'token-138',
+      operatorAuth: 'token-138',
       operatorStation: 'finish-line',
       operatorBlockId: 'block-138'
     }

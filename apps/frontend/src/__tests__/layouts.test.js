@@ -138,7 +138,7 @@ describe('Layout Components', () => {
       })
     ))
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'operator-token',
+      operatorAuth: 'operator-token',
       operatorStation: 'finish-line'
     }
   })

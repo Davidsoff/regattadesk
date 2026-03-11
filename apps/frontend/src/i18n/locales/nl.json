@@ -400,14 +400,14 @@
     "regattas": {
       "title": "Regatta's",
       "description": "Selecteer een regatta om mee te werken",
-      "token_status": "Actief token {token} op station {station}.",
+      "auth_status": "Actief token {token} op station {station}.",
       "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",
       "id": "Regatta ID",
-      "token_status": "Operator-token: {token}",
-      "no_token": "Niet beschikbaar",
+      "auth_status": "Operator-token: {token}",
+      "no_auth": "Niet beschikbaar",
       "station_context": "Station: {station}",
       "session_label": "Sessie: {id}",
       "create_session": "Opnamesessie maken",
