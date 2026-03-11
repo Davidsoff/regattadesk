@@ -27,14 +27,14 @@ function getDefaultLocale() {
   }
 }
 
-const defaultLocale = getDefaultLocale();
-if (typeof document !== 'undefined') {
-  document.documentElement.setAttribute('lang', defaultLocale);
-}
+// Locale detection runs at module scope so the i18n instance is ready
+// immediately on import.  The DOM write (document.lang) is deferred to
+// initI18n() which must be called once at app bootstrap in main.js.
+const detectedLocale = getDefaultLocale();
 
 const i18n = createI18n({
   legacy: false, // Use Composition API mode
-  locale: defaultLocale,
+  locale: detectedLocale,
   fallbackLocale: 'en',
   messages: {
     en,
@@ -43,6 +43,18 @@ const i18n = createI18n({
 });
 
 export default i18n;
+
+/**
+ * Apply the current i18n locale to the document <html lang> attribute.
+ * Must be called once at app bootstrap (main.js) before mounting the Vue app.
+ * Kept separate from module-scope code so import-time DOM mutations are
+ * avoided in test and SSR environments.
+ */
+export function initI18n() {
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('lang', i18n.global.locale.value);
+  }
+}
 
 /**
  * Update the locale and persist it to localStorage
