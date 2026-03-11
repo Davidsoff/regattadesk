@@ -1,8 +1,8 @@
 package com.regattadesk.linescan.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.linescan.LineScanManifest;
-import com.regattadesk.linescan.LineScanManifestTile;
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.LineScanManifestTile;
 
 import java.time.Instant;
 import java.util.Collections;

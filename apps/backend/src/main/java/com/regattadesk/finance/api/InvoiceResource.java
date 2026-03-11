@@ -1,8 +1,8 @@
 package com.regattadesk.finance.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
-import com.regattadesk.finance.InvoiceService;
-import com.regattadesk.finance.InvoiceStatus;
+import com.regattadesk.finance.model.InvoiceStatus;
+import com.regattadesk.finance.service.InvoiceService;
 import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;

@@ -1,7 +1,7 @@
 package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.finance.BulkPaymentMarkResult;
+import com.regattadesk.finance.model.BulkPaymentMarkResult;
 
 import java.util.List;
 

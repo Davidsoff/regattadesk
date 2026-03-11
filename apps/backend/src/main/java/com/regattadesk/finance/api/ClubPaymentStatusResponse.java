@@ -1,7 +1,7 @@
 package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.finance.ClubPaymentStatusDetails;
+import com.regattadesk.finance.model.ClubPaymentStatusDetails;
 
 import java.util.UUID;
 

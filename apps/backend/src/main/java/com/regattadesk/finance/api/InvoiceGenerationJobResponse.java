@@ -1,7 +1,7 @@
 package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.finance.InvoiceGenerationJob;
+import com.regattadesk.finance.event.InvoiceGenerationJob;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.Instant;
