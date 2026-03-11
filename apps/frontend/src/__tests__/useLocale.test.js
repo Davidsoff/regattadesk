@@ -37,10 +37,26 @@ async function mountWithLocale(i18nInstance, setup) {
     setup,
     template: '<div />'
   })
-  const wrapper = mount(TestComponent, {
+  return mount(TestComponent, {
     global: { plugins: [i18nInstance] }
   })
-  return wrapper
+}
+
+async function captureUseLocale(i18nInstance) {
+  const { useLocale } = await import('../composables/useLocale.js')
+  let captured
+
+  await mountWithLocale(i18nInstance, () => {
+    captured = useLocale()
+  })
+
+  return captured
+}
+
+async function setAndReadPersistedLocale(locale) {
+  const { setLocale } = await import('../i18n/index.js')
+  setLocale(locale)
+  return globalThis.localStorage.getItem('regattadesk-locale')
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -69,59 +85,23 @@ describe('useLocale', () => {
   })
 
   it('currentLocale reflects the active i18n locale', async () => {
-    const { useLocale } = await import('../composables/useLocale.js')
-    let captured
-
-    await mountWithLocale(i18n, () => {
-      captured = useLocale()
-    })
-
+    const captured = await captureUseLocale(i18n)
     expect(captured.currentLocale.value).toBe('nl')
   })
 
   it('supportedLocales contains nl and en', async () => {
-    const { useLocale } = await import('../composables/useLocale.js')
-    let captured
-
-    await mountWithLocale(i18n, () => {
-      captured = useLocale()
-    })
-
+    const captured = await captureUseLocale(i18n)
     expect(captured.supportedLocales).toContain('nl')
     expect(captured.supportedLocales).toContain('en')
   })
 
-  it('getLocaleName returns display name for nl', async () => {
-    const { useLocale } = await import('../composables/useLocale.js')
-    let captured
-
-    await mountWithLocale(i18n, () => {
-      captured = useLocale()
-    })
-
-    expect(captured.getLocaleName('nl')).toBe('Nederlands')
-  })
-
-  it('getLocaleName returns display name for en', async () => {
-    const { useLocale } = await import('../composables/useLocale.js')
-    let captured
-
-    await mountWithLocale(i18n, () => {
-      captured = useLocale()
-    })
-
-    expect(captured.getLocaleName('en')).toBe('English')
-  })
-
-  it('getLocaleName returns the code for unknown locales', async () => {
-    const { useLocale } = await import('../composables/useLocale.js')
-    let captured
-
-    await mountWithLocale(i18n, () => {
-      captured = useLocale()
-    })
-
-    expect(captured.getLocaleName('fr')).toBe('fr')
+  it.each([
+    ['nl', 'Nederlands'],
+    ['en', 'English'],
+    ['fr', 'fr'],
+  ])('getLocaleName returns %s for %s', async (locale, expectedName) => {
+    const captured = await captureUseLocale(i18n)
+    expect(captured.getLocaleName(locale)).toBe(expectedName)
   })
 })
 
@@ -140,61 +120,28 @@ describe('setLocale', () => {
     vi.unstubAllGlobals()
   })
 
-  it('persists locale to localStorage', async () => {
-    // Import setLocale directly — it uses the shared i18n singleton
-    const { setLocale } = await import('../i18n/index.js')
-    setLocale('en')
-    expect(storageMock.getItem('regattadesk-locale')).toBe('en')
-  })
-
-  it('persists nl locale to localStorage', async () => {
-    const { setLocale } = await import('../i18n/index.js')
-    setLocale('nl')
-    expect(storageMock.getItem('regattadesk-locale')).toBe('nl')
-  })
-
-  it('falls back to nl for unsupported locale', async () => {
-    const { setLocale } = await import('../i18n/index.js')
-    setLocale('fr') // Unsupported — should fall back to nl
-    expect(storageMock.getItem('regattadesk-locale')).toBe('nl')
+  it.each([
+    ['en', 'en'],
+    ['nl', 'nl'],
+    ['fr', 'nl'],
+  ])('persists %s as %s', async (locale, expectedPersistedLocale) => {
+    expect(await setAndReadPersistedLocale(locale)).toBe(expectedPersistedLocale)
   })
 })
 
 // ─── normalizeLocale tests ─────────────────────────────────────────────────────
 
 describe('normalizeLocale (utils/locale.js)', () => {
-  it('returns nl for nl input', async () => {
+  it.each([
+    ['nl', 'nl'],
+    ['en', 'en'],
+    ['nl-NL', 'nl'],
+    ['en-US', 'en'],
+    ['fr', null],
+    [null, null],
+    ['', null],
+  ])('normalizes %s to %s', async (input, expected) => {
     const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('nl')).toBe('nl')
-  })
-
-  it('returns en for en input', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('en')).toBe('en')
-  })
-
-  it('returns nl for nl-NL locale tag', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('nl-NL')).toBe('nl')
-  })
-
-  it('returns en for en-US locale tag', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('en-US')).toBe('en')
-  })
-
-  it('returns null for unsupported locale', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('fr')).toBeNull()
-  })
-
-  it('returns null for null input', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale(null)).toBeNull()
-  })
-
-  it('returns null for empty string', async () => {
-    const { normalizeLocale } = await import('../utils/locale.js')
-    expect(normalizeLocale('')).toBeNull()
+    expect(normalizeLocale(input)).toBe(expected)
   })
 })
