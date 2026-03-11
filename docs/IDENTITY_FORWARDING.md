@@ -136,6 +136,7 @@ Backend services MUST:
   - `/api/v1/regattas/{id}/clubs/{club_id}/payment_status` - Staff finance endpoint
   - `/api/v1/regattas/{id}/payments/mark_bulk` - Staff finance endpoint
   - `/api/v1/regattas/{id}/invoices*` - Staff finance endpoint family
+  - `/api/v1/regattas/{id}/adjudication*` - Staff adjudication endpoint family
 - Trusted test-only paths (not exposed at Traefik edge):
   - `/test/auth/*` - Test endpoints (non-production only; trusted by `IdentityHeaderSanitizer`)
 - Untrusted paths (headers stripped):
@@ -144,7 +145,7 @@ Backend services MUST:
   - `/api/v1/regattas/{id}/events`, `/api/v1/regattas/{id}/entries` - Non-finance/non-operator regatta endpoints
   - Any future endpoints not explicitly protected by Traefik ForwardAuth
 
-**Security Note:** In production, the trust boundary for identity headers matches Traefik ForwardAuth routes plus the explicit staff finance regatta endpoints above. Test-only endpoints (`/test/auth/*`) are trusted by `IdentityHeaderSanitizer` for integration tests but are not edge-exposed. This keeps trust scoped to known protected routes instead of allowing every `/api/v1/regattas/*` path.
+**Security Note:** In production, the trust boundary for identity headers matches Traefik ForwardAuth routes plus the explicit protected staff regatta endpoints above. Test-only endpoints (`/test/auth/*`) are trusted by `IdentityHeaderSanitizer` for integration tests but are not edge-exposed. This keeps trust scoped to known protected routes instead of allowing every `/api/v1/regattas/*` path.
 
 ### Role-Based Access Control (RBAC)
 

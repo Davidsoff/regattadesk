@@ -139,11 +139,55 @@
     "rulesets": "Reglementen",
     "setup": "Instelling",
     "draw": "Loting",
+    "adjudication": "Jury",
     "finance": "Financiën",
     "blocks": "Blokken",
     "line_scan": "Fotolijn",
     "schedule": "Schema",
     "results": "Resultaten"
+  },
+  "adjudication": {
+    "title": "Jury",
+    "subtitle": "Beheer onderzoeken, straffen, DSQ's, uitsluitingen en resultatenrevisies.",
+    "empty": "Selecteer een onderzoek of open er een voor een inschrijving om te beginnen.",
+    "sections": {
+      "investigations": "Onderzoeken",
+      "detail": "Inschrijvingsdetail",
+      "history": "Geschiedenis"
+    },
+    "open": {
+      "entry_id": "Inschrijvings-ID",
+      "description": "Samenvatting onderzoek",
+      "submit": "Onderzoek openen"
+    },
+    "entry": {
+      "status": "Status",
+      "result_label": "Resultaatlabel",
+      "penalty_seconds": "Strafseconden"
+    },
+    "actions": {
+      "reason": "Reden",
+      "note": "Notitie",
+      "penalty_seconds": "Strafseconden",
+      "penalty": "Straf toepassen",
+      "dsq": "DSQ toepassen",
+      "exclusion": "Uitsluiten",
+      "revert_dsq": "DSQ terugdraaien"
+    },
+    "revision": {
+      "current": "Resultatenrevisie {revision}"
+    },
+    "messages": {
+      "investigation_opened": "Onderzoek geopend."
+    },
+    "errors": {
+      "load": "Juryworkflow laden mislukt.",
+      "open_required": "Inschrijvings-ID en beschrijving zijn verplicht om een onderzoek te openen.",
+      "open_failed": "Onderzoek openen mislukt.",
+      "action_required": "Een reden is verplicht voordat je een juryactie toepast.",
+      "invalid_penalty_seconds": "Strafseconden moeten een geheel getal groter dan nul zijn.",
+      "action_failed": "Juryactie toepassen mislukt."
+    }
   },
   "staff": {
     "regattas": {
