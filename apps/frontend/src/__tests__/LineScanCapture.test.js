@@ -170,6 +170,20 @@ async function mockThemeAndMount(isHighContrast, toggleContrast = vi.fn()) {
   return { wrapper, toggleContrast }
 }
 
+async function updateMarkerFrame(wrapper, frameOffset) {
+  await wrapper.find('[data-testid="edit-marker-marker-1"]').trigger('click')
+  await wrapper.find('[data-testid="marker-frame-input"]').setValue(String(frameOffset))
+  await wrapper.find('[data-testid="update-marker-marker-1"]').trigger('click')
+  await flushPromises()
+}
+
+async function expectMarkerPatch(fetchMock, callIndex, frameOffset) {
+  const request = getRequest(fetchMock, callIndex)
+  expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
+  expect(request.method).toBe('PATCH')
+  await expect(request.json()).resolves.toEqual({ frame_offset: frameOffset })
+}
+
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.stubGlobal('__REGATTADESK_AUTH__', {
@@ -453,16 +467,10 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="edit-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="marker-frame-input"]').setValue('1500')
-    await wrapper.find('[data-testid="update-marker-marker-1"]').trigger('click')
-    await flushPromises()
+    await updateMarkerFrame(wrapper, 1500)
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const request = getRequest(fetchMock, 1)
-    expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(request.method).toBe('PATCH')
-    await expect(request.json()).resolves.toEqual({ frame_offset: 1500 })
+    await expectMarkerPatch(fetchMock, 1, 1500)
   })
 
   it('supports undo of marker position changes', async () => {
@@ -481,21 +489,14 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    // Make a change
-    await wrapper.find('[data-testid="edit-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="marker-frame-input"]').setValue('1500')
-    await wrapper.find('[data-testid="update-marker-marker-1"]').trigger('click')
-    await flushPromises()
+    await updateMarkerFrame(wrapper, 1500)
 
     // Undo the change
     await wrapper.find('[data-testid="undo-last-change"]').trigger('click')
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
-    const request = getRequest(fetchMock, 2)
-    expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(request.method).toBe('PATCH')
-    await expect(request.json()).resolves.toEqual({ frame_offset: 1000 })
+    await expectMarkerPatch(fetchMock, 2, 1000)
   })
 })
 
