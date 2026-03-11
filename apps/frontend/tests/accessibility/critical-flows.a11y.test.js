@@ -29,7 +29,10 @@ async function mountResults() {
         public: {
           results: {
             title: 'Results',
-            description: 'Live race results'
+            description: 'Live race results',
+            empty: 'No results published for this revision yet.',
+            version_banner: 'Draw v{drawRevision}, Results v{resultsRevision}',
+            version_link: 'Copy canonical results link'
           },
           version: {
             draw: 'Draw Revision',
