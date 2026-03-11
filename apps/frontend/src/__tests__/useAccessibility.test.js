@@ -27,7 +27,7 @@ function makeDiv(opts = {}) {
   return el
 }
 
-function makeHeading(level = 1, id) {
+function makeHeading(id, level = 1) {
   const el = document.createElement(`h${level}`)
   if (id) el.id = id
   el.textContent = 'Page heading'
@@ -178,7 +178,7 @@ describe('useFocusManagement', () => {
   })
 
   it('focusPageHeading focuses the first h1', async () => {
-    const h1 = makeHeading(1)
+    const h1 = makeHeading(undefined, 1)
     const focusSpy = vi.spyOn(h1, 'focus')
 
     const { focusPageHeading } = useFocusManagement()
@@ -188,7 +188,7 @@ describe('useFocusManagement', () => {
   })
 
   it('focusPageHeading accepts a custom selector', async () => {
-    const h2 = makeHeading(2, 'section-heading')
+    const h2 = makeHeading('section-heading', 2)
     const focusSpy = vi.spyOn(h2, 'focus')
 
     const { focusPageHeading } = useFocusManagement()

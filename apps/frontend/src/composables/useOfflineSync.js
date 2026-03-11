@@ -157,66 +157,81 @@ async function forceUpdateOperation(operation) {
   }
 }
 
+function getRetryDelay(retryAttempt) {
+  return RETRY_DELAYS[retryAttempt] || RETRY_DELAYS.at(-1)
+}
+
+async function fetchOperation(validatedOperation) {
+  return fetch(validatedOperation.endpoint, {
+    method: validatedOperation.method,
+    headers: buildRequestHeaders(validatedOperation),
+    body: METHODS_WITH_BODY.has(validatedOperation.method)
+      ? JSON.stringify(validatedOperation.data ?? null)
+      : undefined,
+  })
+}
+
+async function buildSyncResponse(validatedOperation, response) {
+  if (response.ok) {
+    const result = await parseResponseBody(response)
+    return { success: true, data: result }
+  }
+
+  if (response.status === 409) {
+    const conflictData = await parseResponseBody(response)
+    return {
+      success: false,
+      conflict: true,
+      status: 409,
+      serverVersion: conflictData?.serverVersion,
+      serverData: conflictData?.serverData,
+      serverTimestamp: conflictData?.serverTimestamp,
+      clientData: validatedOperation.data,
+      operation: validatedOperation,
+    }
+  }
+
+  return {
+    success: false,
+    error: `HTTP ${response.status}: ${response.statusText}`,
+    status: response.status,
+  }
+}
+
+function shouldRetryRequest(enableRetry, retryAttempt, maxRetries) {
+  return enableRetry && retryAttempt < maxRetries
+}
+
 async function syncOperation(operation, options = {}) {
-  const { enableRetry = false } = options;
-  let validatedOperation;
+  const { enableRetry = false } = options
+  let validatedOperation
   try {
-    validatedOperation = normalizeAndValidateOperation(operation);
+    validatedOperation = normalizeAndValidateOperation(operation)
   } catch (err) {
     return {
       success: false,
       error: err instanceof Error ? err.message : String(err),
-    };
+    }
   }
-  const maxRetries = validatedOperation.maxRetries ?? DEFAULT_MAX_RETRIES;
-  let retryAttempt = options.retryAttempt ?? 0;
+
+  const maxRetries = validatedOperation.maxRetries ?? DEFAULT_MAX_RETRIES
+  let retryAttempt = options.retryAttempt ?? 0
 
   while (true) {
     try {
-      const response = await fetch(validatedOperation.endpoint, {
-        method: validatedOperation.method,
-        headers: buildRequestHeaders(validatedOperation),
-        body: METHODS_WITH_BODY.has(validatedOperation.method)
-          ? JSON.stringify(validatedOperation.data ?? null)
-          : undefined,
-      });
-
-      if (response.ok) {
-        const result = await parseResponseBody(response);
-        return { success: true, data: result };
-      }
-
-      if (response.status === 409) {
-        const conflictData = await parseResponseBody(response);
+      const response = await fetchOperation(validatedOperation)
+      return await buildSyncResponse(validatedOperation, response)
+    } catch (err) {
+      if (!shouldRetryRequest(enableRetry, retryAttempt, maxRetries)) {
         return {
           success: false,
-          conflict: true,
-          status: 409,
-          serverVersion: conflictData?.serverVersion,
-          serverData: conflictData?.serverData,
-          serverTimestamp: conflictData?.serverTimestamp,
-          clientData: validatedOperation.data,
-          operation: validatedOperation,
-        };
+          error: err instanceof Error ? err.message : String(err),
+        }
       }
 
-      return {
-        success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`,
-        status: response.status,
-      };
-    } catch (err) {
-      if (enableRetry && retryAttempt < maxRetries) {
-        const delay = RETRY_DELAYS[retryAttempt] || RETRY_DELAYS.at(-1);
-        retryAttempt += 1;
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      };
+      const delay = getRetryDelay(retryAttempt)
+      retryAttempt += 1
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
 }
