@@ -131,18 +131,25 @@ async function mountLineScanCapture(props = {}) {
   })
 }
 
+async function runLinkFlow(wrapper, markerTestId, entryId = 'entry-99') {
+  await wrapper.find(`[data-testid="link-marker-${markerTestId}"]`).trigger('click')
+  await wrapper.find('[data-testid="link-entry-input"]').setValue(entryId)
+  await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
+  await flushPromises()
+}
+
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.stubGlobal('__REGATTADESK_AUTH__', {
+    operatorToken: 'token-97'
+  })
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('LineScanCapture component - Marker CRUD', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('renders empty state when no markers exist', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
     vi.stubGlobal('fetch', fetchMock)
@@ -241,17 +248,6 @@ describe('LineScanCapture component - Marker CRUD', () => {
 })
 
 describe('LineScanCapture component - Marker Linking', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('shows unlinked markers first in the list', async () => {
     const markers = [
       buildMarker('marker-linked', { is_linked: true, entry_id: 'entry-1' }),
@@ -343,17 +339,6 @@ describe('LineScanCapture component - Marker Linking', () => {
 })
 
 describe('LineScanCapture component - Approved Marker Lock States', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('displays locked indicator for approved markers', async () => {
     const approvedMarker = buildMarker('marker-approved', {
       is_linked: true,
@@ -422,17 +407,6 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
 })
 
 describe('LineScanCapture component - Marker State Transitions', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('updates marker frame offset', async () => {
     const marker = buildMarker('marker-1', { frame_offset: 1000 })
     const updatedMarker = buildMarker('marker-1', { frame_offset: 1500 })
@@ -494,17 +468,6 @@ describe('LineScanCapture component - Marker State Transitions', () => {
 })
 
 describe('LineScanCapture component - Conflict Resolution UI', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('shows conflict panel when a data conflict is detected on link', async () => {
     const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
 
@@ -520,10 +483,7 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="link-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
-    await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
-    await flushPromises()
+    await runLinkFlow(wrapper, 'marker-1')
 
     expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid^="conflict-keep-mine-"]').exists()).toBe(true)
@@ -545,10 +505,7 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="link-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
-    await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
-    await flushPromises()
+    await runLinkFlow(wrapper, 'marker-1')
 
     expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(true)
 
@@ -575,10 +532,7 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="link-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
-    await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
-    await flushPromises()
+    await runLinkFlow(wrapper, 'marker-1')
 
     await wrapper.find('[data-testid^="conflict-use-server-"]').trigger('click')
     await flushPromises()
@@ -606,27 +560,13 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="link-marker-marker-approved"]').trigger('click')
-    await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
-    await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
-    await flushPromises()
+    await runLinkFlow(wrapper, 'marker-approved')
 
     expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(false)
   })
 })
 
 describe('LineScanCapture component - High-Contrast Controls', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('shows high-contrast toggle button', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
     vi.stubGlobal('fetch', fetchMock)
@@ -693,17 +633,6 @@ describe('LineScanCapture component - High-Contrast Controls', () => {
 })
 
 describe('LineScanCapture component - Session Status and Tile Pane', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorToken: 'token-97'
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('shows session status refresh button', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
     vi.stubGlobal('fetch', fetchMock)
