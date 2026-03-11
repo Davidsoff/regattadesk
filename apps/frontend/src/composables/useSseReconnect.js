@@ -137,32 +137,32 @@ export function createSseConnection(url, options = {}) {
   }
   
   function handleSnapshot(event) {
+    lastEventId = event.lastEventId
     const data = safeJsonParse(event.data)
     if (data === null) {
       console.error('Failed to parse snapshot event: invalid JSON')
       return
     }
-    lastEventId = event.lastEventId
     onSnapshot(data)
   }
 
   function handleDrawRevision(event) {
+    lastEventId = event.lastEventId
     const data = safeJsonParse(event.data)
     if (data === null) {
       console.error('Failed to parse draw_revision event: invalid JSON')
       return
     }
-    lastEventId = event.lastEventId
     onDrawRevision(data)
   }
 
   function handleResultsRevision(event) {
+    lastEventId = event.lastEventId
     const data = safeJsonParse(event.data)
     if (data === null) {
       console.error('Failed to parse results_revision event: invalid JSON')
       return
     }
-    lastEventId = event.lastEventId
     onResultsRevision(data)
   }
   
