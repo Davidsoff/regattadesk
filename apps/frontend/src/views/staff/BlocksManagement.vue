@@ -22,19 +22,28 @@ const error = ref(null)
 const reorderError = ref(null)
 const regatta = ref(null)
 
-// Drag-and-drop state
+// Block drag-and-drop / keyboard reorder state
+// Valid combinations:
+//   Idle:               draggedBlockId=null, dragOverBlockId=null, keyboardReorderMode=false
+//   Mouse dragging:     draggedBlockId=<id>, dragOverBlockId=<id|null>
+//   Keyboard reorder:   keyboardReorderMode=true, keyboardReorderBlockId=<id>, keyboardReorderTargetIndex>=0
+// Only one mode active at a time; drag events reset keyboard mode and vice versa.
 const draggedBlockId = ref(null)
 const dragOverBlockId = ref(null)
 const keyboardReorderMode = ref(false)
 const keyboardReorderBlockId = ref(null)
 const keyboardReorderTargetIndex = ref(-1)
 
-// Dialog state
+// Dialog state (only one dialog open at a time)
 const showBlockDialog = ref(false)
 const showBibPoolDialog = ref(false)
 const showDeleteDialog = ref(false)
 
-// Drag and drop state
+// Bib pool drag-and-drop / keyboard move state
+// Valid combinations:
+//   Idle:               draggedPoolId=null, dragOverPoolId=null, keyboardMoveMode=false
+//   Mouse dragging:     draggedPoolId=<id>, dragOverPoolId=<id|null>
+//   Keyboard move:      keyboardMoveMode=true, keyboardMovingPoolId=<id>, keyboardTargetIndex>=0
 const draggedPoolId = ref(null)
 const dragOverPoolId = ref(null)
 const keyboardMoveMode = ref(false)

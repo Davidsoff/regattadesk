@@ -1,26 +1,7 @@
 import { createI18n } from 'vue-i18n';
 import en from './locales/en.json';
 import nl from './locales/nl.json';
-
-function normalizeLocale(value) {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const normalizedValue = value.trim();
-  if (normalizedValue.length === 0) {
-    return null;
-  }
-
-  const baseLanguage = normalizedValue.toLowerCase().split(/[-_]/)[0];
-  if (baseLanguage === 'nl') {
-    return 'nl';
-  }
-  if (baseLanguage === 'en') {
-    return 'en';
-  }
-  return null;
-}
+import { normalizeLocale } from '../utils/locale.js';
 
 /**
  * Get the user's preferred locale from localStorage or browser settings.
@@ -76,8 +57,10 @@ export function setLocale(locale) {
   i18n.global.locale.value = normalizedLocale;
   try {
     localStorage.setItem('regattadesk-locale', normalizedLocale);
-  } catch {
-    // Storage may be unavailable in some environments.
+  } catch (storageError) {
+    // localStorage may be unavailable (e.g. private browsing, storage quota exceeded).
+    // Locale preference is not persisted but the app continues to function correctly.
+    console.debug('Could not persist locale to localStorage:', storageError)
   }
 
   if (typeof document !== 'undefined') {

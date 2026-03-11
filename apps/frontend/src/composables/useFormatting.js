@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { normalizeLocale } from '../utils/locale.js';
 
 /**
  * Composable for date/time formatting with locale and timezone support.
@@ -10,26 +11,17 @@ import { computed } from 'vue';
  * - Timezone: regatta-local
  */
 export function useFormatting(locale = 'en') {
-  const normalizeLocale = (value) => {
-    if (typeof value !== 'string' || value.length === 0) {
-      return 'en';
-    }
-
-    const baseLanguage = value.toLowerCase().split(/[-_]/)[0];
-    return baseLanguage === 'nl' ? 'nl' : 'en';
-  };
-
   const currentLocale = computed(() => {
     if (locale !== null && typeof locale === 'object') {
       const value = locale.value;
       if (typeof value === 'string' && value.length > 0) {
-        return normalizeLocale(value);
+        return normalizeLocale(value) ?? 'en';
       }
       return 'en';
     }
 
     if (typeof locale === 'string' && locale.length > 0) {
-      return normalizeLocale(locale);
+      return normalizeLocale(locale) ?? 'en';
     }
 
     return 'en';

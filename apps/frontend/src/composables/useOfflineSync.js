@@ -10,6 +10,20 @@
 
 import { ref } from 'vue';
 
+/**
+ * Parse a JSON string, returning fallback on any parse error.
+ * @param {string} text
+ * @param {*} fallback
+ * @returns {*}
+ */
+function safeJsonParse(text, fallback = null) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return fallback
+  }
+}
+
 const DEFAULT_MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff in ms
 const ALLOWED_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
@@ -83,17 +97,14 @@ async function parseResponseBody(response) {
 
   const contentType = response.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return JSON.parse(text);
+    return safeJsonParse(text, text);
   }
 
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    if (err instanceof SyntaxError) {
-      return text;
-    }
-    throw err;
+  const parsed = safeJsonParse(text, undefined);
+  if (parsed !== undefined) {
+    return parsed;
   }
+  return text;
 }
 
 function buildRequestHeaders(operation) {
@@ -141,7 +152,7 @@ async function forceUpdateOperation(operation) {
   } catch (err) {
     return {
       success: false,
-      error: err.message,
+      error: err instanceof Error ? err.message : String(err),
     };
   }
 }
@@ -154,7 +165,7 @@ async function syncOperation(operation, options = {}) {
   } catch (err) {
     return {
       success: false,
-      error: err.message,
+      error: err instanceof Error ? err.message : String(err),
     };
   }
   const maxRetries = validatedOperation.maxRetries ?? DEFAULT_MAX_RETRIES;
@@ -204,7 +215,7 @@ async function syncOperation(operation, options = {}) {
 
       return {
         success: false,
-        error: err.message,
+        error: err instanceof Error ? err.message : String(err),
       };
     }
   }

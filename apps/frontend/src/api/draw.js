@@ -26,13 +26,11 @@ export function createDrawApi(client) {
      * @returns {Promise<object>} Ruleset list response
      */
     async listRulesets(options = {}) {
-      const params = new URLSearchParams()
+      const query = {}
       if (options.is_global !== undefined) {
-        params.append('is_global', options.is_global)
+        query.is_global = options.is_global
       }
-      const query = params.toString()
-      const url = query ? `/rulesets?${query}` : '/rulesets'
-      return client.get(url)
+      return client.get('/rulesets', { query })
     },
 
     /**

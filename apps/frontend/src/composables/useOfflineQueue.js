@@ -105,27 +105,35 @@ function requestToPromise(request) {
   });
 }
 
-async function getQueueInternal() {
+/**
+ * Open a transaction on STORE_NAME, call fn(store), and return fn's result.
+ * @param {'readonly' | 'readwrite'} mode
+ * @param {(store: IDBObjectStore) => IDBRequest | Promise<*>} fn
+ * @returns {Promise<*>}
+ */
+async function withDbTransaction(mode, fn) {
   const db = await ensureDatabase();
-  const transaction = db.transaction([STORE_NAME], 'readonly');
+  const transaction = db.transaction([STORE_NAME], mode);
   const store = transaction.objectStore(STORE_NAME);
-  const result = await requestToPromise(store.getAll());
+  return fn(store);
+}
+
+async function getQueueInternal() {
+  const result = await withDbTransaction('readonly', (store) => requestToPromise(store.getAll()));
   return result || [];
 }
 
 async function updateQueueItemInternal(queueId, updates) {
-  const db = await ensureDatabase();
-  const transaction = db.transaction([STORE_NAME], 'readwrite');
-  const store = transaction.objectStore(STORE_NAME);
+  return withDbTransaction('readwrite', async (store) => {
+    const item = await requestToPromise(store.get(queueId));
+    if (!item) {
+      throw new Error('Queue item not found');
+    }
 
-  const item = await requestToPromise(store.get(queueId));
-  if (!item) {
-    throw new Error('Queue item not found');
-  }
-
-  const updatedItem = { ...item, ...updates };
-  await requestToPromise(store.put(updatedItem));
-  return updatedItem;
+    const updatedItem = { ...item, ...updates };
+    await requestToPromise(store.put(updatedItem));
+    return updatedItem;
+  });
 }
 
 export function useOfflineQueue() {
@@ -159,74 +167,20 @@ export function useOfflineQueue() {
   }
 
   async function enqueue(operation) {
-    const db = await ensureDatabase();
     const item = sanitizeOperation(operation);
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-
-      const request = store.add(item);
-
-      request.onsuccess = async () => {
-        try {
-          await refreshQueueSize();
-          resolve(request.result);
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    const id = await withDbTransaction('readwrite', (store) => requestToPromise(store.add(item)));
+    await refreshQueueSize();
+    return id;
   }
 
   async function dequeue(queueId) {
-    const db = await ensureDatabase();
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(queueId);
-
-      request.onsuccess = async () => {
-        try {
-          await refreshQueueSize();
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    await withDbTransaction('readwrite', (store) => requestToPromise(store.delete(queueId)));
+    await refreshQueueSize();
   }
 
   async function clearQueue() {
-    const db = await ensureDatabase();
-    
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.clear();
-
-      request.onsuccess = async () => {
-        try {
-          await refreshQueueSize();
-          resolve();
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    await withDbTransaction('readwrite', (store) => requestToPromise(store.clear()));
+    await refreshQueueSize();
   }
 
   return {

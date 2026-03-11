@@ -3,6 +3,12 @@ import { staffGuard, operatorGuard } from '../router/guards'
 
 function clearAuthState() {
   globalThis.__REGATTADESK_AUTH__ = {}
+  try {
+    globalThis.localStorage?.removeItem('rd_operator_token')
+    globalThis.localStorage?.removeItem('rd_staff_authenticated')
+  } catch {
+    // localStorage may not be available in all environments
+  }
 }
 
 describe('Route Guards', () => {

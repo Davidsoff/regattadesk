@@ -278,28 +278,34 @@ export function useArrowNavigation(options = {}) {
  * <a href="#" @click.prevent="skipToMain" class="rd-skip-link">Skip to main content</a>
  */
 
+/**
+ * Temporarily focus an element, restoring its original tabIndex when focus leaves.
+ * @param {HTMLElement} el
+ */
+function focusTemporarily(el) {
+  const originalTabIndex = el.getAttribute('tabindex');
+  el.tabIndex = -1;
+  el.focus();
+
+  const cleanup = () => {
+    if (originalTabIndex === null) {
+      el.removeAttribute('tabindex');
+    } else {
+      el.setAttribute('tabindex', originalTabIndex);
+    }
+    el.removeEventListener('blur', cleanup);
+    el.removeEventListener('focusout', cleanup);
+  };
+
+  el.addEventListener('blur', cleanup, { once: true });
+  el.addEventListener('focusout', cleanup, { once: true });
+}
+
 // Helper function moved to module scope
 function skipToMain(mainId = 'main-content') {
   const mainElement = document.getElementById(mainId);
   if (mainElement) {
-    // Store original tabIndex to restore later
-    const originalTabIndex = mainElement.getAttribute('tabindex');
-    mainElement.tabIndex = -1;
-    mainElement.focus();
-    
-    // Restore original tabIndex after focus moves away
-    const cleanup = () => {
-      if (originalTabIndex === null) {
-        mainElement.removeAttribute('tabindex');
-      } else {
-        mainElement.setAttribute('tabindex', originalTabIndex);
-      }
-      mainElement.removeEventListener('blur', cleanup);
-      mainElement.removeEventListener('focusout', cleanup);
-    };
-    
-    mainElement.addEventListener('blur', cleanup, { once: true });
-    mainElement.addEventListener('focusout', cleanup, { once: true });
+    focusTemporarily(mainElement);
   }
 }
 
@@ -329,24 +335,7 @@ async function focusPageHeading(selector = 'h1') {
   await nextTick();
   const heading = document.querySelector(selector);
   if (heading) {
-    // Store original tabIndex to restore later
-    const originalTabIndex = heading.getAttribute('tabindex');
-    heading.tabIndex = -1;
-    heading.focus();
-    
-    // Restore original tabIndex after focus moves away
-    const cleanup = () => {
-      if (originalTabIndex === null) {
-        heading.removeAttribute('tabindex');
-      } else {
-        heading.setAttribute('tabindex', originalTabIndex);
-      }
-      heading.removeEventListener('blur', cleanup);
-      heading.removeEventListener('focusout', cleanup);
-    };
-    
-    heading.addEventListener('blur', cleanup, { once: true });
-    heading.addEventListener('focusout', cleanup, { once: true });
+    focusTemporarily(heading);
   }
 }
 
@@ -354,24 +343,7 @@ async function focusFirstError(containerSelector = '[role="alert"], .error-summa
   await nextTick();
   const errorContainer = document.querySelector(containerSelector);
   if (errorContainer) {
-    // Store original tabIndex to restore later
-    const originalTabIndex = errorContainer.getAttribute('tabindex');
-    errorContainer.tabIndex = -1;
-    errorContainer.focus();
-    
-    // Restore original tabIndex after focus moves away
-    const cleanup = () => {
-      if (originalTabIndex === null) {
-        errorContainer.removeAttribute('tabindex');
-      } else {
-        errorContainer.setAttribute('tabindex', originalTabIndex);
-      }
-      errorContainer.removeEventListener('blur', cleanup);
-      errorContainer.removeEventListener('focusout', cleanup);
-    };
-    
-    errorContainer.addEventListener('blur', cleanup, { once: true });
-    errorContainer.addEventListener('focusout', cleanup, { once: true });
+    focusTemporarily(errorContainer);
   }
 }
 

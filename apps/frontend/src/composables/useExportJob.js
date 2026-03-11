@@ -82,7 +82,7 @@ export function useExportJob(exportApi, regattaId) {
       }
     } catch (err) {
       status.value = 'failed'
-      error.value = err.message || 'Failed to check job status'
+      error.value = (err instanceof Error ? err.message : String(err)) || 'Failed to check job status'
       clearPolling()
     }
   }
@@ -110,7 +110,7 @@ export function useExportJob(exportApi, regattaId) {
       await pollJobStatus()
     } catch (err) {
       status.value = 'failed'
-      error.value = err.message || 'Failed to start export'
+      error.value = (err instanceof Error ? err.message : String(err)) || 'Failed to start export'
     }
   }
 

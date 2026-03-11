@@ -26,6 +26,19 @@
 
 import { ref, onMounted, onUnmounted } from 'vue'
 
+/**
+ * Parse a JSON string, returning null on any parse error.
+ * @param {string} text
+ * @returns {*}
+ */
+function safeJsonParse(text) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
 const MIN_DELAY_MS = 100
 const BASE_DELAY_MS = 500
 const MAX_DELAY_MS = 20000
@@ -124,33 +137,33 @@ export function createSseConnection(url, options = {}) {
   }
   
   function handleSnapshot(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onSnapshot(data)
-    } catch (error) {
-      console.error('Failed to parse snapshot event:', error)
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse snapshot event: invalid JSON')
+      return
     }
+    lastEventId = event.lastEventId
+    onSnapshot(data)
   }
-  
+
   function handleDrawRevision(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onDrawRevision(data)
-    } catch (error) {
-      console.error('Failed to parse draw_revision event:', error)
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse draw_revision event: invalid JSON')
+      return
     }
+    lastEventId = event.lastEventId
+    onDrawRevision(data)
   }
-  
+
   function handleResultsRevision(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onResultsRevision(data)
-    } catch (error) {
-      console.error('Failed to parse results_revision event:', error)
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse results_revision event: invalid JSON')
+      return
     }
+    lastEventId = event.lastEventId
+    onResultsRevision(data)
   }
   
   function scheduleReconnect() {
