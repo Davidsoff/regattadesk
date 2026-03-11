@@ -61,7 +61,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
      * These are backend role-protected staff endpoints even though they do not live under /api/v1/staff.
      */
     private static final Pattern STAFF_FINANCE_PATH_PATTERN = Pattern.compile(
-        "^api/v1/regattas/[^/]+/(entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables)$"
+        "^api/v1/regattas/[^/]+/(finance/(entries|clubs)|entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables)$"
     );
 
     /**
