@@ -70,6 +70,14 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
     private static final Pattern STAFF_DRAW_PATH_PATTERN = Pattern.compile(
         "^api/v1/regattas/[^/]+($|/blocks(/.*)?|/bib_pools(/.*)?|/draw(/.*)?)$"
     );
+
+    /**
+     * Staff setup paths under /api/v1/regattas/{id}.
+     * These endpoints are backend role-protected regatta admin/info desk surfaces.
+     */
+    private static final Pattern STAFF_SETUP_PATH_PATTERN = Pattern.compile(
+        "^api/v1/regattas/[^/]+/(event-groups|events|crews|entries|entries/[^/]+/(withdraw|reinstate))$"
+    );
     
     /**
      * Identity header names that must be stripped from untrusted requests.
@@ -95,6 +103,9 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
         }
         if (!isTrustedPath) {
             isTrustedPath = STAFF_DRAW_PATH_PATTERN.matcher(normalizedPath).matches();
+        }
+        if (!isTrustedPath) {
+            isTrustedPath = STAFF_SETUP_PATH_PATTERN.matcher(normalizedPath).matches();
         }
         
         if (!isTrustedPath) {

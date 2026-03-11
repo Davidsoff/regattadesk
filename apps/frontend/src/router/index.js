@@ -18,6 +18,31 @@ const staffRoutes = [
   redirectRoute('', '/staff/regattas'),
   route('regattas', 'staff-regattas', () => import('../views/staff/RegattasList.vue')),
   route('regattas/:regattaId', 'staff-regatta-detail', () => import('../views/staff/RegattaDetail.vue')),
+  route(
+    'regattas/:regattaId/setup/event-groups',
+    'staff-regatta-setup-event-groups',
+    () => import('../views/staff/RegattaSetupSection.vue')
+  ),
+  route(
+    'regattas/:regattaId/setup/events',
+    'staff-regatta-setup-events',
+    () => import('../views/staff/RegattaSetupSection.vue')
+  ),
+  route(
+    'regattas/:regattaId/setup/athletes',
+    'staff-regatta-setup-athletes',
+    () => import('../views/staff/RegattaSetupSection.vue')
+  ),
+  route(
+    'regattas/:regattaId/setup/crews',
+    'staff-regatta-setup-crews',
+    () => import('../views/staff/RegattaSetupSection.vue')
+  ),
+  route(
+    'regattas/:regattaId/setup/entries',
+    'staff-regatta-setup-entries',
+    () => import('../views/staff/RegattaSetupSection.vue')
+  ),
   route('regattas/:regattaId/draw', 'staff-regatta-draw', () => import('../views/staff/DrawWorkflow.vue')),
   route('regattas/:regattaId/finance', 'staff-regatta-finance', () => import('../views/staff/RegattaFinance.vue')),
   route('regattas/:regattaId/blocks', 'staff-blocks-management', () => import('../views/staff/BlocksManagement.vue')),

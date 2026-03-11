@@ -141,6 +141,7 @@ tickets:
       ## Current Gap Evidence
       - No staff CRUD page components/routes exist in frontend source.
       - App currently exposes only a finance bulk form.
+      - Minimum backend/OpenAPI support for regatta setup routes is missing for event groups, events, crews, entry list/create, and withdraw/reinstate actions.
 
       ## Scope
       - Implement staff pages for:
@@ -149,6 +150,7 @@ tickets:
         - entries with status/withdrawal actions
       - Add searchable/filterable tables and action forms.
       - Surface audit-oriented metadata for destructive changes.
+      - Add the minimum backend/OpenAPI support required for the frontend to consume real setup workflows end-to-end.
 
       ## Out of Scope
       - Draw publish and ruleset workflows.
@@ -159,6 +161,7 @@ tickets:
       2. Wire create/update/delete/status actions to API client layer.
       3. Add filter/search and bulk action confirmation UX.
       4. Add contextual 409 conflict handling UI patterns.
+      5. Add minimum setup endpoints/contracts for event groups, events, crews, entries, and entry withdraw/reinstate.
 
       ## Acceptance Criteria
       - Staff can execute v0.1 core CRUD flows entirely via frontend UI.
@@ -168,6 +171,7 @@ tickets:
       ## Test Requirements
       - Component and integration tests for CRUD happy paths + validation failures.
       - Regression tests for withdrawal state transitions.
+      - Contract/backend integration tests for setup endpoints added to unblock the frontend workflow.
 
       ## References
       - pdd/implementation/bc03-core-regatta-management.md
