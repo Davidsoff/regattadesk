@@ -32,3 +32,8 @@ __pycache__/
 
 # Python virtual environment
 venv/
+
+# Desloppify artifacts
+.venv-desloppify/
+.desloppify/
+.agents/skills/desloppify/

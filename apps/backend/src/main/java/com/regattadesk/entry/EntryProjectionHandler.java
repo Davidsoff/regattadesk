@@ -2,6 +2,7 @@ package com.regattadesk.entry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,6 +28,9 @@ public class EntryProjectionHandler implements ProjectionHandler {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    EventEnvelopeParser eventParser;
 
     @Override
     public String getProjectionName() {
@@ -58,7 +62,7 @@ public class EntryProjectionHandler implements ProjectionHandler {
     }
 
     private void handleEntryCreated(EventEnvelope envelope) throws Exception {
-        var event = parseEvent(envelope, EntryCreatedEvent.class);
+        var event = eventParser.parseEvent(envelope, EntryCreatedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             String sql = insertEntrySql(conn);
@@ -84,7 +88,7 @@ public class EntryProjectionHandler implements ProjectionHandler {
     }
 
     private void handlePaymentStatusUpdated(EventEnvelope envelope) throws Exception {
-        var event = parseEvent(envelope, EntryPaymentStatusUpdatedEvent.class);
+        var event = eventParser.parseEvent(envelope, EntryPaymentStatusUpdatedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             String sql = """
@@ -111,19 +115,6 @@ public class EntryProjectionHandler implements ProjectionHandler {
                     );
                 }
             }
-        }
-    }
-
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse event payload", e);
         }
     }
 

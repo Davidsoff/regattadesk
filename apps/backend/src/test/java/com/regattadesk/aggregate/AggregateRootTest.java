@@ -3,7 +3,6 @@ package com.regattadesk.aggregate;
 import com.regattadesk.eventstore.DomainEvent;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

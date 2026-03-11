@@ -263,3 +263,7 @@ This project follows the implementation plan defined in `pdd/implementation/plan
 ## Support
 
 For questions or issues, please refer to the project's GitHub issue tracker.
+
+## Desloppify Scorecard
+
+![Desloppify scorecard](scorecard.png)

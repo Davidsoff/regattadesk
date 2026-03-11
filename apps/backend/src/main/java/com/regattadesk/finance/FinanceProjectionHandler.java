@@ -2,6 +2,7 @@ package com.regattadesk.finance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +24,9 @@ public class FinanceProjectionHandler implements ProjectionHandler {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    EventEnvelopeParser eventParser;
 
     @Override
     public String getProjectionName() {
@@ -51,7 +55,7 @@ public class FinanceProjectionHandler implements ProjectionHandler {
     }
 
     private void handleEntryPaymentStatusUpdated(EventEnvelope envelope) throws Exception {
-        EntryPaymentStatusUpdatedEvent event = parseEvent(envelope, EntryPaymentStatusUpdatedEvent.class);
+        EntryPaymentStatusUpdatedEvent event = eventParser.parseEvent(envelope, EntryPaymentStatusUpdatedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             try (PreparedStatement stmt = conn.prepareStatement("""
@@ -76,7 +80,7 @@ public class FinanceProjectionHandler implements ProjectionHandler {
     }
 
     private void handleClubPaymentStatusUpdateRequested(EventEnvelope envelope) throws Exception {
-        ClubPaymentStatusUpdateRequestedEvent event = parseEvent(envelope, ClubPaymentStatusUpdateRequestedEvent.class);
+        ClubPaymentStatusUpdateRequestedEvent event = eventParser.parseEvent(envelope, ClubPaymentStatusUpdateRequestedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             recomputeClubPaymentStatus(conn, event.getRegattaId(), event.getClubId());
@@ -162,15 +166,5 @@ public class FinanceProjectionHandler implements ProjectionHandler {
         return value == null ? null : Timestamp.from(value);
     }
 
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse finance event payload", e);
-        }
-    }
+
 }
