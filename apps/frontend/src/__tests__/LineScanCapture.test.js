@@ -138,6 +138,38 @@ async function runLinkFlow(wrapper, markerTestId, entryId = 'entry-99') {
   await flushPromises()
 }
 
+async function mountWithFetch(fetchMock, props = {}) {
+  vi.stubGlobal('fetch', fetchMock)
+  const wrapper = await mountLineScanCapture(props)
+  await flushPromises()
+  return wrapper
+}
+
+function makeLinkConflictMock({ marker = buildMarker('marker-1', { is_linked: false }), code = 'DATA_CONFLICT', message = 'Conflict detected', afterConflict = [] } = {}) {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(jsonResponse(200, [marker]))
+    .mockResolvedValueOnce(jsonResponse(409, { error: { code, message } }))
+
+  for (const response of afterConflict) {
+    fetchMock.mockResolvedValueOnce(response)
+  }
+
+  return fetchMock
+}
+
+async function mockThemeAndMount(isHighContrast, toggleContrast = vi.fn()) {
+  const { ref } = await import('vue')
+  const { useOperatorTheme } = await import('../composables/useOperatorTheme')
+  vi.mocked(useOperatorTheme).mockReturnValue({
+    isHighContrast: ref(isHighContrast),
+    toggleContrast
+  })
+  const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
+  const wrapper = await mountWithFetch(fetchMock)
+  return { wrapper, toggleContrast }
+}
+
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.stubGlobal('__REGATTADESK_AUTH__', {
@@ -469,19 +501,8 @@ describe('LineScanCapture component - Marker State Transitions', () => {
 
 describe('LineScanCapture component - Conflict Resolution UI', () => {
   it('shows conflict panel when a data conflict is detected on link', async () => {
-    const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker])) // initial load
-      .mockResolvedValueOnce(
-        jsonResponse(409, { error: { code: 'DATA_CONFLICT', message: 'Conflict detected' } })
-      ) // link conflict
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const fetchMock = makeLinkConflictMock()
+    const wrapper = await mountWithFetch(fetchMock)
 
     await runLinkFlow(wrapper, 'marker-1')
 
@@ -491,19 +512,8 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
   })
 
   it('resolving conflict with keep-mine removes it from the panel', async () => {
-    const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker])) // initial load
-      .mockResolvedValueOnce(
-        jsonResponse(409, { error: { code: 'DATA_CONFLICT', message: 'Conflict detected' } })
-      ) // link conflict
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const fetchMock = makeLinkConflictMock()
+    const wrapper = await mountWithFetch(fetchMock)
 
     await runLinkFlow(wrapper, 'marker-1')
 
@@ -516,21 +526,11 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
   })
 
   it('resolving conflict with use-server removes conflict and reloads markers', async () => {
-    const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
     const reloadedMarkers = [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-server' })]
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker])) // initial load
-      .mockResolvedValueOnce(
-        jsonResponse(409, { error: { code: 'DATA_CONFLICT', message: 'Conflict detected' } })
-      ) // link conflict
-      .mockResolvedValueOnce(jsonResponse(200, reloadedMarkers)) // reload after use-server
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const fetchMock = makeLinkConflictMock({
+      afterConflict: [jsonResponse(200, reloadedMarkers)]
+    })
+    const wrapper = await mountWithFetch(fetchMock)
 
     await runLinkFlow(wrapper, 'marker-1')
 
@@ -543,22 +543,12 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
   })
 
   it('does not show conflict panel for MARKER_APPROVED 409 responses', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
-      is_linked: false,
-      is_approved: false
+    const fetchMock = makeLinkConflictMock({
+      marker: buildMarker('marker-approved', { is_linked: false, is_approved: false }),
+      code: 'MARKER_APPROVED',
+      message: 'Cannot modify approved marker'
     })
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [approvedMarker])) // initial load
-      .mockResolvedValueOnce(
-        jsonResponse(409, { error: { code: 'MARKER_APPROVED', message: 'Cannot modify approved marker' } })
-      ) // link blocked by approval
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountWithFetch(fetchMock)
 
     await runLinkFlow(wrapper, 'marker-approved')
 
@@ -577,54 +567,17 @@ describe('LineScanCapture component - High-Contrast Controls', () => {
     expect(wrapper.find('[data-testid="toggle-high-contrast"]').exists()).toBe(true)
   })
 
-  it('toggle button label reflects high-contrast mode (on)', async () => {
-    const { ref } = await import('vue')
-    const { useOperatorTheme } = await import('../composables/useOperatorTheme')
-    vi.mocked(useOperatorTheme).mockReturnValue({
-      isHighContrast: ref(true),
-      toggleContrast: vi.fn()
-    })
-
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="toggle-high-contrast"]').text()).toContain('High Contrast: On')
-  })
-
-  it('toggle button label reflects standard mode (off)', async () => {
-    const { ref } = await import('vue')
-    const { useOperatorTheme } = await import('../composables/useOperatorTheme')
-    vi.mocked(useOperatorTheme).mockReturnValue({
-      isHighContrast: ref(false),
-      toggleContrast: vi.fn()
-    })
-
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="toggle-high-contrast"]').text()).toContain('High Contrast: Off')
+  it.each([
+    { enabled: true, expectedLabel: 'High Contrast: On' },
+    { enabled: false, expectedLabel: 'High Contrast: Off' }
+  ])('toggle button label reflects current high-contrast mode', async ({ enabled, expectedLabel }) => {
+    const { wrapper } = await mockThemeAndMount(enabled)
+    expect(wrapper.find('[data-testid="toggle-high-contrast"]').text()).toContain(expectedLabel)
   })
 
   it('clicking toggle button calls toggleContrast', async () => {
-    const { ref } = await import('vue')
     const mockToggle = vi.fn()
-    const { useOperatorTheme } = await import('../composables/useOperatorTheme')
-    vi.mocked(useOperatorTheme).mockReturnValue({
-      isHighContrast: ref(true),
-      toggleContrast: mockToggle
-    })
-
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const { wrapper } = await mockThemeAndMount(true, mockToggle)
 
     await wrapper.find('[data-testid="toggle-high-contrast"]').trigger('click')
 
@@ -635,10 +588,7 @@ describe('LineScanCapture component - High-Contrast Controls', () => {
 describe('LineScanCapture component - Session Status and Tile Pane', () => {
   it('shows session status refresh button', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountWithFetch(fetchMock)
 
     expect(wrapper.find('[data-testid="load-session-status"]').exists()).toBe(true)
   })
@@ -657,10 +607,7 @@ describe('LineScanCapture component - Session Status and Tile Pane', () => {
       .mockResolvedValueOnce(jsonResponse(200, [])) // initial markers load
       .mockResolvedValueOnce(jsonResponse(200, captureSessionData)) // session load
 
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountWithFetch(fetchMock)
 
     await wrapper.find('[data-testid="load-session-status"]').trigger('click')
     await flushPromises()
@@ -672,10 +619,7 @@ describe('LineScanCapture component - Session Status and Tile Pane', () => {
   it('shows tile status pane when markers are present', async () => {
     const markers = [buildMarker('marker-1', { tile_id: 'tile-abc', tile_x: 10, tile_y: 20 })]
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, markers))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountWithFetch(fetchMock)
 
     expect(wrapper.find('[data-testid="tile-status-pane"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="tile-item-marker-1"]').exists()).toBe(true)
@@ -683,10 +627,7 @@ describe('LineScanCapture component - Session Status and Tile Pane', () => {
 
   it('does not show tile status pane when no markers exist', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountWithFetch(fetchMock)
 
     expect(wrapper.find('[data-testid="tile-status-pane"]').exists()).toBe(false)
   })
