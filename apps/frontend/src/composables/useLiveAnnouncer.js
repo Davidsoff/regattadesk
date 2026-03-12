@@ -9,7 +9,7 @@
  * announce('12 entries selected', 'polite');
  */
 
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 
 function getDocumentObject() {
   return typeof document !== 'undefined' ? document : null;

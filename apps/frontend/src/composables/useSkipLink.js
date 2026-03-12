@@ -10,8 +10,6 @@
  * <a href="#" @click.prevent="skipToMain" class="rd-skip-link">Skip</a>
  */
 
-import { ref } from 'vue';
-
 function getDocumentObject() {
   return typeof document !== 'undefined' ? document : null;
 }
