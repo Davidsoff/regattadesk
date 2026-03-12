@@ -1,6 +1,5 @@
 package com.regattadesk.block;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
@@ -27,9 +26,6 @@ public class BlockProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     @Inject
     EventEnvelopeParser eventParser;

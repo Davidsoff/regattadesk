@@ -67,9 +67,12 @@ export function useFocusTrap() {
 
   function deactivate() {
     document.removeEventListener('keydown', handleKeyDown);
-    
-    triggerElement?.focus?.();
-    previousFocusedElement?.focus?.();
+
+    if (triggerElement && typeof triggerElement.focus === 'function') {
+      triggerElement.focus();
+    } else if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
+      previousFocusedElement.focus();
+    }
 
     triggerElement = null;
     previousFocusedElement = null;

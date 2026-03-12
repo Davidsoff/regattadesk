@@ -10,8 +10,6 @@
  * <a href="#" @click.prevent="skipToMain" class="rd-skip-link">Skip</a>
  */
 
-import { ref } from 'vue';
-
 /**
  * Temporarily focus an element, restoring its original tabIndex when focus leaves.
  * @param {HTMLElement} el

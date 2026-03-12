@@ -1,6 +1,5 @@
 package com.regattadesk.bibpool;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
@@ -24,9 +23,6 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     @Inject
     EventEnvelopeParser eventParser;

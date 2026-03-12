@@ -3,7 +3,6 @@ package com.regattadesk.regatta;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -26,9 +25,6 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-
-    @Inject
-    ObjectMapper objectMapper;
 
     @Inject
     EventEnvelopeParser eventParser;

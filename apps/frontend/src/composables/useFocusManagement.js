@@ -13,7 +13,7 @@
  * focusFirstError();
  */
 
-import { ref, nextTick } from 'vue';
+import { nextTick } from 'vue';
 import { focusTemporarily } from './useSkipLink.js';
 
 async function focusPageHeading(selector = 'h1') {

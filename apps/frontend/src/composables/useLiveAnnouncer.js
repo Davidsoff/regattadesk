@@ -9,7 +9,7 @@
  * announce('12 entries selected', 'polite');
  */
 
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 
 function ensureLiveRegion(liveRegion) {
   if (!liveRegion) {

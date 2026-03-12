@@ -34,10 +34,14 @@ export function getStorageValue(key, defaultValue = null) {
     return defaultValue
   }
 
-  const value = storage.getItem(key)
-  if (value === null) {
+  try {
+    const value = storage.getItem(key)
+    if (value === null) {
+      return defaultValue
+    }
+
+    return value
+  } catch {
     return defaultValue
   }
-
-  return value
 }
