@@ -12,6 +12,10 @@
 
 import { ref } from 'vue';
 
+function getDocumentObject() {
+  return typeof document !== 'undefined' ? document : null;
+}
+
 /**
  * Temporarily focus an element, restoring its original tabIndex when focus leaves.
  * @param {HTMLElement} el
@@ -36,7 +40,12 @@ export function focusTemporarily(el) {
 }
 
 function skipToMain(mainId = 'main-content') {
-  const mainElement = document.getElementById(mainId);
+  const doc = getDocumentObject();
+  if (!doc) {
+    return;
+  }
+
+  const mainElement = doc.getElementById(mainId);
   if (mainElement) {
     focusTemporarily(mainElement);
   }

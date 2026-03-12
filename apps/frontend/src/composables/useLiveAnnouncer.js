@@ -11,17 +11,26 @@
 
 import { ref, onMounted } from 'vue';
 
+function getDocumentObject() {
+  return typeof document !== 'undefined' ? document : null;
+}
+
 function ensureLiveRegion(liveRegion) {
+  const doc = getDocumentObject();
+  if (!doc) {
+    return null;
+  }
+
   if (!liveRegion) {
-    liveRegion = document.getElementById('rd-live-announcer');
+    liveRegion = doc.getElementById('rd-live-announcer');
     
     if (!liveRegion) {
-      liveRegion = document.createElement('div');
+      liveRegion = doc.createElement('div');
       liveRegion.id = 'rd-live-announcer';
       liveRegion.ariaLive = 'polite';
       liveRegion.ariaAtomic = 'true';
       liveRegion.className = 'rd-sr-only';
-      document.body.appendChild(liveRegion);
+      doc.body?.appendChild(liveRegion);
     }
   }
   return liveRegion;
@@ -38,6 +47,10 @@ export function useLiveAnnouncer() {
    */
   function announce(message, priority = 'polite') {
     liveRegion = ensureLiveRegion(liveRegion);
+    if (!liveRegion) {
+      return;
+    }
+
     liveRegion.ariaLive = priority;
     
     // Clear and re-add to ensure announcement

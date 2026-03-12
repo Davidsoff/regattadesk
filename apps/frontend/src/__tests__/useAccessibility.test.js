@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useFocusTrap } from '../composables/useFocusTrap'
 import { createSkipLink } from '../composables/useSkipLink'
+import { useLiveAnnouncer } from '../composables/useLiveAnnouncer'
 import { useFocusManagement } from '../composables/useFocusManagement'
 
 // ─── DOM helpers ──────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ describe('useFocusTrap', () => {
 
 describe('createSkipLink', () => {
   afterEach(() => {
+    vi.unstubAllGlobals()
     document.body.innerHTML = ''
   })
 
@@ -170,12 +172,43 @@ describe('createSkipLink', () => {
 
     expect(focusSpy).toHaveBeenCalled()
   })
+
+  it('skipToMain is a no-op when document is unavailable', () => {
+    vi.stubGlobal('document', undefined)
+    const { skipToMain } = createSkipLink()
+    expect(() => skipToMain()).not.toThrow()
+  })
+})
+
+// ─── useLiveAnnouncer ────────────────────────────────────────────────────────
+
+describe('useLiveAnnouncer', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+  })
+
+  it('announce is a no-op when document is unavailable', () => {
+    vi.stubGlobal('document', undefined)
+    const { announce } = useLiveAnnouncer()
+    expect(() => announce('Hello')).not.toThrow()
+  })
+
+  it('announce creates and updates the live region in browser environments', () => {
+    const { announce } = useLiveAnnouncer()
+    announce('Test announcement')
+
+    const liveRegion = document.getElementById('rd-live-announcer')
+    expect(liveRegion).toBeTruthy()
+    expect(liveRegion?.ariaLive).toBe('polite')
+  })
 })
 
 // ─── useFocusManagement ───────────────────────────────────────────────────────
 
 describe('useFocusManagement', () => {
   afterEach(() => {
+    vi.unstubAllGlobals()
     document.body.innerHTML = ''
   })
 

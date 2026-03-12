@@ -31,7 +31,11 @@ function activateQueryToken(to) {
   const context = getAuthContext()
   context.operatorAuth = queryToken
 
-  getStorage()?.setItem('rd_operator_token', queryToken)
+  try {
+    getStorage()?.setItem('rd_operator_token', queryToken)
+  } catch {
+    // Ignore storage write failures (e.g., private mode/quota limits).
+  }
 }
 
 /** Pure predicate — reads auth state without mutating it. */
