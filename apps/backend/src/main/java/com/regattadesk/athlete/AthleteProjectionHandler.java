@@ -1,7 +1,7 @@
 package com.regattadesk.athlete;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,7 +21,7 @@ public class AthleteProjectionHandler implements ProjectionHandler {
     DataSource dataSource;
 
     @Inject
-    ObjectMapper objectMapper;
+    EventEnvelopeParser eventParser;
 
     @Override
     public String getProjectionName() {
@@ -54,7 +54,7 @@ public class AthleteProjectionHandler implements ProjectionHandler {
     }
 
     private void handleAthleteCreated(EventEnvelope envelope) throws Exception {
-        var event = parseEvent(envelope, AthleteCreatedEvent.class);
+        var event = eventParser.parseEvent(envelope, AthleteCreatedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             String sql = insertAthleteSql(conn);
@@ -76,7 +76,7 @@ public class AthleteProjectionHandler implements ProjectionHandler {
     }
 
     private void handleAthleteUpdated(EventEnvelope envelope) throws Exception {
-        var event = parseEvent(envelope, AthleteUpdatedEvent.class);
+        var event = eventParser.parseEvent(envelope, AthleteUpdatedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             String sql = """
@@ -101,7 +101,7 @@ public class AthleteProjectionHandler implements ProjectionHandler {
     }
 
     private void handleAthleteDeleted(EventEnvelope envelope) throws Exception {
-        var event = parseEvent(envelope, AthleteDeletedEvent.class);
+        var event = eventParser.parseEvent(envelope, AthleteDeletedEvent.class);
 
         try (Connection conn = dataSource.getConnection()) {
             String sql = "DELETE FROM athletes WHERE id = ?";
@@ -110,19 +110,6 @@ public class AthleteProjectionHandler implements ProjectionHandler {
                 stmt.setObject(1, event.getAthleteId());
                 stmt.executeUpdate();
             }
-        }
-    }
-
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse event payload", e);
         }
     }
 

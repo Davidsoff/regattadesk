@@ -29,7 +29,20 @@ function createTestI18n() {
             timestamp: 'Time',
             no_markers: 'No markers yet',
             marker_approved: 'This marker is approved and cannot be edited',
-            undo: 'Undo'
+            undo: 'Undo',
+            errors: {
+              capture_session_required: 'Capture session is required',
+              failed_load_markers: 'Failed to load markers',
+              failed_create_marker: 'Failed to create marker',
+              failed_delete_marker: 'Failed to delete marker',
+              marker_approved: 'This marker is approved and cannot be modified',
+              entry_id_required: 'Entry ID is required',
+              entry_id_invalid: 'Entry ID is invalid',
+              failed_update_marker: 'Failed to update marker',
+              failed_link_marker: 'Failed to link marker',
+              failed_unlink_marker: 'Failed to unlink marker',
+              failed_undo: 'Failed to undo'
+            }
           }
         }
       }
@@ -38,13 +51,19 @@ function createTestI18n() {
 }
 
 function jsonResponse(status, body) {
+  const bodyText = body === null || body === undefined ? '' : JSON.stringify(body)
   return {
     ok: status >= 200 && status < 300,
     status,
     headers: {
       get(name) {
-        return name.toLowerCase() === 'content-type' ? 'application/json' : null
+        if (name.toLowerCase() === 'content-type') return 'application/json'
+        if (name.toLowerCase() === 'content-length') return String(bodyText.length)
+        return null
       }
+    },
+    async text() {
+      return bodyText
     },
     async json() {
       return body
@@ -147,10 +166,10 @@ describe('LineScanCapture component - Marker CRUD', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [url, options] = fetchMock.mock.calls[0]
-    expect(url).toContain('/api/v1/regattas/regatta-97/operator/markers')
-    expect(url).toContain('capture_session_id=session-1')
-    expect(options.headers.x_operator_token).toBe('token-97')
+    const [request] = fetchMock.mock.calls[0]
+    expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
+    expect(request.url).toContain('capture_session_id=session-1')
+    expect(request.headers.get('x_operator_token')).toBe('token-97')
 
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(2)
   })
@@ -171,10 +190,10 @@ describe('LineScanCapture component - Marker CRUD', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [url, options] = fetchMock.mock.calls[1]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers')
-    expect(options.method).toBe('POST')
-    expect(options.headers.x_operator_token).toBe('token-97')
+    const [createRequest] = fetchMock.mock.calls[1]
+    expect(createRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
+    expect(createRequest.method).toBe('POST')
+    expect(createRequest.headers.get('x_operator_token')).toBe('token-97')
 
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(1)
   })
@@ -195,9 +214,9 @@ describe('LineScanCapture component - Marker CRUD', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [url, options] = fetchMock.mock.calls[1]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(options.method).toBe('DELETE')
+    const [deleteRequest] = fetchMock.mock.calls[1]
+    expect(deleteRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
+    expect(deleteRequest.method).toBe('DELETE')
 
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(0)
   })
@@ -275,10 +294,10 @@ describe('LineScanCapture component - Marker Linking', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [url, options] = fetchMock.mock.calls[1]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers/marker-1/link')
-    expect(options.method).toBe('POST')
-    expect(JSON.parse(options.body)).toEqual({ entry_id: 'entry-99' })
+    const [linkRequest] = fetchMock.mock.calls[1]
+    expect(linkRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1/link')
+    expect(linkRequest.method).toBe('POST')
+    await expect(linkRequest.json()).resolves.toEqual({ entry_id: 'entry-99' })
   })
 
   it('unlinks a marker when unlink button is clicked', async () => {
@@ -299,9 +318,9 @@ describe('LineScanCapture component - Marker Linking', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [url, options] = fetchMock.mock.calls[1]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers/marker-1/unlink')
-    expect(options.method).toBe('POST')
+    const [unlinkRequest] = fetchMock.mock.calls[1]
+    expect(unlinkRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1/unlink')
+    expect(unlinkRequest.method).toBe('POST')
   })
 
   it('prevents unlinking of approved markers', async () => {
@@ -396,8 +415,9 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
     await wrapper.vm.deleteMarker('marker-approved')
     await flushPromises()
 
+    // The frontend guard fires before the API call for already-approved markers
     expect(wrapper.find('[data-testid="error-message"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Cannot modify approved marker')
+    expect(wrapper.text()).toContain('This marker is approved and cannot be modified')
   })
 })
 
@@ -433,10 +453,10 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [url, options] = fetchMock.mock.calls[1]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(options.method).toBe('PATCH')
-    expect(JSON.parse(options.body)).toEqual({ frame_offset: 1500 })
+    const [updateRequest] = fetchMock.mock.calls[1]
+    expect(updateRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
+    expect(updateRequest.method).toBe('PATCH')
+    await expect(updateRequest.json()).resolves.toEqual({ frame_offset: 1500 })
   })
 
   it('supports undo of marker position changes', async () => {
@@ -466,9 +486,9 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
-    const [url, options] = fetchMock.mock.calls[2]
-    expect(url).toBe('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(options.method).toBe('PATCH')
-    expect(JSON.parse(options.body)).toEqual({ frame_offset: 1000 })
+    const [undoRequest] = fetchMock.mock.calls[2]
+    expect(undoRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
+    expect(undoRequest.method).toBe('PATCH')
+    await expect(undoRequest.json()).resolves.toEqual({ frame_offset: 1000 })
   })
 })

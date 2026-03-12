@@ -442,7 +442,20 @@
       "bib_number": "Bib",
       "frame_offset": "Frame",
       "no_markers": "No markers yet",
-      "undo": "Undo"
+      "undo": "Undo",
+      "errors": {
+        "capture_session_required": "Capture session is required",
+        "failed_load_markers": "Failed to load markers",
+        "failed_create_marker": "Failed to create marker",
+        "failed_delete_marker": "Failed to delete marker",
+        "failed_update_marker": "Failed to update marker",
+        "failed_link_marker": "Failed to link marker",
+        "failed_unlink_marker": "Failed to unlink marker",
+        "failed_undo": "Failed to undo change",
+        "entry_id_required": "Entry ID is required",
+        "entry_id_invalid": "Entry ID format is invalid",
+        "marker_approved": "Cannot modify approved marker"
+      }
     }
   },
   "public": {

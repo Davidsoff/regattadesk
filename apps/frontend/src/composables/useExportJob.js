@@ -14,6 +14,18 @@ const INITIAL_POLL_DELAY_MS = 2000 // 2 seconds
 const MAX_POLL_DELAY_MS = 30000 // 30 seconds
 const BACKOFF_MULTIPLIER = 2
 
+function toErrorMessage(err, fallback) {
+  if (err instanceof Error && err.message) {
+    return err.message
+  }
+
+  if (typeof err === 'string' && err.trim()) {
+    return err
+  }
+
+  return fallback
+}
+
 /**
  * Composable for export job management with polling.
  * 
@@ -82,7 +94,7 @@ export function useExportJob(exportApi, regattaId) {
       }
     } catch (err) {
       status.value = 'failed'
-      error.value = err.message || 'Failed to check job status'
+      error.value = toErrorMessage(err, 'Failed to check job status')
       clearPolling()
     }
   }
@@ -110,7 +122,7 @@ export function useExportJob(exportApi, regattaId) {
       await pollJobStatus()
     } catch (err) {
       status.value = 'failed'
-      error.value = err.message || 'Failed to start export'
+      error.value = toErrorMessage(err, 'Failed to start export')
     }
   }
 

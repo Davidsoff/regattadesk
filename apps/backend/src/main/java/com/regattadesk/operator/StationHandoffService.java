@@ -1,6 +1,9 @@
 package com.regattadesk.operator;
 
-import com.regattadesk.operator.events.*;
+import com.regattadesk.operator.events.StationHandoffCancelledEvent;
+import com.regattadesk.operator.events.StationHandoffCompletedEvent;
+import com.regattadesk.operator.events.StationHandoffPinRevealedEvent;
+import com.regattadesk.operator.events.StationHandoffRequestedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 

@@ -1,7 +1,7 @@
 package com.regattadesk.block;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -13,7 +13,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.UUID;
 
 /**
  * Projection handler for Block read model.
@@ -27,9 +26,9 @@ public class BlockProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-    
+
     @Inject
-    ObjectMapper objectMapper;
+    EventEnvelopeParser eventParser;
     
     @Override
     public String getProjectionName() {
@@ -56,7 +55,7 @@ public class BlockProjectionHandler implements ProjectionHandler {
     
     private void handleBlockCreated(EventEnvelope envelope) {
         try {
-            BlockCreatedEvent event = parseEvent(envelope, BlockCreatedEvent.class);
+            BlockCreatedEvent event = eventParser.parseEvent(envelope, BlockCreatedEvent.class);
             insertBlock(event);
             LOG.debug("Projected BlockCreated event for block {}", event.getBlockId());
         } catch (Exception e) {
@@ -67,7 +66,7 @@ public class BlockProjectionHandler implements ProjectionHandler {
     
     private void handleBlockUpdated(EventEnvelope envelope) {
         try {
-            BlockUpdatedEvent event = parseEvent(envelope, BlockUpdatedEvent.class);
+            BlockUpdatedEvent event = eventParser.parseEvent(envelope, BlockUpdatedEvent.class);
             updateBlock(event);
             LOG.debug("Projected BlockUpdated event for block {}", event.getBlockId());
         } catch (Exception e) {
@@ -78,7 +77,7 @@ public class BlockProjectionHandler implements ProjectionHandler {
     
     private void handleBlockDeleted(EventEnvelope envelope) {
         try {
-            BlockDeletedEvent event = parseEvent(envelope, BlockDeletedEvent.class);
+            BlockDeletedEvent event = eventParser.parseEvent(envelope, BlockDeletedEvent.class);
             deleteBlock(event);
             LOG.debug("Projected BlockDeleted event for block {}", event.getBlockId());
         } catch (Exception e) {
@@ -142,18 +141,6 @@ public class BlockProjectionHandler implements ProjectionHandler {
             
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete block from read model", e);
-        }
-    }
-    
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse event payload", e);
         }
     }
     

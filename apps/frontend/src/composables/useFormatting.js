@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { normalizeLocale } from '../utils/locale.js';
 
 /**
  * Composable for date/time formatting with locale and timezone support.
@@ -9,27 +10,45 @@ import { computed } from 'vue';
  * - Time: 24-hour format (HH:mm for scheduled, M:SS.mmm for elapsed)
  * - Timezone: regatta-local
  */
+/**
+ * Internal guard: check if val is null, undefined, or empty string.
+ * For dates: also validates by checking if it's a valid Date using Number.isNaN(d.getTime()).
+ * @param {*} val
+ * @param {function(*): string} fn
+ * @param {string} fallback
+ * @returns {string}
+ */
+function withValue(val, fn, fallback = '') {
+  if (val == null || val === '') return fallback;
+  const d = new Date(val);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return fn(val);
+}
+
+/**
+ * Internal guard: check if val is null, undefined, or NaN for numeric values.
+ * @param {*} val
+ * @param {function(*): string|number} fn
+ * @param {string|number} fallback
+ * @returns {string|number}
+ */
+function withNumericValue(val, fn, fallback = '') {
+  if (val == null || Number.isNaN(val)) return fallback;
+  return fn(val);
+}
+
 export function useFormatting(locale = 'en') {
-  const normalizeLocale = (value) => {
-    if (typeof value !== 'string' || value.length === 0) {
-      return 'en';
-    }
-
-    const baseLanguage = value.toLowerCase().split(/[-_]/)[0];
-    return baseLanguage === 'nl' ? 'nl' : 'en';
-  };
-
   const currentLocale = computed(() => {
     if (locale !== null && typeof locale === 'object') {
       const value = locale.value;
       if (typeof value === 'string' && value.length > 0) {
-        return normalizeLocale(value);
+        return normalizeLocale(value) ?? 'en';
       }
       return 'en';
     }
 
     if (typeof locale === 'string' && locale.length > 0) {
-      return normalizeLocale(locale);
+      return normalizeLocale(locale) ?? 'en';
     }
 
     return 'en';
@@ -105,22 +124,20 @@ export function useFormatting(locale = 'en') {
    * Format a date in ISO 8601 format (YYYY-MM-DD) for technical/API use
    */
   const formatDateISO = (date) => {
-    if (date == null || date === '') return '';
-
-    if (typeof date === 'string') {
-      const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-      if (dateOnlyMatch) {
-        return dateOnlyMatch[0];
+    return withValue(date, (val) => {
+      if (typeof val === 'string') {
+        const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(val);
+        if (dateOnlyMatch) {
+          return dateOnlyMatch[0];
+        }
       }
-    }
 
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '';
-
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+      const d = new Date(val);
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    });
   };
 
   /**
@@ -129,34 +146,32 @@ export function useFormatting(locale = 'en') {
    * en: YYYY-MM-DD
    */
   const formatDateDisplay = (date, regattaTimezone = null) => {
-    if (date == null || date === '') return '';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '';
+    return withValue(date, (val) => {
+      const d = new Date(val);
+      const parts = getDateTimeParts(d, regattaTimezone);
+      const year = String(parts.year);
+      const month = String(parts.month).padStart(2, '0');
+      const day = String(parts.day).padStart(2, '0');
 
-    const parts = getDateTimeParts(d, regattaTimezone);
-    const year = String(parts.year);
-    const month = String(parts.month).padStart(2, '0');
-    const day = String(parts.day).padStart(2, '0');
-
-    const localeValue = currentLocale.value;
-    if (localeValue === 'nl') {
-      return `${day}-${month}-${year}`;
-    }
-    return `${year}-${month}-${day}`;
+      const localeValue = currentLocale.value;
+      if (localeValue === 'nl') {
+        return `${day}-${month}-${year}`;
+      }
+      return `${year}-${month}-${day}`;
+    });
   };
 
   /**
    * Format a time in 24-hour format (HH:mm) for scheduled times
    */
   const formatScheduledTime = (time, regattaTimezone = null) => {
-    if (time == null || time === '') return '';
-    const d = new Date(time);
-    if (Number.isNaN(d.getTime())) return '';
-
-    const parts = getDateTimeParts(d, regattaTimezone);
-    const hours = String(parts.hour).padStart(2, '0');
-    const minutes = String(parts.minute).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return withValue(time, (val) => {
+      const d = new Date(val);
+      const parts = getDateTimeParts(d, regattaTimezone);
+      const hours = String(parts.hour).padStart(2, '0');
+      const minutes = String(parts.minute).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    });
   };
 
   /**
@@ -164,15 +179,18 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Elapsed time in milliseconds
    */
   const formatElapsedTime = (milliseconds) => {
-    if (milliseconds == null || Number.isNaN(milliseconds)) return '';
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return '';
+    }
 
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const ms = milliseconds % 1000;
+    const ms = Number(milliseconds);
+    const totalSeconds = Math.floor(ms / 1000);
+    const msRemainder = ms % 1000;
     const seconds = totalSeconds % 60;
     const minutes = Math.floor(totalSeconds / 60) % 60;
     const hours = Math.floor(totalSeconds / 3600);
 
-    const msStr = String(ms).padStart(3, '0');
+    const msStr = String(msRemainder).padStart(3, '0');
     const secStr = String(seconds).padStart(2, '0');
 
     if (hours > 0) {
@@ -188,13 +206,16 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Delta time in milliseconds
    */
   const formatDeltaTime = (milliseconds) => {
-    if (milliseconds == null || Number.isNaN(milliseconds)) return '';
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return '';
+    }
 
-    if (milliseconds === 0) {
+    const ms = Number(milliseconds);
+    if (ms === 0) {
       return '+0:00.000';
     }
 
-    const formatted = formatElapsedTime(milliseconds);
+    const formatted = formatElapsedTime(ms);
     return `+${formatted}`;
   };
 
@@ -203,21 +224,20 @@ export function useFormatting(locale = 'en') {
    * Example: 2026-02-06T14:30:00+01:00
    */
   const formatTimestampISO = (date, regattaTimezone = null) => {
-    if (date == null || date === '') return '';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '';
+    return withValue(date, (val) => {
+      const d = new Date(val);
+      const parts = getDateTimeParts(d, regattaTimezone);
+      const offsetMinutes = getOffsetMinutes(d, regattaTimezone);
 
-    const parts = getDateTimeParts(d, regattaTimezone);
-    const offsetMinutes = getOffsetMinutes(d, regattaTimezone);
+      const year = String(parts.year);
+      const month = String(parts.month).padStart(2, '0');
+      const day = String(parts.day).padStart(2, '0');
+      const hour = String(parts.hour).padStart(2, '0');
+      const minute = String(parts.minute).padStart(2, '0');
+      const second = String(parts.second).padStart(2, '0');
 
-    const year = String(parts.year);
-    const month = String(parts.month).padStart(2, '0');
-    const day = String(parts.day).padStart(2, '0');
-    const hour = String(parts.hour).padStart(2, '0');
-    const minute = String(parts.minute).padStart(2, '0');
-    const second = String(parts.second).padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hour}:${minute}:${second}${formatOffset(offsetMinutes)}`;
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}${formatOffset(offsetMinutes)}`;
+    });
   };
 
   /**
@@ -225,13 +245,12 @@ export function useFormatting(locale = 'en') {
    * Includes date and time in regatta timezone
    */
   const formatTimestampDisplay = (date, regattaTimezone = null) => {
-    if (date == null || date === '') return '';
-    const d = new Date(date);
-    if (Number.isNaN(d.getTime())) return '';
-
-    const datePart = formatDateDisplay(d, regattaTimezone);
-    const timePart = formatScheduledTime(d, regattaTimezone);
-    return `${datePart} ${timePart}`;
+    return withValue(date, (val) => {
+      const d = new Date(val);
+      const datePart = formatDateDisplay(d, regattaTimezone);
+      const timePart = formatScheduledTime(d, regattaTimezone);
+      return `${datePart} ${timePart}`;
+    });
   };
 
   /**
@@ -240,12 +259,16 @@ export function useFormatting(locale = 'en') {
    * @param {number} precision - Number of decimal places (default 3 for milliseconds)
    */
   const roundTime = (milliseconds, precision = 3) => {
-    if (milliseconds == null || Number.isNaN(milliseconds)) return 0;
-    if (precision <= 0) return milliseconds;
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return 0;
+    }
+
+    const ms = Number(milliseconds);
+    if (precision <= 0) return ms;
 
     const clampedPrecision = Math.min(3, precision);
     const scale = Math.pow(10, 3 - clampedPrecision);
-    return Math.round(milliseconds / scale) * scale;
+    return Math.round(ms / scale) * scale;
   };
 
   return {

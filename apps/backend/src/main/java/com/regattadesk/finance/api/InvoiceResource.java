@@ -1,7 +1,6 @@
 package com.regattadesk.finance.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
-import com.regattadesk.finance.InvoiceGenerationJobStatus;
 import com.regattadesk.finance.InvoiceService;
 import com.regattadesk.finance.InvoiceStatus;
 import com.regattadesk.security.RequireRole;

@@ -59,18 +59,13 @@ export function createOperatorApi(client, options = {}) {
     },
 
     async listCaptureSessions(regattaId, filters = {}) {
-      const params = new URLSearchParams()
-      if (filters.station) params.append('station', filters.station)
-      if (filters.state) params.append('state', filters.state)
-      if (filters.block_id) params.append('block_id', filters.block_id)
-      if (filters.session_type) params.append('session_type', filters.session_type)
-      
-      const query = params.toString()
-      let path = `/regattas/${regattaId}/operator/capture_sessions`
-      if (query) {
-        path += `?${query}`
-      }
-      return client.get(path, authOptions())
+      const query = {}
+      if (filters.station) query.station = filters.station
+      if (filters.state) query.state = filters.state
+      if (filters.block_id) query.block_id = filters.block_id
+      if (filters.session_type) query.session_type = filters.session_type
+
+      return client.get(`/regattas/${regattaId}/operator/capture_sessions`, { ...authOptions(), query })
     },
 
     async closeCaptureSession(regattaId, captureSessionId, payload) {
@@ -118,15 +113,10 @@ export function createOperatorApi(client, options = {}) {
     },
 
     async listMarkers(regattaId, filters = {}) {
-      const params = new URLSearchParams()
-      if (filters.capture_session_id) params.append('capture_session_id', filters.capture_session_id)
-      
-      const query = params.toString()
-      let path = `/regattas/${regattaId}/operator/markers`
-      if (query) {
-        path += `?${query}`
-      }
-      return client.get(path, authOptions())
+      const query = {}
+      if (filters.capture_session_id) query.capture_session_id = filters.capture_session_id
+
+      return client.get(`/regattas/${regattaId}/operator/markers`, { ...authOptions(), query })
     }
   }
 }

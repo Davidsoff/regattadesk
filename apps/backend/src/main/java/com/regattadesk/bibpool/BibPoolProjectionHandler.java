@@ -1,7 +1,7 @@
 package com.regattadesk.bibpool;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Projection handler for BibPool read model.
@@ -25,9 +23,9 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-    
+
     @Inject
-    ObjectMapper objectMapper;
+    EventEnvelopeParser eventParser;
     
     @Override
     public String getProjectionName() {
@@ -54,7 +52,7 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
     
     private void handleBibPoolCreated(EventEnvelope envelope) {
         try {
-            BibPoolCreatedEvent event = parseEvent(envelope, BibPoolCreatedEvent.class);
+            BibPoolCreatedEvent event = eventParser.parseEvent(envelope, BibPoolCreatedEvent.class);
             insertBibPool(event);
             LOG.debug("Projected BibPoolCreated event for pool {}", event.getPoolId());
         } catch (Exception e) {
@@ -65,7 +63,7 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
     
     private void handleBibPoolUpdated(EventEnvelope envelope) {
         try {
-            BibPoolUpdatedEvent event = parseEvent(envelope, BibPoolUpdatedEvent.class);
+            BibPoolUpdatedEvent event = eventParser.parseEvent(envelope, BibPoolUpdatedEvent.class);
             updateBibPool(event);
             LOG.debug("Projected BibPoolUpdated event for pool {}", event.getPoolId());
         } catch (Exception e) {
@@ -76,7 +74,7 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
     
     private void handleBibPoolDeleted(EventEnvelope envelope) {
         try {
-            BibPoolDeletedEvent event = parseEvent(envelope, BibPoolDeletedEvent.class);
+            BibPoolDeletedEvent event = eventParser.parseEvent(envelope, BibPoolDeletedEvent.class);
             deleteBibPool(event);
             LOG.debug("Projected BibPoolDeleted event for pool {}", event.getPoolId());
         } catch (Exception e) {
@@ -180,18 +178,6 @@ public class BibPoolProjectionHandler implements ProjectionHandler {
             
         } catch (SQLException e) {
             throw new RuntimeException("Failed to delete bib pool from read model", e);
-        }
-    }
-    
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse event payload", e);
         }
     }
     

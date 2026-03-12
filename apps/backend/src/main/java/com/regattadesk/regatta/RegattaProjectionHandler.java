@@ -1,19 +1,17 @@
 package com.regattadesk.regatta;
 
 import com.regattadesk.eventstore.EventEnvelope;
+import com.regattadesk.projection.EventEnvelopeParser;
 import com.regattadesk.projection.ProjectionHandler;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.UUID;
 
 /**
  * Projection handler for Regatta read model.
@@ -27,9 +25,9 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     
     @Inject
     DataSource dataSource;
-    
+
     @Inject
-    ObjectMapper objectMapper;
+    EventEnvelopeParser eventParser;
     
     @Override
     public String getProjectionName() {
@@ -60,7 +58,7 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     private void handleRegattaCreated(EventEnvelope envelope) {
         try {
             // Parse the event payload
-            RegattaCreatedEvent event = parseEvent(envelope, RegattaCreatedEvent.class);
+            RegattaCreatedEvent event = eventParser.parseEvent(envelope, RegattaCreatedEvent.class);
             
             // Insert into read model
             insertRegatta(event);
@@ -76,7 +74,7 @@ public class RegattaProjectionHandler implements ProjectionHandler {
     private void handleDrawPublished(EventEnvelope envelope) {
         try {
             // Parse the event payload
-            DrawPublishedEvent event = parseEvent(envelope, DrawPublishedEvent.class);
+            DrawPublishedEvent event = eventParser.parseEvent(envelope, DrawPublishedEvent.class);
             
             // Update draw revision and seed in read model
             updateDrawRevision(event);
@@ -92,7 +90,7 @@ public class RegattaProjectionHandler implements ProjectionHandler {
 
     private void handleDrawGenerated(EventEnvelope envelope) {
         try {
-            DrawGeneratedEvent event = parseEvent(envelope, DrawGeneratedEvent.class);
+            DrawGeneratedEvent event = eventParser.parseEvent(envelope, DrawGeneratedEvent.class);
             updateGeneratedSeed(event);
             LOG.debug("Projected DrawGenerated event for regatta {}", event.getRegattaId());
         } catch (Exception e) {
@@ -103,7 +101,7 @@ public class RegattaProjectionHandler implements ProjectionHandler {
 
     private void handleDrawUnpublished(EventEnvelope envelope) {
         try {
-            DrawUnpublishedEvent event = parseEvent(envelope, DrawUnpublishedEvent.class);
+            DrawUnpublishedEvent event = eventParser.parseEvent(envelope, DrawUnpublishedEvent.class);
             resetDrawState(event);
             LOG.debug("Projected DrawUnpublished event for regatta {}", event.getRegattaId());
         } catch (Exception e) {
@@ -174,19 +172,6 @@ public class RegattaProjectionHandler implements ProjectionHandler {
         }
     }
     
-    private <T> T parseEvent(EventEnvelope envelope, Class<T> eventClass) {
-        try {
-            String payload = envelope.getRawPayload();
-            if (payload != null && !payload.isBlank()) {
-                return objectMapper.readValue(payload, eventClass);
-            }
-
-            return objectMapper.convertValue(envelope.getPayload(), eventClass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse event payload", e);
-        }
-    }
-
     private String insertRegattaSql(Connection conn) throws SQLException {
         String databaseName = conn.getMetaData().getDatabaseProductName();
         if ("PostgreSQL".equalsIgnoreCase(databaseName)) {
