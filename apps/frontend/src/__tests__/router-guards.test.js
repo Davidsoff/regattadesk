@@ -6,9 +6,8 @@ function clearAuthState() {
   try {
     globalThis.localStorage?.removeItem('rd_operator_token')
     globalThis.localStorage?.removeItem('rd_staff_authenticated')
-  } catch (err) {
+  } catch {
     // localStorage may not be available in all test environments (e.g., jsdom restrictions)
-    void err;
   }
 }
 

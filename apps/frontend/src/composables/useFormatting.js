@@ -179,23 +179,26 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Elapsed time in milliseconds
    */
   const formatElapsedTime = (milliseconds) => {
-    return withNumericValue(milliseconds, (ms) => {
-      const totalSeconds = Math.floor(ms / 1000);
-      const msRemainder = ms % 1000;
-      const seconds = totalSeconds % 60;
-      const minutes = Math.floor(totalSeconds / 60) % 60;
-      const hours = Math.floor(totalSeconds / 3600);
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return '';
+    }
 
-      const msStr = String(msRemainder).padStart(3, '0');
-      const secStr = String(seconds).padStart(2, '0');
+    const ms = Number(milliseconds);
+    const totalSeconds = Math.floor(ms / 1000);
+    const msRemainder = ms % 1000;
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60) % 60;
+    const hours = Math.floor(totalSeconds / 3600);
 
-      if (hours > 0) {
-        const minStr = String(minutes).padStart(2, '0');
-        return `${hours}:${minStr}:${secStr}.${msStr}`;
-      }
+    const msStr = String(msRemainder).padStart(3, '0');
+    const secStr = String(seconds).padStart(2, '0');
 
-      return `${minutes}:${secStr}.${msStr}`;
-    });
+    if (hours > 0) {
+      const minStr = String(minutes).padStart(2, '0');
+      return `${hours}:${minStr}:${secStr}.${msStr}`;
+    }
+
+    return `${minutes}:${secStr}.${msStr}`;
   };
 
   /**
@@ -203,14 +206,17 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Delta time in milliseconds
    */
   const formatDeltaTime = (milliseconds) => {
-    return withNumericValue(milliseconds, (ms) => {
-      if (ms === 0) {
-        return '+0:00.000';
-      }
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return '';
+    }
 
-      const formatted = formatElapsedTime(ms);
-      return `+${formatted}`;
-    });
+    const ms = Number(milliseconds);
+    if (ms === 0) {
+      return '+0:00.000';
+    }
+
+    const formatted = formatElapsedTime(ms);
+    return `+${formatted}`;
   };
 
   /**
@@ -253,13 +259,16 @@ export function useFormatting(locale = 'en') {
    * @param {number} precision - Number of decimal places (default 3 for milliseconds)
    */
   const roundTime = (milliseconds, precision = 3) => {
-    return withNumericValue(milliseconds, (ms) => {
-      if (precision <= 0) return ms;
+    if (milliseconds == null || Number.isNaN(milliseconds)) {
+      return 0;
+    }
 
-      const clampedPrecision = Math.min(3, precision);
-      const scale = Math.pow(10, 3 - clampedPrecision);
-      return Math.round(ms / scale) * scale;
-    }, 0);
+    const ms = Number(milliseconds);
+    if (precision <= 0) return ms;
+
+    const clampedPrecision = Math.min(3, precision);
+    const scale = Math.pow(10, 3 - clampedPrecision);
+    return Math.round(ms / scale) * scale;
   };
 
   return {
