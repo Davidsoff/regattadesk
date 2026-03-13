@@ -2,11 +2,40 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import StaffBreadcrumbs from '../components/navigation/StaffBreadcrumbs.vue'
+import { STAFF_PRIMARY_NAV_ITEMS, getStaffRegattaNavItems } from '../navigation/staffNavigation.js'
 
 const { t } = useI18n()
 const route = useRoute()
 
 const regattaId = computed(() => route.params.regattaId)
+const primaryNavItems = STAFF_PRIMARY_NAV_ITEMS
+const regattaNavItems = computed(() => getStaffRegattaNavItems(regattaId.value))
+
+function isRouteActive(navItem) {
+  return navItem.routeNames.includes(String(route.name))
+}
+
+function getNavigationLabel(navItem) {
+  switch (navItem.key) {
+    case 'regattas':
+      return t('navigation.regattas')
+    case 'rulesets':
+      return t('navigation.rulesets')
+    case 'setup':
+      return t('navigation.setup')
+    case 'draw':
+      return t('navigation.draw')
+    case 'finance':
+      return t('navigation.finance')
+    case 'operator_access':
+      return t('navigation.operator_access')
+    case 'blocks':
+      return t('navigation.blocks')
+    default:
+      return navItem.key
+  }
+}
 </script>
 
 <template>
@@ -21,18 +50,13 @@ const regattaId = computed(() => route.params.regattaId)
       
       <nav class="staff-layout__nav" aria-label="Primary navigation">
         <router-link
-          to="/staff/regattas"
+          v-for="navItem in primaryNavItems"
+          :key="navItem.key"
+          :to="navItem.to"
           class="staff-layout__nav-item"
-          :aria-current="route.name === 'staff-regattas' ? 'page' : undefined"
+          :aria-current="isRouteActive(navItem) ? 'page' : undefined"
         >
-          {{ t('navigation.regattas') }}
-        </router-link>
-        <router-link
-          to="/staff/rulesets"
-          class="staff-layout__nav-item"
-          :aria-current="route.name === 'staff-rulesets' ? 'page' : undefined"
-        >
-          {{ t('navigation.rulesets') }}
+          {{ getNavigationLabel(navItem) }}
         </router-link>
       </nav>
     </header>
@@ -43,36 +67,18 @@ const regattaId = computed(() => route.params.regattaId)
       aria-label="Regatta navigation"
     >
       <router-link
-        :to="`/staff/regattas/${regattaId}`"
+        v-for="navItem in regattaNavItems"
+        :key="navItem.key"
+        :to="navItem.to"
         class="staff-layout__subnav-item"
-        :aria-current="route.name === 'staff-regatta-detail' ? 'page' : undefined"
+        :aria-current="isRouteActive(navItem) ? 'page' : undefined"
       >
-        {{ t('navigation.setup') }}
-      </router-link>
-      <router-link
-        :to="`/staff/regattas/${regattaId}/draw`"
-        class="staff-layout__subnav-item"
-        :aria-current="route.name === 'staff-regatta-draw' ? 'page' : undefined"
-      >
-        {{ t('navigation.draw') }}
-      </router-link>
-      <router-link
-        :to="`/staff/regattas/${regattaId}/finance`"
-        class="staff-layout__subnav-item"
-        :aria-current="route.name === 'staff-regatta-finance' ? 'page' : undefined"
-      >
-        {{ t('navigation.finance') }}
-      </router-link>
-      <router-link
-        :to="`/staff/regattas/${regattaId}/blocks`"
-        class="staff-layout__subnav-item"
-        :aria-current="route.name === 'staff-blocks-management' ? 'page' : undefined"
-      >
-        {{ t('navigation.blocks') }}
+        {{ getNavigationLabel(navItem) }}
       </router-link>
     </nav>
     
     <main id="main-content" class="staff-layout__main">
+      <StaffBreadcrumbs />
       <router-view />
     </main>
   </div>

@@ -20,6 +20,11 @@ function createTestRouter() {
             component: { template: '<div>Staff Regatta Detail</div>' },
           },
           {
+            path: 'regattas/:regattaId/operator-access',
+            name: 'staff-regatta-operator-access',
+            component: { template: '<div>Staff Operator Access</div>' },
+          },
+          {
             path: 'regattas/:regattaId/finance',
             name: 'staff-regatta-finance',
             component: { template: '<div>Staff Finance</div>' },
@@ -123,6 +128,12 @@ describe('Router Configuration', () => {
     {
       path: '/staff/regattas/test-uuid-123/finance',
       name: 'staff-regatta-finance',
+      param: 'regattaId',
+      value: 'test-uuid-123',
+    },
+    {
+      path: '/staff/regattas/test-uuid-123/operator-access',
+      name: 'staff-regatta-operator-access',
       param: 'regattaId',
       value: 'test-uuid-123',
     },
