@@ -5,15 +5,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import OperatorLayout from '../layouts/OperatorLayout.vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import StaffLayout from '../layouts/StaffLayout.vue'
-
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
+import { jsonResponse } from './utils/testHelpers.js'
 
 function createTestRouter(extraRoutes = []) {
   return createRouter({
@@ -138,7 +130,7 @@ describe('Layout Components', () => {
   beforeEach(() => {
     router = createTestRouter()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      jsonResponse({
+      jsonResponse(200, {
         capture_session_id: 'my-session-id',
         station: 'finish-line',
         is_synced: false,
@@ -146,7 +138,7 @@ describe('Layout Components', () => {
       })
     ))
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'operator-token',
+      operatorAuth: 'operator-token',
       operatorStation: 'finish-line'
     }
   })

@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Projection handler for BibPool read model.

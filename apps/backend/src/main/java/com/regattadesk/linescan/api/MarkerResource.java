@@ -1,8 +1,8 @@
 package com.regattadesk.linescan.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
-import com.regattadesk.linescan.TimingMarker;
-import com.regattadesk.linescan.TimingMarkerService;
+import com.regattadesk.linescan.model.TimingMarker;
+import com.regattadesk.linescan.service.TimingMarkerService;
 import com.regattadesk.operator.OperatorTokenService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

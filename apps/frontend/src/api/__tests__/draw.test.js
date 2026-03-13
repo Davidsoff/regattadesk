@@ -34,7 +34,7 @@ describe('draw', () => {
 
         const result = await api.listRulesets()
 
-        expect(mockClient.get).toHaveBeenCalledWith('/rulesets')
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets', { query: {} })
         expect(result).toEqual(mockResponse)
       })
 
@@ -44,7 +44,7 @@ describe('draw', () => {
 
         await api.listRulesets({ is_global: true })
 
-        expect(mockClient.get).toHaveBeenCalledWith('/rulesets?is_global=true')
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets', { query: { is_global: true } })
       })
 
       it('fetches regatta-owned rulesets when is_global=false', async () => {
@@ -53,7 +53,7 @@ describe('draw', () => {
 
         await api.listRulesets({ is_global: false })
 
-        expect(mockClient.get).toHaveBeenCalledWith('/rulesets?is_global=false')
+        expect(mockClient.get).toHaveBeenCalledWith('/rulesets', { query: { is_global: false } })
       })
     })
 

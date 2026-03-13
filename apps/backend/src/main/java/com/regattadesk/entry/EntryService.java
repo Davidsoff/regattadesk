@@ -5,7 +5,7 @@ import com.regattadesk.eventstore.DomainEvent;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.eventstore.EventMetadata;
 import com.regattadesk.eventstore.EventStore;
-import com.regattadesk.linescan.MarkerCompletionEvaluator;
+import com.regattadesk.linescan.service.MarkerCompletionEvaluator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

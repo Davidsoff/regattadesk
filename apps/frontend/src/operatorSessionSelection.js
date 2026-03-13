@@ -1,20 +1,9 @@
+import { getStorage } from './utils/storage.js'
+
 export const SELECTED_CAPTURE_SESSIONS_STORAGE_KEY = 'rd_operator_selected_capture_sessions'
 
 function normalizeStorageKeyPart(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null
-}
-
-function getStorage() {
-  const storage = globalThis.window?.localStorage ?? globalThis.localStorage
-  if (
-    storage &&
-    typeof storage.getItem === 'function' &&
-    typeof storage.setItem === 'function'
-  ) {
-    return storage
-  }
-
-  return null
 }
 
 function readSelectionMap() {

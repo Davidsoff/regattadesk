@@ -400,14 +400,14 @@
     "regattas": {
       "title": "Regatta's",
       "description": "Selecteer een regatta om mee te werken",
-      "token_status": "Actief token {token} op station {station}.",
+      "auth_status": "Actief token {token} op station {station}.",
       "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",
       "id": "Regatta ID",
-      "token_status": "Operator-token: {token}",
-      "no_token": "Niet beschikbaar",
+      "auth_status": "Operator-token: {token}",
+      "no_auth": "Niet beschikbaar",
       "station_context": "Station: {station}",
       "session_label": "Sessie: {id}",
       "create_session": "Opnamesessie maken",
@@ -442,7 +442,20 @@
       "bib_number": "Startnr",
       "frame_offset": "Frame",
       "no_markers": "Nog geen markeringen",
-      "undo": "Ongedaan maken"
+      "undo": "Ongedaan maken",
+      "errors": {
+        "capture_session_required": "Capturesessie is vereist",
+        "failed_load_markers": "Markers laden mislukt",
+        "failed_create_marker": "Marker aanmaken mislukt",
+        "failed_delete_marker": "Marker verwijderen mislukt",
+        "failed_update_marker": "Marker bijwerken mislukt",
+        "failed_link_marker": "Marker koppelen mislukt",
+        "failed_unlink_marker": "Marker ontkoppelen mislukt",
+        "failed_undo": "Ongedaan maken mislukt",
+        "entry_id_required": "Inschrijving-ID is vereist",
+        "entry_id_invalid": "Inschrijving-ID formaat is ongeldig",
+        "marker_approved": "Goedgekeurde marker kan niet worden gewijzigd"
+      }
     }
   },
   "public": {

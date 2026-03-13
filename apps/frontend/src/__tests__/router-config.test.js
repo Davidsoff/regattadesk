@@ -77,7 +77,7 @@ describe('Router Configuration', () => {
   beforeEach(() => {
     globalThis.__REGATTADESK_AUTH__ = {
       staffAuthenticated: true,
-      operatorToken: 'operator-token',
+      operatorAuth: 'operator-token',
     }
     router = createTestRouter()
   })

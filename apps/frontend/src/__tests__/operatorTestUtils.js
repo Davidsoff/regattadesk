@@ -74,14 +74,14 @@ const defaultMessages = {
       regattas: {
         title: 'Regattas',
         description: 'Select a regatta to work with',
-        token_status: 'Active token {token} at station {station}.',
+        auth_status: 'Active token {token} at station {station}.',
         access_hint: 'Open the assigned link.'
       },
       regatta: {
         title: 'Regatta',
         id: 'Regatta ID',
-        token_status: 'Operator token: {token}',
-        no_token: 'Unavailable',
+        auth_status: 'Operator token: {token}',
+        no_auth: 'Unavailable',
         station_context: 'Station: {station}',
         create_session: 'Create Capture Session',
         loading_sessions: 'Loading capture sessions...',

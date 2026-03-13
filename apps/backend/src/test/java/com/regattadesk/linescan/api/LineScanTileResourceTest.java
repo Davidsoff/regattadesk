@@ -1,6 +1,6 @@
 package com.regattadesk.linescan.api;
 
-import com.regattadesk.linescan.LineScanTileService;
+import com.regattadesk.linescan.service.LineScanTileService;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
 

@@ -29,3 +29,13 @@ Thumbs.db
 # Python cache artifacts
 __pycache__/
 *.pyc
+
+# Python virtual environment
+venv/
+
+# Desloppify artifacts
+.desloppify/
+.agents/
+.claude/
+.worktrees/
+.venv-desloppify/

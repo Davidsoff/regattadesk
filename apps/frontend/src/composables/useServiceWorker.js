@@ -1,16 +1,23 @@
 /**
  * Service Worker registration and management composable
- * 
+ *
  * Handles service worker lifecycle, state tracking, and messaging.
  * Provides reactive state for service worker registration and communication.
+ *
+ * Singleton pattern: module-level variables are shared across all component
+ * instances that call useServiceWorker(). This is intentional — there is only
+ * one service worker per origin, so all components should observe the same
+ * registration and lifecycle state. The pattern avoids duplicate registrations
+ * and ensures a single source of truth for SW state.
  */
 
 import { ref, computed } from 'vue';
 
-let registrationState = null;
-let isRegisteredState = null;
-let stateRef = null;
-let errorState = null;
+// Module-level singleton refs (see file-level comment above)
+let _swRegistration = null; // ref<ServiceWorkerRegistration|null>
+let _swIsRegistered = null; // ref<boolean>
+let _swLifecycleState = null; // ref<string> — 'idle' | 'installing' | 'installed' | 'activating' | 'activated' | 'redundant'
+let _swError = null; // ref<Error|null>
 let messageListeners = [];
 
 function createMessageEventHandler(callback) {
@@ -37,18 +44,19 @@ function onMessage(callback) {
 }
 
 export function useServiceWorker() {
-  // Initialize singleton state
-  if (!registrationState) {
-    registrationState = ref(null);
-    isRegisteredState = ref(false);
-    stateRef = ref('idle');
-    errorState = ref(null);
+  // Initialize singleton state on first call
+  if (!_swRegistration) {
+    _swRegistration = ref(null);
+    _swIsRegistered = ref(false);
+    _swLifecycleState = ref('idle');
+    _swError = ref(null);
   }
 
-  const registration = registrationState;
-  const isRegistered = isRegisteredState;
-  const state = stateRef;
-  const error = errorState;
+  // Expose refs under clean public names
+  const registration = _swRegistration;
+  const isRegistered = _swIsRegistered;
+  const state = _swLifecycleState;
+  const error = _swError;
 
   const isSupported = computed(() => {
     return typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
@@ -124,6 +132,7 @@ export function useServiceWorker() {
     } catch (err) {
       console.error('Service Worker update failed:', err);
       error.value = err;
+      throw err;
     }
   }
 
@@ -143,7 +152,7 @@ export function useServiceWorker() {
     } catch (err) {
       console.error('Service Worker unregistration failed:', err);
       error.value = err;
-      return false;
+      throw err;
     }
   }
 
@@ -164,10 +173,10 @@ export function useServiceWorker() {
       }
     });
     messageListeners = [];
-    registrationState = null;
-    isRegisteredState = null;
-    stateRef = null;
-    errorState = null;
+    _swRegistration = null;
+    _swIsRegistered = null;
+    _swLifecycleState = null;
+    _swError = null;
   }
 
   return {

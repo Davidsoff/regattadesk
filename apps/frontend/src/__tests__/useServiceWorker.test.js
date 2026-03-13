@@ -237,4 +237,37 @@ describe('useServiceWorker message handling', () => {
     expect(receivedMessages).toHaveLength(1);
     expect(receivedMessages[0]).toEqual({ type: 'SYNC_COMPLETE', payload: { count: 5 } });
   });
+
+  it('reinitializes singleton refs after cleanup', async () => {
+    const firstRegistration = createMockRegistration();
+    const secondRegistration = createMockRegistration('waiting');
+    const registerMock = vi
+      .fn()
+      .mockResolvedValueOnce(firstRegistration)
+      .mockResolvedValueOnce(secondRegistration);
+
+    const removeEventListener = vi.fn();
+
+    vi.stubGlobal('navigator', {
+      serviceWorker: {
+        register: registerMock,
+        ready: Promise.resolve(firstRegistration),
+        addEventListener: vi.fn(),
+        removeEventListener,
+      },
+    });
+
+    const { useServiceWorker } = await importFreshUseServiceWorker();
+    const first = useServiceWorker();
+
+    await first.register('/sw.js');
+    first.cleanup();
+
+    const second = useServiceWorker();
+    await second.register('/sw.js');
+
+    expect(registerMock).toHaveBeenCalledTimes(2);
+    expect(second.registration.value).toStrictEqual(secondRegistration);
+    expect(second.state.value).toBe('waiting');
+  });
 });

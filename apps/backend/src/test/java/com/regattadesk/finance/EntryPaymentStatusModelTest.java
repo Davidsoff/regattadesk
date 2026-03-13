@@ -1,5 +1,7 @@
 package com.regattadesk.finance;
 
+import com.regattadesk.finance.model.EntryPaymentStatusModel;
+import com.regattadesk.finance.model.PaymentStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

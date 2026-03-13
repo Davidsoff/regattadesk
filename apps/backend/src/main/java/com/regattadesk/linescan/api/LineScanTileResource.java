@@ -1,7 +1,7 @@
 package com.regattadesk.linescan.api;
 
-import com.regattadesk.linescan.LineScanTileService;
-import com.regattadesk.linescan.MinioStorageAdapter;
+import com.regattadesk.linescan.config.MinioStorageAdapter;
+import com.regattadesk.linescan.service.LineScanTileService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
