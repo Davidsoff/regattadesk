@@ -23,21 +23,24 @@ function parseFilename(contentDisposition, fallbackFilename) {
     return fallbackFilename
   }
 
-  const filenameStarMatch = contentDisposition.match(/filename\*\s*=\s*([^;]+)/i)
-  const filenameMatch = contentDisposition.match(/filename\s*=\s*([^;]+)/i)
+  const filenameStarRegex = /filename\*\s*=\s*([^;]+)/i
+  const filenameRegex = /filename\s*=\s*([^;]+)/i
+  const filenameStarMatch = filenameStarRegex.exec(contentDisposition)
+  const filenameMatch = filenameRegex.exec(contentDisposition)
   let rawFilename = filenameStarMatch?.[1] ?? filenameMatch?.[1]
 
   if (!rawFilename) {
     return fallbackFilename
   }
 
-  rawFilename = rawFilename.trim().replace(/^["']|["']$/g, '')
+  rawFilename = rawFilename.trim().replaceAll(/^["']|["']$/g, '')
 
   if (/^utf-8''/i.test(rawFilename)) {
+    const normalizedFilename = rawFilename.slice(7)
     try {
-      return decodeURIComponent(rawFilename.replace(/^utf-8''/i, ''))
+      return decodeURIComponent(normalizedFilename)
     } catch {
-      return rawFilename.replace(/^utf-8''/i, '')
+      return normalizedFilename
     }
   }
 
@@ -59,11 +62,12 @@ function normalizePdfResponse(result, tokenId, headers) {
   }
 
   if (result && typeof result === 'object' && !Array.isArray(result)) {
-    const blob = result.blob instanceof Blob
-      ? result.blob
-      : result.data instanceof Blob
-        ? result.data
-        : null
+    let blob = null
+    if (result.blob instanceof Blob) {
+      blob = result.blob
+    } else if (result.data instanceof Blob) {
+      blob = result.data
+    }
 
     return {
       ...result,

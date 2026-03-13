@@ -44,14 +44,14 @@ function toIsoString(value) {
 }
 
 function downloadBlob(blob, filename) {
-  const objectUrl = window.URL.createObjectURL(blob)
+  const objectUrl = globalThis.URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = objectUrl
   link.download = filename
   document.body.appendChild(link)
   link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(objectUrl)
+  link.remove()
+  globalThis.URL.revokeObjectURL(objectUrl)
 }
 
 async function loadTokens() {
@@ -106,7 +106,7 @@ async function exportTokenPdf(tokenId) {
   try {
     const result = await operatorAccessApi.exportTokenPdf(regattaId.value, tokenId)
     if (!(result?.blob instanceof Blob)) {
-      throw new Error(t('operator_access.errors.export_token'))
+      throw new TypeError(t('operator_access.errors.export_token'))
     }
     downloadBlob(result.blob, result.filename)
     actionMessage.value = t('operator_access.messages.token_exported', { filename: result.filename })
