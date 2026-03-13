@@ -38,3 +38,4 @@ venv/
 .agents/
 .claude/
 .worktrees/
+.venv-desloppify/
