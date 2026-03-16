@@ -255,7 +255,7 @@ describe('OperatorAccess view (issue #137)', () => {
     const revealButton = wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`)
     expect(revealButton.exists()).toBe(true)
     expect(wrapper.text()).toContain('pixel-operator-2')
-    expect(wrapper.text()).toContain('2026-03-10T08:50:00Z')
+    expect(wrapper.text()).toContain('2026-03-10 08:50')
 
     await revealButton.trigger('click')
 

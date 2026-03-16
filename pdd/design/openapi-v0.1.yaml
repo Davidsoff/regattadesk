@@ -624,6 +624,36 @@ components:
         requestingDeviceId:
           type: string
           pattern: \S
+    StationHandoffListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StationHandoffResponse"
+    StationHandoffResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regattaId:
+          $ref: "#/components/schemas/UUID"
+        tokenId:
+          $ref: "#/components/schemas/UUID"
+        station:
+          type: string
+        requestingDeviceId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        expiresAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+        pin:
+          type: string
     TileDto:
       type: object
       required:
@@ -2154,6 +2184,7 @@ paths:
       tags:
       - Station Handoff Resource
     get:
+      summary: List pending station handoffs
       parameters:
       - name: regatta_id
         in: path
@@ -2173,8 +2204,14 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: List Pending Handoffs
+              schema:
+                $ref: "#/components/schemas/StationHandoffListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:

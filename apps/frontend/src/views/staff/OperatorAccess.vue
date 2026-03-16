@@ -3,11 +3,13 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { createApiClient, createStaffOperatorAccessApi } from '../../api'
+import { useFormatting } from '../../composables/useFormatting'
 import { useUserRole } from '../../composables/useUserRole'
 
-const { t } = useI18n()
+const { locale, t } = useI18n()
 const route = useRoute()
 const regattaId = computed(() => route.params.regattaId)
+const { formatTimestampDisplay } = useFormatting(locale)
 
 const operatorAccessApi = createStaffOperatorAccessApi(createApiClient())
 const { role, isSuperAdmin, isRegattaAdmin, loadRole } = useUserRole()
@@ -188,6 +190,10 @@ function getConfirmationMessage(action, station) {
   }
 }
 
+function formatDisplayTimestamp(value) {
+  return formatTimestampDisplay(value) || '-'
+}
+
 async function confirmPendingTokenAction() {
   if (!pendingTokenAction.value) {
     return
@@ -305,8 +311,8 @@ onMounted(async () => {
               <td>{{ token.station }}</td>
               <td>
                 {{ t('operator_access.tokens.validity_window', {
-                  start: token.valid_from,
-                  end: token.valid_until
+                  start: formatDisplayTimestamp(token.valid_from),
+                  end: formatDisplayTimestamp(token.valid_until)
                 }) }}
               </td>
               <td>{{ token.is_active ? t('operator_access.tokens.active') : t('operator_access.tokens.revoked') }}</td>
@@ -380,7 +386,7 @@ onMounted(async () => {
                 <div>{{ pendingHandoff.status }}</div>
               </td>
               <td>{{ pendingHandoff.requestingDeviceId }}</td>
-              <td>{{ pendingHandoff.expiresAt }}</td>
+              <td>{{ formatDisplayTimestamp(pendingHandoff.expiresAt) }}</td>
               <td>{{ pendingHandoff.tokenId }}</td>
               <td class="operator-access__actions operator-access__actions--stacked">
                 <button

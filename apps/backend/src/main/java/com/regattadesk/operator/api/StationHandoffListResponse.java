@@ -1,12 +1,14 @@
 package com.regattadesk.operator.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
 
 /**
  * Response DTO for list of station handoffs.
  */
+@Schema(name = "StationHandoffListResponse")
 public class StationHandoffListResponse {
 
     @JsonProperty("data")

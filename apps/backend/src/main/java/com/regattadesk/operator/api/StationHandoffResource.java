@@ -11,6 +11,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +45,19 @@ public class StationHandoffResource {
      */
     @GET
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
+    @Operation(summary = "List pending station handoffs")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = StationHandoffListResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response listPendingHandoffs(
             @PathParam("regatta_id") UUID regattaId,
             @QueryParam("station") String station,

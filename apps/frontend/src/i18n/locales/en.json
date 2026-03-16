@@ -205,7 +205,6 @@
       "clear_filters": "Clear filters",
       "empty": "No pending handoffs match the current filters.",
       "station": "Station",
-      "status": "Status",
       "requesting_device": "Requesting device",
       "expires_at": "Expires at",
       "token_id": "Token ID",

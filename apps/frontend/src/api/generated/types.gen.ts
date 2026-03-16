@@ -310,6 +310,23 @@ export type StationHandoffCreateRequest = {
     requestingDeviceId: string;
 };
 
+export type StationHandoffListResponse = {
+    data?: Array<StationHandoffResponse>;
+};
+
+export type StationHandoffResponse = {
+    id?: Uuid;
+    regattaId?: Uuid;
+    tokenId?: Uuid;
+    station?: string;
+    requestingDeviceId?: string;
+    status?: string;
+    createdAt?: Instant;
+    expiresAt?: Instant;
+    completedAt?: Instant;
+    pin?: string;
+};
+
 export type TileDto = {
     tile_id: string;
     tile_x: number;
@@ -1547,12 +1564,23 @@ export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsData = {
     url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs';
 };
 
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsError = GetApiV1RegattasByRegattaIdOperatorStationHandoffsErrors[keyof GetApiV1RegattasByRegattaIdOperatorStationHandoffsErrors];
+
 export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StationHandoffListResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsResponse = GetApiV1RegattasByRegattaIdOperatorStationHandoffsResponses[keyof GetApiV1RegattasByRegattaIdOperatorStationHandoffsResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsData = {
     body: StationHandoffCreateRequest;
