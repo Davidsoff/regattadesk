@@ -141,8 +141,8 @@ describe('Router Configuration', () => {
       name: 'staff-regatta-operator-access',
       param: 'regattaId',
       value: 'test-uuid-123',
-        },
-        {
+    },
+    {
       path: '/staff/regattas/test-uuid-123/printables',
       name: 'staff-regatta-printables',
       param: 'regattaId',
