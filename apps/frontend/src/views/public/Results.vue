@@ -42,6 +42,12 @@ function isJsonResponse(response) {
   return contentType.includes('application/json')
 }
 
+function fetchVersions() {
+  return fetch(versionsUrl.value, {
+    credentials: 'include',
+  })
+}
+
 function applyRevisions(data) {
   drawRevision.value = data.draw_revision
   resultsRevision.value = data.results_revision
@@ -53,12 +59,6 @@ watchEffect(() => {
   }
 })
 
-function fetchVersions() {
-  return fetch(versionsUrl.value, {
-    credentials: 'include',
-  })
-}
-
 async function fetchResults(
   drawRevisionOverride = drawRevision.value,
   resultsRevisionOverride = resultsRevision.value,
@@ -69,6 +69,8 @@ async function fetchResults(
     return
   }
 
+  // Monotonically increasing request counter — used to discard stale responses if a
+  // newer fetchResults() call starts before this one resolves (race condition prevention).
   const requestId = ++latestResultsRequestId
   const requestUrl = `/public/v${drawRevisionOverride}-${resultsRevisionOverride}/regattas/${regattaId.value}/results`
 
@@ -82,9 +84,12 @@ async function fetchResults(
     }
 
     const data = await response.json()
+    // Discard if revisions changed while the request was in flight (user navigated
+    // to a newer revision before this response arrived).
     if (drawRevision.value !== expectedDrawRevision || resultsRevision.value !== expectedResultsRevision) {
       return
     }
+    // Discard if a newer concurrent request has already superseded this one.
     if (requestId !== latestResultsRequestId) {
       return
     }

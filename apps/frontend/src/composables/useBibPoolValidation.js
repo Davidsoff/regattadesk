@@ -5,7 +5,7 @@
  * specifically handling overlap detection between bib pools.
  * 
  * Usage:
- * import { parseBibPoolValidationError, formatOverlappingBibs } from '@/composables/useBibPoolValidation'
+ * import { parseBibPoolValidationError, formatOverlappingBibs } from '@/composables/bibPoolValidation'
  * 
  * try {
  *   await saveBibPool(data)

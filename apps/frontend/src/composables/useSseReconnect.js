@@ -25,6 +25,7 @@
  */
 
 import { ref, onMounted, onUnmounted } from 'vue'
+import { safeJsonParse } from '../utils/jsonUtils.js'
 
 const MIN_DELAY_MS = 100
 const BASE_DELAY_MS = 500
@@ -124,33 +125,33 @@ export function createSseConnection(url, options = {}) {
   }
   
   function handleSnapshot(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onSnapshot(data)
-    } catch (error) {
-      console.error('Failed to parse snapshot event:', error)
+    lastEventId = event.lastEventId
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse snapshot event: invalid JSON')
+      return
     }
+    onSnapshot(data)
   }
-  
+
   function handleDrawRevision(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onDrawRevision(data)
-    } catch (error) {
-      console.error('Failed to parse draw_revision event:', error)
+    lastEventId = event.lastEventId
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse draw_revision event: invalid JSON')
+      return
     }
+    onDrawRevision(data)
   }
-  
+
   function handleResultsRevision(event) {
-    try {
-      const data = JSON.parse(event.data)
-      lastEventId = event.lastEventId
-      onResultsRevision(data)
-    } catch (error) {
-      console.error('Failed to parse results_revision event:', error)
+    lastEventId = event.lastEventId
+    const data = safeJsonParse(event.data)
+    if (data === null) {
+      console.error('Failed to parse results_revision event: invalid JSON')
+      return
     }
+    onResultsRevision(data)
   }
   
   function scheduleReconnect() {
@@ -230,10 +231,8 @@ export function useSseConnection(url) {
       },
       onDrawRevision: (data) => {
         lastDrawRevision.value = data.draw_revision
-        lastResultsRevision.value = data.results_revision
       },
       onResultsRevision: (data) => {
-        lastDrawRevision.value = data.draw_revision
         lastResultsRevision.value = data.results_revision
       },
       onConnectionChange: (connected) => {

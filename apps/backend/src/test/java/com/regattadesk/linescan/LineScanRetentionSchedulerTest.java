@@ -1,5 +1,15 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.TimingMarker;
+import com.regattadesk.linescan.repository.EntryRepository;
+import com.regattadesk.linescan.repository.LineScanManifestRepository;
+import com.regattadesk.linescan.repository.LineScanTileRepository;
+import com.regattadesk.linescan.repository.RegattaRepository;
+import com.regattadesk.linescan.repository.TimingMarkerRepository;
+import com.regattadesk.linescan.service.LineScanPruningService;
+import com.regattadesk.linescan.service.LineScanRetentionEvaluator;
+import com.regattadesk.linescan.service.LineScanRetentionScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.regattadesk.linescan.LineScanManifest.RetentionState.*;
+import static com.regattadesk.linescan.model.LineScanManifest.RetentionState.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 

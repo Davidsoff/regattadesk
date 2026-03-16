@@ -228,7 +228,7 @@ async function confirmDuplicate() {
     const newRuleset = await drawApi.duplicateRuleset(route.params.rulesetId, payload)
     
     // Navigate to the new ruleset
-    router.push(`/staff/rulesets/${newRuleset.id}`)
+    router.push(`/staff/rulesets/${newRuleset.id}`).catch(err => console.error('Navigation error:', err))
     successMessage.value = t('ruleset.messages.duplicate_success')
     closeDuplicateDialog()
   } catch (error) {

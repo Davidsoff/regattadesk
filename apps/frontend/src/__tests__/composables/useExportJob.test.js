@@ -61,6 +61,17 @@ describe('useExportJob', () => {
       expect(status.value).toBe('failed')
       expect(error.value).toBe(errorMessage)
     })
+
+    it('falls back to the default message for non-Error throw values', async () => {
+      mockExportApi.requestPrintableExport.mockRejectedValue({ reason: 'bad response' })
+
+      const { startExport, status, error } = useExportJob(mockExportApi, mockRegattaId)
+
+      await startExport()
+
+      expect(status.value).toBe('failed')
+      expect(error.value).toBe('Failed to start export')
+    })
   })
 
   describe('job polling', () => {
@@ -114,6 +125,20 @@ describe('useExportJob', () => {
       const callCount = mockExportApi.getJobStatus.mock.calls.length
       await vi.advanceTimersByTimeAsync(10000)
       expect(mockExportApi.getJobStatus.mock.calls.length).toBe(callCount)
+    })
+
+    it('uses the default polling error message for non-Error throw values', async () => {
+      const jobIdValue = '9b7e6d5a-8c3f-4e2d-9a1b-6c5d4e3f2a1b'
+
+      mockExportApi.requestPrintableExport.mockResolvedValue({ job_id: jobIdValue })
+      mockExportApi.getJobStatus.mockRejectedValue(null)
+
+      const { startExport, status, error } = useExportJob(mockExportApi, mockRegattaId)
+
+      await startExport()
+
+      expect(status.value).toBe('failed')
+      expect(error.value).toBe('Failed to check job status')
     })
 
     it('uses exponential backoff for polling', async () => {

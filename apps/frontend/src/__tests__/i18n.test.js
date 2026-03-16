@@ -12,7 +12,11 @@ const NL_MESSAGES = {
 
 async function importFreshI18n() {
   vi.resetModules();
-  return import('../i18n/index.js');
+  const mod = await import('../i18n/index.js');
+  // initI18n() writes the detected locale to document.lang (formerly done at
+  // module scope); locale detection itself still runs at module import time.
+  mod.initI18n();
+  return mod;
 }
 
 function stubStorageAndNavigator(storedLocale, navigatorLanguage = 'en-US') {

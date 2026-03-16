@@ -3,6 +3,12 @@ import { staffGuard, operatorGuard } from '../router/guards'
 
 function clearAuthState() {
   globalThis.__REGATTADESK_AUTH__ = {}
+  try {
+    globalThis.localStorage?.removeItem('rd_operator_token')
+    globalThis.localStorage?.removeItem('rd_staff_authenticated')
+  } catch {
+    // localStorage may not be available in all test environments (e.g., jsdom restrictions)
+  }
 }
 
 describe('Route Guards', () => {
@@ -54,7 +60,7 @@ describe('Route Guards', () => {
   describe('operatorGuard', () => {
     it('allows access when operator token is present', () => {
       clearAuthState()
-      globalThis.__REGATTADESK_AUTH__.operatorToken = 'token-123'
+      globalThis.__REGATTADESK_AUTH__.operatorAuth = 'token-123'
       const to = { fullPath: '/operator/regattas' }
       const from = {}
       const next = vi.fn()
@@ -74,7 +80,7 @@ describe('Route Guards', () => {
       operatorGuard(to, from, next)
 
       expect(next).toHaveBeenCalledWith()
-      expect(globalThis.__REGATTADESK_AUTH__.operatorToken).toBe('query-token')
+      expect(globalThis.__REGATTADESK_AUTH__.operatorAuth).toBe('query-token')
     })
 
     it('redirects to unauthorized when operator token is missing', () => {

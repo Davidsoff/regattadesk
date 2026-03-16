@@ -93,7 +93,8 @@ watch(
       selectedSessionSummary.value = normalizeCaptureSession(
         await operatorApi.getCaptureSession(nextRegattaId, nextCaptureSessionId)
       )
-    } catch {
+    } catch (err) {
+      console.error('Session load error:', err)
       selectedSessionSummary.value = null
     }
   },
