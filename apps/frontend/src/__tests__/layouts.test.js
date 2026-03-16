@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { nextTick } from 'vue'
 import OperatorLayout from '../layouts/OperatorLayout.vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import StaffLayout from '../layouts/StaffLayout.vue'
@@ -75,41 +76,44 @@ function createTestRouter(extraRoutes = []) {
 }
 
 function createTestI18n() {
+  const messages = {
+    common: {
+      skip_to_content: 'Skip to main content',
+      staff: 'Staff',
+      operator: 'Operator',
+      powered_by_regattadesk: 'Powered by RegattaDesk',
+    },
+    navigation: {
+      regattas: 'Regattas',
+      sessions: 'Sessions',
+      rulesets: 'Rulesets',
+      setup: 'Setup',
+      draw: 'Draw',
+      finance: 'Finance',
+      blocks: 'Blocks',
+      line_scan: 'Line Scan',
+      schedule: 'Schedule',
+      results: 'Results',
+    },
+    operator: {
+      regatta: {
+        station_context: 'Station: {station}',
+        session_label: 'Session: {id}',
+        title: 'Regatta',
+        sync_synced: 'Sync status: synced',
+        sync_pending: 'Sync status: pending ({reason})',
+        sync_pending_default: 'awaiting upload',
+        sync_attention: 'Sync status: attention required',
+      },
+    },
+  }
+
   return createI18n({
     legacy: false,
     locale: 'en',
     messages: {
-      en: {
-        common: {
-          skip_to_content: 'Skip to main content',
-          staff: 'Staff',
-          operator: 'Operator',
-          powered_by_regattadesk: 'Powered by RegattaDesk',
-        },
-        navigation: {
-          regattas: 'Regattas',
-          sessions: 'Sessions',
-          rulesets: 'Rulesets',
-          setup: 'Setup',
-          draw: 'Draw',
-          finance: 'Finance',
-          blocks: 'Blocks',
-          line_scan: 'Line Scan',
-          schedule: 'Schedule',
-          results: 'Results',
-        },
-        operator: {
-          regatta: {
-            station_context: 'Station: {station}',
-            session_label: 'Session: {id}',
-            title: 'Regatta',
-            sync_synced: 'Sync status: synced',
-            sync_pending: 'Sync status: pending ({reason})',
-            sync_pending_default: 'awaiting upload',
-            sync_attention: 'Sync status: attention required'
-          },
-        },
-      },
+      en: messages,
+      nl: messages,
     },
   })
 }
@@ -141,6 +145,15 @@ describe('Layout Components', () => {
       operatorAuth: 'operator-token',
       operatorStation: 'finish-line'
     }
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'en',
+      setItem: vi.fn(),
+    })
+    document.documentElement.setAttribute('lang', 'en')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   const layoutCases = [
@@ -349,6 +362,22 @@ describe('Layout Components', () => {
       const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
       const localeGroup = wrapper.find('.public-layout__locale')
       expect(localeGroup.attributes('role')).toBe('group')
+    })
+
+    it('updates pressed state and document language when switching locale', async () => {
+      const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
+      let buttons = wrapper.findAll('.public-layout__locale-btn')
+
+      expect(buttons[0].attributes('aria-pressed')).toBe('false')
+      expect(buttons[1].attributes('aria-pressed')).toBe('true')
+
+      await buttons[0].trigger('click')
+      await nextTick()
+      buttons = wrapper.findAll('.public-layout__locale-btn')
+
+      expect(buttons[0].attributes('aria-pressed')).toBe('true')
+      expect(buttons[1].attributes('aria-pressed')).toBe('false')
+      expect(document.documentElement.getAttribute('lang')).toBe('nl')
     })
   })
 })

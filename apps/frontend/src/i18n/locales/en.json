@@ -21,6 +21,7 @@
   },
   "status": {
     "entered": "Entered",
+    "official": "Official",
     "withdrawn_before_draw": "Withdrawn Before Draw",
     "withdrawn_after_draw": "Withdrawn After Draw"
   },
@@ -482,7 +483,27 @@
     },
     "results": {
       "title": "Results",
-      "description": "View race results"
+      "description": "Live race results",
+      "empty": "No results published for this revision yet.",
+      "version_banner": "Draw v{drawRevision}, Results v{resultsRevision}",
+      "version_link": "Canonical results link",
+      "fields": {
+        "rank": "Rank",
+        "crew": "Crew",
+        "club": "Club",
+        "time": "Time",
+        "delta": "Delta",
+        "status": "Status"
+      },
+      "penalties": {
+        "label": "Penalty",
+        "seconds": "+{seconds}s"
+      },
+      "recovery": {
+        "missing_regatta": "Missing regatta context. Re-open the published results link for this regatta.",
+        "bootstrap_failed": "Unable to refresh public results right now.",
+        "retry": "Retry loading results"
+      }
     },
     "version": {
       "draw": "Draw Revision",
