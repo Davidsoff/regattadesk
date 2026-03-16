@@ -2153,6 +2153,30 @@ paths:
       summary: Request Handoff
       tags:
       - Station Handoff Resource
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: station
+        in: query
+        schema:
+          type: string
+      - name: token_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: List Pending Handoffs
+      tags:
+      - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:
     get:
       parameters:

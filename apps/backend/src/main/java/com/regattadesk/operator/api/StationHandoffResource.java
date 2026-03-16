@@ -12,8 +12,10 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * REST resource for station handoff management.
@@ -31,6 +33,25 @@ public class StationHandoffResource {
     @Inject
     public StationHandoffResource(StationHandoffService handoffService) {
         this.handoffService = handoffService;
+    }
+
+    /**
+     * List pending handoffs for staff oversight.
+     */
+    @GET
+    @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
+    public Response listPendingHandoffs(
+            @PathParam("regatta_id") UUID regattaId,
+            @QueryParam("station") String station,
+            @QueryParam("token_id") UUID tokenId) {
+
+        List<StationHandoffResponse> responses = handoffService
+            .listPendingHandoffs(regattaId, station, tokenId)
+            .stream()
+            .map(StationHandoffResponse::new)
+            .collect(Collectors.toList());
+
+        return Response.ok(new StationHandoffListResponse(responses)).build();
     }
     
     /**

@@ -4,6 +4,43 @@ import { ApiError } from '../client.js'
 import { createStaffOperatorAccessApi } from '../staffOperatorAccess.js'
 
 describe('createStaffOperatorAccessApi', () => {
+  it('lists pending handoffs with filters and normalizes the response', async () => {
+    const get = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'handoff-1',
+          requesting_device_id: 'device-9',
+          expires_at: '2026-03-10T08:50:00Z',
+        },
+      ],
+    })
+
+    const api = createStaffOperatorAccessApi({
+      generatedClient: { request: vi.fn() },
+      get,
+      post: vi.fn(),
+    })
+
+    const result = await api.listPendingHandoffs('regatta-1', {
+      station: 'finish-line',
+      token_id: 'token-1',
+    })
+
+    expect(get).toHaveBeenCalledWith('/regattas/regatta-1/operator/station_handoffs', {
+      query: {
+        station: 'finish-line',
+        token_id: 'token-1',
+      },
+    })
+    expect(result).toEqual([
+      expect.objectContaining({
+        id: 'handoff-1',
+        requestingDeviceId: 'device-9',
+        expiresAt: '2026-03-10T08:50:00Z',
+      }),
+    ])
+  })
+
   it('returns a blob and filename for PDF exports from the generated client response', async () => {
     const blob = new Blob(['pdf-bytes'], { type: 'application/pdf' })
     const request = vi.fn().mockResolvedValue({

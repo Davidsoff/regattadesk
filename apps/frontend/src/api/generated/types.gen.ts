@@ -1535,6 +1535,25 @@ export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses
     200: unknown;
 };
 
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        station?: string;
+        token_id?: Uuid;
+    };
+    url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs';
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsData = {
     body: StationHandoffCreateRequest;
     path: {

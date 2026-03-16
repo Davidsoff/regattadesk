@@ -167,8 +167,7 @@
       "invalid_validity_window": "Geldig tot moet na geldig vanaf liggen.",
       "revoke_token": "Intrekken van operatortoken mislukt.",
       "export_token": "Exporteren van operatortoken-pdf mislukt.",
-      "handoff_required": "Voer een overdracht-ID in voordat je een overdracht laadt.",
-      "load_handoff": "Laden van stationsoverdracht mislukt.",
+      "load_handoffs": "Laden van openstaande stationsoverdrachten mislukt.",
       "reveal_pin": "Tonen van overdrachts-PIN mislukt."
     },
     "confirmation": {
@@ -199,13 +198,17 @@
     },
     "handoff": {
       "title": "Overdrachtsinzicht",
-      "description": "Bekijk een stationsoverdracht op id en toon de PIN op afstand wanneer de backend het admin-terugvalendpoint ondersteunt.",
-      "lookup_label": "Overdracht-ID",
-      "lookup_submit": "Overdracht laden",
+      "description": "Bekijk openstaande stationsoverdrachten voor de hele regatta, filter op station of token en toon de PIN op afstand wanneer het admin-terugvalendpoint beschikbaar is.",
+      "station_filter": "Filter op station",
+      "token_filter": "Filter op token-ID",
+      "lookup_submit": "Overdrachten verversen",
+      "clear_filters": "Filters wissen",
+      "empty": "Geen openstaande overdrachten voor de huidige filters.",
       "station": "Station",
       "status": "Status",
       "requesting_device": "Aanvragend apparaat",
       "expires_at": "Verloopt om",
+      "token_id": "Token-ID",
       "admin_reveal_pin": "PIN tonen",
       "revealed_pin": "PIN: {pin}"
     }

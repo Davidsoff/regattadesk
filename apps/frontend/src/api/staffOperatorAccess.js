@@ -100,6 +100,11 @@ function normalizeStationHandoffResponse(result) {
   }
 }
 
+function normalizeStationHandoffListResponse(result) {
+  const handoffs = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []
+  return handoffs.map(normalizeStationHandoffResponse)
+}
+
 export function createStaffOperatorAccessApi(client) {
   return {
     async listTokens(regattaId) {
@@ -132,6 +137,21 @@ export function createStaffOperatorAccessApi(client) {
 
       const result = await client.get(`/regattas/${regattaId}/operator/tokens/${tokenId}/export_pdf`)
       return normalizePdfResponse(result, tokenId)
+    },
+
+    async listPendingHandoffs(regattaId, filters = {}) {
+      const query = {}
+
+      if (typeof filters.station === 'string' && filters.station.trim()) {
+        query.station = filters.station.trim()
+      }
+
+      if (typeof filters.token_id === 'string' && filters.token_id.trim()) {
+        query.token_id = filters.token_id.trim()
+      }
+
+      const result = await client.get(`/regattas/${regattaId}/operator/station_handoffs`, { query })
+      return normalizeStationHandoffListResponse(result)
     },
 
     async getStationHandoff(regattaId, handoffId) {

@@ -14,6 +14,7 @@ const mockStaffOperatorAccessApi = {
   createToken: vi.fn(),
   revokeToken: vi.fn(),
   exportTokenPdf: vi.fn(),
+  listPendingHandoffs: vi.fn(),
   getStationHandoff: vi.fn(),
   adminRevealPin: vi.fn(),
 }
@@ -98,7 +99,7 @@ describe('OperatorAccess view (issue #137)', () => {
     mockStaffOperatorAccessApi.listTokens.mockResolvedValue({
       data: [createToken()],
     })
-    mockStaffOperatorAccessApi.getStationHandoff.mockResolvedValue(createHandoff())
+    mockStaffOperatorAccessApi.listPendingHandoffs.mockResolvedValue([createHandoff()])
     mockStaffOperatorAccessApi.createToken.mockResolvedValue(
       createToken({
         id: '9df6f4a2-f053-4329-b89e-6c0b61896f4a',
@@ -133,6 +134,12 @@ describe('OperatorAccess view (issue #137)', () => {
       expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalledWith(REGATTA_ID)
     })
     await vi.waitFor(() => {
+      expect(mockStaffOperatorAccessApi.listPendingHandoffs).toHaveBeenCalledWith(REGATTA_ID, {
+        station: '',
+        token_id: '',
+      })
+    })
+    await vi.waitFor(() => {
       expect(wrapper.find(`[data-testid="token-row-${TOKEN_ID}"]`).exists()).toBe(true)
     })
 
@@ -144,6 +151,7 @@ describe('OperatorAccess view (issue #137)', () => {
     expect(wrapper.find(`[data-testid="token-row-${TOKEN_ID}"]`).exists()).toBe(true)
     expect(wrapper.find(`[data-testid="export-token-${TOKEN_ID}"]`).exists()).toBe(true)
     expect(wrapper.find(`[data-testid="revoke-token-${TOKEN_ID}"]`).exists()).toBe(true)
+    expect(wrapper.find(`[data-testid="pending-handoff-row-${HANDOFF_ID}"]`).exists()).toBe(true)
   })
 
   it('creates a token from the staff form and refreshes the administration table', async () => {
@@ -226,18 +234,22 @@ describe('OperatorAccess view (issue #137)', () => {
     })
   })
 
-  it('loads handoff oversight on demand and shows the admin reveal affordance for regatta admins', async () => {
+  it('loads handoff oversight on mount, supports filters, and shows the admin reveal affordance for regatta admins', async () => {
     const wrapper = await mountPage()
 
     await vi.waitFor(() => {
-      expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalled()
+      expect(mockStaffOperatorAccessApi.listPendingHandoffs).toHaveBeenCalled()
     })
 
-    await wrapper.find('input[name="handoff_id"]').setValue(HANDOFF_ID)
-    await wrapper.find('[data-testid="load-handoff"]').trigger('click')
+    await wrapper.find('input[name="handoff_station"]').setValue('Finish Tower')
+    await wrapper.find('input[name="handoff_token_id"]').setValue(TOKEN_ID)
+    await wrapper.find('[data-testid="load-pending-handoffs"]').trigger('click')
 
     await vi.waitFor(() => {
-      expect(mockStaffOperatorAccessApi.getStationHandoff).toHaveBeenCalledWith(REGATTA_ID, HANDOFF_ID)
+      expect(mockStaffOperatorAccessApi.listPendingHandoffs).toHaveBeenLastCalledWith(REGATTA_ID, {
+        station: 'Finish Tower',
+        token_id: TOKEN_ID,
+      })
     })
 
     const revealButton = wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`)
@@ -254,30 +266,31 @@ describe('OperatorAccess view (issue #137)', () => {
     expect(wrapper.find(`[data-testid="handoff-pin-${HANDOFF_ID}"]`).text()).toContain('4821')
   })
 
-  it('requires a handoff id before loading handoff details', async () => {
+  it('shows an empty state when no pending handoffs are available', async () => {
+    mockStaffOperatorAccessApi.listPendingHandoffs.mockResolvedValueOnce([])
+
     const wrapper = await mountPage()
 
     await vi.waitFor(() => {
-      expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalled()
+      expect(mockStaffOperatorAccessApi.listPendingHandoffs).toHaveBeenCalled()
     })
 
-    await wrapper.find('[data-testid="load-handoff"]').trigger('click')
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="handoff-empty-state"]').exists()).toBe(true)
+    })
 
-    expect(mockStaffOperatorAccessApi.getStationHandoff).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Enter a handoff ID before loading a handoff.')
+    expect(wrapper.find('[data-testid="handoff-empty-state"]').text()).toContain('No pending handoffs')
   })
 
   it('hides privileged actions and shows a clear authorization message for non-admin staff roles', async () => {
     const wrapper = await mountPage({ userRole: 'info_desk' })
-
-    await vi.waitFor(() => {
-      expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalled()
-    })
 
     expect(wrapper.find('[data-testid="operator-access-authorization"]').text()).toContain('not authorized')
     expect(wrapper.find('[data-testid="create-token-form"]').exists()).toBe(false)
     expect(wrapper.find(`[data-testid="export-token-${TOKEN_ID}"]`).exists()).toBe(false)
     expect(wrapper.find(`[data-testid="revoke-token-${TOKEN_ID}"]`).exists()).toBe(false)
     expect(wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`).exists()).toBe(false)
+    expect(mockStaffOperatorAccessApi.listTokens).not.toHaveBeenCalled()
+    expect(mockStaffOperatorAccessApi.listPendingHandoffs).not.toHaveBeenCalled()
   })
 })
