@@ -9,6 +9,7 @@ describe('createStaffOperatorAccessApi', () => {
       data: [
         {
           id: 'handoff-1',
+          token_id: 'token-1',
           requesting_device_id: 'device-9',
           expires_at: '2026-03-10T08:50:00Z',
         },
@@ -35,6 +36,7 @@ describe('createStaffOperatorAccessApi', () => {
     expect(result).toEqual([
       expect.objectContaining({
         id: 'handoff-1',
+        tokenId: 'token-1',
         requestingDeviceId: 'device-9',
         expiresAt: '2026-03-10T08:50:00Z',
       }),
@@ -79,6 +81,7 @@ describe('createStaffOperatorAccessApi', () => {
   it('normalizes handoff fields to camelCase', async () => {
     const get = vi.fn().mockResolvedValue({
       id: 'handoff-1',
+      token_id: 'token-1',
       requesting_device_id: 'device-9',
       expires_at: '2026-03-10T08:50:00Z',
       created_at: '2026-03-10T08:45:00Z',
@@ -93,6 +96,7 @@ describe('createStaffOperatorAccessApi', () => {
 
     const result = await api.getStationHandoff('regatta-1', 'handoff-1')
 
+  expect(result.tokenId).toBe('token-1')
     expect(result.requestingDeviceId).toBe('device-9')
     expect(result.expiresAt).toBe('2026-03-10T08:50:00Z')
     expect(result.createdAt).toBe('2026-03-10T08:45:00Z')

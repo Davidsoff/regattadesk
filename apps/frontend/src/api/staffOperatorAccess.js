@@ -93,6 +93,7 @@ function normalizeStationHandoffResponse(result) {
 
   return {
     ...result,
+    tokenId: result.tokenId ?? result.token_id ?? null,
     requestingDeviceId: result.requestingDeviceId ?? result.requesting_device_id ?? null,
     expiresAt: result.expiresAt ?? result.expires_at ?? null,
     createdAt: result.createdAt ?? result.created_at ?? null,
