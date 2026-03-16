@@ -20,9 +20,29 @@ function createTestRouter() {
             component: { template: '<div>Staff Regatta Detail</div>' },
           },
           {
+            path: 'regattas/:regattaId/operator-access',
+            name: 'staff-regatta-operator-access',
+            component: { template: '<div>Staff Operator Access</div>' },
+          },
+          {
             path: 'regattas/:regattaId/finance',
             name: 'staff-regatta-finance',
             component: { template: '<div>Staff Finance</div>' },
+          },
+          {
+            path: 'regattas/:regattaId/adjudication',
+            name: 'staff-regatta-adjudication',
+            component: { template: '<div>Staff Adjudication</div>' },
+          },
+          {
+            path: 'regattas/:regattaId/operator-access',
+            name: 'staff-regatta-operator-access',
+            component: { template: '<div>Staff Operator Access</div>' },
+          },
+          {
+            path: 'regattas/:regattaId/printables',
+            name: 'staff-regatta-printables',
+            component: { template: '<div>Staff Printables</div>' },
           },
         ],
       },
@@ -77,7 +97,7 @@ describe('Router Configuration', () => {
   beforeEach(() => {
     globalThis.__REGATTADESK_AUTH__ = {
       staffAuthenticated: true,
-      operatorToken: 'operator-token',
+      operatorAuth: 'operator-token',
     }
     router = createTestRouter()
   })
@@ -123,6 +143,24 @@ describe('Router Configuration', () => {
     {
       path: '/staff/regattas/test-uuid-123/finance',
       name: 'staff-regatta-finance',
+      param: 'regattaId',
+      value: 'test-uuid-123',
+    },
+    {
+      path: '/staff/regattas/test-uuid-123/adjudication',
+      name: 'staff-regatta-adjudication',
+      param: 'regattaId',
+      value: 'test-uuid-123',
+        },
+        {
+      path: '/staff/regattas/test-uuid-123/operator-access',
+      name: 'staff-regatta-operator-access',
+      param: 'regattaId',
+      value: 'test-uuid-123',
+    },
+    {
+      path: '/staff/regattas/test-uuid-123/printables',
+      name: 'staff-regatta-printables',
       param: 'regattaId',
       value: 'test-uuid-123',
     },
@@ -176,11 +214,13 @@ describe('Router Configuration', () => {
   })
 
   it('supports direct navigation across protected and public surfaces', async () => {
-    const staff = await navigate(router, '/staff/regattas/direct-test/finance')
+    const staff = await navigate(router, '/staff/regattas/direct-test/adjudication')
+    const staffPrintables = await navigate(router, '/staff/regattas/direct-test/printables')
     const operator = await navigate(router, '/operator/regattas/direct-test/sessions/session-direct/line-scan')
     const publicRoute = await navigate(router, '/public/v42-99/results')
 
-    expect(staff.name).toBe('staff-regatta-finance')
+    expect(staff.name).toBe('staff-regatta-adjudication')
+    expect(staffPrintables.name).toBe('staff-regatta-printables')
     expect(operator.name).toBe('operator-session-line-scan')
     expect(publicRoute.name).toBe('public-results')
   })

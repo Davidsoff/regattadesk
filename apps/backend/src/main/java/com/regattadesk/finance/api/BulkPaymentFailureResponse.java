@@ -1,7 +1,7 @@
 package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.finance.BulkPaymentFailure;
+import com.regattadesk.finance.model.BulkPaymentFailure;
 
 import java.util.UUID;
 

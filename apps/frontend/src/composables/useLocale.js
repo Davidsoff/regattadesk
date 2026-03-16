@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { setLocale } from '../i18n';
+import { applyLocalePreference } from '../i18n';
 
 const SUPPORTED_LOCALES = ['nl', 'en'];
 
@@ -13,7 +13,9 @@ export function useLocale() {
   const currentLocale = computed(() => locale.value);
 
   const switchLocale = (newLocale) => {
-    setLocale(newLocale);
+    applyLocalePreference(newLocale, (normalizedLocale) => {
+      locale.value = normalizedLocale;
+    });
   };
 
   const getLocaleName = (localeCode) => {

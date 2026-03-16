@@ -16,6 +16,15 @@
 
 import { ref, computed } from 'vue'
 
+const STAFF_ROLES = new Set([
+  'staff',
+  'super_admin',
+  'regatta_admin',
+  'financial_manager',
+  'info_desk',
+  'head_of_jury'
+])
+
 /**
  * Get user role composable
  * 
@@ -59,17 +68,17 @@ export function useUserRole() {
    * Check if user is super_admin
    */
   const isSuperAdmin = computed(() => role.value === 'super_admin')
+  const isRegattaAdmin = computed(() => role.value === 'regatta_admin')
 
   /**
    * Check if user has staff capabilities (staff or super_admin)
    */
-  const isStaff = computed(() => 
-    role.value === 'staff' || role.value === 'super_admin'
-  )
+  const isStaff = computed(() => STAFF_ROLES.has(role.value))
 
   return {
     role,
     isSuperAdmin,
+    isRegattaAdmin,
     isStaff,
     loadRole
   }

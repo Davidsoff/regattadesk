@@ -1,5 +1,12 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.linescan.config.MinioStorageAdapter;
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.LineScanTileMetadata;
+import com.regattadesk.linescan.repository.LineScanManifestRepository;
+import com.regattadesk.linescan.repository.LineScanTileRepository;
+import com.regattadesk.linescan.service.LineScanPruningService;
+import com.regattadesk.linescan.service.LineScanRetentionEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.regattadesk.linescan.LineScanManifest.RetentionState.*;
+import static com.regattadesk.linescan.model.LineScanManifest.RetentionState.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;

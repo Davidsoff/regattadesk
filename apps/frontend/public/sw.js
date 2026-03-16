@@ -110,8 +110,6 @@ globalThis.addEventListener('fetch', (event) => {
 
   if (shouldUseCacheFirst(url)) {
     event.respondWith(cacheFirst(request));
-  } else if (shouldUseNetworkFirst(url)) {
-    event.respondWith(networkFirst(request));
   } else {
     event.respondWith(networkFirst(request));
   }

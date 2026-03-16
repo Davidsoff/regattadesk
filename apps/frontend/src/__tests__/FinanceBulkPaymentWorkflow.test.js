@@ -2,15 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import FinanceBulkPaymentWorkflow from '../components/FinanceBulkPaymentWorkflow.vue'
 import i18n from '../i18n'
-
-function jsonResponse(body, status = 200) {
-  return new Response(body == null ? '' : JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-}
+import { jsonResponse } from './utils/testHelpers.js'
 
 async function getRequestCall(fetchMock, index = 0) {
   const request = fetchMock.mock.calls[index][0]
@@ -56,7 +48,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
       idempotency_key: 'key-1',
       idempotent_replay: false
     }
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mockResponse))
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, mockResponse))
     vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = mount(FinanceBulkPaymentWorkflow, {
@@ -84,7 +76,7 @@ describe('FinanceBulkPaymentWorkflow', () => {
 
   it('only sends non-empty entry_ids/club_ids in the request body', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({
+      jsonResponse(200, {
         success: true,
         message: 'Bulk payment update completed',
         total_requested: 1,
@@ -121,12 +113,12 @@ describe('FinanceBulkPaymentWorkflow', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse({
+        jsonResponse(400, {
           error: {
             code: 'VALIDATION_ERROR',
             message: apiErrorMessage
           }
-        }, 400)
+        })
       )
     )
 
@@ -148,11 +140,11 @@ describe('FinanceBulkPaymentWorkflow', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse({
+        jsonResponse(500, {
           error: {
             code: 'INTERNAL_ERROR'
           }
-        }, 500)
+        })
       )
     )
 

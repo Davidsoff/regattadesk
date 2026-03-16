@@ -5,17 +5,9 @@ import { nextTick } from 'vue'
 
 import i18n from '../i18n'
 import DrawWorkflow from '../views/staff/DrawWorkflow.vue'
+import { jsonResponse } from './utils/testHelpers.js'
 
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
-
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-}
 
 async function expectPostedRequest(call, expectedPath, expectedBody) {
   const request = globalThis.fetch.mock.calls[call][0]
@@ -98,7 +90,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
   describe('generate draw', () => {
     it('calls generate endpoint and updates seed/revision state', async () => {
       globalThis.fetch.mockResolvedValueOnce(
-        jsonResponse({ seed: 12345, generated_entry_count: 42 })
+        jsonResponse(200, { seed: 12345, generated_entry_count: 42 })
       )
 
       const wrapper = await mountPage({
@@ -171,7 +163,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
       expect(wrapper.find('[data-testid="loading"]').exists()).toBe(true)
 
-      resolveFetch(jsonResponse({ seed: 99, generated_entry_count: 3 }))
+      resolveFetch(jsonResponse(200, { seed: 99, generated_entry_count: 3 }))
       await flushPromises()
 
       expect(wrapper.find('[data-testid="loading"]').exists()).toBe(false)
@@ -196,7 +188,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
   describe('publish and unpublish', () => {
     it('publishes and updates draw/results revisions', async () => {
       globalThis.fetch.mockResolvedValueOnce(
-        jsonResponse({ draw_revision: 2, results_revision: 1 })
+        jsonResponse(200, { draw_revision: 2, results_revision: 1 })
       )
 
       const wrapper = await mountPage({
@@ -221,7 +213,7 @@ describe('DrawWorkflow view (FEGAP-008-C)', () => {
 
     it('unpublishes and updates draw/results revisions', async () => {
       globalThis.fetch.mockResolvedValueOnce(
-        jsonResponse({ draw_revision: 2, results_revision: 3 })
+        jsonResponse(200, { draw_revision: 2, results_revision: 3 })
       )
 
       const wrapper = await mountPage({

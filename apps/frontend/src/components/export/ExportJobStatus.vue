@@ -36,9 +36,18 @@
       >
         {{ t('common.download') }}
       </a>
-      <p data-testid="export-expiration-notice" class="export-job-status__expiration">
+      <p v-if="downloadUrl" data-testid="export-expiration-notice" class="export-job-status__expiration">
         {{ t('export.expiration_notice') }}
       </p>
+      <button
+        v-if="!downloadUrl"
+        type="button"
+        data-testid="export-regenerate-button"
+        class="export-job-status__retry-button"
+        @click="handleRetry"
+      >
+        {{ t('export.retry') }}
+      </button>
     </div>
 
     <!-- Failed state -->

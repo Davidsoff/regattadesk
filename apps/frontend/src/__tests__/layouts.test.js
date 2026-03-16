@@ -1,19 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { nextTick } from 'vue'
 import OperatorLayout from '../layouts/OperatorLayout.vue'
 import PublicLayout from '../layouts/PublicLayout.vue'
 import StaffLayout from '../layouts/StaffLayout.vue'
-
-function jsonResponse(body, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
+import { jsonResponse } from './utils/testHelpers.js'
 
 function createTestRouter(extraRoutes = []) {
   return createRouter({
@@ -21,6 +14,12 @@ function createTestRouter(extraRoutes = []) {
     routes: [
       { path: '/staff/regattas', name: 'staff-regattas', component: { template: '<div>Staff Regattas</div>' } },
       { path: '/staff/rulesets', name: 'staff-rulesets', component: { template: '<div>Staff Rulesets</div>' } },
+      { path: '/staff/rulesets/new', name: 'staff-ruleset-create', component: { template: '<div>Staff Ruleset Create</div>' } },
+      {
+        path: '/staff/rulesets/:rulesetId',
+        name: 'staff-ruleset-detail',
+        component: { template: '<div>Staff Ruleset Detail</div>' },
+      },
       {
         path: '/staff/regattas/:regattaId',
         name: 'staff-regatta-detail',
@@ -37,9 +36,44 @@ function createTestRouter(extraRoutes = []) {
         component: { template: '<div>Staff Finance</div>' },
       },
       {
+        path: '/staff/regattas/:regattaId/finance/entries/:entryId',
+        name: 'staff-regatta-finance-entry',
+        component: { template: '<div>Staff Finance Entry</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/clubs/:clubId',
+        name: 'staff-regatta-finance-club',
+        component: { template: '<div>Staff Finance Club</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/invoices',
+        name: 'staff-regatta-finance-invoices',
+        component: { template: '<div>Staff Finance Invoices</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/finance/invoices/:invoiceId',
+        name: 'staff-regatta-finance-invoice',
+        component: { template: '<div>Staff Finance Invoice</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/operator-access',
+        name: 'staff-regatta-operator-access',
+        component: { template: '<div>Staff Operator Access</div>' },
+      },
+      {
         path: '/staff/regattas/:regattaId/blocks',
         name: 'staff-blocks-management',
         component: { template: '<div>Staff Blocks</div>' },
+      },
+      {
+        path: '/staff/regattas/:regattaId/adjudication',
+        name: 'staff-regatta-adjudication',
+        component: { template: '<div>Staff Adjudication</div>' },
+            },
+            {
+        path: '/staff/regattas/:regattaId/printables',
+        name: 'staff-regatta-printables',
+        component: { template: '<div>Staff Printables</div>' },
       },
       { path: '/operator/regattas', name: 'operator-regattas', component: { template: '<div>Operator Regattas</div>' } },
       {
@@ -83,41 +117,61 @@ function createTestRouter(extraRoutes = []) {
 }
 
 function createTestI18n() {
+  const messages = {
+    common: {
+      skip_to_content: 'Skip to main content',
+      staff: 'Staff',
+      operator: 'Operator',
+      powered_by_regattadesk: 'Powered by RegattaDesk',
+    },
+    navigation: {
+      regattas: 'Regattas',
+      sessions: 'Sessions',
+      rulesets: 'Rulesets',
+      setup: 'Setup',
+      draw: 'Draw',
+      finance: 'Finance',
+      operator_access: 'Operator Access',
+      blocks: 'Blocks',
+      printables: 'Printables',
+      line_scan: 'Line Scan',
+      schedule: 'Schedule',
+      results: 'Results',
+    },
+    operator: {
+      regatta: {
+        station_context: 'Station: {station}',
+        session_label: 'Session: {id}',
+        title: 'Regatta',
+        sync_synced: 'Sync status: synced',
+        sync_pending: 'Sync status: pending ({reason})',
+        sync_pending_default: 'awaiting upload',
+        sync_attention: 'Sync status: attention required',
+      },
+    },
+    breadcrumb: {
+      regattas: 'Regattas',
+      operator_access: 'Operator Access',
+    },
+  }
+
   return createI18n({
     legacy: false,
     locale: 'en',
     messages: {
       en: {
-        common: {
-          skip_to_content: 'Skip to main content',
-          staff: 'Staff',
-          operator: 'Operator',
-          powered_by_regattadesk: 'Powered by RegattaDesk',
-        },
+        ...messages,
         navigation: {
-          regattas: 'Regattas',
-          sessions: 'Sessions',
-          rulesets: 'Rulesets',
-          setup: 'Setup',
-          draw: 'Draw',
-          finance: 'Finance',
-          blocks: 'Blocks',
-          line_scan: 'Line Scan',
-          schedule: 'Schedule',
-          results: 'Results',
+          ...messages.navigation,
+          adjudication: 'Adjudication',
         },
-        operator: {
-          regatta: {
-            station_context: 'Station: {station}',
-            session_label: 'Session: {id}',
-            title: 'Regatta',
-            sync_synced: 'Sync status: synced',
-            sync_pending: 'Sync status: pending ({reason})',
-            sync_pending_default: 'awaiting upload',
-            sync_attention: 'Sync status: attention required'
-          },
-        },
+        breadcrumb: {
+          ...messages.breadcrumb,
+          adjudication: 'Adjudication',
+          printables: 'Printables',
+        }
       },
+      nl: messages,
     },
   })
 }
@@ -135,20 +189,31 @@ async function mountAtRoute(router, route, component) {
 describe('Layout Components', () => {
   let router
 
+  function createOperatorSessionResponse() {
+    return jsonResponse(200, {
+      capture_session_id: 'my-session-id',
+      station: 'finish-line',
+      is_synced: false,
+      unsynced_reason: 'awaiting upload'
+    })
+  }
+
   beforeEach(() => {
     router = createTestRouter()
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      jsonResponse({
-        capture_session_id: 'my-session-id',
-        station: 'finish-line',
-        is_synced: false,
-        unsynced_reason: 'awaiting upload'
-      })
-    ))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(createOperatorSessionResponse())))
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'operator-token',
+      operatorAuth: 'operator-token',
       operatorStation: 'finish-line'
     }
+    vi.stubGlobal('localStorage', {
+      getItem: () => 'en',
+      setItem: vi.fn(),
+    })
+    document.documentElement.setAttribute('lang', 'en')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   const layoutCases = [
@@ -248,14 +313,17 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-    it('renders subnav with draw, finance, blocks links inside a regatta', async () => {
+    it('renders subnav with adjudication, finance, operator access, blocks, and printables links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
       expect(links).toContain('/staff/regattas/test-id-123')
       expect(links).toContain('/staff/regattas/test-id-123/draw')
+      expect(links).toContain('/staff/regattas/test-id-123/adjudication')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
+      expect(links).toContain('/staff/regattas/test-id-123/operator-access')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
+      expect(links).toContain('/staff/regattas/test-id-123/printables')
     })
 
     it('subnav is labelled for accessibility', async () => {
@@ -270,6 +338,22 @@ describe('Layout Components', () => {
       expect(navItems).toContain('/staff/rulesets')
     })
 
+    it('renders a shared breadcrumb trail for operator access routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/operator-access', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Operator Access')
+    })
+
+    it('renders a shared breadcrumb trail for adjudication routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/adjudication', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Adjudication')
+    })
+
     it('sets aria-current on the active primary nav item', async () => {
       const regattasWrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
       const regattasLink = regattasWrapper.findAll('.staff-layout__nav-item')[0]
@@ -278,6 +362,35 @@ describe('Layout Components', () => {
       const rulesetsWrapper = await mountAtRoute(router, '/staff/rulesets', StaffLayout)
       const rulesetsLink = rulesetsWrapper.findAll('.staff-layout__nav-item')[1]
       expect(rulesetsLink.attributes('aria-current')).toBe('page')
+    })
+
+    it('sets aria-current on the active printables subnav item', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/printables', StaffLayout)
+      const printablesLink = wrapper
+        .findAll('.staff-layout__subnav-item')
+        .find((node) => node.attributes('href') === '/staff/regattas/test-id-123/printables')
+
+      expect(printablesLink?.attributes('aria-current')).toBe('page')
+    })
+
+    it('keeps rulesets primary nav active on ruleset subroutes', async () => {
+      const createWrapper = await mountAtRoute(router, '/staff/rulesets/new', StaffLayout)
+      expect(createWrapper.findAll('.staff-layout__nav-item')[1].attributes('aria-current')).toBe('page')
+
+      const detailWrapper = await mountAtRoute(router, '/staff/rulesets/ruleset-123', StaffLayout)
+      expect(detailWrapper.findAll('.staff-layout__nav-item')[1].attributes('aria-current')).toBe('page')
+    })
+
+    it('keeps finance subnav active on finance subroutes', async () => {
+      const wrapper = await mountAtRoute(
+        router,
+        '/staff/regattas/test-id-123/finance/invoices/invoice-123',
+        StaffLayout
+      )
+      const financeLink = wrapper
+        .findAll('.staff-layout__subnav-item')
+        .find((node) => node.attributes('href') === '/staff/regattas/test-id-123/finance')
+      expect(financeLink.attributes('aria-current')).toBe('page')
     })
   })
 
@@ -357,6 +470,22 @@ describe('Layout Components', () => {
       const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
       const localeGroup = wrapper.find('.public-layout__locale')
       expect(localeGroup.attributes('role')).toBe('group')
+    })
+
+    it('updates pressed state and document language when switching locale', async () => {
+      const wrapper = await mountAtRoute(router, '/public/v2-5/schedule', PublicLayout)
+      let buttons = wrapper.findAll('.public-layout__locale-btn')
+
+      expect(buttons[0].attributes('aria-pressed')).toBe('false')
+      expect(buttons[1].attributes('aria-pressed')).toBe('true')
+
+      await buttons[0].trigger('click')
+      await nextTick()
+      buttons = wrapper.findAll('.public-layout__locale-btn')
+
+      expect(buttons[0].attributes('aria-pressed')).toBe('true')
+      expect(buttons[1].attributes('aria-pressed')).toBe('false')
+      expect(document.documentElement.getAttribute('lang')).toBe('nl')
     })
   })
 })

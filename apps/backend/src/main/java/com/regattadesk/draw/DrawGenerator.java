@@ -1,6 +1,12 @@
 package com.regattadesk.draw;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
 /**
  * Service for generating deterministic random draws with bib assignments.

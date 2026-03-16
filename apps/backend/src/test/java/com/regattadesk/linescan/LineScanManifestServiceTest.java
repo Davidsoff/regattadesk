@@ -1,5 +1,13 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.linescan.config.MinioConfiguration;
+import com.regattadesk.linescan.config.MinioStorageAdapter;
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.LineScanManifestTile;
+import com.regattadesk.linescan.model.LineScanTileMetadata;
+import com.regattadesk.linescan.repository.LineScanManifestRepository;
+import com.regattadesk.linescan.repository.LineScanTileRepository;
+import com.regattadesk.linescan.service.LineScanManifestService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -10,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
@@ -82,11 +91,12 @@ class LineScanManifestServiceTest {
 
         verify(storageAdapter).ensureBucket(regattaId);
         verify(tileRepository).deleteByManifestId(manifestId);
-        verify(tileRepository).saveAll(argThat(list ->
-            list.size() == 2
-                && list.stream().allMatch(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.PENDING)
-                && list.stream().allMatch(tile -> tile.getUploadAttempts() != null && tile.getUploadAttempts() == 0)
-        ));
+        verify(tileRepository).saveAll(argThat((List<LineScanTileMetadata> list) -> {
+            assertEquals(2, list.size());
+            assertTrue(list.stream().allMatch(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.PENDING));
+            assertTrue(list.stream().allMatch(tile -> tile.getUploadAttempts() != null && tile.getUploadAttempts() == 0));
+            return true;
+        }));
         verify(manifestRepository).findById(manifestId);
         assertEquals(manifestId, result.getId());
         assertEquals(1, result.getTiles().size());

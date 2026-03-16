@@ -1,7 +1,7 @@
 package com.regattadesk.linescan.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.linescan.TimingMarker;
+import com.regattadesk.linescan.model.TimingMarker;
 
 import java.util.UUID;
 
