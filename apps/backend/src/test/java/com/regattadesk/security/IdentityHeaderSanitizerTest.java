@@ -113,6 +113,8 @@ class IdentityHeaderSanitizerTest {
 
     @Test
     void testRegattaAdjudicationPath_TrustsIdentityHeaders() {
+        // Adjudication routes are explicitly edge-protected by ForwardAuth and should preserve
+        // forwarded identity headers for backend role enforcement.
         given()
             .header("Remote-User", "jury-user")
             .header("Remote-Groups", "head_of_jury")

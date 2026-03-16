@@ -42,10 +42,6 @@ function getResponseStatus(response) {
   return 0
 }
 
-function hasOwn(value, key) {
-  return Object.hasOwn(value, key)
-}
-
 /**
  * Custom error class for API errors with normalized fields.
  */
@@ -111,7 +107,7 @@ export function createApiClient(options = {}) {
 
       const status = getResponseStatus(result.response)
 
-      if (hasOwn(result, 'error') && result.error !== undefined && result.error !== null) {
+      if (Object.hasOwn(result, 'error') && result.error !== undefined && result.error !== null) {
         throw new ApiError(normalizeUnknownError(result.error), status)
       }
 
@@ -119,7 +115,7 @@ export function createApiClient(options = {}) {
         return null
       }
 
-      if (!hasOwn(result, 'data') || result.data === undefined) {
+      if (!Object.hasOwn(result, 'data') || result.data === undefined) {
         return null
       }
 

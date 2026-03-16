@@ -1,6 +1,9 @@
 package com.regattadesk.operator;
 
-import com.regattadesk.operator.events.*;
+import com.regattadesk.operator.events.StationHandoffCancelledEvent;
+import com.regattadesk.operator.events.StationHandoffCompletedEvent;
+import com.regattadesk.operator.events.StationHandoffPinRevealedEvent;
+import com.regattadesk.operator.events.StationHandoffRequestedEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -306,14 +309,26 @@ public class StationHandoffService {
      * @return list of pending handoffs
      */
     public List<StationHandoff> listPendingHandoffs(UUID regattaId, String station) {
+        return listPendingHandoffs(regattaId, station, null);
+    }
+
+    /**
+     * Lists pending handoffs for a regatta with optional station and token filters.
+     *
+     * @param regattaId the regatta ID
+     * @param station optional station identifier
+     * @param tokenId optional token identifier
+     * @return list of pending handoffs
+     */
+    public List<StationHandoff> listPendingHandoffs(UUID regattaId, String station, UUID tokenId) {
         if (regattaId == null) {
             throw new IllegalArgumentException("Regatta ID cannot be null");
         }
-        if (station == null || station.isBlank()) {
-            throw new IllegalArgumentException("Station cannot be null or blank");
-        }
-        
-        return repository.findPendingByRegattaAndStation(regattaId, station);
+
+        return repository.findPendingByRegatta(regattaId).stream()
+            .filter(handoff -> station == null || station.isBlank() || handoff.getStation().equals(station))
+            .filter(handoff -> tokenId == null || handoff.getTokenId().equals(tokenId))
+            .toList();
     }
     
     /**

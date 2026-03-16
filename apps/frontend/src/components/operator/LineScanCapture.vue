@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
+import { resolveOperatorToken } from '../../operatorContext.js'
 
 const props = defineProps({
   captureSessionId: {
@@ -25,23 +26,8 @@ const linkingMarkerId = ref(null)
 const linkingEntryId = ref('')
 const undoStack = ref([])
 
-// Follow-up: extract operator token retrieval into a shared composable
-// to avoid duplication with LineScan.vue and ensure consistency.
-const operatorToken = computed(() => {
-  const contextToken =
-    typeof globalThis.__REGATTADESK_AUTH__?.operatorToken === 'string'
-      ? globalThis.__REGATTADESK_AUTH__.operatorToken.trim()
-      : ''
-  const storageToken =
-    typeof globalThis.window?.localStorage?.getItem === 'function'
-      ? (globalThis.window.localStorage.getItem('rd_operator_token') || '').trim()
-      : ''
-
-  return contextToken || storageToken
-})
-
 const operatorApi = createOperatorApi(createApiClient(), {
-  getOperatorToken: () => operatorToken.value
+  getOperatorToken: () => resolveOperatorToken()
 })
 
 const sortedMarkers = computed(() => {
@@ -84,7 +70,7 @@ function resolveTileMetadata(frameOffset) {
 
 async function loadMarkers() {
   if (!hasCaptureSession()) {
-    errorMessage.value = 'Capture session is required'
+    errorMessage.value = t('operator.capture.errors.capture_session_required')
     return
   }
 
@@ -101,7 +87,7 @@ async function loadMarkers() {
     })
     markers.value = result || []
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to load markers'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_load_markers')
   } finally {
     isLoading.value = false
   }
@@ -109,7 +95,7 @@ async function loadMarkers() {
 
 async function createMarker() {
   if (!hasCaptureSession()) {
-    errorMessage.value = 'Capture session is required'
+    errorMessage.value = t('operator.capture.errors.capture_session_required')
     return
   }
 
@@ -133,7 +119,7 @@ async function createMarker() {
     })
     markers.value.push(newMarker)
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to create marker'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_create_marker')
   } finally {
     isLoading.value = false
   }
@@ -146,7 +132,7 @@ async function deleteMarker(markerId) {
 
   const marker = markers.value.find((m) => m.id === markerId)
   if (marker?.is_approved) {
-    errorMessage.value = 'Cannot modify approved marker'
+    errorMessage.value = t('operator.capture.errors.marker_approved')
     return
   }
 
@@ -159,9 +145,9 @@ async function deleteMarker(markerId) {
   } catch (error) {
     if (error instanceof ApiError && error.status === 409) {
       errorMessage.value =
-        error.code === 'MARKER_APPROVED' ? 'Cannot modify approved marker' : error.message
+        error.code === 'MARKER_APPROVED' ? t('operator.capture.errors.marker_approved') : error.message
     } else {
-      errorMessage.value = error instanceof Error ? error.message : 'Failed to delete marker'
+      errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_delete_marker')
     }
   } finally {
     isLoading.value = false
@@ -195,22 +181,22 @@ async function updateMarker(markerId) {
     const updated = await operatorApi.updateMarker(props.regattaId, markerId, {
       frame_offset: Number.parseInt(editingFrameOffset.value, 10)
     })
-    
+
     const index = markers.value.findIndex((m) => m.id === markerId)
     if (index !== -1) {
       markers.value[index] = updated
     }
-    
+
     // Save state for undo only after successful update
     undoStack.value.push({
       markerId,
       oldFrameOffset
     })
-    
+
     editingMarkerId.value = null
     editingFrameOffset.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to update marker'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_update_marker')
   } finally {
     isLoading.value = false
   }
@@ -228,12 +214,12 @@ async function linkMarker(markerId) {
 
   const normalizedEntryId = linkingEntryId.value.trim()
   if (!normalizedEntryId) {
-    errorMessage.value = 'Entry ID is required'
+    errorMessage.value = t('operator.capture.errors.entry_id_required')
     return
   }
 
   if (!/^[A-Za-z0-9-]{1,64}$/.test(normalizedEntryId)) {
-    errorMessage.value = 'Entry ID format is invalid'
+    errorMessage.value = t('operator.capture.errors.entry_id_invalid')
     return
   }
 
@@ -244,16 +230,16 @@ async function linkMarker(markerId) {
     const linked = await operatorApi.linkMarker(props.regattaId, markerId, {
       entry_id: normalizedEntryId
     })
-    
+
     const index = markers.value.findIndex((m) => m.id === markerId)
     if (index !== -1) {
       markers.value[index] = linked
     }
-    
+
     linkingMarkerId.value = null
     linkingEntryId.value = ''
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to link marker'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_link_marker')
   } finally {
     isLoading.value = false
   }
@@ -266,7 +252,7 @@ async function unlinkMarker(markerId) {
 
   const marker = markers.value.find((m) => m.id === markerId)
   if (marker?.is_approved) {
-    errorMessage.value = 'Cannot modify approved marker'
+    errorMessage.value = t('operator.capture.errors.marker_approved')
     return
   }
 
@@ -275,13 +261,13 @@ async function unlinkMarker(markerId) {
 
   try {
     const unlinked = await operatorApi.unlinkMarker(props.regattaId, markerId)
-    
+
     const index = markers.value.findIndex((m) => m.id === markerId)
     if (index !== -1) {
       markers.value[index] = unlinked
     }
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to unlink marker'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_unlink_marker')
   } finally {
     isLoading.value = false
   }
@@ -300,13 +286,13 @@ async function undoLastChange() {
     const updated = await operatorApi.updateMarker(props.regattaId, lastChange.markerId, {
       frame_offset: lastChange.oldFrameOffset
     })
-    
+
     const index = markers.value.findIndex((m) => m.id === lastChange.markerId)
     if (index !== -1) {
       markers.value[index] = updated
     }
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Failed to undo change'
+    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_undo')
   } finally {
     isLoading.value = false
   }

@@ -58,10 +58,11 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
 
     /**
      * Staff regatta-scoped protected paths under /api/v1/regattas/{id}.
-     * These are backend role-protected staff endpoints that also have matching edge protection
-     * even though they do not live under /api/v1/staff.
+     * These specific route families are covered by Traefik ForwardAuth in front of the backend,
+     * so forwarded identity headers remain trusted even though the paths do not live under
+     * /api/v1/staff.
      */
-    private static final Pattern STAFF_REGATTA_PROTECTED_PATH_PATTERN = Pattern.compile(
+    private static final Pattern STAFF_REGATTA_EDGE_PROTECTED_PATH_PATTERN = Pattern.compile(
         "^api/v1/regattas/[^/]+/(entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables|adjudication(/.*)?)$"
     );
 
@@ -92,7 +93,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
             .anyMatch(normalizedPath::startsWith)
             || OPERATOR_PATH_PATTERN.matcher(normalizedPath).matches();
         if (!isTrustedPath) {
-            isTrustedPath = STAFF_REGATTA_PROTECTED_PATH_PATTERN.matcher(normalizedPath).matches();
+            isTrustedPath = STAFF_REGATTA_EDGE_PROTECTED_PATH_PATTERN.matcher(normalizedPath).matches();
         }
         if (!isTrustedPath) {
             isTrustedPath = STAFF_DRAW_PATH_PATTERN.matcher(normalizedPath).matches();

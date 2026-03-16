@@ -119,6 +119,35 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
             throw new RuntimeException("Failed to find station handoff", e);
         }
     }
+
+    @Override
+    public List<StationHandoff> findPendingByRegatta(UUID regattaId) {
+        String sql = """
+            SELECT id, regatta_id, token_id, station, requesting_device_id,
+                   pin, status, created_at, expires_at, completed_at
+            FROM station_handoffs
+            WHERE regatta_id = ? AND status = 'PENDING' AND expires_at > ?
+            ORDER BY created_at DESC
+            """;
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setObject(1, regattaId);
+            stmt.setTimestamp(2, Timestamp.from(Instant.now()));
+
+            List<StationHandoff> handoffs = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    handoffs.add(mapResultSet(rs));
+                }
+            }
+            return handoffs;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to find pending handoffs for regatta", e);
+        }
+    }
     
     @Override
     public List<StationHandoff> findPendingByRegattaAndStation(UUID regattaId, String station) {
@@ -126,7 +155,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
             SELECT id, regatta_id, token_id, station, requesting_device_id,
                    pin, status, created_at, expires_at, completed_at
             FROM station_handoffs
-            WHERE regatta_id = ? AND station = ? AND status = 'PENDING'
+            WHERE regatta_id = ? AND station = ? AND status = 'PENDING' AND expires_at > ?
             ORDER BY created_at DESC
             """;
         
@@ -135,6 +164,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
             
             stmt.setObject(1, regattaId);
             stmt.setString(2, station);
+            stmt.setTimestamp(3, Timestamp.from(Instant.now()));
             
             List<StationHandoff> handoffs = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
@@ -155,7 +185,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
             SELECT id, regatta_id, token_id, station, requesting_device_id,
                    pin, status, created_at, expires_at, completed_at
             FROM station_handoffs
-            WHERE token_id = ? AND status = 'PENDING'
+            WHERE token_id = ? AND status = 'PENDING' AND expires_at > ?
             ORDER BY created_at DESC
             """;
         
@@ -163,6 +193,7 @@ public class JdbcStationHandoffRepository implements StationHandoffRepository {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setObject(1, tokenId);
+            stmt.setTimestamp(2, Timestamp.from(Instant.now()));
             
             List<StationHandoff> handoffs = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {

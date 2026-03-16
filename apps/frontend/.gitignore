@@ -26,3 +26,7 @@ a11y-reports/
 *.njsproj
 *.sln
 *.sw?
+
+# Desloppify artifacts
+.desloppify/
+.claude/

@@ -21,7 +21,7 @@ const maskedOperatorToken = computed(() => {
     <h2>{{ t('operator.regattas.title') }}</h2>
     <p>{{ t('operator.regattas.description') }}</p>
     <p v-if="operatorToken" class="operator-regattas-list__status">
-      {{ t('operator.regattas.token_status', { token: maskedOperatorToken, station: operatorStation }) }}
+      {{ t('operator.regattas.auth_status', { token: maskedOperatorToken, station: operatorStation }) }}
     </p>
     <p class="operator-regattas-list__hint">{{ t('operator.regattas.access_hint') }}</p>
   </div>
