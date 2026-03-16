@@ -18,6 +18,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * JDBC-backed adjudication workflows.
+ *
+ * Transaction note:
+ * Quarkus/Narayana enlists connections obtained from the application DataSource
+ * in the active JTA transaction. The write methods in this service intentionally
+ * keep the @Transactional boundary at the public service method and perform all
+ * JDBC work through connections acquired inside that boundary so the mutation
+ * either commits or rolls back as one unit.
+ */
 @ApplicationScoped
 public class AdjudicationService {
 
