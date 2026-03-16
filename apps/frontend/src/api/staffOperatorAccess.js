@@ -101,7 +101,14 @@ function normalizeStationHandoffResponse(result) {
 }
 
 function normalizeStationHandoffListResponse(result) {
-  const handoffs = Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []
+  let handoffs = []
+
+  if (Array.isArray(result?.data)) {
+    handoffs = result.data
+  } else if (Array.isArray(result)) {
+    handoffs = result
+  }
+
   return handoffs.map(normalizeStationHandoffResponse)
 }
 
