@@ -192,4 +192,60 @@ describe('AdjudicationView', () => {
     expect(wrapper.text()).toContain('Results revision advanced to 1 after penalty.')
     expect(wrapper.get('.revision-message').text()).toBe('Results revision advanced to 1 after penalty.')
   })
+
+  it('requires confirmation before destructive adjudication actions are submitted', async () => {
+    mockApi.listInvestigations.mockResolvedValue([investigation('entry-1', 'one')])
+    mockApi.getEntryDetail.mockResolvedValue({
+      ...detail('entry-1', 'Next adjudication change will advance results revision to 1.'),
+      history: [
+        {
+          action: 'investigation_opened',
+          actor: 'jury-user',
+          results_revision: 0,
+          created_at: '2026-03-16T10:00:00Z'
+        }
+      ]
+    })
+    mockApi.applyDsq.mockResolvedValue(detail('entry-1', 'Results revision advanced to 1 after DSQ.', 1))
+
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="action-reason"]').exists()).toBe(true)
+    })
+
+    await wrapper.get('[data-testid="action-reason"]').setValue('Lane violation confirmed on review')
+    await wrapper.get('[data-testid="request-dsq"]').trigger('click')
+
+    expect(mockApi.applyDsq).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="adjudication-confirmation"]').text()).toContain('Disqualify Crew entry-1?')
+    expect(wrapper.get('[data-testid="adjudication-confirmation"]').text()).toContain('Current state: entered, result label provisional')
+
+    await wrapper.get('[data-testid="confirm-action"]').trigger('click')
+
+    await vi.waitFor(() => {
+      expect(mockApi.applyDsq).toHaveBeenCalledWith('regatta-1', 'entry-1', {
+        reason: 'Lane violation confirmed on review',
+        note: undefined
+      })
+    })
+  })
+
+  it('allows cancelling a destructive adjudication confirmation', async () => {
+    mockApi.listInvestigations.mockResolvedValue([investigation('entry-1', 'one')])
+    mockApi.getEntryDetail.mockResolvedValue(detail('entry-1', 'Next adjudication change will advance results revision to 1.'))
+
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="action-reason"]').exists()).toBe(true)
+    })
+
+    await wrapper.get('[data-testid="action-reason"]').setValue('Restore original state')
+    await wrapper.get('[data-testid="request-revert-dsq"]').trigger('click')
+    await wrapper.get('[data-testid="cancel-action"]').trigger('click')
+
+    expect(mockApi.revertDsq).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="adjudication-confirmation"]').exists()).toBe(false)
+  })
 })

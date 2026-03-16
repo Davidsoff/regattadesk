@@ -183,6 +183,18 @@
       "exclusion": "Apply exclusion",
       "revert_dsq": "Revert DSQ"
     },
+    "confirmation": {
+      "title": "Confirm {action}",
+      "confirm": "Confirm action",
+      "cancel": "Cancel",
+      "current_state": "Current state: {status}, result label {resultLabel}, results revision {revision}.",
+      "latest_history": "Latest adjudication history: {action} by {actor} at revision {revision}.",
+      "prompts": {
+        "dsq": "Disqualify {crew}? This result-affecting change will be added to adjudication history.",
+        "exclusion": "Exclude {crew}? This destructive change will be added to adjudication history.",
+        "revert_dsq": "Revert the DSQ for {crew}? This restoration will also be recorded in adjudication history."
+      }
+    },
     "revision": {
       "current": "Results revision {revision}"
     },

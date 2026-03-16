@@ -183,6 +183,18 @@
       "exclusion": "Uitsluiten",
       "revert_dsq": "DSQ terugdraaien"
     },
+    "confirmation": {
+      "title": "{action} bevestigen",
+      "confirm": "Actie bevestigen",
+      "cancel": "Annuleren",
+      "current_state": "Huidige status: {status}, resultaatlabel {resultLabel}, resultatenrevisie {revision}.",
+      "latest_history": "Laatste jurygeschiedenis: {action} door {actor} op revisie {revision}.",
+      "prompts": {
+        "dsq": "{crew} diskwalificeren? Deze resultaatbepalende wijziging wordt aan de jurygeschiedenis toegevoegd.",
+        "exclusion": "{crew} uitsluiten? Deze destructieve wijziging wordt aan de jurygeschiedenis toegevoegd.",
+        "revert_dsq": "De DSQ voor {crew} terugdraaien? Ook dit herstel wordt in de jurygeschiedenis vastgelegd."
+      }
+    },
     "revision": {
       "current": "Resultatenrevisie {revision}"
     },

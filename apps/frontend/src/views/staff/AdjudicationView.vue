@@ -19,10 +19,24 @@ const error = ref('')
 const success = ref('')
 const openForm = ref({ entry_id: '', description: '' })
 const actionForm = ref({ reason: '', note: '', penalty_seconds: 15 })
+const pendingConfirmation = ref(null)
+
+const destructiveActions = new Set(['dsq', 'exclusion', 'revert_dsq'])
+
+const latestHistoryItem = computed(() => {
+  if (!detail.value?.history?.length) {
+    return null
+  }
+  return detail.value.history[detail.value.history.length - 1]
+})
 
 function resetMessages() {
   error.value = ''
   success.value = ''
+}
+
+function clearPendingConfirmation() {
+  pendingConfirmation.value = null
 }
 
 async function loadInvestigations() {
@@ -57,11 +71,13 @@ async function selectEntry(entryId, options = {}) {
     detail.value = null
     selectedEntryId.value = ''
     openForm.value.entry_id = ''
+    clearPendingConfirmation()
     return
   }
   if (resetFeedback) {
     resetMessages()
   }
+  clearPendingConfirmation()
   selectedEntryId.value = entryId
   const nextDetail = await api.getEntryDetail(regattaId.value, entryId)
   if (preserveRevisionImpact) {
@@ -103,10 +119,14 @@ async function submitInvestigation() {
   }
 }
 
-async function submitAction(action) {
+function getActionLabel(action) {
+  return t(`adjudication.actions.${action}`)
+}
+
+function buildActionPayload(action) {
   if (!selectedEntryId.value || !actionForm.value.reason.trim()) {
     error.value = t('adjudication.errors.action_required')
-    return
+    return null
   }
 
   const payload = {
@@ -117,11 +137,41 @@ async function submitAction(action) {
     const seconds = Number(actionForm.value.penalty_seconds)
     if (!Number.isFinite(seconds) || !Number.isInteger(seconds) || seconds <= 0) {
       error.value = t('adjudication.errors.invalid_penalty_seconds')
-      return
+      return null
     }
     payload.penalty_seconds = seconds
   }
 
+  return payload
+}
+
+function requestAction(action) {
+  resetMessages()
+
+  const payload = buildActionPayload(action)
+  if (!payload) {
+    return
+  }
+
+  if (destructiveActions.has(action)) {
+    pendingConfirmation.value = { action, payload }
+    return
+  }
+
+  return executeAction(action, payload)
+}
+
+async function confirmAction() {
+  if (!pendingConfirmation.value) {
+    return
+  }
+
+  const { action, payload } = pendingConfirmation.value
+  clearPendingConfirmation()
+  await executeAction(action, payload)
+}
+
+async function executeAction(action, payload) {
   const actionMap = {
     penalty: api.applyPenalty,
     dsq: api.applyDsq,
@@ -150,6 +200,7 @@ async function submitAction(action) {
 watch(regattaId, () => {
   selectedEntryId.value = ''
   openForm.value.entry_id = ''
+  clearPendingConfirmation()
   loadInvestigations()
 })
 
@@ -215,7 +266,42 @@ onMounted(loadInvestigations)
             </span>
           </div>
 
-          <form class="stack" data-testid="penalty-form" @submit.prevent="submitAction('penalty')">
+          <section
+            v-if="pendingConfirmation"
+            class="confirmation-panel"
+            data-testid="adjudication-confirmation"
+            role="alertdialog"
+            aria-live="assertive"
+          >
+            <h4>{{ t('adjudication.confirmation.title', { action: getActionLabel(pendingConfirmation.action) }) }}</h4>
+            <p>
+              {{ t(`adjudication.confirmation.prompts.${pendingConfirmation.action}`, { crew: detail.entry.crew_name }) }}
+            </p>
+            <p class="confirmation-panel__context">
+              {{ t('adjudication.confirmation.current_state', {
+                status: detail.entry.status,
+                resultLabel: detail.entry.result_label,
+                revision: detail.revision_impact.current_results_revision
+              }) }}
+            </p>
+            <p v-if="latestHistoryItem" class="confirmation-panel__context">
+              {{ t('adjudication.confirmation.latest_history', {
+                action: latestHistoryItem.action,
+                actor: latestHistoryItem.actor,
+                revision: latestHistoryItem.results_revision
+              }) }}
+            </p>
+            <div class="button-row">
+              <button type="button" data-testid="confirm-action" :disabled="saving" @click="confirmAction">
+                {{ t('adjudication.confirmation.confirm') }}
+              </button>
+              <button type="button" data-testid="cancel-action" :disabled="saving" @click="clearPendingConfirmation">
+                {{ t('adjudication.confirmation.cancel') }}
+              </button>
+            </div>
+          </section>
+
+          <form class="stack" data-testid="penalty-form" @submit.prevent="requestAction('penalty')">
             <label>
               <span>{{ t('adjudication.actions.reason') }}</span>
               <input v-model="actionForm.reason" data-testid="action-reason" type="text" />
@@ -230,9 +316,9 @@ onMounted(loadInvestigations)
             </label>
             <div class="button-row">
               <button type="submit" :disabled="saving">{{ t('adjudication.actions.penalty') }}</button>
-              <button type="button" :disabled="saving" @click="submitAction('dsq')">{{ t('adjudication.actions.dsq') }}</button>
-              <button type="button" :disabled="saving" @click="submitAction('exclusion')">{{ t('adjudication.actions.exclusion') }}</button>
-              <button type="button" :disabled="saving" @click="submitAction('revert_dsq')">{{ t('adjudication.actions.revert_dsq') }}</button>
+              <button type="button" data-testid="request-dsq" :disabled="saving" @click="requestAction('dsq')">{{ t('adjudication.actions.dsq') }}</button>
+              <button type="button" data-testid="request-exclusion" :disabled="saving" @click="requestAction('exclusion')">{{ t('adjudication.actions.exclusion') }}</button>
+              <button type="button" data-testid="request-revert-dsq" :disabled="saving" @click="requestAction('revert_dsq')">{{ t('adjudication.actions.revert_dsq') }}</button>
             </div>
           </form>
 
@@ -340,6 +426,24 @@ onMounted(loadInvestigations)
   background: var(--rd-bg);
   border-radius: 0.5rem;
   padding: 0.75rem;
+}
+
+.confirmation-panel {
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 0.5rem;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.confirmation-panel h4,
+.confirmation-panel p {
+  margin: 0;
+}
+
+.confirmation-panel__context {
+  color: var(--rd-text-muted);
 }
 
 .button-row {

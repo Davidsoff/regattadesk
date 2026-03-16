@@ -344,6 +344,14 @@ describe('Layout Components', () => {
       expect(breadcrumb.text()).toContain('Operator Access')
     })
 
+    it('renders a shared breadcrumb trail for adjudication routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/adjudication', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Adjudication')
+    })
+
     it('sets aria-current on the active primary nav item', async () => {
       const regattasWrapper = await mountAtRoute(router, '/staff/regattas', StaffLayout)
       const regattasLink = regattasWrapper.findAll('.staff-layout__nav-item')[0]
