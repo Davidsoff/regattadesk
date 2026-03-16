@@ -207,17 +207,17 @@ class StationHandoffServiceTest {
         UUID regattaId = UUID.randomUUID();
         String station = "finish-line";
         List<StationHandoff> pendingHandoffs = List.of(
-            createPendingHandoff(UUID.randomUUID()),
-            createPendingHandoff(UUID.randomUUID())
+            createPendingHandoff(UUID.randomUUID(), UUID.randomUUID(), regattaId, station),
+            createPendingHandoff(UUID.randomUUID(), UUID.randomUUID(), regattaId, station)
         );
         
-        when(repository.findPendingByRegattaAndStation(regattaId, station))
+        when(repository.findPendingByRegatta(regattaId))
             .thenReturn(pendingHandoffs);
 
         List<StationHandoff> result = service.listPendingHandoffs(regattaId, station);
 
         assertEquals(2, result.size());
-        verify(repository).findPendingByRegattaAndStation(regattaId, station);
+        verify(repository).findPendingByRegatta(regattaId);
     }
 
     private OperatorToken createValidToken(UUID tokenId, UUID regattaId, String station) {

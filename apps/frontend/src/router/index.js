@@ -20,6 +20,7 @@ const staffRoutes = [
   route('regattas/:regattaId', 'staff-regatta-detail', () => import('../views/staff/RegattaDetail.vue')),
   route('regattas/:regattaId/draw', 'staff-regatta-draw', () => import('../views/staff/DrawWorkflow.vue')),
   route('regattas/:regattaId/finance', 'staff-regatta-finance', () => import('../views/staff/RegattaFinance.vue')),
+  route('regattas/:regattaId/operator-access', 'staff-regatta-operator-access', () => import('../views/staff/OperatorAccess.vue')),
   route('regattas/:regattaId/blocks', 'staff-blocks-management', () => import('../views/staff/BlocksManagement.vue')),
   route('regattas/:regattaId/printables', 'staff-regatta-printables', () => import('../views/staff/RegattaPrintables.vue')),
   route('regattas/:regattaId/finance/entries/:entryId', 'staff-regatta-finance-entry', () => import('../views/staff/EntryPaymentStatus.vue')),
