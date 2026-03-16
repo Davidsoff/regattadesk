@@ -295,7 +295,6 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-    it('renders subnav with draw, finance, blocks, and printables links inside a regatta', async () => {
   it('renders subnav with draw, finance, operator access, blocks, and printables links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)

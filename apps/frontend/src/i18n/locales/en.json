@@ -164,8 +164,10 @@
     "errors": {
       "load_tokens": "Failed to load operator tokens.",
       "create_token": "Failed to create operator token.",
+      "invalid_validity_window": "Valid until must be after valid from.",
       "revoke_token": "Failed to revoke operator token.",
       "export_token": "Failed to export operator token PDF.",
+      "handoff_required": "Enter a handoff ID before loading a handoff.",
       "load_handoff": "Failed to load station handoff.",
       "reveal_pin": "Failed to reveal station handoff PIN."
     },

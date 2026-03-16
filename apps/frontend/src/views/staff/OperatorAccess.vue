@@ -43,6 +43,14 @@ function toIsoString(value) {
   return new Date(value).toISOString()
 }
 
+function isInvalidValidityWindow(validFrom, validUntil) {
+  if (!validFrom || !validUntil) {
+    return false
+  }
+
+  return new Date(validUntil).getTime() < new Date(validFrom).getTime()
+}
+
 function downloadBlob(blob, filename) {
   const objectUrl = globalThis.URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -71,6 +79,11 @@ async function loadTokens() {
 async function submitTokenForm() {
   actionMessage.value = ''
   errorMessage.value = ''
+
+  if (isInvalidValidityWindow(tokenForm.valid_from, tokenForm.valid_until)) {
+    errorMessage.value = t('operator_access.errors.invalid_validity_window')
+    return
+  }
 
   try {
     await operatorAccessApi.createToken(regattaId.value, {
@@ -116,11 +129,19 @@ async function exportTokenPdf(tokenId) {
 }
 
 async function loadHandoff() {
-  handoffLoading.value = true
   handoffError.value = ''
+  const handoffId = handoffLookup.handoff_id.trim()
+
+  if (!handoffId) {
+    handoff.value = null
+    handoffError.value = t('operator_access.errors.handoff_required')
+    return
+  }
+
+  handoffLoading.value = true
 
   try {
-    handoff.value = await operatorAccessApi.getStationHandoff(regattaId.value, handoffLookup.handoff_id)
+    handoff.value = await operatorAccessApi.getStationHandoff(regattaId.value, handoffId)
   } catch (error) {
     handoff.value = null
     handoffError.value = error?.message || t('operator_access.errors.load_handoff')
@@ -221,7 +242,7 @@ onMounted(async () => {
         <button data-testid="confirm-token-action" type="button" @click="confirmPendingTokenAction">
           {{ t('common.confirm') }}
         </button>
-        <button type="button" @click="cancelPendingTokenAction">
+        <button data-testid="cancel-token-action" type="button" @click="cancelPendingTokenAction">
           {{ t('common.cancel') }}
         </button>
       </div>

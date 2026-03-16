@@ -170,6 +170,22 @@ describe('OperatorAccess view (issue #137)', () => {
     })
   })
 
+  it('blocks token creation when valid until is earlier than valid from', async () => {
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalled()
+    })
+
+    await wrapper.find('input[name="station"]').setValue('Start Pontoon')
+    await wrapper.find('input[name="valid_from"]').setValue('2026-03-10T17:00')
+    await wrapper.find('input[name="valid_until"]').setValue('2026-03-10T09:00')
+    await wrapper.find('[data-testid="create-token-form"]').trigger('submit.prevent')
+
+    expect(mockStaffOperatorAccessApi.createToken).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Valid until must be after valid from.')
+  })
+
   it('requires confirmation before exporting or revoking a token', async () => {
     const wrapper = await mountPage()
 
@@ -181,6 +197,12 @@ describe('OperatorAccess view (issue #137)', () => {
 
     expect(wrapper.find('[data-testid="token-action-confirmation"]').text()).toContain('Export PDF')
     expect(mockStaffOperatorAccessApi.exportTokenPdf).not.toHaveBeenCalled()
+
+    await wrapper.find('[data-testid="cancel-token-action"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="token-action-confirmation"]').exists()).toBe(false)
+
+    await wrapper.find(`[data-testid="export-token-${TOKEN_ID}"]`).trigger('click')
 
     await wrapper.find('[data-testid="confirm-token-action"]').trigger('click')
 
@@ -230,6 +252,19 @@ describe('OperatorAccess view (issue #137)', () => {
     })
 
     expect(wrapper.find(`[data-testid="handoff-pin-${HANDOFF_ID}"]`).text()).toContain('4821')
+  })
+
+  it('requires a handoff id before loading handoff details', async () => {
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(mockStaffOperatorAccessApi.listTokens).toHaveBeenCalled()
+    })
+
+    await wrapper.find('[data-testid="load-handoff"]').trigger('click')
+
+    expect(mockStaffOperatorAccessApi.getStationHandoff).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Enter a handoff ID before loading a handoff.')
   })
 
   it('hides privileged actions and shows a clear authorization message for non-admin staff roles', async () => {

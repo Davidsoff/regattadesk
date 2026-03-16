@@ -157,7 +157,7 @@ function getNavigationLabel(navItem) {
   background: var(--rd-surface-2);
 }
 
-.staff-layout__nav-item.router-link-active {
+.staff-layout__nav-item[aria-current='page'] {
   background: var(--rd-accent);
   color: white;
 }
@@ -182,7 +182,7 @@ function getNavigationLabel(navItem) {
   background: var(--rd-surface-2);
 }
 
-.staff-layout__subnav-item.router-link-exact-active {
+.staff-layout__subnav-item[aria-current='page'] {
   background: var(--rd-accent);
   color: white;
 }

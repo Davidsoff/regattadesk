@@ -164,8 +164,10 @@
     "errors": {
       "load_tokens": "Laden van operatortokens mislukt.",
       "create_token": "Aanmaken van operatortoken mislukt.",
+      "invalid_validity_window": "Geldig tot moet na geldig vanaf liggen.",
       "revoke_token": "Intrekken van operatortoken mislukt.",
       "export_token": "Exporteren van operatortoken-pdf mislukt.",
+      "handoff_required": "Voer een overdracht-ID in voordat je een overdracht laadt.",
       "load_handoff": "Laden van stationsoverdracht mislukt.",
       "reveal_pin": "Tonen van overdrachts-PIN mislukt."
     },
