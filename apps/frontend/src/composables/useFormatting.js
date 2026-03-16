@@ -37,6 +37,30 @@ function withNumericValue(val, fn, fallback = '') {
   return fn(val);
 }
 
+/**
+ * Internal guard for numeric formatters that always return strings.
+ * @param {*} val
+ * @param {function(*): string} fn
+ * @param {string} fallback
+ * @returns {string}
+ */
+function withNumericStringValue(val, fn, fallback = '') {
+  if (val == null || Number.isNaN(val)) return fallback;
+  return fn(val);
+}
+
+/**
+ * Internal guard for numeric formatters that always return numbers.
+ * @param {*} val
+ * @param {function(*): number} fn
+ * @param {number} fallback
+ * @returns {number}
+ */
+function withNumericNumberValue(val, fn, fallback = 0) {
+  if (val == null || Number.isNaN(val)) return fallback;
+  return fn(val);
+}
+
 export function useFormatting(locale = 'en') {
   const currentLocale = computed(() => {
     if (locale !== null && typeof locale === 'object') {
@@ -179,7 +203,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Elapsed time in milliseconds
    */
   const formatElapsedTime = (milliseconds) => {
-    return withNumericValue(milliseconds, (ms) => {
+    return withNumericStringValue(milliseconds, (ms) => {
       const totalSeconds = Math.floor(ms / 1000);
       const msRemainder = ms % 1000;
       const seconds = totalSeconds % 60;
@@ -203,7 +227,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} milliseconds - Delta time in milliseconds
    */
   const formatDeltaTime = (milliseconds) => {
-    return withNumericValue(milliseconds, (ms) => {
+    return withNumericStringValue(milliseconds, (ms) => {
       if (ms === 0) {
         return '+0:00.000';
       }
@@ -253,7 +277,7 @@ export function useFormatting(locale = 'en') {
    * @param {number} precision - Number of decimal places (default 3 for milliseconds)
    */
   const roundTime = (milliseconds, precision = 3) => {
-    return withNumericValue(milliseconds, (ms) => {
+    return withNumericNumberValue(milliseconds, (ms) => {
       if (precision <= 0) return ms;
 
       const clampedPrecision = Math.min(3, precision);

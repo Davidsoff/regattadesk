@@ -11,7 +11,11 @@
  */
 
 function getDocumentObject() {
-  return typeof document !== 'undefined' ? document : null;
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return document;
 }
 
 /**
