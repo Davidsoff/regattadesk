@@ -189,16 +189,18 @@ async function mountAtRoute(router, route, component) {
 describe('Layout Components', () => {
   let router
 
+  function createOperatorSessionResponse() {
+    return jsonResponse(200, {
+      capture_session_id: 'my-session-id',
+      station: 'finish-line',
+      is_synced: false,
+      unsynced_reason: 'awaiting upload'
+    })
+  }
+
   beforeEach(() => {
     router = createTestRouter()
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      jsonResponse(200, {
-        capture_session_id: 'my-session-id',
-        station: 'finish-line',
-        is_synced: false,
-        unsynced_reason: 'awaiting upload'
-      })
-    ))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(createOperatorSessionResponse())))
     globalThis.__REGATTADESK_AUTH__ = {
       operatorAuth: 'operator-token',
       operatorStation: 'finish-line'

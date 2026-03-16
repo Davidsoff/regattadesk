@@ -14,7 +14,6 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
@@ -41,6 +40,69 @@ class AdjudicationResourceIT {
             .body("revision_impact.current_results_revision", equalTo(0))
             .body("revision_impact.next_results_revision", equalTo(1))
             .body("revision_impact.message", equalTo("Next adjudication change will advance results revision to 1."));
+    }
+
+    @Test
+    void openInvestigation_andExclusion_updateInvestigationLifecycleAndRevisionImpact() throws Exception {
+        TestData data = seedAdjudicationData();
+
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+            .contentType("application/json")
+            .body("""
+                {
+                  "entry_id": "%s",
+                  "description": "Wash riding reported by marshal"
+                }
+                """.formatted(data.entryId))
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/adjudication/investigations")
+        .then()
+            .statusCode(200)
+            .body("entry.entry_id", equalTo(data.entryId.toString()))
+            .body("investigations", hasSize(1))
+            .body("investigations[0].status", equalTo("open"))
+            .body("investigations[0].description", equalTo("Wash riding reported by marshal"))
+            .body("history", hasSize(0))
+            .body("revision_impact.current_results_revision", equalTo(0))
+            .body("revision_impact.next_results_revision", equalTo(1));
+
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+        .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/adjudication/investigations")
+        .then()
+            .statusCode(200)
+            .body("entry_id", hasSize(1))
+            .body("entry_id[0]", equalTo(data.entryId.toString()))
+            .body("status[0]", equalTo("open"));
+
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+            .contentType("application/json")
+            .body("""
+                {
+                  "reason": "Outside assistance confirmed on review",
+                  "note": "Exclude crew from official results"
+                }
+                """)
+        .when()
+            .post("/api/v1/regattas/" + data.regattaId + "/adjudication/entries/" + data.entryId + "/exclude")
+        .then()
+            .statusCode(200)
+            .body("entry.status", equalTo("excluded"))
+            .body("entry.result_label", equalTo("edited"))
+            .body("investigations", hasSize(1))
+            .body("investigations[0].status", equalTo("closed"))
+            .body("investigations[0].outcome", equalTo("excluded"))
+            .body("revision_impact.current_results_revision", equalTo(1))
+            .body("revision_impact.next_results_revision", equalTo(2))
+            .body("revision_impact.message", equalTo("Results revision advanced to 1 after exclusion."))
+            .body("history", hasSize(1))
+            .body("history[0].action", equalTo("exclusion"));
     }
 
     @Test

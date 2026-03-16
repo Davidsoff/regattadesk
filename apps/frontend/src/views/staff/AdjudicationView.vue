@@ -120,7 +120,31 @@ async function submitInvestigation() {
 }
 
 function getActionLabel(action) {
-  return t(`adjudication.actions.${action}`)
+  switch (action) {
+    case 'penalty':
+      return t('adjudication.actions.penalty')
+    case 'dsq':
+      return t('adjudication.actions.dsq')
+    case 'exclusion':
+      return t('adjudication.actions.exclusion')
+    case 'revert_dsq':
+      return t('adjudication.actions.revert_dsq')
+    default:
+      return action
+  }
+}
+
+function getConfirmationPrompt(action, crew) {
+  switch (action) {
+    case 'dsq':
+      return t('adjudication.confirmation.prompts.dsq', { crew })
+    case 'exclusion':
+      return t('adjudication.confirmation.prompts.exclusion', { crew })
+    case 'revert_dsq':
+      return t('adjudication.confirmation.prompts.revert_dsq', { crew })
+    default:
+      return ''
+  }
 }
 
 function buildActionPayload(action) {
@@ -275,7 +299,7 @@ onMounted(loadInvestigations)
           >
             <h4>{{ t('adjudication.confirmation.title', { action: getActionLabel(pendingConfirmation.action) }) }}</h4>
             <p>
-              {{ t(`adjudication.confirmation.prompts.${pendingConfirmation.action}`, { crew: detail.entry.crew_name }) }}
+              {{ getConfirmationPrompt(pendingConfirmation.action, detail.entry.crew_name) }}
             </p>
             <p class="confirmation-panel__context">
               {{ t('adjudication.confirmation.current_state', {

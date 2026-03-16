@@ -134,6 +134,51 @@ describe('AdjudicationView', () => {
     })
   })
 
+  it('opens an investigation and refreshes the selected entry detail', async () => {
+    const openedDetail = {
+      ...detail('entry-1', 'Next adjudication change will advance results revision to 1.'),
+      investigations: [investigation('entry-1', 'one')],
+      history: [
+        {
+          action: 'investigation_opened',
+          actor: 'jury-user',
+          results_revision: 0,
+          reason: 'Wash riding reported by marshal',
+          created_at: '2026-03-16T10:00:00Z'
+        }
+      ]
+    }
+
+    mockApi.listInvestigations
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([investigation('entry-1', 'one')])
+    mockApi.openInvestigation.mockResolvedValue(openedDetail)
+    mockApi.getEntryDetail.mockResolvedValue(openedDetail)
+
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(mockApi.listInvestigations).toHaveBeenCalledWith('regatta-1')
+    })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="open-entry-id"]').setValue('entry-1')
+    await wrapper.find('textarea').setValue('Wash riding reported by marshal')
+    await wrapper.find('form.stack').trigger('submit')
+
+    await vi.waitFor(() => {
+      expect(mockApi.openInvestigation).toHaveBeenCalledWith('regatta-1', {
+        entry_id: 'entry-1',
+        description: 'Wash riding reported by marshal'
+      })
+    })
+
+    expect(mockApi.listInvestigations).toHaveBeenCalledTimes(2)
+    expect(mockApi.getEntryDetail).toHaveBeenCalledWith('regatta-1', 'entry-1')
+    expect(wrapper.text()).toContain('Investigation opened.')
+    expect(wrapper.text()).toContain('Wash riding reported by marshal')
+  })
+
   it('validates penalty seconds before posting', async () => {
     mockApi.listInvestigations.mockResolvedValue([investigation('entry-1', 'one')])
     mockApi.getEntryDetail.mockResolvedValue(detail('entry-1', 'Next adjudication change will advance results revision to 1.'))
@@ -229,6 +274,76 @@ describe('AdjudicationView', () => {
         note: undefined
       })
     })
+  })
+
+  it('applies an exclusion after confirmation and shows the revised status', async () => {
+    mockApi.listInvestigations
+      .mockResolvedValueOnce([investigation('entry-1', 'one')])
+      .mockResolvedValueOnce([investigation('entry-1', 'one')])
+    mockApi.getEntryDetail
+      .mockResolvedValueOnce(detail('entry-1', 'Next adjudication change will advance results revision to 1.'))
+      .mockResolvedValueOnce({
+        ...detail('entry-1', 'Results revision advanced to 1 after exclusion.', 1),
+        entry: {
+          entry_id: 'entry-1',
+          crew_name: 'Crew entry-1',
+          status: 'excluded',
+          result_label: 'edited',
+          penalty_seconds: null
+        },
+        history: [
+          {
+            action: 'exclusion',
+            actor: 'jury-user',
+            results_revision: 1,
+            reason: 'Outside assistance confirmed',
+            created_at: '2026-03-16T10:05:00Z'
+          }
+        ]
+      })
+    mockApi.applyExclusion.mockResolvedValue({
+      ...detail('entry-1', 'Results revision advanced to 1 after exclusion.', 1),
+      entry: {
+        entry_id: 'entry-1',
+        crew_name: 'Crew entry-1',
+        status: 'excluded',
+        result_label: 'edited',
+        penalty_seconds: null
+      },
+      history: [
+        {
+          action: 'exclusion',
+          actor: 'jury-user',
+          results_revision: 1,
+          reason: 'Outside assistance confirmed',
+          created_at: '2026-03-16T10:05:00Z'
+        }
+      ]
+    })
+
+    const wrapper = await mountPage()
+
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="action-reason"]').exists()).toBe(true)
+    })
+
+    await wrapper.get('[data-testid="action-reason"]').setValue('Outside assistance confirmed')
+    await wrapper.get('[data-testid="request-exclusion"]').trigger('click')
+
+    expect(mockApi.applyExclusion).not.toHaveBeenCalled()
+    expect(wrapper.get('[data-testid="adjudication-confirmation"]').text()).toContain('Exclude Crew entry-1?')
+
+    await wrapper.get('[data-testid="confirm-action"]').trigger('click')
+
+    await vi.waitFor(() => {
+      expect(mockApi.applyExclusion).toHaveBeenCalledWith('regatta-1', 'entry-1', {
+        reason: 'Outside assistance confirmed',
+        note: undefined
+      })
+    })
+
+    expect(wrapper.text()).toContain('Status: excluded')
+    expect(wrapper.get('.revision-message').text()).toBe('Results revision advanced to 1 after exclusion.')
   })
 
   it('allows cancelling a destructive adjudication confirmation', async () => {
