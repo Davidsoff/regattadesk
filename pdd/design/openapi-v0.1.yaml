@@ -521,6 +521,11 @@ components:
           format: int32
         is_approved:
           type: boolean
+    OperationResult:
+      type: object
+      properties:
+        message:
+          type: string
     OperatorTokenCreateRequest:
       type: object
       properties:
@@ -2152,6 +2157,7 @@ paths:
       - Marker Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs:
     post:
+      summary: Request Handoff
       parameters:
       - name: regatta_id
         in: path
@@ -2173,14 +2179,24 @@ paths:
               $ref: "#/components/schemas/StationHandoffCreateRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
         "400":
           description: Bad Request
-      summary: Request Handoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
     get:
@@ -2216,6 +2232,7 @@ paths:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:
     get:
+      summary: Get Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2232,12 +2249,19 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Get Handoff
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin:
     post:
+      summary: Admin Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2254,12 +2278,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Admin Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel:
     post:
+      summary: Cancel Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2276,12 +2325,25 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Cancel Handoff
+              schema:
+                $ref: "#/components/schemas/OperationResult"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete:
     post:
+      summary: Complete Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2304,14 +2366,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
         "400":
           description: Bad Request
-      summary: Complete Handoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin:
     post:
+      summary: Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2328,8 +2413,26 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/tokens:

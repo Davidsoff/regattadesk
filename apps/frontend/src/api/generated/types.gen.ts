@@ -262,6 +262,10 @@ export type MarkerUpdateRequest = {
     is_approved?: boolean;
 };
 
+export type OperationResult = {
+    message?: string;
+};
+
 export type OperatorTokenCreateRequest = {
     block_id?: Uuid;
     station: string;
@@ -1598,15 +1602,23 @@ export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsErrors = {
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsError = PostApiV1RegattasByRegattaIdOperatorStationHandoffsErrors[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponses = {
     /**
-     * OK
+     * Created
      */
-    200: unknown;
+    201: StationHandoffResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponse = PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponses[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsResponses];
 
 export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdData = {
     body?: never;
@@ -1618,12 +1630,23 @@ export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdData = 
     url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}';
 };
 
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdError = GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdErrors[keyof GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdErrors];
+
 export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StationHandoffResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponse = GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponses[keyof GetApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinData = {
     body?: never;
@@ -1635,12 +1658,35 @@ export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminR
     url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin';
 };
 
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Gone
+     */
+    410: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinError = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinErrors[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinErrors];
+
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StationHandoffResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponse = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponses[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdAdminRevealPinResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelData = {
     body?: never;
@@ -1652,12 +1698,27 @@ export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancel
     url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel';
 };
 
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelError = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelErrors[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelErrors];
+
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: OperationResult;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponse = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponses[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCancelResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteData = {
     body: StationHandoffCompleteRequest;
@@ -1673,15 +1734,31 @@ export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdComple
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Gone
+     */
+    410: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteError = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteErrors[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StationHandoffResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponse = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponses[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdCompleteResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinData = {
     body?: never;
@@ -1693,12 +1770,31 @@ export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdReveal
     url: '/api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin';
 };
 
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+    /**
+     * Gone
+     */
+    410: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinError = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinErrors[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinErrors];
+
 export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StationHandoffResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponse = PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponses[keyof PostApiV1RegattasByRegattaIdOperatorStationHandoffsByHandoffIdRevealPinResponses];
 
 export type GetApiV1RegattasByRegattaIdOperatorTokensData = {
     body?: never;

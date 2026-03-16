@@ -79,6 +79,24 @@ public class StationHandoffResource {
      * revealed on the active device and verified on the requesting device.
      */
     @POST
+    @Operation(summary = "Request Handoff")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "201",
+            description = "Created",
+            content = @Content(schema = @Schema(implementation = StationHandoffResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response requestHandoff(
             @PathParam("regatta_id") UUID regattaId,
             @QueryParam("token_id") UUID tokenId,
@@ -124,6 +142,19 @@ public class StationHandoffResource {
      */
     @GET
     @Path("/{handoff_id}")
+    @Operation(summary = "Get Handoff")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = StationHandoffResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response getHandoff(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {
@@ -151,6 +182,29 @@ public class StationHandoffResource {
     @POST
     @Path("/{handoff_id}/reveal_pin")
     @Consumes(MediaType.WILDCARD)
+    @Operation(summary = "Reveal Pin")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = StationHandoffResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "410",
+            description = "Gone",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response revealPin(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {
@@ -186,6 +240,34 @@ public class StationHandoffResource {
     @Path("/{handoff_id}/admin_reveal_pin")
     @Consumes(MediaType.WILDCARD)
     @RequireRole({Role.REGATTA_ADMIN, Role.SUPER_ADMIN})
+    @Operation(summary = "Admin Reveal Pin")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = StationHandoffResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "401",
+            description = "Unauthorized",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "410",
+            description = "Gone",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response adminRevealPin(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {
@@ -219,6 +301,34 @@ public class StationHandoffResource {
      */
     @POST
     @Path("/{handoff_id}/complete")
+    @Operation(summary = "Complete Handoff")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = StationHandoffResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "410",
+            description = "Gone",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response completeHandoff(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId,
@@ -270,6 +380,24 @@ public class StationHandoffResource {
     @POST
     @Path("/{handoff_id}/cancel")
     @Consumes(MediaType.WILDCARD)
+    @Operation(summary = "Cancel Handoff")
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = OperationResult.class))
+        ),
+        @APIResponse(
+            responseCode = "404",
+            description = "Not Found",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @APIResponse(
+            responseCode = "409",
+            description = "Conflict",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
     public Response cancelHandoff(
             @PathParam("regatta_id") UUID regattaId,
             @PathParam("handoff_id") UUID handoffId) {

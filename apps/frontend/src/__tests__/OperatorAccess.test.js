@@ -3,11 +3,13 @@ import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import i18n from '../i18n'
+import { useFormatting } from '../composables/useFormatting'
 import OperatorAccess from '../views/staff/OperatorAccess.vue'
 
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
 const TOKEN_ID = '0d7e2de8-084a-4e33-85a4-5400066cc23e'
 const HANDOFF_ID = 'b8082c46-b8ca-43af-88ee-c9e5605522bb'
+const { formatTimestampDisplay } = useFormatting(i18n.global.locale)
 
 const mockStaffOperatorAccessApi = {
   listTokens: vi.fn(),
@@ -255,7 +257,7 @@ describe('OperatorAccess view (issue #137)', () => {
     const revealButton = wrapper.find(`[data-testid="admin-reveal-pin-${HANDOFF_ID}"]`)
     expect(revealButton.exists()).toBe(true)
     expect(wrapper.text()).toContain('pixel-operator-2')
-    expect(wrapper.text()).toContain('2026-03-10 08:50')
+    expect(wrapper.text()).toContain(formatTimestampDisplay('2026-03-10T08:50:00Z'))
 
     await revealButton.trigger('click')
 
