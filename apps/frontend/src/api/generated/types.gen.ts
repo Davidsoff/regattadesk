@@ -4,6 +4,12 @@ export type ClientOptions = {
     baseUrl: 'https://localhost:8080' | 'https://0.0.0.0:8080' | (string & {});
 };
 
+export type AdjudicationActionRequest = {
+    reason: string;
+    note?: string;
+    penalty_seconds?: number;
+};
+
 export type AthleteCreateRequest = {
     first_name: string;
     middle_name?: string;
@@ -260,6 +266,11 @@ export type MarkerUpdateRequest = {
     tile_x?: number;
     tile_y?: number;
     is_approved?: boolean;
+};
+
+export type OpenInvestigationRequest = {
+    entry_id: Uuid;
+    description: string;
 };
 
 export type OperationResult = {
@@ -562,6 +573,158 @@ export type GetApiV1RegattasByRegattaIdData = {
 };
 
 export type GetApiV1RegattasByRegattaIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdData = {
+    body?: never;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}';
+};
+
+export type GetApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/dsq';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdDsqResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/exclude';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdExcludeResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/penalty';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdPenaltyResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqData = {
+    body: AdjudicationActionRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/revert_dsq';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationEntriesByEntryIdRevertDsqResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiV1RegattasByRegattaIdAdjudicationInvestigationsData = {
+    body?: never;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/investigations';
+};
+
+export type GetApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsData = {
+    body: OpenInvestigationRequest;
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/adjudication/investigations';
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+};
+
+export type PostApiV1RegattasByRegattaIdAdjudicationInvestigationsResponses = {
     /**
      * OK
      */

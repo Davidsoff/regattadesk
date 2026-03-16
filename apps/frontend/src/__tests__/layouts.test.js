@@ -66,6 +66,11 @@ function createTestRouter(extraRoutes = []) {
         component: { template: '<div>Staff Blocks</div>' },
       },
       {
+        path: '/staff/regattas/:regattaId/adjudication',
+        name: 'staff-regatta-adjudication',
+        component: { template: '<div>Staff Adjudication</div>' },
+            },
+            {
         path: '/staff/regattas/:regattaId/printables',
         name: 'staff-regatta-printables',
         component: { template: '<div>Staff Printables</div>' },
@@ -154,7 +159,18 @@ function createTestI18n() {
     legacy: false,
     locale: 'en',
     messages: {
-      en: messages,
+      en: {
+        ...messages,
+        navigation: {
+          ...messages.navigation,
+          adjudication: 'Adjudication',
+        },
+        breadcrumb: {
+          ...messages.breadcrumb,
+          adjudication: 'Adjudication',
+          printables: 'Printables',
+        }
+      },
       nl: messages,
     },
   })
@@ -173,16 +189,18 @@ async function mountAtRoute(router, route, component) {
 describe('Layout Components', () => {
   let router
 
+  function createOperatorSessionResponse() {
+    return jsonResponse(200, {
+      capture_session_id: 'my-session-id',
+      station: 'finish-line',
+      is_synced: false,
+      unsynced_reason: 'awaiting upload'
+    })
+  }
+
   beforeEach(() => {
     router = createTestRouter()
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      jsonResponse(200, {
-        capture_session_id: 'my-session-id',
-        station: 'finish-line',
-        is_synced: false,
-        unsynced_reason: 'awaiting upload'
-      })
-    ))
+    vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(createOperatorSessionResponse())))
     globalThis.__REGATTADESK_AUTH__ = {
       operatorAuth: 'operator-token',
       operatorStation: 'finish-line'
@@ -295,12 +313,13 @@ describe('Layout Components', () => {
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(false)
     })
 
-  it('renders subnav with draw, finance, operator access, blocks, and printables links inside a regatta', async () => {
+    it('renders subnav with adjudication, finance, operator access, blocks, and printables links inside a regatta', async () => {
       const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/draw', StaffLayout)
       expect(wrapper.find('.staff-layout__subnav').exists()).toBe(true)
       const links = wrapper.findAll('.staff-layout__subnav-item').map((n) => n.attributes('href'))
       expect(links).toContain('/staff/regattas/test-id-123')
       expect(links).toContain('/staff/regattas/test-id-123/draw')
+      expect(links).toContain('/staff/regattas/test-id-123/adjudication')
       expect(links).toContain('/staff/regattas/test-id-123/finance')
       expect(links).toContain('/staff/regattas/test-id-123/operator-access')
       expect(links).toContain('/staff/regattas/test-id-123/blocks')
@@ -325,6 +344,14 @@ describe('Layout Components', () => {
       expect(breadcrumb.exists()).toBe(true)
       expect(breadcrumb.text()).toContain('Regattas')
       expect(breadcrumb.text()).toContain('Operator Access')
+    })
+
+    it('renders a shared breadcrumb trail for adjudication routes', async () => {
+      const wrapper = await mountAtRoute(router, '/staff/regattas/test-id-123/adjudication', StaffLayout)
+      const breadcrumb = wrapper.find('[data-testid="staff-breadcrumbs"]')
+      expect(breadcrumb.exists()).toBe(true)
+      expect(breadcrumb.text()).toContain('Regattas')
+      expect(breadcrumb.text()).toContain('Adjudication')
     })
 
     it('sets aria-current on the active primary nav item', async () => {
@@ -360,7 +387,9 @@ describe('Layout Components', () => {
         '/staff/regattas/test-id-123/finance/invoices/invoice-123',
         StaffLayout
       )
-      const financeLink = wrapper.findAll('.staff-layout__subnav-item')[2]
+      const financeLink = wrapper
+        .findAll('.staff-layout__subnav-item')
+        .find((node) => node.attributes('href') === '/staff/regattas/test-id-123/finance')
       expect(financeLink.attributes('aria-current')).toBe('page')
     })
   })

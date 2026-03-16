@@ -26,12 +26,16 @@ function getNavigationLabel(navItem) {
       return t('navigation.setup')
     case 'draw':
       return t('navigation.draw')
+    case 'adjudication':
+      return t('navigation.adjudication')
     case 'finance':
       return t('navigation.finance')
     case 'operator_access':
       return t('navigation.operator_access')
     case 'blocks':
       return t('navigation.blocks')
+    case 'printables':
+      return t('navigation.printables')
     default:
       return navItem.key
   }
@@ -74,13 +78,6 @@ function getNavigationLabel(navItem) {
         :aria-current="isRouteActive(navItem) ? 'page' : undefined"
       >
         {{ getNavigationLabel(navItem) }}
-      </router-link>
-      <router-link
-        :to="`/staff/regattas/${regattaId}/printables`"
-        class="staff-layout__subnav-item"
-        :aria-current="route.name === 'staff-regatta-printables' ? 'page' : undefined"
-      >
-        {{ t('navigation.printables') }}
       </router-link>
     </nav>
     

@@ -16,6 +16,11 @@ export function getStaffRegattaNavItems(regattaId) {
     { key: 'setup', to: `/staff/regattas/${regattaId}`, routeNames: ['staff-regatta-detail'] },
     { key: 'draw', to: `/staff/regattas/${regattaId}/draw`, routeNames: ['staff-regatta-draw'] },
     {
+      key: 'adjudication',
+      to: `/staff/regattas/${regattaId}/adjudication`,
+      routeNames: ['staff-regatta-adjudication'],
+    },
+    {
       key: 'finance',
       to: `/staff/regattas/${regattaId}/finance`,
       routeNames: [
@@ -32,6 +37,11 @@ export function getStaffRegattaNavItems(regattaId) {
       routeNames: ['staff-regatta-operator-access'],
     },
     { key: 'blocks', to: `/staff/regattas/${regattaId}/blocks`, routeNames: ['staff-blocks-management'] },
+    {
+      key: 'printables',
+      to: `/staff/regattas/${regattaId}/printables`,
+      routeNames: ['staff-regatta-printables'],
+    },
   ]
 }
 
@@ -55,6 +65,20 @@ export function getStaffBreadcrumbs(route, t) {
   if (route.name === 'staff-regatta-operator-access') {
     breadcrumbs.push({
       label: t('breadcrumb.operator_access'),
+      to: null,
+    })
+  }
+
+  if (route.name === 'staff-regatta-adjudication') {
+    breadcrumbs.push({
+      label: t('breadcrumb.adjudication'),
+      to: null,
+    })
+  }
+
+  if (route.name === 'staff-regatta-printables') {
+    breadcrumbs.push({
+      label: t('breadcrumb.printables'),
       to: null,
     })
   }

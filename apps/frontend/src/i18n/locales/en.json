@@ -140,6 +140,7 @@
     "rulesets": "Rulesets",
     "setup": "Setup",
     "draw": "Draw",
+    "adjudication": "Adjudication",
     "finance": "Finance",
     "operator_access": "Operator Access",
     "blocks": "Blocks",
@@ -150,7 +151,64 @@
   },
   "breadcrumb": {
     "regattas": "Regattas",
-    "operator_access": "Operator Access"
+    "operator_access": "Operator Access",
+    "adjudication": "Adjudication",
+    "printables": "Printables"
+  },
+  "adjudication": {
+    "title": "Adjudication",
+    "subtitle": "Manage investigations, penalties, DSQs, exclusions, and revision-impact messaging.",
+    "empty": "Select an investigation or open one for an entry to begin adjudication.",
+    "sections": {
+      "investigations": "Investigations",
+      "detail": "Entry detail",
+      "history": "History"
+    },
+    "open": {
+      "entry_id": "Entry ID",
+      "description": "Investigation summary",
+      "submit": "Open investigation"
+    },
+    "entry": {
+      "status": "Status",
+      "result_label": "Result label",
+      "penalty_seconds": "Penalty seconds"
+    },
+    "actions": {
+      "reason": "Reason",
+      "note": "Note",
+      "penalty_seconds": "Penalty seconds",
+      "penalty": "Apply penalty",
+      "dsq": "Apply DSQ",
+      "exclusion": "Apply exclusion",
+      "revert_dsq": "Revert DSQ"
+    },
+    "confirmation": {
+      "title": "Confirm {action}",
+      "confirm": "Confirm action",
+      "cancel": "Cancel",
+      "current_state": "Current state: {status}, result label {resultLabel}, results revision {revision}.",
+      "latest_history": "Latest adjudication history: {action} by {actor} at revision {revision}.",
+      "prompts": {
+        "dsq": "Disqualify {crew}? This result-affecting change will be added to adjudication history.",
+        "exclusion": "Exclude {crew}? This destructive change will be added to adjudication history.",
+        "revert_dsq": "Revert the DSQ for {crew}? This restoration will also be recorded in adjudication history."
+      }
+    },
+    "revision": {
+      "current": "Results revision {revision}"
+    },
+    "messages": {
+      "investigation_opened": "Investigation opened."
+    },
+    "errors": {
+      "load": "Failed to load adjudication workflow.",
+      "open_required": "Entry ID and description are required to open an investigation.",
+      "open_failed": "Failed to open investigation.",
+      "action_required": "A reason is required before applying an adjudication action.",
+      "invalid_penalty_seconds": "Penalty seconds must be a whole number greater than zero.",
+      "action_failed": "Failed to apply adjudication action."
+    }
   },
   "operator_access": {
     "title": "Operator access",
