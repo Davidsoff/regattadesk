@@ -17,12 +17,10 @@ class MockIDBDatabase {
   }
 
   createObjectStore(name, options) {
-    const store = { 
-      name, 
-      keyPath: options?.keyPath, 
+    const store = new MockIDBObjectStore(name, {
+      keyPath: options?.keyPath,
       autoIncrement: options?.autoIncrement,
-      createIndex: vi.fn(), // Add createIndex method
-    };
+    });
     this.stores.set(name, store);
     this.objectStoreNames.length = this.stores.size;
     return store;
@@ -41,7 +39,10 @@ class MockIDBTransaction {
 
   objectStore(name) {
     if (!this._stores.has(name)) {
-      this._stores.set(name, new MockIDBObjectStore(name));
+      if (!this.db.stores.has(name)) {
+        this.db.stores.set(name, new MockIDBObjectStore(name));
+      }
+      this._stores.set(name, this.db.stores.get(name));
     }
     return this._stores.get(name);
   }
@@ -52,15 +53,27 @@ class MockIDBTransaction {
 }
 
 class MockIDBObjectStore {
-  constructor(name) {
+  constructor(name, options = {}) {
     this.name = name;
+    this.keyPath = options.keyPath;
+    this.autoIncrement = options.autoIncrement;
     this._data = new Map();
     this._keyCounter = 0;
+    this.createIndex = vi.fn();
   }
 
   add(value) {
     return this._createRequest(() => {
       const key = ++this._keyCounter;
+      const storedValue = this.keyPath ? { ...value, [this.keyPath]: key } : value;
+      this._data.set(key, storedValue);
+      return key;
+    });
+  }
+
+  put(value) {
+    return this._createRequest(() => {
+      const key = value[this.keyPath];
       this._data.set(key, value);
       return key;
     });
@@ -180,10 +193,11 @@ describe('useOfflineQueue initialization', () => {
           onerror: null,
           onsuccess: null,
           onupgradeneeded: null,
+          error: new Error('DB open failed'),
         };
         setTimeout(() => {
           if (request.onerror) {
-            request.onerror({ target: { error: new Error('DB open failed') } });
+            request.onerror({ target: request });
           }
         }, 0);
         return request;
@@ -263,9 +277,9 @@ describe('useOfflineQueue operations', () => {
     await vi.waitFor(() => expect(isReady.value).toBe(true));
 
     const ops = [
-      { type: 'OP1', data: { value: 1 }, timestamp: Date.now() },
-      { type: 'OP2', data: { value: 2 }, timestamp: Date.now() + 1 },
-      { type: 'OP3', data: { value: 3 }, timestamp: Date.now() + 2 },
+      { type: 'OP1', endpoint: '/api/v1/op1', method: 'POST', data: { value: 1 }, timestamp: Date.now() },
+      { type: 'OP2', endpoint: '/api/v1/op2', method: 'POST', data: { value: 2 }, timestamp: Date.now() + 1 },
+      { type: 'OP3', endpoint: '/api/v1/op3', method: 'POST', data: { value: 3 }, timestamp: Date.now() + 2 },
     ];
 
     for (const op of ops) {
@@ -287,8 +301,8 @@ describe('useOfflineQueue operations', () => {
 
     await vi.waitFor(() => expect(isReady.value).toBe(true));
 
-    await enqueue({ type: 'OP1', data: {}, timestamp: Date.now() });
-    await enqueue({ type: 'OP2', data: {}, timestamp: Date.now() });
+    await enqueue({ type: 'OP1', endpoint: '/api/v1/op1', method: 'POST', data: {}, timestamp: Date.now() });
+    await enqueue({ type: 'OP2', endpoint: '/api/v1/op2', method: 'POST', data: {}, timestamp: Date.now() });
 
     let queue = await getQueue();
     expect(queue).toHaveLength(2);
@@ -308,11 +322,11 @@ describe('useOfflineQueue operations', () => {
 
     expect(queueSize.value).toBe(0);
 
-    const id1 = await enqueue({ type: 'OP1', data: {}, timestamp: Date.now() });
+    const id1 = await enqueue({ type: 'OP1', endpoint: '/api/v1/op1', method: 'POST', data: {}, timestamp: Date.now() });
     await nextTick();
     expect(queueSize.value).toBe(1);
 
-    await enqueue({ type: 'OP2', data: {}, timestamp: Date.now() });
+    await enqueue({ type: 'OP2', endpoint: '/api/v1/op2', method: 'POST', data: {}, timestamp: Date.now() });
     await nextTick();
     expect(queueSize.value).toBe(2);
 
@@ -379,5 +393,26 @@ describe('useOfflineQueue conflict metadata', () => {
     
     expect(item.attempts).toBe(1);
     expect(item.lastError).toBe('Conflict detected');
+  });
+
+  it('resolves IDBRequest values returned by transaction callbacks', async () => {
+    setupMockIndexedDB();
+
+    const { useOfflineQueue } = await importFreshUseOfflineQueue();
+    const { enqueue, getQueue, isReady } = useOfflineQueue();
+
+    await vi.waitFor(() => expect(isReady.value).toBe(true));
+
+    await enqueue({
+      endpoint: '/api/v1/markers',
+      method: 'POST',
+      data: { time: 123 },
+      timestamp: Date.now(),
+    });
+
+    const queue = await getQueue();
+
+    expect(queue).toHaveLength(1);
+    expect(queue[0].data).toEqual({ time: 123 });
   });
 });

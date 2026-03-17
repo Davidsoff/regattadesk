@@ -1,5 +1,6 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.linescan.service.MarkerCompletionEvaluator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

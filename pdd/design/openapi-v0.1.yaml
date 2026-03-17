@@ -2,6 +2,20 @@
 openapi: 3.1.0
 components:
   schemas:
+    AdjudicationActionRequest:
+      type: object
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          pattern: \S
+        note:
+          type: string
+        penalty_seconds:
+          type: integer
+          format: int32
+          minimum: 1
     AthleteCreateRequest:
       type: object
       required:
@@ -518,6 +532,57 @@ components:
           type: string
           description: Human-readable error description. Present only when status
             is "failed".
+    FinanceClubListResponse:
+      type: object
+      properties:
+        clubs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceClubSummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceClubSummaryResponse:
+      type: object
+      properties:
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        club_name:
+          type: string
+        payment_status:
+          type: string
+        paid_entries:
+          type: integer
+          format: int32
+        unpaid_entries:
+          type: integer
+          format: int32
+    FinanceEntryListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceEntrySummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceEntrySummaryResponse:
+      type: object
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        crew_name:
+          type: string
+        club_name:
+          type: string
+        payment_status:
+          type: string
+    FinanceListPaginationResponse:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     GenerateDrawRequest:
       type: object
       properties:
@@ -745,6 +810,22 @@ components:
           format: int32
         is_approved:
           type: boolean
+    OpenInvestigationRequest:
+      type: object
+      required:
+      - entry_id
+      - description
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        description:
+          type: string
+          pattern: \S
+    OperationResult:
+      type: object
+      properties:
+        message:
+          type: string
     OperatorTokenCreateRequest:
       type: object
       properties:
@@ -866,6 +947,36 @@ components:
         requestingDeviceId:
           type: string
           pattern: \S
+    StationHandoffListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StationHandoffResponse"
+    StationHandoffResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regattaId:
+          $ref: "#/components/schemas/UUID"
+        tokenId:
+          $ref: "#/components/schemas/UUID"
+        station:
+          type: string
+        requestingDeviceId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        expiresAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+        pin:
+          type: string
     TileDto:
       type: object
       required:
@@ -1193,6 +1304,189 @@ paths:
       summary: Get Regatta
       tags:
       - Regatta Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}:
+    get:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Get Entry Detail
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/dsq:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Dsq
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/exclude:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Exclusion
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/penalty:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Penalty
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/revert_dsq:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Revert Dsq
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/investigations:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenInvestigationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Open Investigation
+      tags:
+      - Adjudication Resource
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: List Investigations
+      tags:
+      - Adjudication Resource
   /api/v1/regattas/{regatta_id}/bib_pools:
     get:
       summary: List bib pools
@@ -1973,6 +2267,99 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Printable Export Resource
+  /api/v1/regattas/{regatta_id}/finance/clubs:
+    get:
+      summary: List Finance Clubs
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+          - partial
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceClubListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/finance/entries:
+    get:
+      summary: List Finance Entries
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceEntryListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
   /api/v1/regattas/{regatta_id}/invoices:
     get:
       summary: List invoices
@@ -2694,6 +3081,7 @@ paths:
       - Marker Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs:
     post:
+      summary: Request Handoff
       parameters:
       - name: regatta_id
         in: path
@@ -2715,18 +3103,60 @@ paths:
               $ref: "#/components/schemas/StationHandoffCreateRequest"
         required: true
       responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Station Handoff Resource
+    get:
+      summary: List pending station handoffs
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: station
+        in: query
+        schema:
+          type: string
+      - name: token_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: {}
-        "400":
-          description: Bad Request
-      summary: Request Handoff
+              schema:
+                $ref: "#/components/schemas/StationHandoffListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:
     get:
+      summary: Get Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2743,12 +3173,19 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Get Handoff
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin:
     post:
+      summary: Admin Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2765,12 +3202,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Admin Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel:
     post:
+      summary: Cancel Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2787,12 +3249,25 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Cancel Handoff
+              schema:
+                $ref: "#/components/schemas/OperationResult"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete:
     post:
+      summary: Complete Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2815,14 +3290,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
         "400":
           description: Bad Request
-      summary: Complete Handoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin:
     post:
+      summary: Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2839,8 +3337,26 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/tokens:

@@ -6,15 +6,7 @@ import {
   mountOperatorRegattaHome
 } from './operatorTestUtils'
 import RegattaDetail from '../views/operator/RegattaDetail.vue'
-
-function jsonResponse(status, body) {
-  return new Response(body === null ? '' : JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-}
+import { jsonResponse } from './utils/testHelpers.js'
 
 
 describe('Operator regatta home integration for issue #138', () => {
@@ -22,7 +14,7 @@ describe('Operator regatta home integration for issue #138', () => {
     installStorage().clear()
     vi.stubGlobal('fetch', vi.fn())
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'token-138',
+      operatorAuth: 'token-138',
       operatorStation: 'finish-line',
       operatorBlockId: 'block-138'
     }

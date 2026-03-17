@@ -19,23 +19,15 @@ describe('useSseReconnect', () => {
     })
     
     it('increases delay with exponential backoff', () => {
-      // Run multiple times to account for jitter
-      let increasingCount = 0
-      const runs = 30  // Increased runs for more stability
-      
-      for (let run = 0; run < runs; run++) {
-        const delay0 = calculateReconnectDelay(0)
-        const delay1 = calculateReconnectDelay(1)
-        const delay2 = calculateReconnectDelay(2)
-        
-        // On average, delays should increase
-        if (delay1 > delay0 && delay2 > delay1) {
-          increasingCount++
-        }
-      }
-      
-      // At least 40% of runs should show increasing pattern (lowered due to high jitter)
-      expect(increasingCount / runs).toBeGreaterThan(0.4)
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+
+      const delay0 = calculateReconnectDelay(0)
+      const delay1 = calculateReconnectDelay(1)
+      const delay2 = calculateReconnectDelay(2)
+
+      expect(delay1).toBeGreaterThan(delay0)
+      expect(delay2).toBeGreaterThan(delay1)
+      randomSpy.mockRestore()
     })
     
     it('applies full jitter (returns different values)', () => {
@@ -212,6 +204,19 @@ describe('useSseReconnect', () => {
       // lastEventId is stored internally
       expect(connection._getLastEventId()).toBe('123:2:5:0')
     })
+
+    it('stores lastEventId even when event payload JSON is invalid', async () => {
+      const connection = createSseConnection('/test')
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      eventListeners['snapshot']({
+        data: '{not valid json',
+        lastEventId: '123:2:5:9'
+      })
+
+      expect(connection._getLastEventId()).toBe('123:2:5:9')
+    })
     
     it('closes connection when close() is called', async () => {
       const onConnectionChange = vi.fn()
@@ -259,6 +264,7 @@ describe('useSseReconnect', () => {
     })
     
     it('increments reconnect attempt on each reconnection', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0)
       createSseConnection('/test')
       
       // Wait for initialization
@@ -271,7 +277,7 @@ describe('useSseReconnect', () => {
       eventListeners['error']({})
       
       // Wait for reconnect
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise(resolve => setTimeout(resolve, 150))
       
       // Should create new EventSource
       expect(globalThis.EventSource.mock.calls.length).toBeGreaterThanOrEqual(2)

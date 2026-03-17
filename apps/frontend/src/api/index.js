@@ -23,8 +23,10 @@
 
 export { createApiClient, ApiError } from './client.js'
 export { normalizeApiError, isApiError } from './errors.js'
+export { createAdjudicationApi } from './adjudication.js'
 export { createFinanceApi } from './finance.js'
 export { createOperatorApi } from './operator.js'
+export { createStaffOperatorAccessApi } from './staffOperatorAccess.js'
 export { createDrawApi } from './draw.js'
 export { createExportApi } from './export.js'
 export { createRegattaSetupApi } from './regatta-setup.js'

@@ -1,5 +1,6 @@
 codex-loop.log
 RALPH_DONE
+.codex/
 .vscode/
 .DS_Store
 node_modules/
@@ -29,3 +30,21 @@ Thumbs.db
 # Python cache artifacts
 __pycache__/
 *.pyc
+
+# Python virtual environment
+venv/
+.venv/
+
+# Desloppify artifacts
+.desloppify/
+.agents/
+.claude/
+.worktrees/
+.venv-desloppify/
+
+# other 
+.npm-cache/
+.npm-global/
+.pip-cache/
+.uv-cache/
+.codex-readiness-unit-test/

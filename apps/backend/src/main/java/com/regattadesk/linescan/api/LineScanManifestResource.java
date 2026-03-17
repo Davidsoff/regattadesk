@@ -1,7 +1,10 @@
 package com.regattadesk.linescan.api;
 
 import com.regattadesk.api.dto.ErrorResponse;
-import com.regattadesk.linescan.*;
+import com.regattadesk.linescan.config.MinioStorageAdapter;
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.LineScanManifestTile;
+import com.regattadesk.linescan.service.LineScanManifestService;
 import com.regattadesk.operator.OperatorTokenService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;

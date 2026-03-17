@@ -1,7 +1,7 @@
 package com.regattadesk.finance.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.regattadesk.finance.EntryPaymentStatusDetails;
+import com.regattadesk.finance.model.EntryPaymentStatusDetails;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -129,7 +129,7 @@ watch(
     <h2>{{ t('operator.regatta.title') }}</h2>
     <p>{{ t('operator.regatta.id') }}: {{ regattaId }}</p>
     <p data-testid="operator-token-status">
-      {{ t('operator.regatta.token_status', { token: operatorToken || t('operator.regatta.no_token') }) }}
+      {{ t('operator.regatta.auth_status', { token: operatorToken || t('operator.regatta.no_auth') }) }}
     </p>
     <p data-testid="operator-station-context">
       {{ t('operator.regatta.station_context', { station: operatorStation }) }}

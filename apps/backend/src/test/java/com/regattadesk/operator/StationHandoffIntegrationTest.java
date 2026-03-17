@@ -126,6 +126,83 @@ class StationHandoffIntegrationTest {
     }
 
     @Test
+    void listPendingHandoffs_shouldReturnPendingHandoffsForRegatta() {
+        String firstHandoffId = createHandoff(tokenId, station, "device-list-1");
+
+        UUID secondTokenId = tokenService.issueToken(
+            regattaId,
+            null,
+            "start-line",
+            Instant.now(),
+            Instant.now().plus(8, ChronoUnit.HOURS)
+        ).getId();
+        String secondHandoffId = createHandoff(secondTokenId, "start-line", "device-list-2");
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+        .when()
+            .get("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(200)
+            .body("data.id", hasItems(firstHandoffId, secondHandoffId))
+            .body("data.size()", equalTo(2));
+    }
+
+    @Test
+    void listPendingHandoffs_shouldSupportStationAndTokenFilters() {
+        createHandoff(tokenId, station, "device-filter-1");
+
+        UUID secondTokenId = tokenService.issueToken(
+            regattaId,
+            null,
+            "start-line",
+            Instant.now(),
+            Instant.now().plus(8, ChronoUnit.HOURS)
+        ).getId();
+        createHandoff(secondTokenId, "start-line", "device-filter-2");
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "super_admin")
+            .queryParam("station", station)
+            .queryParam("token_id", tokenId.toString())
+        .when()
+            .get("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(200)
+            .body("data.size()", equalTo(1))
+            .body("data[0].station", equalTo(station))
+            .body("data[0].tokenId", equalTo(tokenId.toString()));
+    }
+
+    @Test
+    void listPendingHandoffs_shouldExcludeExpiredHandoffs() {
+        String handoffId = createHandoff(tokenId, station, "device-expired-list");
+        forceExpireHandoffForTest(handoffId);
+
+        given()
+            .header("Remote-User", "admin")
+            .header("Remote-Groups", "regatta_admin")
+        .when()
+            .get("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(200)
+            .body("data", empty());
+    }
+
+    @Test
+    void listPendingHandoffs_shouldRequireAdminRole() {
+        given()
+            .header("Remote-User", "user")
+            .header("Remote-Groups", "info_desk")
+        .when()
+            .get("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(403);
+    }
+
+    @Test
     void revealPin_shouldReturnPinForPendingHandoff() {
         // Create a handoff
         String requestBody = """
@@ -357,5 +434,22 @@ class StationHandoffIntegrationTest {
         } catch (Exception e) {
             throw new RuntimeException("Failed to force handoff expiration for test", e);
         }
+    }
+
+    private String createHandoff(UUID activeTokenId, String activeStation, String requestingDeviceId) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body(String.format("""
+                {
+                    "requestingDeviceId": "%s"
+                }
+                """, requestingDeviceId))
+            .queryParam("token_id", activeTokenId.toString())
+            .queryParam("station", activeStation)
+        .when()
+            .post("/api/v1/regattas/" + regattaId + "/operator/station_handoffs")
+        .then()
+            .statusCode(201)
+            .extract().path("id");
     }
 }

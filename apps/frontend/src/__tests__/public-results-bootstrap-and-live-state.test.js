@@ -18,11 +18,32 @@ function createTestI18n() {
         },
         status: {
           entered: 'Entered',
+          official: 'Official',
         },
         public: {
           results: {
             title: 'Results',
             description: 'Live race results',
+            empty: 'No results published for this revision yet.',
+            version_banner: 'Draw v{drawRevision}, Results v{resultsRevision}',
+            version_link: 'Canonical results link',
+            fields: {
+              rank: 'Rank',
+              crew: 'Crew',
+              club: 'Club',
+              time: 'Time',
+              delta: 'Delta',
+              status: 'Status',
+            },
+            penalties: {
+              label: 'Penalty',
+              seconds: '+{seconds}s',
+            },
+            recovery: {
+              missing_regatta: 'Missing regatta context. Re-open the published results link for this regatta.',
+              bootstrap_failed: 'Unable to refresh public results right now.',
+              retry: 'Retry loading results',
+            },
           },
           version: {
             draw: 'Draw Revision',
@@ -279,6 +300,67 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
     expect(wrapper.text()).not.toContain('Crew B')
   })
 
+  it('ignores stale failed fetches when a newer revision has already loaded', async () => {
+    const listeners = {}
+    const mockEventSource = {
+      addEventListener: vi.fn((event, handler) => {
+        listeners[event] = handler
+      }),
+      close: vi.fn(),
+    }
+    globalThis.EventSource.mockImplementation(function MockEventSource() {
+      return mockEventSource
+    })
+
+    let rejectOlderResults
+    const olderResultsPromise = new Promise((_, reject) => {
+      rejectOlderResults = reject
+    })
+
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse({ draw_revision: 1, results_revision: 2 }))
+      .mockResolvedValueOnce(jsonResponse({
+        draw_revision: 1,
+        results_revision: 2,
+        data: [{ entry_id: 'e1', crew_name: 'Crew A', status: 'entered', rank: 1 }],
+      }))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => olderResultsPromise,
+      })
+      .mockResolvedValueOnce(jsonResponse({
+        draw_revision: 1,
+        results_revision: 4,
+        data: [{ entry_id: 'e4', crew_name: 'Crew D', status: 'entered', rank: 1 }],
+      }))
+
+    const wrapper = await mountResults('/public/v1-2/results?regatta_id=45454545-4545-4545-4545-454545454545')
+    await flushPromises()
+
+    listeners.results_revision?.({
+      data: JSON.stringify({
+        draw_revision: 1,
+        results_revision: 3,
+      }),
+    })
+    listeners.results_revision?.({
+      data: JSON.stringify({
+        draw_revision: 1,
+        results_revision: 4,
+      }),
+    })
+    await flushPromises()
+
+    rejectOlderResults(new Error('stale request failed'))
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Results Revision: 4')
+    expect(wrapper.text()).toContain('Crew D')
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
   it('applies snapshot and draw_revision SSE events to refresh revisions', async () => {
     const { listeners, mockEventSource } = createSseHarness()
     globalThis.EventSource.mockImplementation(function MockEventSource() {
@@ -329,7 +411,141 @@ describe('Public Results bootstrap and live state (Issue #19)', () => {
     const wrapper = await mountResults('/public/v1-2/results?regatta_id=55555555-5555-5555-5555-555555555555')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('7. Crew C (-)')
+    expect(wrapper.text()).toContain('Crew C')
+    expect(wrapper.text()).toContain('Status')
+    expect(wrapper.text()).toContain('-')
     expect(wrapper.text()).not.toContain('status.null')
+  })
+
+  it('shows a recovery alert instead of silently failing when regatta context is missing', async () => {
+    const sessionStorageMock = {
+      getItem: vi.fn(() => null),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(),
+      length: 0,
+    }
+    vi.stubGlobal('sessionStorage', sessionStorageMock)
+
+    const wrapper = await mountResults('/public/v1-2/results')
+    await flushPromises()
+
+    const alert = wrapper.find('[role="alert"]')
+    expect(alert.exists()).toBe(true)
+    expect(alert.text()).toContain('Missing regatta context. Re-open the published results link for this regatta.')
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+  })
+
+  it('shows a retryable bootstrap recovery message when versions loading fails', async () => {
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse({ error: { code: 'UNAVAILABLE' } }, { status: 503 }))
+      .mockResolvedValueOnce(jsonResponse({ draw_revision: 3, results_revision: 8 }))
+      .mockResolvedValueOnce(jsonResponse({
+        draw_revision: 3,
+        results_revision: 8,
+        data: [],
+      }))
+
+    const wrapper = await mountResults()
+    await flushPromises()
+
+    const alert = wrapper.find('[role="alert"]')
+    expect(alert.exists()).toBe(true)
+    expect(alert.text()).toContain('Unable to refresh public results right now.')
+
+    await wrapper.get('[data-testid="public-results-retry"]').trigger('click')
+    await flushPromises()
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(3)
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('does not show the empty state before a successful results fetch completes', async () => {
+    let resolveResults
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse({ draw_revision: 3, results_revision: 8 }))
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => new Promise((resolve) => {
+          resolveResults = resolve
+        }),
+      })
+
+    const wrapper = await mountResults()
+    await flushPromises()
+
+    expect(wrapper.find('.results-empty').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="public-results-list"]').exists()).toBe(false)
+
+    resolveResults({ draw_revision: 3, results_revision: 8, data: [] })
+    await flushPromises()
+
+    expect(wrapper.find('.results-empty').exists()).toBe(true)
+  })
+
+  it('renders mobile-first result cards with club, times, labels, and penalties when available', async () => {
+    queueBootstrapSequence(globalThis.fetch, {
+      resultData: [
+        {
+          entry_id: 'e5',
+          crew_name: 'Crew E',
+          club_name: 'River Club',
+          status: 'entered',
+          result_label: 'official',
+          rank: 2,
+          elapsed_time_ms: 94567,
+          delta_time_ms: 2100,
+          penalty_seconds: 5,
+          penalty_reason: 'Lane infringement',
+        },
+      ],
+    })
+
+    const wrapper = await mountResults('/public/v1-2/results?regatta_id=66666666-6666-6666-6666-666666666666')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="public-results-version-banner"]').text()).toContain('Draw v1, Results v2')
+    expect(wrapper.find('[data-testid="public-results-version-link"]').attributes('href')).toBe('/public/v1-2/results?regatta_id=66666666-6666-6666-6666-666666666666')
+
+    const cards = wrapper.findAll('[data-testid="public-results-card"]')
+    expect(cards).toHaveLength(1)
+    expect(cards[0].text()).toContain('Rank')
+    expect(cards[0].text()).toContain('Crew')
+    expect(cards[0].text()).toContain('Club')
+    expect(cards[0].text()).toContain('Time')
+    expect(cards[0].text()).toContain('Delta')
+    expect(cards[0].text()).toContain('Status')
+    expect(cards[0].text()).toContain('Crew E')
+    expect(cards[0].text()).toContain('River Club')
+    expect(cards[0].text()).toContain('1:34.567')
+    expect(cards[0].text()).toContain('+0:02.100')
+    expect(cards[0].text()).toContain('Official')
+    expect(cards[0].text()).toContain('Penalty')
+    expect(cards[0].text()).toContain('+5s')
+    expect(cards[0].text()).toContain('Lane infringement')
+  })
+
+  it('does not render a penalty row when penalty seconds are zero without a reason', async () => {
+    queueBootstrapSequence(globalThis.fetch, {
+      resultData: [
+        {
+          entry_id: 'e6',
+          crew_name: 'Crew F',
+          club_name: 'Canal Club',
+          status: 'entered',
+          rank: 3,
+          penalty_seconds: 0,
+        },
+      ],
+    })
+
+    const wrapper = await mountResults('/public/v1-2/results?regatta_id=67676767-6767-6767-6767-676767676767')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="public-results-card"]').text()).not.toContain('Penalty')
+    expect(wrapper.find('.results-card__penalty').exists()).toBe(false)
   })
 })

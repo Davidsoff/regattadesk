@@ -34,6 +34,14 @@ public interface StationHandoffRepository {
      * @return the handoff if found
      */
     Optional<StationHandoff> findById(UUID id);
+
+    /**
+     * Finds pending handoffs for a regatta.
+     *
+     * @param regattaId the regatta ID
+     * @return list of pending handoffs
+     */
+    List<StationHandoff> findPendingByRegatta(UUID regattaId);
     
     /**
      * Finds pending handoffs for a specific station.

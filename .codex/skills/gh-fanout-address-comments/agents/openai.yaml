@@ -1,4 +1,0 @@
-interface:
-  display_name: "Batch PR Comments"
-  short_description: "Collect open PRs and delegate comment handling per PR"
-  default_prompt: "Find all open pull requests in the repository, then spawn one subagent per PR to run the pr-address-comments skill for that PR. Track progress, surface blockers, and report outcomes per PR."
