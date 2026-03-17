@@ -63,7 +63,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
      * /api/v1/staff.
      */
     private static final Pattern STAFF_REGATTA_EDGE_PROTECTED_PATH_PATTERN = Pattern.compile(
-        "^api/v1/regattas/[^/]+/(entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables|adjudication(/.*)?)$"
+        "^api/v1/regattas/[^/]+/(finance/(entries|clubs)|entries/[^/]+/payment_status|clubs/[^/]+/payment_status|payments/mark_bulk|invoices(/.*)?|export/printables|adjudication(/.*)?)$"
     );
 
     /**

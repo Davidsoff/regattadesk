@@ -248,6 +248,121 @@ class PaymentStatusResourceIT {
             .body("failed_count", equalTo(0));
     }
 
+    @Test
+    void financeDiscoveryEndpoints_listEntriesAndClubsWithSearchAndStatusFilters() throws Exception {
+        TestData data = seedFinanceData();
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .contentType("application/json")
+            .body("""
+                {
+                  "payment_status": "paid",
+                  "payment_reference": "ENTRY-LIST-001"
+                }
+                """)
+            .when()
+            .put("/api/v1/regattas/" + data.regattaId + "/entries/" + data.entryOneId + "/payment_status")
+            .then()
+            .statusCode(200);
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("search", "crew two")
+            .queryParam("payment_status", "unpaid")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/entries")
+            .then()
+            .statusCode(200)
+            .body("entries.size()", equalTo(1))
+            .body("entries[0].entry_id", equalTo(data.entryTwoId.toString()))
+            .body("entries[0].crew_name", equalTo("Crew Two"))
+            .body("entries[0].club_name", equalTo("Finance Club"))
+            .body("entries[0].payment_status", equalTo("unpaid"))
+            .body("pagination.has_more", equalTo(false));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("search", "finance")
+            .queryParam("payment_status", "Partial")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/clubs")
+            .then()
+            .statusCode(200)
+            .body("clubs.size()", equalTo(1))
+            .body("clubs[0].club_id", equalTo(data.clubId.toString()))
+            .body("clubs[0].club_name", equalTo("Finance Club"))
+            .body("clubs[0].payment_status", equalTo("partial"))
+            .body("clubs[0].paid_entries", equalTo(1))
+            .body("clubs[0].unpaid_entries", equalTo(1))
+            .body("pagination.has_more", equalTo(false));
+    }
+
+    @Test
+    void financeDiscoveryEndpoints_rejectUnsupportedPaymentStatusValues() throws Exception {
+        TestData data = seedFinanceData();
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("payment_status", "partial")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/entries")
+            .then()
+            .statusCode(400)
+            .body("error.message", equalTo("payment_status must be one of: paid, unpaid"));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("payment_status", "unknown")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/clubs")
+            .then()
+            .statusCode(400)
+            .body("error.message", equalTo("payment_status must be one of: paid, unpaid, partial"));
+    }
+
+    @Test
+    void financeDiscoveryEndpoints_applyPaginationBounds() throws Exception {
+        TestData data = seedFinanceData();
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("limit", 1)
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/entries")
+            .then()
+            .statusCode(200)
+            .body("entries.size()", equalTo(1))
+            .body("pagination.has_more", equalTo(true))
+            .body("pagination.next_cursor", equalTo("1"));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("cursor", "bogus")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/clubs")
+            .then()
+            .statusCode(400)
+            .body("error.message", equalTo("cursor must be a non-negative integer no greater than 10000"));
+
+        given()
+            .header("Remote-User", "fin-user")
+            .header("Remote-Groups", "financial_manager")
+            .queryParam("cursor", "10001")
+            .when()
+            .get("/api/v1/regattas/" + data.regattaId + "/finance/entries")
+            .then()
+            .statusCode(400)
+            .body("error.message", equalTo("cursor must be a non-negative integer no greater than 10000"));
+    }
+
     private int countAuditEvents(String eventType, UUID aggregateId) throws Exception {
         String sql = """
             SELECT COUNT(*) AS c

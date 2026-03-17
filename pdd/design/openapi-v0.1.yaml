@@ -308,6 +308,57 @@ components:
           type: string
           description: Human-readable error description. Present only when status
             is "failed".
+    FinanceClubListResponse:
+      type: object
+      properties:
+        clubs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceClubSummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceClubSummaryResponse:
+      type: object
+      properties:
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        club_name:
+          type: string
+        payment_status:
+          type: string
+        paid_entries:
+          type: integer
+          format: int32
+        unpaid_entries:
+          type: integer
+          format: int32
+    FinanceEntryListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceEntrySummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceEntrySummaryResponse:
+      type: object
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        crew_name:
+          type: string
+        club_name:
+          type: string
+        payment_status:
+          type: string
+    FinanceListPaginationResponse:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     GenerateDrawRequest:
       type: object
       properties:
@@ -1644,6 +1695,99 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Printable Export Resource
+  /api/v1/regattas/{regatta_id}/finance/clubs:
+    get:
+      summary: List Finance Clubs
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+          - partial
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceClubListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/finance/entries:
+    get:
+      summary: List Finance Entries
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceEntryListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
   /api/v1/regattas/{regatta_id}/invoices:
     get:
       summary: List invoices

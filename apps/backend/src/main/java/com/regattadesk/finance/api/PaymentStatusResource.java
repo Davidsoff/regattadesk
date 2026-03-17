@@ -7,14 +7,22 @@ import com.regattadesk.security.RequireRole;
 import com.regattadesk.security.SecurityContext;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import java.util.UUID;
 
@@ -34,6 +42,88 @@ public class PaymentStatusResource {
 
     @Inject
     SecurityContext securityContext;
+
+    @GET
+    @Path("/finance/entries")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "List Finance Entries")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = FinanceEntryListResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response listFinanceEntries(
+        @PathParam("regatta_id") UUID regattaId,
+        @QueryParam("search") String search,
+        @Parameter(schema = @Schema(enumeration = {"paid", "unpaid"}))
+        @QueryParam("payment_status") String paymentStatus,
+        @QueryParam("cursor") String cursor,
+        @Parameter(schema = @Schema(implementation = Integer.class, defaultValue = "100", minimum = "1", maximum = "100"))
+        @QueryParam("limit") @DefaultValue("100") Integer limit
+    ) {
+        try {
+            String normalizedPaymentStatus = normalizeEntryPaymentStatus(paymentStatus);
+            var result = paymentStatusService.listFinanceEntries(regattaId, search, normalizedPaymentStatus, limit, cursor);
+            var entries = result.entries()
+                .stream()
+                .map(FinanceEntrySummaryResponse::from)
+                .toList();
+            return Response.ok(new FinanceEntryListResponse(
+                entries,
+                new FinanceListPaginationResponse(result.nextCursor() != null, result.nextCursor())
+            )).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(ErrorResponse.internalError("Failed to list finance entries"))
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/finance/clubs")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, HEAD_OF_JURY, INFO_DESK, FINANCIAL_MANAGER})
+    @Operation(summary = "List Finance Clubs")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK",
+            content = @Content(schema = @Schema(implementation = FinanceClubListResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response listFinanceClubs(
+        @PathParam("regatta_id") UUID regattaId,
+        @QueryParam("search") String search,
+        @Parameter(schema = @Schema(enumeration = {"paid", "unpaid", "partial"}))
+        @QueryParam("payment_status") String paymentStatus,
+        @QueryParam("cursor") String cursor,
+        @Parameter(schema = @Schema(implementation = Integer.class, defaultValue = "100", minimum = "1", maximum = "100"))
+        @QueryParam("limit") @DefaultValue("100") Integer limit
+    ) {
+        try {
+            String normalizedPaymentStatus = normalizeClubPaymentStatus(paymentStatus);
+            var result = paymentStatusService.listFinanceClubs(regattaId, search, normalizedPaymentStatus, limit, cursor);
+            var clubs = result.clubs()
+                .stream()
+                .map(FinanceClubSummaryResponse::from)
+                .toList();
+            return Response.ok(new FinanceClubListResponse(
+                clubs,
+                new FinanceListPaginationResponse(result.nextCursor() != null, result.nextCursor())
+            )).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest(e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            return Response.serverError()
+                .entity(ErrorResponse.internalError("Failed to list finance clubs"))
+                .build();
+        }
+    }
 
     @GET
     @Path("/entries/{entry_id}/payment_status")
@@ -191,5 +281,39 @@ public class PaymentStatusResource {
                 .entity(ErrorResponse.internalError("Failed to bulk update payment status"))
                 .build();
         }
+    }
+
+    private String normalizeEntryPaymentStatus(String paymentStatus) {
+        return normalizeQueryPaymentStatus(
+            paymentStatus,
+            "payment_status must be one of: paid, unpaid",
+            "paid",
+            "unpaid"
+        );
+    }
+
+    private String normalizeClubPaymentStatus(String paymentStatus) {
+        return normalizeQueryPaymentStatus(
+            paymentStatus,
+            "payment_status must be one of: paid, unpaid, partial",
+            "paid",
+            "unpaid",
+            "partial"
+        );
+    }
+
+    private String normalizeQueryPaymentStatus(String paymentStatus, String errorMessage, String... supportedValues) {
+        if (paymentStatus == null || paymentStatus.isBlank()) {
+            return null;
+        }
+
+        String normalized = paymentStatus.trim().toLowerCase();
+        for (String value : supportedValues) {
+            if (value.equals(normalized)) {
+                return normalized;
+            }
+        }
+
+        throw new IllegalArgumentException(errorMessage);
     }
 }

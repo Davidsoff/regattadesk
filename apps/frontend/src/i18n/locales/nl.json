@@ -107,6 +107,23 @@
       "not_found": "Club niet gevonden",
       "entries_list": "Inschrijvingen"
     },
+    "home": {
+      "search_label": "Zoek financiële records",
+      "payment_status_label": "Betalingsstatus",
+      "all_statuses": "Alle statussen",
+      "status_paid": "Betaald",
+      "status_unpaid": "Onbetaald",
+      "status_partial": "Gedeeltelijk",
+      "entries_heading": "Inschrijvingen",
+      "clubs_heading": "Clubs",
+      "bulk_heading": "Bulk-update",
+      "invoices_heading": "Facturen",
+      "entry_empty": "Geen overeenkomende inschrijvingen gevonden",
+      "club_empty": "Geen overeenkomende clubs gevonden",
+      "load_error": "Financiële records laden mislukt",
+      "view_entry": "Open inschrijving",
+      "view_club": "Open club"
+    },
     "invoice": {
       "list_title": "Facturenlijst",
       "detail_title": "Factuurdetails",
@@ -131,6 +148,9 @@
       "entries": "Factuurregels"
     },
     "navigation": {
+      "entries": "Inschrijvingen",
+      "clubs": "Clubs",
+      "bulk": "Bulk-update",
       "invoices": "Facturen"
     }
   },

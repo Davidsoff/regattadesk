@@ -5,6 +5,8 @@ import com.regattadesk.eventstore.DomainEvent;
 import com.regattadesk.eventstore.EventEnvelope;
 import com.regattadesk.eventstore.EventMetadata;
 import com.regattadesk.eventstore.EventStore;
+import com.regattadesk.finance.FinanceClubSummary;
+import com.regattadesk.finance.FinanceEntrySummary;
 import com.regattadesk.finance.event.BulkPaymentStatusMarkedEvent;
 import com.regattadesk.finance.event.ClubPaymentStatusUpdateRequestedEvent;
 import com.regattadesk.finance.event.EntryPaymentStatusUpdatedEvent;
@@ -30,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +40,9 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class PaymentStatusService {
+    private static final int DEFAULT_DISCOVERY_LIMIT = 100;
+    private static final int MAX_DISCOVERY_LIMIT = 100;
+    private static final int MAX_DISCOVERY_CURSOR_OFFSET = 10_000;
 
     @Inject
     EventStore eventStore;
@@ -86,6 +92,73 @@ public class PaymentStatusService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load entry payment status", e);
         }
+    }
+
+    public FinanceEntryListResult listFinanceEntries(
+        UUID regattaId,
+        String search,
+        String paymentStatus,
+        Integer limit,
+        String cursor
+    ) {
+        List<FinanceEntrySummary> entries = new ArrayList<>();
+        String normalizedSearch = normalizeLikeFilter(search);
+        String normalizedStatus = normalizeLowercaseText(paymentStatus);
+        int normalizedLimit = normalizeDiscoveryLimit(limit);
+        int offset = parseCursor(cursor);
+        String sql = """
+            SELECT
+                e.id AS entry_id,
+                c.display_name AS crew_name,
+                COALESCE(billing_club.name, crew_club.name, 'Composite / Unassigned') AS club_name,
+                e.payment_status
+            FROM entries e
+            JOIN crews c ON c.id = e.crew_id
+            LEFT JOIN clubs billing_club ON billing_club.id = e.billing_club_id
+            LEFT JOIN clubs crew_club ON crew_club.id = c.club_id
+            WHERE e.regatta_id = ?
+              AND (
+                    ? IS NULL
+                 OR LOWER(c.display_name) LIKE ?
+                 OR LOWER(COALESCE(billing_club.name, crew_club.name, '')) LIKE ?
+              )
+              AND (? IS NULL OR e.payment_status = ?)
+            ORDER BY LOWER(c.display_name), e.id
+            LIMIT ? OFFSET ?
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, normalizedSearch);
+            stmt.setString(3, normalizedSearch);
+            stmt.setString(4, normalizedSearch);
+            stmt.setString(5, normalizedStatus);
+            stmt.setString(6, normalizedStatus);
+            stmt.setInt(7, normalizedLimit + 1);
+            stmt.setInt(8, offset);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    entries.add(new FinanceEntrySummary(
+                        (UUID) rs.getObject("entry_id"),
+                        rs.getString("crew_name"),
+                        rs.getString("club_name"),
+                        rs.getString("payment_status")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list finance entries", e);
+        }
+
+        boolean hasMore = entries.size() > normalizedLimit;
+        if (hasMore) {
+            entries.remove(entries.size() - 1);
+        }
+
+        return new FinanceEntryListResult(
+            List.copyOf(entries),
+            hasMore ? String.valueOf(offset + normalizedLimit) : null
+        );
     }
 
     @Transactional
@@ -178,6 +251,93 @@ public class PaymentStatusService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to load club payment status", e);
         }
+    }
+
+    public FinanceClubListResult listFinanceClubs(
+        UUID regattaId,
+        String search,
+        String paymentStatus,
+        Integer limit,
+        String cursor
+    ) {
+        List<FinanceClubSummary> clubs = new ArrayList<>();
+        String normalizedSearch = normalizeLikeFilter(search);
+        String normalizedStatus = normalizeLowercaseText(paymentStatus);
+        int normalizedLimit = normalizeDiscoveryLimit(limit);
+        int offset = parseCursor(cursor);
+        String sql = """
+            WITH club_totals AS (
+                SELECT
+                    COALESCE(e.billing_club_id, CASE WHEN c.is_composite = FALSE THEN c.club_id END) AS club_id,
+                    COALESCE(billing_club.name, crew_club.name) AS club_name,
+                    SUM(CASE WHEN e.payment_status = 'paid' THEN 1 ELSE 0 END) AS paid_entries,
+                    SUM(CASE WHEN e.payment_status = 'unpaid' THEN 1 ELSE 0 END) AS unpaid_entries
+                FROM entries e
+                JOIN crews c ON c.id = e.crew_id
+                LEFT JOIN clubs billing_club ON billing_club.id = e.billing_club_id
+                LEFT JOIN clubs crew_club ON crew_club.id = c.club_id
+                WHERE e.regatta_id = ?
+                GROUP BY
+                    COALESCE(e.billing_club_id, CASE WHEN c.is_composite = FALSE THEN c.club_id END),
+                    COALESCE(billing_club.name, crew_club.name)
+            )
+            SELECT
+                club_id,
+                club_name,
+                CASE
+                    WHEN paid_entries = 0 THEN 'unpaid'
+                    WHEN unpaid_entries = 0 THEN 'paid'
+                    ELSE 'partial'
+                END AS payment_status,
+                paid_entries,
+                unpaid_entries
+            FROM club_totals
+            WHERE club_id IS NOT NULL
+              AND (? IS NULL OR LOWER(club_name) LIKE ?)
+              AND (
+                    ? IS NULL
+                 OR CASE
+                        WHEN paid_entries = 0 THEN 'unpaid'
+                        WHEN unpaid_entries = 0 THEN 'paid'
+                        ELSE 'partial'
+                    END = ?
+              )
+            ORDER BY LOWER(club_name), club_id
+            LIMIT ? OFFSET ?
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, regattaId);
+            stmt.setString(2, normalizedSearch);
+            stmt.setString(3, normalizedSearch);
+            stmt.setString(4, normalizedStatus);
+            stmt.setString(5, normalizedStatus);
+            stmt.setInt(6, normalizedLimit + 1);
+            stmt.setInt(7, offset);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    clubs.add(new FinanceClubSummary(
+                        (UUID) rs.getObject("club_id"),
+                        rs.getString("club_name"),
+                        rs.getString("payment_status"),
+                        rs.getInt("paid_entries"),
+                        rs.getInt("unpaid_entries")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to list finance clubs", e);
+        }
+
+        boolean hasMore = clubs.size() > normalizedLimit;
+        if (hasMore) {
+            clubs.remove(clubs.size() - 1);
+        }
+
+        return new FinanceClubListResult(
+            List.copyOf(clubs),
+            hasMore ? String.valueOf(offset + normalizedLimit) : null
+        );
     }
 
     @Transactional
@@ -719,6 +879,46 @@ public class PaymentStatusService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private String normalizeLowercaseText(String value) {
+        String normalized = normalizeText(value);
+        return normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeLikeFilter(String value) {
+        String normalized = normalizeText(value);
+        return normalized == null ? null : "%" + normalized.toLowerCase(Locale.ROOT) + "%";
+    }
+
+    private int normalizeDiscoveryLimit(Integer limit) {
+        if (limit == null) {
+            return DEFAULT_DISCOVERY_LIMIT;
+        }
+        if (limit < 1 || limit > MAX_DISCOVERY_LIMIT) {
+            throw new IllegalArgumentException("limit must be between 1 and " + MAX_DISCOVERY_LIMIT);
+        }
+        return limit;
+    }
+
+    private int parseCursor(String cursor) {
+        String normalizedCursor = normalizeText(cursor);
+        if (normalizedCursor == null) {
+            return 0;
+        }
+        try {
+            int offset = Integer.parseInt(normalizedCursor);
+            if (offset < 0 || offset > MAX_DISCOVERY_CURSOR_OFFSET) {
+                throw new IllegalArgumentException(
+                    "cursor must be a non-negative integer no greater than " + MAX_DISCOVERY_CURSOR_OFFSET
+                );
+            }
+            return offset;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                "cursor must be a non-negative integer no greater than " + MAX_DISCOVERY_CURSOR_OFFSET
+            );
+        }
+    }
+
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
     }
@@ -744,6 +944,18 @@ public class PaymentStatusService {
         String paidBy,
         String paymentReference,
         UUID effectiveClubId
+    ) {
+    }
+
+    public record FinanceEntryListResult(
+        List<FinanceEntrySummary> entries,
+        String nextCursor
+    ) {
+    }
+
+    public record FinanceClubListResult(
+        List<FinanceClubSummary> clubs,
+        String nextCursor
     ) {
     }
 }

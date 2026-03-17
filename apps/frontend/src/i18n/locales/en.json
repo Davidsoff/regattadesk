@@ -107,6 +107,23 @@
       "not_found": "Club not found",
       "entries_list": "Entries"
     },
+    "home": {
+      "search_label": "Search finance records",
+      "payment_status_label": "Payment status",
+      "all_statuses": "All statuses",
+      "status_paid": "Paid",
+      "status_unpaid": "Unpaid",
+      "status_partial": "Partial",
+      "entries_heading": "Entries",
+      "clubs_heading": "Clubs",
+      "bulk_heading": "Bulk Update",
+      "invoices_heading": "Invoices",
+      "entry_empty": "No matching entries found",
+      "club_empty": "No matching clubs found",
+      "load_error": "Failed to load finance records",
+      "view_entry": "Open entry",
+      "view_club": "Open club"
+    },
     "invoice": {
       "list_title": "Invoice List",
       "detail_title": "Invoice Details",
@@ -131,6 +148,9 @@
       "entries": "Invoice Entries"
     },
     "navigation": {
+      "entries": "Entries",
+      "clubs": "Clubs",
+      "bulk": "Bulk Update",
       "invoices": "Invoices"
     }
   },
