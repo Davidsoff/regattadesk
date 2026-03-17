@@ -1,9 +1,11 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ApiError, createApiClient, createRegattaSetupApi } from '../../api'
 
 const route = useRoute()
+const { t } = useI18n()
 const api = createRegattaSetupApi(createApiClient())
 
 const destructiveDialog = ref(null)
@@ -549,16 +551,16 @@ watch(
 
     <div class="regatta-setup-section__controls">
       <label>
-        Search
+        {{ t('common.search') }}
         <input v-model="filters.search" name="setup_search" type="search" />
       </label>
       <label v-if="route.name === 'staff-regatta-setup-entries'">
         Status
         <select v-model="filters.status" name="entries_status_filter" @change="loadItems">
           <option value="">All statuses</option>
-          <option value="entered">Entered</option>
-          <option value="withdrawn_before_draw">Withdrawn Before Draw</option>
-          <option value="withdrawn_after_draw">Withdrawn After Draw</option>
+          <option value="entered">{{ t('status.entered') }}</option>
+          <option value="withdrawn_before_draw">{{ t('status.withdrawn_before_draw') }}</option>
+          <option value="withdrawn_after_draw">{{ t('status.withdrawn_after_draw') }}</option>
         </select>
       </label>
     </div>
@@ -653,8 +655,8 @@ watch(
       <template v-if="destructiveMode === 'withdraw'">
         <label for="withdraw-status">Withdrawal timing</label>
         <select id="withdraw-status" v-model="withdrawStatus" name="status">
-          <option value="withdrawn_before_draw">Before draw publication</option>
-          <option value="withdrawn_after_draw">After draw publication</option>
+          <option value="withdrawn_before_draw">{{ t('status.withdrawn_before_draw') }}</option>
+          <option value="withdrawn_after_draw">{{ t('status.withdrawn_after_draw') }}</option>
         </select>
         <label for="withdraw-reason">Reason</label>
         <textarea id="withdraw-reason" v-model="withdrawReason" name="reason" />
