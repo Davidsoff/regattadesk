@@ -57,6 +57,20 @@ public class TestRegattaIdentityEchoResource {
     }
 
     @GET
+    @Path("/entries/{entry_id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public EchoResponse entryMutationEchoIdentity(
+        @PathParam("regatta_id") String regattaId,
+        @PathParam("entry_id") String entryId,
+        @HeaderParam("Remote-User") String remoteUser,
+        @HeaderParam("Remote-Groups") String remoteGroups,
+        @HeaderParam("Remote-Name") String remoteName,
+        @HeaderParam("Remote-Email") String remoteEmail
+    ) {
+        return buildEchoResponse(regattaId + ":" + entryId, remoteUser, remoteGroups, remoteName, remoteEmail);
+    }
+
+    @GET
     @Path("/adjudication/echo-identity")
     @Produces(MediaType.APPLICATION_JSON)
     public EchoResponse adjudicationEchoIdentity(

@@ -6,6 +6,27 @@ import i18n from '../i18n'
 import RegattaDetail from '../views/staff/RegattaDetail.vue'
 import RegattaSetupSection from '../views/staff/RegattaSetupSection.vue'
 
+const eventGroupStore = [
+  {
+    id: 'event-group-1',
+    name: 'Junior Sweep',
+    description: 'Morning setup group',
+    display_order: 1
+  }
+]
+
+const athleteStore = [
+  {
+    id: 'athlete-1',
+    first_name: 'Ada',
+    middle_name: '',
+    last_name: 'Lovelace',
+    date_of_birth: '1990-12-10',
+    gender: 'F',
+    club_id: 'club-1'
+  }
+]
+
 const entryStore = [
   {
     id: 'entry-entered',
@@ -34,15 +55,68 @@ const entryStore = [
 ]
 
 const mockSetupApi = {
-  listEventGroups: vi.fn(async () => ({ data: [] })),
-  createEventGroup: vi.fn(async () => ({})),
+  listEventGroups: vi.fn(async (regattaId, params) => ({
+    data: params?.search
+      ? eventGroupStore.filter((group) => group.name.toLowerCase().includes(params.search.toLowerCase()))
+      : eventGroupStore
+  })),
+  createEventGroup: vi.fn(async (regattaId, payload) => {
+    const item = {
+      id: `event-group-${eventGroupStore.length + 1}`,
+      ...payload
+    }
+    eventGroupStore.push(item)
+    return item
+  }),
+  updateEventGroup: vi.fn(async (regattaId, eventGroupId, payload) => {
+    const item = eventGroupStore.find((group) => group.id === eventGroupId)
+    Object.assign(item, payload)
+    return item
+  }),
+  deleteEventGroup: vi.fn(async (regattaId, eventGroupId) => {
+    const index = eventGroupStore.findIndex((group) => group.id === eventGroupId)
+    eventGroupStore.splice(index, 1)
+    return null
+  }),
   listEvents: vi.fn(async () => ({ data: [] })),
   createEvent: vi.fn(async () => ({})),
-  listAthletes: vi.fn(async () => ({ data: [] })),
-  createAthlete: vi.fn(async () => ({})),
+  updateEvent: vi.fn(async () => ({})),
+  deleteEvent: vi.fn(async () => null),
+  listAthletes: vi.fn(async (params) => ({
+    data: params?.search
+      ? athleteStore.filter((athlete) => `${athlete.first_name} ${athlete.last_name}`.toLowerCase().includes(params.search.toLowerCase()))
+      : athleteStore
+  })),
+  createAthlete: vi.fn(async (payload) => {
+    const item = {
+      id: `athlete-${athleteStore.length + 1}`,
+      ...payload
+    }
+    athleteStore.push(item)
+    return item
+  }),
+  updateAthlete: vi.fn(async (athleteId, payload) => {
+    const item = athleteStore.find((athlete) => athlete.id === athleteId)
+    Object.assign(item, payload)
+    return item
+  }),
+  deleteAthlete: vi.fn(async (athleteId) => {
+    const index = athleteStore.findIndex((athlete) => athlete.id === athleteId)
+    athleteStore.splice(index, 1)
+    return null
+  }),
   listCrews: vi.fn(async () => ({ data: [] })),
   createCrew: vi.fn(async () => ({})),
-  listEntries: vi.fn(async (regattaId, params) => ({ data: params?.status ? entryStore.filter((entry) => entry.status === params.status) : entryStore })),
+  updateCrew: vi.fn(async () => ({})),
+  deleteCrew: vi.fn(async () => null),
+  listEntries: vi.fn(async (regattaId, params) => ({
+    data: entryStore.filter((entry) => {
+      const matchesStatus = !params?.status || entry.status === params.status
+      const search = params?.search?.toLowerCase()
+      const matchesSearch = !search || JSON.stringify(entry).toLowerCase().includes(search)
+      return matchesStatus && matchesSearch
+    })
+  })),
   createEntry: vi.fn(async (regattaId, payload) => {
     entryStore.push({
       id: 'entry-new',
@@ -50,6 +124,16 @@ const mockSetupApi = {
       status: 'entered'
     })
     return { id: 'entry-new' }
+  }),
+  updateEntry: vi.fn(async (regattaId, entryId, payload) => {
+    const entry = entryStore.find((item) => item.id === entryId)
+    Object.assign(entry, payload)
+    return entry
+  }),
+  deleteEntry: vi.fn(async (regattaId, entryId) => {
+    const index = entryStore.findIndex((entry) => entry.id === entryId)
+    entryStore.splice(index, 1)
+    return null
   }),
   withdrawEntry: vi.fn(async (regattaId, entryId, payload) => {
     if (payload.reason.includes('conflict')) {
@@ -148,6 +232,53 @@ async function settle() {
   await Promise.resolve()
 }
 
+function createSetupRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/staff/regattas/:regattaId/setup/entries',
+        name: 'staff-regatta-setup-entries',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/event-groups',
+        name: 'staff-regatta-setup-event-groups',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/events',
+        name: 'staff-regatta-setup-events',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/athletes',
+        name: 'staff-regatta-setup-athletes',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/crews',
+        name: 'staff-regatta-setup-crews',
+        component: RegattaSetupSection
+      }
+    ]
+  })
+}
+
+async function mountSetupSection(sectionName) {
+  const router = createSetupRouter()
+
+  await router.push(`/staff/regattas/${REGATTA_ID}/setup/${sectionName}`)
+  await router.isReady()
+
+  return mount(RegattaSetupSection, {
+    attachTo: document.body,
+    global: {
+      plugins: [router, i18n]
+    }
+  })
+}
+
 async function mountEntriesSection() {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -195,6 +326,25 @@ describe('Staff regatta management workflows (issue #134)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     document.body.innerHTML = ''
+    eventGroupStore.splice(0, eventGroupStore.length,
+      {
+        id: 'event-group-1',
+        name: 'Junior Sweep',
+        description: 'Morning setup group',
+        display_order: 1
+      }
+    )
+    athleteStore.splice(0, athleteStore.length,
+      {
+        id: 'athlete-1',
+        first_name: 'Ada',
+        middle_name: '',
+        last_name: 'Lovelace',
+        date_of_birth: '1990-12-10',
+        gender: 'F',
+        club_id: 'club-1'
+      }
+    )
     entryStore.splice(0, entryStore.length,
       {
         id: 'entry-entered',
@@ -340,5 +490,57 @@ describe('Staff regatta management workflows (issue #134)', () => {
         expected_status: 'entered'
       })
     )
+  })
+
+  it('searches and completes edit/delete flows for event groups', async () => {
+    const wrapper = await mountSetupSection('event-groups')
+    await settle()
+
+    await wrapper.find('input[name="setup_search"]').setValue('Junior')
+    await settle()
+
+    expect(mockSetupApi.listEventGroups).toHaveBeenLastCalledWith(REGATTA_ID, { search: 'Junior' })
+
+    await wrapper.find('button[data-action="edit-item"]').trigger('click')
+    await wrapper.find('input[name="name"]').setValue('Senior Sweep')
+    await wrapper.find('form[data-testid="setup-form"]').trigger('submit.prevent')
+    await settle()
+
+    expect(mockSetupApi.updateEventGroup).toHaveBeenCalledWith(
+      REGATTA_ID,
+      'event-group-1',
+      expect.objectContaining({ name: 'Senior Sweep' })
+    )
+
+    await wrapper.find('input[name="setup_search"]').setValue('Senior')
+    await settle()
+
+    await wrapper.find('button[data-action="delete-item"]').trigger('click')
+    expect(wrapper.find('[data-testid="destructive-action-dialog"]').text()).toContain('Delete event group')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-delete"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.deleteEventGroup).toHaveBeenCalledWith(REGATTA_ID, 'event-group-1')
+  })
+
+  it('uses the shared athlete API for edit and delete setup workflows', async () => {
+    const wrapper = await mountSetupSection('athletes')
+    await settle()
+
+    await wrapper.find('button[data-action="edit-item"]').trigger('click')
+    await wrapper.find('input[name="last_name"]').setValue('Byron')
+    await wrapper.find('form[data-testid="setup-form"]').trigger('submit.prevent')
+    await settle()
+
+    expect(mockSetupApi.updateAthlete).toHaveBeenCalledWith(
+      'athlete-1',
+      expect.objectContaining({ last_name: 'Byron' })
+    )
+
+    await wrapper.find('button[data-action="delete-item"]').trigger('click')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-delete"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.deleteAthlete).toHaveBeenCalledWith('athlete-1')
   })
 })

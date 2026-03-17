@@ -27,6 +27,7 @@ class RegattaSetupResourceIT {
     void regattaSetupEndpoints_supportCrudRoundTripAcrossSetupEntities() throws Exception {
         SeedData seed = seedBaseData();
         SeedData otherSeed = seedBaseData();
+        UUID alternateAthleteId = seedAthlete(seed, "Grace", "Hopper");
 
         String eventGroupId = given()
             .header("Remote-User", "staff-admin")
@@ -59,6 +60,23 @@ class RegattaSetupResourceIT {
             .body("data.id", hasItem(eventGroupId))
             .body("pagination.has_more", equalTo(false));
 
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "name": "Senior Sweep",
+                  "description": "Updated setup group",
+                  "display_order": 2
+                }
+                """)
+            .when()
+            .patch("/api/v1/regattas/" + seed.regattaId + "/event-groups/" + eventGroupId)
+            .then()
+            .statusCode(200)
+            .body("name", equalTo("Senior Sweep"));
+
         String eventId = given()
             .header("Remote-User", "staff-admin")
             .header("Remote-Groups", "super_admin")
@@ -81,6 +99,35 @@ class RegattaSetupResourceIT {
             .body("name", equalTo("JW4x"))
             .extract()
             .path("id");
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "event_group_id": "%s",
+                  "category_id": "%s",
+                  "boat_type_id": "%s",
+                  "name": "JW2x",
+                  "display_order": 2
+                }
+                """.formatted(eventGroupId, seed.categoryId, seed.boatTypeId))
+            .when()
+            .patch("/api/v1/regattas/" + seed.regattaId + "/events/" + eventId)
+            .then()
+            .statusCode(200)
+            .body("name", equalTo("JW2x"));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .queryParam("search", "JW2")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/events")
+            .then()
+            .statusCode(200)
+            .body("data.id", hasItem(eventId));
 
         String crewId = given()
             .header("Remote-User", "staff-admin")
@@ -122,6 +169,40 @@ class RegattaSetupResourceIT {
             .body("data.display_name", hasItem("Amstel Crew"))
             .body("data.id", not(hasItem(otherCrewId.toString())));
 
+                given()
+                        .header("Remote-User", "staff-admin")
+                        .header("Remote-Groups", "super_admin")
+                        .contentType("application/json")
+                        .body("""
+                                {
+                                    "display_name": "Amstel Composite",
+                                    "club_id": "%s",
+                                    "is_composite": false,
+                                    "members": [
+                                        {
+                                            "athlete_id": "%s",
+                                            "seat_position": 2
+                                        }
+                                    ]
+                                }
+                                """.formatted(seed.clubId, alternateAthleteId))
+                        .when()
+                        .patch("/api/v1/regattas/" + seed.regattaId + "/crews/" + crewId)
+                        .then()
+                        .statusCode(200)
+                        .body("display_name", equalTo("Amstel Composite"))
+                        .body("members[0].athlete_id", equalTo(alternateAthleteId.toString()));
+
+                given()
+                        .header("Remote-User", "staff-admin")
+                        .header("Remote-Groups", "super_admin")
+                        .queryParam("search", "Composite")
+                        .when()
+                        .get("/api/v1/regattas/" + seed.regattaId + "/crews")
+                        .then()
+                        .statusCode(200)
+                        .body("data.id", hasItem(crewId));
+
         String entryId = given()
             .header("Remote-User", "staff-admin")
             .header("Remote-Groups", "super_admin")
@@ -152,6 +233,102 @@ class RegattaSetupResourceIT {
             .then()
             .statusCode(200)
             .body("data.id", hasItem(entryId));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .contentType("application/json")
+            .body("""
+                {
+                  "event_id": "%s",
+                  "block_id": "%s",
+                  "crew_id": "%s",
+                  "billing_club_id": null
+                }
+                """.formatted(eventId, seed.blockId, crewId))
+            .when()
+            .patch("/api/v1/regattas/" + seed.regattaId + "/entries/" + entryId)
+            .then()
+            .statusCode(200)
+            .body("billing_club_id", equalTo(null));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .queryParam("search", "Composite")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/entries")
+            .then()
+            .statusCode(200)
+            .body("data.id", hasItem(entryId));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .delete("/api/v1/regattas/" + seed.regattaId + "/entries/" + entryId)
+            .then()
+            .statusCode(204);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .delete("/api/v1/regattas/" + seed.regattaId + "/crews/" + crewId)
+            .then()
+            .statusCode(204);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .delete("/api/v1/regattas/" + seed.regattaId + "/events/" + eventId)
+            .then()
+            .statusCode(204);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .delete("/api/v1/regattas/" + seed.regattaId + "/event-groups/" + eventGroupId)
+            .then()
+            .statusCode(204);
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/entries")
+            .then()
+            .statusCode(200)
+            .body("data.id", not(hasItem(entryId)));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/crews")
+            .then()
+            .statusCode(200)
+            .body("data.id", not(hasItem(crewId)));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/events")
+            .then()
+            .statusCode(200)
+            .body("data.id", not(hasItem(eventId)));
+
+        given()
+            .header("Remote-User", "staff-admin")
+            .header("Remote-Groups", "super_admin")
+            .when()
+            .get("/api/v1/regattas/" + seed.regattaId + "/event-groups")
+            .then()
+            .statusCode(200)
+            .body("data.id", not(hasItem(eventGroupId)));
     }
 
     @Test
@@ -294,6 +471,19 @@ class RegattaSetupResourceIT {
             );
         }
         return eventId;
+    }
+
+    private UUID seedAthlete(SeedData seed, String firstName, String lastName) throws Exception {
+        UUID athleteId = UUID.randomUUID();
+        try (Connection connection = dataSource.getConnection()) {
+            insert(
+                connection,
+                "INSERT INTO athletes (id, first_name, last_name, date_of_birth, gender, club_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                athleteId, firstName, lastName, java.sql.Date.valueOf("1991-01-01"), "F", seed.clubId,
+                Timestamp.from(Instant.parse("2026-03-10T12:00:00Z")), Timestamp.from(Instant.parse("2026-03-10T12:00:00Z"))
+            );
+        }
+        return athleteId;
     }
 
     private UUID seedCrew(SeedData seed) throws Exception {

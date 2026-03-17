@@ -10,9 +10,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -65,6 +67,36 @@ public class RegattaSetupResource {
         return Response.ok(EventGroupListResponse.from(service.listEventGroups(regattaId, search))).build();
     }
 
+    @PATCH
+    @Path("/event-groups/{event_group_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Update Event Group")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EventGroupResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response updateEventGroup(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("event_group_id") UUID eventGroupId,
+        @Valid EventGroupCreateRequest request
+    ) {
+        return Response.ok(service.updateEventGroup(regattaId, eventGroupId, request)).build();
+    }
+
+    @DELETE
+    @Path("/event-groups/{event_group_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Delete Event Group")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "No Content"),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response deleteEventGroup(@PathParam("regatta_id") UUID regattaId, @PathParam("event_group_id") UUID eventGroupId) {
+        service.deleteEventGroup(regattaId, eventGroupId);
+        return Response.noContent().build();
+    }
+
     @POST
     @Path("/events")
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
@@ -82,8 +114,38 @@ public class RegattaSetupResource {
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
     @Operation(summary = "List Events")
     @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EventListResponse.class)))
-    public Response listEvents(@PathParam("regatta_id") UUID regattaId) {
-        return Response.ok(EventListResponse.from(service.listEvents(regattaId))).build();
+    public Response listEvents(@PathParam("regatta_id") UUID regattaId, @QueryParam("search") String search) {
+        return Response.ok(EventListResponse.from(service.listEvents(regattaId, search))).build();
+    }
+
+    @PATCH
+    @Path("/events/{event_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Update Event")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EventResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response updateEvent(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("event_id") UUID eventId,
+        @Valid EventCreateRequest request
+    ) {
+        return Response.ok(service.updateEvent(regattaId, eventId, request)).build();
+    }
+
+    @DELETE
+    @Path("/events/{event_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Delete Event")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "No Content"),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response deleteEvent(@PathParam("regatta_id") UUID regattaId, @PathParam("event_id") UUID eventId) {
+        service.deleteEvent(regattaId, eventId);
+        return Response.noContent().build();
     }
 
     @POST
@@ -103,8 +165,40 @@ public class RegattaSetupResource {
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
     @Operation(summary = "List Crews")
     @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = CrewListResponse.class)))
-    public Response listCrews(@PathParam("regatta_id") UUID regattaId) {
-        return Response.ok(CrewListResponse.from(service.listCrews(regattaId))).build();
+    public Response listCrews(@PathParam("regatta_id") UUID regattaId, @QueryParam("search") String search) {
+        return Response.ok(CrewListResponse.from(service.listCrews(regattaId, search))).build();
+    }
+
+    @PATCH
+    @Path("/crews/{crew_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Update Crew")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = CrewResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "409", description = "Conflict", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response updateCrew(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("crew_id") UUID crewId,
+        @Valid CrewCreateRequest request
+    ) {
+        return Response.ok(service.updateCrew(regattaId, crewId, request)).build();
+    }
+
+    @DELETE
+    @Path("/crews/{crew_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Delete Crew")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "No Content"),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "409", description = "Conflict", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response deleteCrew(@PathParam("regatta_id") UUID regattaId, @PathParam("crew_id") UUID crewId) {
+        service.deleteCrew(regattaId, crewId);
+        return Response.noContent().build();
     }
 
     @POST
@@ -124,8 +218,42 @@ public class RegattaSetupResource {
     @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
     @Operation(summary = "List Entries")
     @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EntryListResponse.class)))
-    public Response listEntries(@PathParam("regatta_id") UUID regattaId, @QueryParam("status") String status) {
-        return Response.ok(EntryListResponse.from(service.listEntries(regattaId, status))).build();
+    public Response listEntries(
+        @PathParam("regatta_id") UUID regattaId,
+        @QueryParam("status") String status,
+        @QueryParam("search") String search
+    ) {
+        return Response.ok(EntryListResponse.from(service.listEntries(regattaId, status, search))).build();
+    }
+
+    @PATCH
+    @Path("/entries/{entry_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Update Entry")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "OK", content = @Content(schema = @Schema(implementation = EntryResponse.class))),
+        @APIResponse(responseCode = "400", description = "Bad Request", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response updateEntry(
+        @PathParam("regatta_id") UUID regattaId,
+        @PathParam("entry_id") UUID entryId,
+        @Valid EntryCreateRequest request
+    ) {
+        return Response.ok(service.updateEntry(regattaId, entryId, request)).build();
+    }
+
+    @DELETE
+    @Path("/entries/{entry_id}")
+    @RequireRole({SUPER_ADMIN, REGATTA_ADMIN, INFO_DESK})
+    @Operation(summary = "Delete Entry")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "No Content"),
+        @APIResponse(responseCode = "404", description = "Not Found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response deleteEntry(@PathParam("regatta_id") UUID regattaId, @PathParam("entry_id") UUID entryId) {
+        service.deleteEntry(regattaId, entryId);
+        return Response.noContent().build();
     }
 
     @POST
@@ -176,6 +304,26 @@ public class RegattaSetupResource {
         public Response toResponse(RegattaSetupService.ConflictException conflict) {
             return Response.status(Response.Status.CONFLICT)
                 .entity(new ErrorResponse("CONFLICT", conflict.getMessage(), conflict.details()))
+                .build();
+        }
+    }
+
+    @jakarta.ws.rs.ext.Provider
+    public static class SetupNotFoundExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<RegattaSetupService.SetupNotFoundException> {
+        @Override
+        public Response toResponse(RegattaSetupService.SetupNotFoundException exception) {
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(ErrorResponse.notFound(exception.getMessage()))
+                .build();
+        }
+    }
+
+    @jakarta.ws.rs.ext.Provider
+    public static class SetupBadRequestExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<RegattaSetupService.SetupBadRequestException> {
+        @Override
+        public Response toResponse(RegattaSetupService.SetupBadRequestException exception) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ErrorResponse.badRequest(exception.getMessage()))
                 .build();
         }
     }

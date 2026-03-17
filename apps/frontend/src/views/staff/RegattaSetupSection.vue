@@ -1,21 +1,23 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, createApiClient, createRegattaSetupApi } from '../../api'
 
 const route = useRoute()
 const api = createRegattaSetupApi(createApiClient())
 
-const withdrawDialog = ref(null)
-const withdrawTriggerButton = ref(null)
+const destructiveDialog = ref(null)
+const destructiveTriggerButton = ref(null)
 const items = ref([])
 const loading = ref(false)
 const pageError = ref('')
 const saving = ref(false)
-const showWithdrawDialog = ref(false)
+const showDestructiveDialog = ref(false)
+const destructiveMode = ref('withdraw')
 const withdrawReason = ref('')
 const withdrawStatus = ref('withdrawn_before_draw')
-const selectedEntry = ref(null)
+const selectedItem = ref(null)
+const editingItem = ref(null)
 const conflictMessage = ref('')
 const formErrors = ref({})
 const filters = ref({
@@ -23,29 +25,97 @@ const filters = ref({
   status: ''
 })
 
+function normalizeNullable(value) {
+  const normalized = String(value ?? '').trim()
+  return normalized ? normalized : null
+}
+
+function toInteger(value) {
+  return Number(value || 0)
+}
+
+function buildEventGroupPayload(payload) {
+  return {
+    name: payload.name,
+    description: normalizeNullable(payload.description),
+    display_order: toInteger(payload.display_order)
+  }
+}
+
+function buildEventPayload(payload) {
+  return {
+    event_group_id: payload.event_group_id,
+    category_id: payload.category_id,
+    boat_type_id: payload.boat_type_id,
+    name: payload.name,
+    display_order: toInteger(payload.display_order)
+  }
+}
+
+function buildAthletePayload(payload) {
+  return {
+    first_name: payload.first_name,
+    middle_name: normalizeNullable(payload.middle_name),
+    last_name: payload.last_name,
+    date_of_birth: payload.date_of_birth,
+    gender: payload.gender,
+    club_id: normalizeNullable(payload.club_id)
+  }
+}
+
+function buildCrewPayload(payload) {
+  return {
+    display_name: payload.display_name,
+    club_id: normalizeNullable(payload.club_id),
+    is_composite: false,
+    members: [
+      {
+        athlete_id: payload.athlete_id,
+        seat_position: Number(payload.seat_position)
+      }
+    ]
+  }
+}
+
+function buildEntryPayload(payload) {
+  return {
+    event_id: payload.event_id,
+    block_id: payload.block_id,
+    crew_id: payload.crew_id,
+    billing_club_id: normalizeNullable(payload.billing_club_id)
+  }
+}
+
 const sectionConfigs = {
   'staff-regatta-setup-event-groups': {
     title: 'Event Groups',
-    description: 'Create and review event groups for this regatta.',
+    singular: 'event group',
+    description: 'Create, search, update, and delete event groups for this regatta.',
     formFields: [
       { key: 'name', label: 'Name', required: true },
       { key: 'description', label: 'Description' },
       { key: 'display_order', label: 'Display Order', type: 'number' }
     ],
     create(payload) {
-      return api.createEventGroup(route.params.regattaId, {
-        name: payload.name,
-        description: payload.description || null,
-        display_order: Number(payload.display_order || 0)
-      })
+      return api.createEventGroup(route.params.regattaId, buildEventGroupPayload(payload))
+    },
+    update(item, payload) {
+      return api.updateEventGroup(route.params.regattaId, item.id, buildEventGroupPayload(payload))
+    },
+    delete(item) {
+      return api.deleteEventGroup(route.params.regattaId, item.id)
     },
     list() {
       return api.listEventGroups(route.params.regattaId, { search: filters.value.search || undefined })
+    },
+    label(item) {
+      return item.name || item.id
     }
   },
   'staff-regatta-setup-events': {
     title: 'Events',
-    description: 'Manage regatta-scoped events and their group assignment.',
+    singular: 'event',
+    description: 'Manage regatta-scoped events, with real search and edit/delete support.',
     formFields: [
       { key: 'event_group_id', label: 'Event Group ID', required: true },
       { key: 'category_id', label: 'Category ID', required: true },
@@ -54,42 +124,53 @@ const sectionConfigs = {
       { key: 'display_order', label: 'Display Order', type: 'number' }
     ],
     create(payload) {
-      return api.createEvent(route.params.regattaId, {
-        event_group_id: payload.event_group_id,
-        category_id: payload.category_id,
-        boat_type_id: payload.boat_type_id,
-        name: payload.name,
-        display_order: Number(payload.display_order || 0)
-      })
+      return api.createEvent(route.params.regattaId, buildEventPayload(payload))
+    },
+    update(item, payload) {
+      return api.updateEvent(route.params.regattaId, item.id, buildEventPayload(payload))
+    },
+    delete(item) {
+      return api.deleteEvent(route.params.regattaId, item.id)
     },
     list() {
-      return api.listEvents(route.params.regattaId)
+      return api.listEvents(route.params.regattaId, { search: filters.value.search || undefined })
+    },
+    label(item) {
+      return item.name || item.id
     }
   },
   'staff-regatta-setup-athletes': {
     title: 'Athletes',
-    description: 'Search and create athletes using the shared BC03 athlete API.',
+    singular: 'athlete',
+    description: 'Search, create, update, and delete athletes using the shared BC03 athlete API.',
     formFields: [
       { key: 'first_name', label: 'First Name', required: true },
+      { key: 'middle_name', label: 'Middle Name' },
       { key: 'last_name', label: 'Last Name', required: true },
       { key: 'date_of_birth', label: 'Date of Birth', type: 'date', required: true },
-      { key: 'gender', label: 'Gender', required: true }
+      { key: 'gender', label: 'Gender', required: true },
+      { key: 'club_id', label: 'Club ID' }
     ],
     create(payload) {
-      return api.createAthlete({
-        first_name: payload.first_name,
-        last_name: payload.last_name,
-        date_of_birth: payload.date_of_birth,
-        gender: payload.gender
-      })
+      return api.createAthlete(buildAthletePayload(payload))
+    },
+    update(item, payload) {
+      return api.updateAthlete(item.id, buildAthletePayload(payload))
+    },
+    delete(item) {
+      return api.deleteAthlete(item.id)
     },
     list() {
       return api.listAthletes({ search: filters.value.search || undefined })
+    },
+    label(item) {
+      return `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.id
     }
   },
   'staff-regatta-setup-crews': {
     title: 'Crews',
-    description: 'Create crews and seed member assignments for regatta entries.',
+    singular: 'crew',
+    description: 'Create crews, search them, and maintain their setup metadata before entry handling.',
     formFields: [
       { key: 'display_name', label: 'Display Name', required: true },
       { key: 'club_id', label: 'Club ID' },
@@ -97,25 +178,25 @@ const sectionConfigs = {
       { key: 'seat_position', label: 'Seat Position', type: 'number', required: true }
     ],
     create(payload) {
-      return api.createCrew(route.params.regattaId, {
-        display_name: payload.display_name,
-        club_id: payload.club_id || null,
-        is_composite: false,
-        members: [
-          {
-            athlete_id: payload.athlete_id,
-            seat_position: Number(payload.seat_position)
-          }
-        ]
-      })
+      return api.createCrew(route.params.regattaId, buildCrewPayload(payload))
+    },
+    update(item, payload) {
+      return api.updateCrew(route.params.regattaId, item.id, buildCrewPayload(payload))
+    },
+    delete(item) {
+      return api.deleteCrew(route.params.regattaId, item.id)
     },
     list() {
-      return api.listCrews(route.params.regattaId)
+      return api.listCrews(route.params.regattaId, { search: filters.value.search || undefined })
+    },
+    label(item) {
+      return item.display_name || item.id
     }
   },
   'staff-regatta-setup-entries': {
     title: 'Entries',
-    description: 'Create entries, filter by status, and handle withdraw and reinstate workflows.',
+    singular: 'entry',
+    description: 'Create, search, filter, edit, delete, withdraw, and reinstate regatta entries.',
     formFields: [
       { key: 'event_id', label: 'Event ID', required: true, focusName: 'event_id' },
       { key: 'block_id', label: 'Block ID', required: true },
@@ -123,21 +204,47 @@ const sectionConfigs = {
       { key: 'billing_club_id', label: 'Billing Club ID' }
     ],
     create(payload) {
-      return api.createEntry(route.params.regattaId, {
-        event_id: payload.event_id,
-        block_id: payload.block_id,
-        crew_id: payload.crew_id,
-        billing_club_id: payload.billing_club_id || null
-      })
+      return api.createEntry(route.params.regattaId, buildEntryPayload(payload))
+    },
+    update(item, payload) {
+      return api.updateEntry(route.params.regattaId, item.id, buildEntryPayload(payload))
+    },
+    delete(item) {
+      return api.deleteEntry(route.params.regattaId, item.id)
     },
     list() {
-      return api.listEntries(route.params.regattaId, { status: filters.value.status || undefined })
+      return api.listEntries(route.params.regattaId, {
+        search: filters.value.search || undefined,
+        status: filters.value.status || undefined
+      })
+    },
+    label(item) {
+      return item.id
     }
   }
 }
 
 const currentSection = computed(() => sectionConfigs[route.name] || sectionConfigs['staff-regatta-setup-event-groups'])
 const formState = ref({})
+const displayedItems = computed(() => items.value)
+const isEditing = computed(() => editingItem.value !== null)
+const submitButtonLabel = computed(() => (isEditing.value ? 'Update' : 'Save'))
+const destructiveDialogTitle = computed(() => {
+  if (destructiveMode.value === 'delete') {
+    return `Delete ${currentSection.value.singular}`
+  }
+  return 'Withdraw entry'
+})
+const destructiveDialogLabelId = computed(() => (destructiveMode.value === 'withdraw' ? 'withdraw-dialog-title' : 'destructive-dialog-title'))
+const destructiveDialogDescription = computed(() => {
+  if (!selectedItem.value) {
+    return ''
+  }
+  if (destructiveMode.value === 'delete') {
+    return `You are deleting ${currentSection.value.label(selectedItem.value)}.`
+  }
+  return `You are withdrawing entry ${selectedItem.value.id}.`
+})
 
 function resetForm() {
   const next = {}
@@ -145,7 +252,28 @@ function resetForm() {
     next[field.key] = ''
   }
   formState.value = next
+  editingItem.value = null
   formErrors.value = {}
+}
+
+function populateForm(item) {
+  const next = {}
+  for (const field of currentSection.value.formFields) {
+    if (route.name === 'staff-regatta-setup-crews' && field.key === 'athlete_id') {
+      next[field.key] = item.members?.[0]?.athlete_id ?? ''
+      continue
+    }
+    if (route.name === 'staff-regatta-setup-crews' && field.key === 'seat_position') {
+      next[field.key] = item.members?.[0]?.seat_position ?? ''
+      continue
+    }
+    next[field.key] = item[field.key] ?? ''
+  }
+  formState.value = next
+  editingItem.value = item
+  formErrors.value = {}
+  pageError.value = ''
+  conflictMessage.value = ''
 }
 
 function displayValue(item, field) {
@@ -156,18 +284,21 @@ function displayValue(item, field) {
   return value ?? ''
 }
 
-const displayedItems = computed(() => {
-  if (route.name !== 'staff-regatta-setup-entries') {
-    return items.value
+function extractErrorMessage(error, fallback) {
+  if (error instanceof ApiError) {
+    return error.message || fallback
   }
+  return error?.message || fallback
+}
 
-  const search = filters.value.search.trim().toLowerCase()
-  if (!search) {
-    return items.value
+function applyMutationError(error, fallback) {
+  const message = extractErrorMessage(error, fallback)
+  if (message.toLowerCase().includes('conflict')) {
+    conflictMessage.value = message
+    return
   }
-
-  return items.value.filter((item) => JSON.stringify(item).toLowerCase().includes(search))
-})
+  pageError.value = message
+}
 
 async function loadItems() {
   loading.value = true
@@ -177,7 +308,7 @@ async function loadItems() {
     const response = await currentSection.value.list()
     items.value = Array.isArray(response?.data) ? response.data : response || []
   } catch (error) {
-    pageError.value = error.message || 'Failed to load setup section.'
+    pageError.value = extractErrorMessage(error, 'Failed to load setup section.')
   } finally {
     loading.value = false
   }
@@ -209,48 +340,64 @@ async function submitForm() {
 
   saving.value = true
   pageError.value = ''
+  conflictMessage.value = ''
 
   try {
-    await currentSection.value.create(formState.value)
+    if (editingItem.value) {
+      await currentSection.value.update(editingItem.value, formState.value)
+    } else {
+      await currentSection.value.create(formState.value)
+    }
     resetForm()
     await loadItems()
   } catch (error) {
-    pageError.value = error.message || 'Failed to save changes.'
+    applyMutationError(error, 'Failed to save changes.')
   } finally {
     saving.value = false
   }
 }
 
 function startWithdraw(entry, event) {
-  selectedEntry.value = entry
-  showWithdrawDialog.value = true
+  selectedItem.value = entry
+  destructiveMode.value = 'withdraw'
+  showDestructiveDialog.value = true
   withdrawReason.value = ''
   withdrawStatus.value = 'withdrawn_before_draw'
   conflictMessage.value = ''
-  withdrawTriggerButton.value = event?.currentTarget ?? null
+  destructiveTriggerButton.value = event?.currentTarget ?? null
 }
 
-function closeWithdrawDialog() {
-  showWithdrawDialog.value = false
+function startDelete(item, event) {
+  selectedItem.value = item
+  destructiveMode.value = 'delete'
+  showDestructiveDialog.value = true
+  conflictMessage.value = ''
+  destructiveTriggerButton.value = event?.currentTarget ?? null
+}
+
+function closeDestructiveDialog() {
+  showDestructiveDialog.value = false
   withdrawStatus.value = 'withdrawn_before_draw'
+  withdrawReason.value = ''
+  selectedItem.value = null
   nextTick(() => {
-    withdrawTriggerButton.value?.focus?.()
+    destructiveTriggerButton.value?.focus?.()
   })
 }
 
 function dialogFocusableElements() {
-  if (!withdrawDialog.value) {
+  if (!destructiveDialog.value) {
     return []
   }
 
-  return [...withdrawDialog.value.querySelectorAll('button, textarea, input, select, [tabindex]:not([tabindex="-1"])')]
+  return [...destructiveDialog.value.querySelectorAll('button, textarea, input, select, [tabindex]:not([tabindex="-1"])')]
     .filter((element) => !element.hasAttribute('disabled'))
 }
 
 function onDialogKeydown(event) {
   if (event.key === 'Escape') {
     event.preventDefault()
-    closeWithdrawDialog()
+    closeDestructiveDialog()
     return
   }
 
@@ -269,7 +416,7 @@ function onDialogKeydown(event) {
   const active = document.activeElement
 
   if (event.shiftKey) {
-    if (active === first || !withdrawDialog.value?.contains(active)) {
+    if (active === first || !destructiveDialog.value?.contains(active)) {
       event.preventDefault()
       last.focus()
     }
@@ -283,24 +430,44 @@ function onDialogKeydown(event) {
 }
 
 async function confirmWithdraw() {
-  if (!selectedEntry.value) {
+  if (!selectedItem.value) {
     return
   }
 
   try {
-    await api.withdrawEntry(route.params.regattaId, selectedEntry.value.id, {
+    await api.withdrawEntry(route.params.regattaId, selectedItem.value.id, {
       status: withdrawStatus.value,
       reason: withdrawReason.value,
-      expected_status: selectedEntry.value.status
+      expected_status: selectedItem.value.status
     })
-    closeWithdrawDialog()
+    closeDestructiveDialog()
     await loadItems()
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : error?.message
-    conflictMessage.value = message || 'Conflict'
-    showWithdrawDialog.value = false
+    conflictMessage.value = extractErrorMessage(error, 'Conflict')
+    showDestructiveDialog.value = false
     nextTick(() => {
-      withdrawTriggerButton.value?.focus?.()
+      destructiveTriggerButton.value?.focus?.()
+    })
+  }
+}
+
+async function confirmDelete() {
+  if (!selectedItem.value) {
+    return
+  }
+
+  try {
+    await currentSection.value.delete(selectedItem.value)
+    if (editingItem.value?.id === selectedItem.value.id) {
+      resetForm()
+    }
+    closeDestructiveDialog()
+    await loadItems()
+  } catch (error) {
+    conflictMessage.value = extractErrorMessage(error, 'Failed to delete item.')
+    showDestructiveDialog.value = false
+    nextTick(() => {
+      destructiveTriggerButton.value?.focus?.()
     })
   }
 }
@@ -313,7 +480,7 @@ async function reinstateEntry(entry) {
     conflictMessage.value = ''
     await loadItems()
   } catch (error) {
-    conflictMessage.value = error.message || 'Conflict'
+    conflictMessage.value = extractErrorMessage(error, 'Conflict')
   }
 }
 
@@ -323,12 +490,34 @@ watch(
     resetForm()
     filters.value.search = ''
     filters.value.status = ''
+    conflictMessage.value = ''
+    await loadItems()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => filters.value.search,
+  async (current, previous) => {
+    if (current === previous) {
+      return
+    }
     await loadItems()
   }
 )
 
 watch(
-  () => showWithdrawDialog.value,
+  () => filters.value.status,
+  async (current, previous) => {
+    if (current === previous) {
+      return
+    }
+    await loadItems()
+  }
+)
+
+watch(
+  () => showDestructiveDialog.value,
   async (open) => {
     if (!open) {
       return
@@ -339,11 +528,6 @@ watch(
     first?.focus()
   }
 )
-
-onMounted(async () => {
-  resetForm()
-  await loadItems()
-})
 </script>
 
 <template>
@@ -389,7 +573,8 @@ onMounted(async () => {
           :aria-invalid="formErrors[field.key] ? 'true' : undefined"
         />
       </label>
-      <button type="submit" :disabled="saving">Save</button>
+      <button type="submit" :disabled="saving">{{ submitButtonLabel }}</button>
+      <button v-if="isEditing" type="button" data-action="cancel-edit" @click="resetForm">Cancel</button>
     </form>
 
     <div v-if="Object.keys(formErrors).length" data-testid="entry-form-errors">
@@ -411,7 +596,7 @@ onMounted(async () => {
           <th v-for="field in currentSection.formFields" :key="`head-${field.key}`" scope="col">
             {{ field.label }}
           </th>
-          <th v-if="route.name === 'staff-regatta-setup-entries'" scope="col">Actions</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -421,9 +606,11 @@ onMounted(async () => {
           :data-testid="route.name === 'staff-regatta-setup-entries' ? `entry-row-${item.status.replaceAll('_', '-')}` : undefined"
         >
           <td v-for="field in currentSection.formFields" :key="`${item.id}-${field.key}`">{{ displayValue(item, field) }}</td>
-          <td v-if="route.name === 'staff-regatta-setup-entries'">
+          <td>
+            <button type="button" data-action="edit-item" @click="populateForm(item)">Edit</button>
+            <button type="button" data-action="delete-item" @click="startDelete(item, $event)">Delete</button>
             <button
-              v-if="item.status === 'entered'"
+              v-if="route.name === 'staff-regatta-setup-entries' && item.status === 'entered'"
               type="button"
               data-action="withdraw-entry"
               @click="startWithdraw(item, $event)"
@@ -431,7 +618,7 @@ onMounted(async () => {
               Withdraw
             </button>
             <button
-              v-else-if="item.status === 'withdrawn_before_draw' || item.status === 'withdrawn_after_draw'"
+              v-else-if="route.name === 'staff-regatta-setup-entries' && (item.status === 'withdrawn_before_draw' || item.status === 'withdrawn_after_draw')"
               type="button"
               data-action="set-status-entered"
               @click="reinstateEntry(item)"
@@ -439,7 +626,7 @@ onMounted(async () => {
               Reinstate
             </button>
             <button
-              v-else
+              v-else-if="route.name === 'staff-regatta-setup-entries'"
               type="button"
               data-action="set-status-entered"
               disabled
@@ -452,27 +639,45 @@ onMounted(async () => {
     </table>
 
     <dialog
-      v-if="showWithdrawDialog"
-      ref="withdrawDialog"
+      v-if="showDestructiveDialog"
+      ref="destructiveDialog"
       open
       data-testid="destructive-action-dialog"
       aria-modal="true"
-      aria-labelledby="withdraw-dialog-title"
+      :aria-labelledby="destructiveDialogLabelId"
       tabindex="-1"
       @keydown="onDialogKeydown"
     >
-      <p id="withdraw-dialog-title">Withdraw entry</p>
-      <label for="withdraw-status">Withdrawal timing</label>
-      <select id="withdraw-status" v-model="withdrawStatus" name="status">
-        <option value="withdrawn_before_draw">Before draw publication</option>
-        <option value="withdrawn_after_draw">After draw publication</option>
-      </select>
-      <label for="withdraw-reason">Reason</label>
-      <textarea id="withdraw-reason" v-model="withdrawReason" name="reason" />
+      <p :id="destructiveDialogLabelId">{{ destructiveDialogTitle }}</p>
+      <p>{{ destructiveDialogDescription }}</p>
+      <template v-if="destructiveMode === 'withdraw'">
+        <label for="withdraw-status">Withdrawal timing</label>
+        <select id="withdraw-status" v-model="withdrawStatus" name="status">
+          <option value="withdrawn_before_draw">Before draw publication</option>
+          <option value="withdrawn_after_draw">After draw publication</option>
+        </select>
+        <label for="withdraw-reason">Reason</label>
+        <textarea id="withdraw-reason" v-model="withdrawReason" name="reason" />
+      </template>
       <div data-testid="audit-actor">Actor recorded from staff identity</div>
       <div data-testid="audit-timestamp">Timestamp recorded on submit</div>
-      <button type="button" data-action="confirm-withdraw" @click="confirmWithdraw">Confirm</button>
-      <button type="button" data-action="cancel-withdraw" @click="closeWithdrawDialog">Cancel</button>
+      <button
+        v-if="destructiveMode === 'withdraw'"
+        type="button"
+        data-action="confirm-withdraw"
+        @click="confirmWithdraw"
+      >
+        Confirm
+      </button>
+      <button
+        v-else
+        type="button"
+        data-action="confirm-delete"
+        @click="confirmDelete"
+      >
+        Delete
+      </button>
+      <button type="button" data-action="cancel-destructive" @click="closeDestructiveDialog">Cancel</button>
     </dialog>
   </section>
 </template>

@@ -4,14 +4,21 @@ import RulesetsList from '../views/staff/RulesetsList.vue'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 
+const mockApi = {
+  listRulesets: vi.fn()
+}
+
+vi.mock('../api/index.js', () => ({
+  createApiClient: vi.fn(() => ({})),
+  createDrawApi: vi.fn(() => mockApi)
+}))
+
 describe('RulesetsList.vue', () => {
   let wrapper
-  let mockApi
 
   beforeEach(() => {
-    mockApi = {
-      listRulesets: vi.fn()
-    }
+    mockApi.listRulesets.mockReset()
+    mockApi.listRulesets.mockResolvedValue({ data: [] })
     
     const router = createRouter({
       history: createMemoryHistory(),
@@ -34,6 +41,7 @@ describe('RulesetsList.vue', () => {
             tableCaption: 'List of rulesets',
             emptyState: 'No rulesets found',
             loadError: 'Failed to load rulesets',
+            retryButton: 'Retry',
             filter: {
               all: 'All rulesets',
               global: 'Global only',
@@ -61,10 +69,7 @@ describe('RulesetsList.vue', () => {
 
     wrapper = mount(RulesetsList, {
       global: {
-        plugins: [router, i18n],
-        mocks: {
-          $api: mockApi
-        }
+        plugins: [router, i18n]
       }
     })
   })
@@ -126,15 +131,17 @@ describe('RulesetsList.vue', () => {
   })
 
   it('displays loading state', async () => {
-    mockApi.listRulesets.mockImplementation(() => new Promise(() => {}))
+    let resolveRequest
+    mockApi.listRulesets.mockImplementationOnce(() => new Promise((resolve) => {
+      resolveRequest = resolve
+    }))
 
     const loadingPromise = wrapper.vm.loadRulesets()
     await wrapper.vm.$nextTick()
 
     expect(wrapper.vm.loading).toBe(true)
 
-    // Clean up
-    mockApi.listRulesets.mockResolvedValue({ data: [] })
+    resolveRequest({ data: [] })
     await loadingPromise
   })
 

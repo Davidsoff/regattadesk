@@ -1187,7 +1187,9 @@ export type GetApiV1RegattasByRegattaIdCrewsData = {
     path: {
         regatta_id: Uuid;
     };
-    query?: never;
+    query?: {
+        search?: string;
+    };
     url: '/api/v1/regattas/{regatta_id}/crews';
 };
 
@@ -1226,6 +1228,74 @@ export type PostApiV1RegattasByRegattaIdCrewsResponses = {
 };
 
 export type PostApiV1RegattasByRegattaIdCrewsResponse = PostApiV1RegattasByRegattaIdCrewsResponses[keyof PostApiV1RegattasByRegattaIdCrewsResponses];
+
+export type DeleteApiV1RegattasByRegattaIdCrewsByCrewIdData = {
+    body?: never;
+    path: {
+        crew_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/crews/{crew_id}';
+};
+
+export type DeleteApiV1RegattasByRegattaIdCrewsByCrewIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdCrewsByCrewIdError = DeleteApiV1RegattasByRegattaIdCrewsByCrewIdErrors[keyof DeleteApiV1RegattasByRegattaIdCrewsByCrewIdErrors];
+
+export type DeleteApiV1RegattasByRegattaIdCrewsByCrewIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteApiV1RegattasByRegattaIdCrewsByCrewIdResponse = DeleteApiV1RegattasByRegattaIdCrewsByCrewIdResponses[keyof DeleteApiV1RegattasByRegattaIdCrewsByCrewIdResponses];
+
+export type PatchApiV1RegattasByRegattaIdCrewsByCrewIdData = {
+    body: CrewCreateRequest;
+    path: {
+        crew_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/crews/{crew_id}';
+};
+
+export type PatchApiV1RegattasByRegattaIdCrewsByCrewIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdCrewsByCrewIdError = PatchApiV1RegattasByRegattaIdCrewsByCrewIdErrors[keyof PatchApiV1RegattasByRegattaIdCrewsByCrewIdErrors];
+
+export type PatchApiV1RegattasByRegattaIdCrewsByCrewIdResponses = {
+    /**
+     * OK
+     */
+    200: CrewResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdCrewsByCrewIdResponse = PatchApiV1RegattasByRegattaIdCrewsByCrewIdResponses[keyof PatchApiV1RegattasByRegattaIdCrewsByCrewIdResponses];
 
 export type PostApiV1RegattasByRegattaIdDrawGenerateData = {
     body: GenerateDrawRequest;
@@ -1288,6 +1358,7 @@ export type GetApiV1RegattasByRegattaIdEntriesData = {
         regatta_id: Uuid;
     };
     query?: {
+        search?: string;
         status?: string;
     };
     url: '/api/v1/regattas/{regatta_id}/entries';
@@ -1328,6 +1399,66 @@ export type PostApiV1RegattasByRegattaIdEntriesResponses = {
 };
 
 export type PostApiV1RegattasByRegattaIdEntriesResponse = PostApiV1RegattasByRegattaIdEntriesResponses[keyof PostApiV1RegattasByRegattaIdEntriesResponses];
+
+export type DeleteApiV1RegattasByRegattaIdEntriesByEntryIdData = {
+    body?: never;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/entries/{entry_id}';
+};
+
+export type DeleteApiV1RegattasByRegattaIdEntriesByEntryIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEntriesByEntryIdError = DeleteApiV1RegattasByRegattaIdEntriesByEntryIdErrors[keyof DeleteApiV1RegattasByRegattaIdEntriesByEntryIdErrors];
+
+export type DeleteApiV1RegattasByRegattaIdEntriesByEntryIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEntriesByEntryIdResponse = DeleteApiV1RegattasByRegattaIdEntriesByEntryIdResponses[keyof DeleteApiV1RegattasByRegattaIdEntriesByEntryIdResponses];
+
+export type PatchApiV1RegattasByRegattaIdEntriesByEntryIdData = {
+    body: EntryCreateRequest;
+    path: {
+        entry_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/entries/{entry_id}';
+};
+
+export type PatchApiV1RegattasByRegattaIdEntriesByEntryIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEntriesByEntryIdError = PatchApiV1RegattasByRegattaIdEntriesByEntryIdErrors[keyof PatchApiV1RegattasByRegattaIdEntriesByEntryIdErrors];
+
+export type PatchApiV1RegattasByRegattaIdEntriesByEntryIdResponses = {
+    /**
+     * OK
+     */
+    200: EntryResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEntriesByEntryIdResponse = PatchApiV1RegattasByRegattaIdEntriesByEntryIdResponses[keyof PatchApiV1RegattasByRegattaIdEntriesByEntryIdResponses];
 
 export type GetApiV1RegattasByRegattaIdEntriesByEntryIdPaymentStatusData = {
     body?: never;
@@ -1489,12 +1620,74 @@ export type PostApiV1RegattasByRegattaIdEventGroupsResponses = {
 
 export type PostApiV1RegattasByRegattaIdEventGroupsResponse = PostApiV1RegattasByRegattaIdEventGroupsResponses[keyof PostApiV1RegattasByRegattaIdEventGroupsResponses];
 
+export type DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdData = {
+    body?: never;
+    path: {
+        event_group_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/event-groups/{event_group_id}';
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdError = DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors[keyof DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors];
+
+export type DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponse = DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses[keyof DeleteApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses];
+
+export type PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdData = {
+    body: EventGroupCreateRequest;
+    path: {
+        event_group_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/event-groups/{event_group_id}';
+};
+
+export type PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdError = PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors[keyof PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdErrors];
+
+export type PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses = {
+    /**
+     * OK
+     */
+    200: EventGroupResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponse = PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses[keyof PatchApiV1RegattasByRegattaIdEventGroupsByEventGroupIdResponses];
+
 export type GetApiV1RegattasByRegattaIdEventsData = {
     body?: never;
     path: {
         regatta_id: Uuid;
     };
-    query?: never;
+    query?: {
+        search?: string;
+    };
     url: '/api/v1/regattas/{regatta_id}/events';
 };
 
@@ -1533,6 +1726,66 @@ export type PostApiV1RegattasByRegattaIdEventsResponses = {
 };
 
 export type PostApiV1RegattasByRegattaIdEventsResponse = PostApiV1RegattasByRegattaIdEventsResponses[keyof PostApiV1RegattasByRegattaIdEventsResponses];
+
+export type DeleteApiV1RegattasByRegattaIdEventsByEventIdData = {
+    body?: never;
+    path: {
+        event_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/events/{event_id}';
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventsByEventIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventsByEventIdError = DeleteApiV1RegattasByRegattaIdEventsByEventIdErrors[keyof DeleteApiV1RegattasByRegattaIdEventsByEventIdErrors];
+
+export type DeleteApiV1RegattasByRegattaIdEventsByEventIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteApiV1RegattasByRegattaIdEventsByEventIdResponse = DeleteApiV1RegattasByRegattaIdEventsByEventIdResponses[keyof DeleteApiV1RegattasByRegattaIdEventsByEventIdResponses];
+
+export type PatchApiV1RegattasByRegattaIdEventsByEventIdData = {
+    body: EventCreateRequest;
+    path: {
+        event_id: Uuid;
+        regatta_id: Uuid;
+    };
+    query?: never;
+    url: '/api/v1/regattas/{regatta_id}/events/{event_id}';
+};
+
+export type PatchApiV1RegattasByRegattaIdEventsByEventIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEventsByEventIdError = PatchApiV1RegattasByRegattaIdEventsByEventIdErrors[keyof PatchApiV1RegattasByRegattaIdEventsByEventIdErrors];
+
+export type PatchApiV1RegattasByRegattaIdEventsByEventIdResponses = {
+    /**
+     * OK
+     */
+    200: EventResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdEventsByEventIdResponse = PatchApiV1RegattasByRegattaIdEventsByEventIdResponses[keyof PatchApiV1RegattasByRegattaIdEventsByEventIdResponses];
 
 export type PostApiV1RegattasByRegattaIdExportPrintablesData = {
     body?: never;

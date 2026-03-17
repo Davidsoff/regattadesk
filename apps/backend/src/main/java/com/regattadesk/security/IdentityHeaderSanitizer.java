@@ -78,7 +78,7 @@ public class IdentityHeaderSanitizer implements ContainerRequestFilter {
      * These endpoints are backend role-protected regatta admin/info desk surfaces.
      */
     private static final Pattern STAFF_SETUP_PATH_PATTERN = Pattern.compile(
-        "^api/v1/regattas/[^/]+/(event-groups|events|crews|entries|entries/[^/]+/(withdraw|reinstate))$"
+        "^api/v1/regattas/[^/]+/(event-groups(?:/[0-9a-fA-F-]{36})?|events(?:/[0-9a-fA-F-]{36})?|crews(?:/[0-9a-fA-F-]{36})?|entries(?:/[0-9a-fA-F-]{36}(?:/(withdraw|reinstate))?)?)$"
     );
     
     /**

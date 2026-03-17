@@ -1840,6 +1840,10 @@ paths:
         required: true
         schema:
           $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -1872,6 +1876,83 @@ paths:
                 $ref: "#/components/schemas/CrewResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/crews/{crew_id}:
+    patch:
+      summary: Update Crew
+      parameters:
+      - name: crew_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrewCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Crew
+      parameters:
+      - name: crew_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
           content:
             application/json:
               schema:
@@ -1946,6 +2027,10 @@ paths:
         required: true
         schema:
           $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
       - name: status
         in: query
         schema:
@@ -1982,6 +2067,71 @@ paths:
                 $ref: "#/components/schemas/EntryResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}:
+    patch:
+      summary: Update Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:
@@ -2184,6 +2334,71 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/event-groups/{event_group_id}:
+    patch:
+      summary: Update Event Group
+      parameters:
+      - name: event_group_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventGroupCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventGroupResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Event Group
+      parameters:
+      - name: event_group_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
   /api/v1/regattas/{regatta_id}/events:
     get:
       summary: List Events
@@ -2193,6 +2408,10 @@ paths:
         required: true
         schema:
           $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
       responses:
         "200":
           description: OK
@@ -2225,6 +2444,71 @@ paths:
                 $ref: "#/components/schemas/EventResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/events/{event_id}:
+    patch:
+      summary: Update Event
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Event
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
           content:
             application/json:
               schema:

@@ -112,6 +112,22 @@ class IdentityHeaderSanitizerTest {
     }
 
     @Test
+    void testRegattaSetupItemMutationPath_TrustsIdentityHeaders() {
+        given()
+            .header("Remote-User", "setup-admin")
+            .header("Remote-Groups", "regatta_admin")
+            .header("Remote-Name", "Setup Admin")
+            .header("Remote-Email", "setup@regattadesk.local")
+            .when().get("/api/v1/regattas/" + REGATTA_ID + "/entries/11111111-1111-1111-1111-111111111111")
+            .then()
+            .statusCode(200)
+            .body("authenticated", equalTo(true))
+            .body("username", equalTo("setup-admin"))
+            .body("remoteUser", equalTo("setup-admin"))
+            .body("remoteGroups", equalTo("regatta_admin"));
+    }
+
+    @Test
     void testRegattaAdjudicationPath_TrustsIdentityHeaders() {
         // Adjudication routes are explicitly edge-protected by ForwardAuth and should preserve
         // forwarded identity headers for backend role enforcement.
