@@ -15,6 +15,19 @@ RegattaDesk is a web application for managing rowing head races (single-distance
 - Real-time updates via Server-Sent Events (SSE)
 - Cacheable public pages with versioned URLs
 
+## Issue Tracking
+
+This project uses **bd (beads)** for issue tracking.
+Run `bd prime` for workflow context, or install hooks (`bd hooks install`) for auto-injection.
+
+**Quick reference:**
+- `bd ready` - Find unblocked work
+- `bd create "Title" --type task --priority 2` - Create issue
+- `bd close <id>` - Complete work
+- `bd dolt push` - Push beads to remote
+
+For full workflow details: `bd prime`
+
 ## Tech Stack & Architecture
 
 **Backend:** Quarkus (Java) + PostgreSQL
@@ -158,3 +171,14 @@ Demo mode is planned but not part of v0.1. Deferred to post-v0.1 implementation.
 - **Note:** Ignore `pdd/rough-idea.md` (superseded by detailed-design.md)
 
 **Trust these instructions.** Only perform additional searches if the information here is incomplete or found to be in error.
+
+<!-- BEGIN mindspec:managed -->
+
+**IMPORTANT**: You MUST read and follow [AGENTS.md](../AGENTS.md) as your primary behavioral instructions. AGENTS.md is the canonical source of project conventions, workflow rules, and development guidance shared across all coding agents.
+
+On session start, run `mindspec instruct` in the terminal for mode-appropriate operating guidance.
+
+## Skills
+
+MindSpec workflow skills are available in `.agents/skills/`. Each skill directory contains a `SKILL.md` with instructions.
+<!-- END mindspec:managed -->

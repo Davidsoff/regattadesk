@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "sessionStart": [
+      {
+        "bash": "mindspec hook session-start --format copilot",
+        "timeoutSec": 10,
+        "type": "command"
+      }
+    ]
+  },
+  "version": 1
+}

@@ -48,3 +48,9 @@ venv/
 .pip-cache/
 .uv-cache/
 .codex-readiness-unit-test/
+.worktrees/
+
+# Gas Town (added by gt)
+.runtime/
+.logs/
+state.json
