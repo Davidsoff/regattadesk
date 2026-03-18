@@ -1,11 +1,11 @@
 {
   "common": {
     "save": "Opslaan",
+    "search": "Zoeken",
     "cancel": "Annuleren",
     "delete": "Verwijderen",
     "edit": "Bewerken",
     "confirm": "Bevestigen",
-    "search": "Zoeken",
     "yes": "Ja",
     "no": "Nee",
     "loading": "Laden...",
@@ -21,12 +21,12 @@
   },
   "status": {
     "entered": "Ingeschreven",
+    "official": "Officieel",
     "withdrawn_before_draw": "Afgemeld voor loting",
     "withdrawn_after_draw": "Afgemeld na loting"
   },
   "entry": {
-    "crew": "Ploeg",
-    "status": "Status"
+    "crew": "Ploeg"
   },
   "print": {
     "generated": "Gegenereerd",
@@ -106,6 +106,23 @@
       "not_found": "Club niet gevonden",
       "entries_list": "Inschrijvingen"
     },
+    "home": {
+      "search_label": "Zoek financiële records",
+      "payment_status_label": "Betalingsstatus",
+      "all_statuses": "Alle statussen",
+      "status_paid": "Betaald",
+      "status_unpaid": "Onbetaald",
+      "status_partial": "Gedeeltelijk",
+      "entries_heading": "Inschrijvingen",
+      "clubs_heading": "Clubs",
+      "bulk_heading": "Bulk-update",
+      "invoices_heading": "Facturen",
+      "entry_empty": "Geen overeenkomende inschrijvingen gevonden",
+      "club_empty": "Geen overeenkomende clubs gevonden",
+      "load_error": "Financiële records laden mislukt",
+      "view_entry": "Open inschrijving",
+      "view_club": "Open club"
+    },
     "invoice": {
       "list_title": "Facturenlijst",
       "detail_title": "Factuurdetails",
@@ -130,6 +147,9 @@
       "entries": "Factuurregels"
     },
     "navigation": {
+      "entries": "Inschrijvingen",
+      "clubs": "Clubs",
+      "bulk": "Bulk-update",
       "invoices": "Facturen"
     }
   },
@@ -139,11 +159,135 @@
     "rulesets": "Reglementen",
     "setup": "Instelling",
     "draw": "Loting",
+    "adjudication": "Jury",
     "finance": "Financiën",
+    "operator_access": "Operator toegang",
     "blocks": "Blokken",
+    "printables": "Afdrukken",
     "line_scan": "Fotolijn",
     "schedule": "Schema",
     "results": "Resultaten"
+  },
+  "breadcrumb": {
+    "regattas": "Regatta's",
+    "operator_access": "Operator toegang",
+    "adjudication": "Jury",
+    "printables": "Afdrukken"
+  },
+  "adjudication": {
+    "title": "Jury",
+    "subtitle": "Beheer onderzoeken, straffen, DSQ's, uitsluitingen en resultatenrevisies.",
+    "empty": "Selecteer een onderzoek of open er een voor een inschrijving om te beginnen.",
+    "sections": {
+      "investigations": "Onderzoeken",
+      "detail": "Inschrijvingsdetail",
+      "history": "Geschiedenis"
+    },
+    "open": {
+      "entry_id": "Inschrijvings-ID",
+      "description": "Samenvatting onderzoek",
+      "submit": "Onderzoek openen"
+    },
+    "entry": {
+      "status": "Status",
+      "result_label": "Resultaatlabel",
+      "penalty_seconds": "Strafseconden"
+    },
+    "actions": {
+      "reason": "Reden",
+      "note": "Notitie",
+      "penalty_seconds": "Strafseconden",
+      "penalty": "Straf toepassen",
+      "dsq": "DSQ toepassen",
+      "exclusion": "Uitsluiten",
+      "revert_dsq": "DSQ terugdraaien"
+    },
+    "confirmation": {
+      "title": "{action} bevestigen",
+      "confirm": "Actie bevestigen",
+      "cancel": "Annuleren",
+      "current_state": "Huidige status: {status}, resultaatlabel {resultLabel}, resultatenrevisie {revision}.",
+      "latest_history": "Laatste jurygeschiedenis: {action} door {actor} op revisie {revision}.",
+      "prompts": {
+        "dsq": "{crew} diskwalificeren? Deze resultaatbepalende wijziging wordt aan de jurygeschiedenis toegevoegd.",
+        "exclusion": "{crew} uitsluiten? Deze destructieve wijziging wordt aan de jurygeschiedenis toegevoegd.",
+        "revert_dsq": "De DSQ voor {crew} terugdraaien? Ook dit herstel wordt in de jurygeschiedenis vastgelegd."
+      }
+    },
+    "revision": {
+      "current": "Resultatenrevisie {revision}"
+    },
+    "messages": {
+      "investigation_opened": "Onderzoek geopend."
+    },
+    "errors": {
+      "load": "Juryworkflow laden mislukt.",
+      "open_required": "Inschrijvings-ID en beschrijving zijn verplicht om een onderzoek te openen.",
+      "open_failed": "Onderzoek openen mislukt.",
+      "action_required": "Een reden is verplicht voordat je een juryactie toepast.",
+      "invalid_penalty_seconds": "Strafseconden moeten een geheel getal groter dan nul zijn.",
+      "action_failed": "Juryactie toepassen mislukt."
+    }
+  },
+  "operator_access": {
+    "title": "Operator toegang",
+    "description": "Beheer operatortokens, PDF-terugvalinstructies en staff-zicht op station-overdrachten voor deze regatta.",
+    "authorization_denied": "Je bent niet gemachtigd om operator-toegang voor deze regatta aan te maken, in te trekken of de PIN te tonen.",
+    "messages": {
+      "token_created": "Operatortoken aangemaakt.",
+      "token_revoked": "Operatortoken ingetrokken.",
+      "token_exported": "Operatortoken-pdf voorbereid: {filename}"
+    },
+    "errors": {
+      "load_tokens": "Laden van operatortokens mislukt.",
+      "create_token": "Aanmaken van operatortoken mislukt.",
+      "invalid_validity_window": "Geldig tot moet na geldig vanaf liggen.",
+      "revoke_token": "Intrekken van operatortoken mislukt.",
+      "export_token": "Exporteren van operatortoken-pdf mislukt.",
+      "load_handoffs": "Laden van openstaande stationsoverdrachten mislukt.",
+      "reveal_pin": "Tonen van overdrachts-PIN mislukt."
+    },
+    "confirmation": {
+      "title": "Bevestig tokenactie",
+      "export": "PDF exporteren voor station {station}?",
+      "revoke": "Operator-toegang intrekken voor station {station}?"
+    },
+    "create": {
+      "title": "Operatortoken aanmaken",
+      "station": "Station",
+      "block_id": "Blok-ID",
+      "valid_from": "Geldig vanaf",
+      "valid_until": "Geldig tot",
+      "submit": "Token aanmaken"
+    },
+    "tokens": {
+      "title": "Uitgegeven tokens",
+      "station": "Station",
+      "validity": "Geldigheid",
+      "status": "Status",
+      "actions": "Acties",
+      "active": "Actief",
+      "revoked": "Ingetrokken",
+      "export_pdf": "PDF exporteren",
+      "revoke": "Intrekken",
+      "fallback_instructions": "Terugval: als de QR-scan faalt, open de operator-url handmatig en gebruik de station-PIN uit de geëxporteerde pdf.",
+      "validity_window": "Geldig: {start} tot {end}"
+    },
+    "handoff": {
+      "title": "Overdrachtsinzicht",
+      "description": "Bekijk openstaande stationsoverdrachten voor de hele regatta, filter op station of token en toon de PIN op afstand wanneer het admin-terugvalendpoint beschikbaar is.",
+      "station_filter": "Filter op station",
+      "token_filter": "Filter op token-ID",
+      "lookup_submit": "Overdrachten verversen",
+      "clear_filters": "Filters wissen",
+      "empty": "Geen openstaande overdrachten voor de huidige filters.",
+      "station": "Station",
+      "requesting_device": "Aanvragend apparaat",
+      "expires_at": "Verloopt om",
+      "token_id": "Token-ID",
+      "admin_reveal_pin": "PIN tonen",
+      "revealed_pin": "PIN: {pin}"
+    }
   },
   "staff": {
     "regattas": {
@@ -156,55 +300,20 @@
     },
     "regatta_detail": {
       "sections": {
-        "events": "Nummers",
-        "athletes": "Atleten",
-        "crews": "Ploegen",
-        "entries": "Inschrijvingen",
         "export": "Export"
       },
       "form": {
-        "eventGroup": "Nummergroep",
-        "selectPlaceholder": "Selecteer",
-        "groupA": "Groep A",
-        "name": "Naam",
-        "crewName": "Ploegnaam",
-        "allStatuses": "Alle",
-        "athlete": "Atleet",
-        "saveEntry": "Inschrijving opslaan"
+        "selectPlaceholder": "Selecteer"
       },
       "export": {
         "export_printables": "Printbare bestanden exporteren",
         "export_printables_aria": "Start asynchrone exporttaak voor printbare documenten"
-      },
-      "events": {
-        "open2x": "Open 2x"
-      },
-      "athletes": {
-        "row1": "Atleet 1"
-      },
-      "crews": {
-        "row1": "Ploeg 1"
-      },
-      "withdraw": {
-        "open": "Inschrijving afmelden",
-        "confirmTitle": "Bevestig destructieve actie",
-        "reason": "Reden",
-        "auditActor": "actor: staff.user",
-        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
-        "conflict": "conflict: deze inschrijving is gewijzigd sinds je laatste keer ophalen",
-        "reload": "Opnieuw laden",
-        "alreadyBeforeDraw": "Al afgemeld voor loting",
-        "setEntered": "Zet op ingeschreven",
-        "invalidTransition": "Ongeldige overgang"
-      },
-      "table": {
-        "event": "Nummer",
-        "action": "Actie",
-        "athlete": "Atleet",
-        "crew": "Ploeg",
-        "currentAction": "Huidige actie",
-        "nextAction": "Volgende actie"
       }
+    },
+    "printables": {
+      "title": "Regatta-afdrukken",
+      "description": "Exporteer printbare regatta-documenten en controleer de kopmetadata voordat je downloadt.",
+      "header_preview": "Voorbeeld printkop"
     },
     "draw_workflow": {
       "title": "Loting Workflow",
@@ -386,10 +495,6 @@
     }
   },
   "validation": {
-    "entry": {
-      "crewRequired": "Ploeg is verplicht",
-      "athleteRequired": "Atleet is verplicht"
-    },
     "ruleset": {
       "nameRequired": "Naam is verplicht",
       "versionRequired": "Versie is verplicht",
@@ -400,14 +505,14 @@
     "regattas": {
       "title": "Regatta's",
       "description": "Selecteer een regatta om mee te werken",
-      "token_status": "Actief token {token} op station {station}.",
+      "auth_status": "Actief token {token} op station {station}.",
       "access_hint": "Open de link van uw regatta-beheerder om toegang te krijgen tot uw toegewezen regatta."
     },
     "regatta": {
       "title": "Regatta",
       "id": "Regatta ID",
-      "token_status": "Operator-token: {token}",
-      "no_token": "Niet beschikbaar",
+      "auth_status": "Operator-token: {token}",
+      "no_auth": "Niet beschikbaar",
       "station_context": "Station: {station}",
       "session_label": "Sessie: {id}",
       "create_session": "Opnamesessie maken",
@@ -450,13 +555,25 @@
       "session_status_refresh": "Vernieuwen",
       "session_status_loading": "Laden...",
       "tile_status": "Tegelstatus",
-      "tile_status_synced": "Gesynchroniseerd",
-      "tile_status_pending": "Synchronisatie in behandeling",
       "conflicts_pending_title": "Conflicten vereisen oplossing",
       "conflict_marker": "Conflict voor markering {id}",
       "conflict_keep_mine": "Mijn versie bewaren",
       "conflict_use_server": "Serverversie gebruiken",
-      "conflict_detected": "Er is een conflict gedetecteerd. Zie het conflictpaneel hieronder."
+      "conflict_detected": "Er is een conflict gedetecteerd. Zie het conflictpaneel hieronder.",
+      "errors": {
+        "capture_session_required": "Capturesessie is vereist",
+        "failed_load_markers": "Markers laden mislukt",
+        "failed_load_session_status": "Sessiestatus laden mislukt",
+        "failed_create_marker": "Marker aanmaken mislukt",
+        "failed_delete_marker": "Marker verwijderen mislukt",
+        "failed_update_marker": "Marker bijwerken mislukt",
+        "failed_link_marker": "Marker koppelen mislukt",
+        "failed_unlink_marker": "Marker ontkoppelen mislukt",
+        "failed_undo": "Ongedaan maken mislukt",
+        "entry_id_required": "Inschrijving-ID is vereist",
+        "entry_id_invalid": "Inschrijving-ID formaat is ongeldig",
+        "marker_approved": "Goedgekeurde marker kan niet worden gewijzigd"
+      }
     }
   },
   "public": {
@@ -483,7 +600,27 @@
     },
     "results": {
       "title": "Resultaten",
-      "description": "Bekijk race resultaten"
+      "description": "Live wedstrijduitslagen",
+      "empty": "Er zijn nog geen resultaten gepubliceerd voor deze versie.",
+      "version_banner": "Loting v{drawRevision}, Resultaten v{resultsRevision}",
+      "version_link": "Canonieke resultatenlink",
+      "fields": {
+        "rank": "Plaats",
+        "crew": "Ploeg",
+        "club": "Club",
+        "time": "Tijd",
+        "delta": "Delta",
+        "status": "Status"
+      },
+      "penalties": {
+        "label": "Straf",
+        "seconds": "+{seconds}s"
+      },
+      "recovery": {
+        "missing_regatta": "Regattacontext ontbreekt. Open de gepubliceerde resultatenlink voor deze regatta opnieuw.",
+        "bootstrap_failed": "Het vernieuwen van openbare resultaten lukt nu niet.",
+        "retry": "Resultaten opnieuw laden"
+      }
     },
     "version": {
       "draw": "Loting versie",

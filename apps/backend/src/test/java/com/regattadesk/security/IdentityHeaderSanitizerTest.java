@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.nullValue;
  * from untrusted (public) paths to prevent authentication bypass.
  *
  * This test suite validates that the trust boundary is correctly enforced:
- * - Trusted paths: /api/v1/staff/*, /api/v1/regattas/{id}/operator/*, /test/auth/*
+ * - Trusted paths: /api/v1/staff/*, /api/v1/regattas/{id}/operator/*, protected regatta staff subpaths, /test/auth/*
  * - Untrusted paths: Everything else (public, health, and non-operator regatta paths)
  */
 @QuarkusTest
@@ -109,6 +109,40 @@ class IdentityHeaderSanitizerTest {
             .body("remoteGroups", nullValue())
             .body("remoteName", nullValue())
             .body("remoteEmail", nullValue());
+    }
+
+    @Test
+    void testRegattaSetupItemMutationPath_TrustsIdentityHeaders() {
+        given()
+            .header("Remote-User", "setup-admin")
+            .header("Remote-Groups", "regatta_admin")
+            .header("Remote-Name", "Setup Admin")
+            .header("Remote-Email", "setup@regattadesk.local")
+            .when().get("/api/v1/regattas/" + REGATTA_ID + "/entries/11111111-1111-1111-1111-111111111111")
+            .then()
+            .statusCode(200)
+            .body("authenticated", equalTo(true))
+            .body("username", equalTo("setup-admin"))
+            .body("remoteUser", equalTo("setup-admin"))
+            .body("remoteGroups", equalTo("regatta_admin"));
+    }
+
+    @Test
+    void testRegattaAdjudicationPath_TrustsIdentityHeaders() {
+        // Adjudication routes are explicitly edge-protected by ForwardAuth and should preserve
+        // forwarded identity headers for backend role enforcement.
+        given()
+            .header("Remote-User", "jury-user")
+            .header("Remote-Groups", "head_of_jury")
+            .header("Remote-Name", "Jury User")
+            .header("Remote-Email", "jury@regattadesk.local")
+            .when().get("/api/v1/regattas/" + REGATTA_ID + "/adjudication/echo-identity")
+            .then()
+            .statusCode(200)
+            .body("authenticated", equalTo(true))
+            .body("username", equalTo("jury-user"))
+            .body("remoteUser", equalTo("jury-user"))
+            .body("remoteGroups", equalTo("head_of_jury"));
     }
 
     @Test

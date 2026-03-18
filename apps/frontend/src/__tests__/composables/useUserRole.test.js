@@ -140,5 +140,33 @@ describe('useUserRole', () => {
       // super_admin should have staff capabilities
       expect(isStaff.value).toBe(true)
     })
+
+    it('returns true for regatta_admin role', async () => {
+      globalThis.__REGATTADESK_AUTH__ = {
+        user: {
+          role: 'regatta_admin'
+        }
+      }
+
+      const { isStaff, isRegattaAdmin, loadRole } = useUserRole()
+      await loadRole()
+
+      expect(isStaff.value).toBe(true)
+      expect(isRegattaAdmin.value).toBe(true)
+    })
+
+    it('returns true for other staff-scoped roles', async () => {
+      globalThis.__REGATTADESK_AUTH__ = {
+        user: {
+          role: 'info_desk'
+        }
+      }
+
+      const { isStaff, isRegattaAdmin, loadRole } = useUserRole()
+      await loadRole()
+
+      expect(isStaff.value).toBe(true)
+      expect(isRegattaAdmin.value).toBe(false)
+    })
   })
 })

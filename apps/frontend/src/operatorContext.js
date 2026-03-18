@@ -1,34 +1,22 @@
-const OPERATOR_TOKEN_STORAGE_KEY = 'rd_operator_token'
+import { getStorage } from './utils/storage.js'
+
+const OPERATOR_AUTH_STORAGE_KEY = 'rd_operator_token'
 const OPERATOR_STATION_STORAGE_KEY = 'rd_operator_station'
 const OPERATOR_DEVICE_ID_STORAGE_KEY = 'rd_operator_device_id'
 const OPERATOR_BLOCK_ID_STORAGE_KEY = 'rd_operator_block_id'
 
-function getStorage() {
-  const storage = globalThis.window?.localStorage ?? globalThis.localStorage
-  if (
-    storage &&
-    typeof storage.getItem === 'function' &&
-    typeof storage.setItem === 'function'
-  ) {
-    return storage
-  }
-
-  return null
-}
-
 function readContextValue(key) {
-  return typeof globalThis.__REGATTADESK_AUTH__?.[key] === 'string'
-    ? globalThis.__REGATTADESK_AUTH__[key].trim()
-    : ''
+  const value = globalThis.__REGATTADESK_AUTH__?.[key]
+  return typeof value === 'string' ? value.trim() : ''
 }
 
 export function resolveOperatorToken() {
-  const contextToken = readContextValue('operatorToken')
+  const contextToken = readContextValue('operatorAuth')
   if (contextToken) {
     return contextToken
   }
 
-  return getStorage()?.getItem(OPERATOR_TOKEN_STORAGE_KEY)?.trim() ?? ''
+  return getStorage()?.getItem(OPERATOR_AUTH_STORAGE_KEY)?.trim() ?? ''
 }
 
 export function resolveOperatorStation() {

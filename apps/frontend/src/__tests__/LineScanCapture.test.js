@@ -4,7 +4,6 @@ import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import LineScanCapture from '../components/operator/LineScanCapture.vue'
 
-// Mock the operator theme composable to avoid singleton state issues across tests
 vi.mock('../composables/useOperatorTheme', async () => {
   const { ref } = await import('vue')
   return {
@@ -22,6 +21,12 @@ function createTestI18n() {
     messages: {
       en: {
         operator: {
+          regatta: {
+            sync_synced: 'Synced',
+            sync_pending: 'Sync pending ({reason})',
+            sync_pending_default: 'awaiting upload',
+            sync_attention: 'Attention required'
+          },
           capture: {
             title: 'Line Scan Capture',
             overview: 'Overview',
@@ -39,7 +44,7 @@ function createTestI18n() {
             frame_offset: 'Frame',
             timestamp: 'Time',
             no_markers: 'No markers yet',
-            marker_approved: 'This marker is approved and cannot be edited',
+            marker_approved: 'Cannot modify approved marker',
             undo: 'Undo',
             high_contrast_on: 'High Contrast: On',
             high_contrast_off: 'High Contrast: Off',
@@ -53,7 +58,21 @@ function createTestI18n() {
             conflict_marker: 'Conflict for marker {id}',
             conflict_keep_mine: 'Keep Mine',
             conflict_use_server: 'Use Server',
-            conflict_detected: 'A conflict was detected. See the conflict panel below.'
+            conflict_detected: 'A conflict was detected. See the conflict panel below.',
+            errors: {
+              capture_session_required: 'Capture session is required',
+              failed_load_markers: 'Failed to load markers',
+              failed_load_session_status: 'Failed to load session status',
+              failed_create_marker: 'Failed to create marker',
+              failed_delete_marker: 'Failed to delete marker',
+              marker_approved: 'Cannot modify approved marker',
+              entry_id_required: 'Entry ID is required',
+              entry_id_invalid: 'Entry ID format is invalid',
+              failed_update_marker: 'Failed to update marker',
+              failed_link_marker: 'Failed to link marker',
+              failed_unlink_marker: 'Failed to unlink marker',
+              failed_undo: 'Failed to undo'
+            }
           }
         }
       }
@@ -100,6 +119,8 @@ function buildCaptureSession(id = 'session-1', overrides = {}) {
     server_time_at_start: '2026-01-01T10:00:00Z',
     fps: 30,
     is_synced: true,
+    drift_exceeded_threshold: false,
+    unsynced_reason: '',
     ...overrides
   }
 }
@@ -145,7 +166,12 @@ async function mountWithFetch(fetchMock, props = {}) {
   return wrapper
 }
 
-function makeLinkConflictMock({ marker = buildMarker('marker-1', { is_linked: false }), code = 'DATA_CONFLICT', message = 'Conflict detected', afterConflict = [] } = {}) {
+function makeLinkConflictMock({
+  marker = buildMarker('marker-1', { is_linked: false }),
+  code = 'DATA_CONFLICT',
+  message = 'Conflict detected',
+  afterConflict = []
+} = {}) {
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce(jsonResponse(200, [marker]))
@@ -187,7 +213,7 @@ async function expectMarkerPatch(fetchMock, callIndex, frameOffset) {
 beforeEach(() => {
   vi.restoreAllMocks()
   vi.stubGlobal('__REGATTADESK_AUTH__', {
-    operatorToken: 'token-97'
+    operatorAuth: 'token-97'
   })
 })
 
@@ -208,11 +234,7 @@ describe('LineScanCapture component - Marker CRUD', () => {
   })
 
   it('loads and displays markers on mount', async () => {
-    const markers = [
-      buildMarker('marker-1'),
-      buildMarker('marker-2', { frame_offset: 2000 })
-    ]
-    
+    const markers = [buildMarker('marker-1'), buildMarker('marker-2', { frame_offset: 2000 })]
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, markers))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -224,7 +246,6 @@ describe('LineScanCapture component - Marker CRUD', () => {
     expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
     expect(request.url).toContain('capture_session_id=session-1')
     expect(request.headers.get('x_operator_token')).toBe('token-97')
-
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(2)
   })
 
@@ -232,8 +253,8 @@ describe('LineScanCapture component - Marker CRUD', () => {
     const newMarker = buildMarker('marker-new', { frame_offset: 3000 })
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [])) // initial load
-      .mockResolvedValueOnce(jsonResponse(201, newMarker)) // create
+      .mockResolvedValueOnce(jsonResponse(200, []))
+      .mockResolvedValueOnce(jsonResponse(201, newMarker))
 
     vi.stubGlobal('fetch', fetchMock)
 
@@ -248,16 +269,14 @@ describe('LineScanCapture component - Marker CRUD', () => {
     expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
     expect(request.method).toBe('POST')
     expect(request.headers.get('x_operator_token')).toBe('token-97')
-
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(1)
   })
 
   it('deletes a marker when delete button is clicked', async () => {
-    const markers = [buildMarker('marker-1')]
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, markers)) // initial load
-      .mockResolvedValueOnce(jsonResponse(204, null)) // delete
+      .mockResolvedValueOnce(jsonResponse(200, [buildMarker('marker-1')]))
+      .mockResolvedValueOnce(jsonResponse(204, null))
 
     vi.stubGlobal('fetch', fetchMock)
 
@@ -271,7 +290,6 @@ describe('LineScanCapture component - Marker CRUD', () => {
     const request = getRequest(fetchMock, 1)
     expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
     expect(request.method).toBe('DELETE')
-
     expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(0)
   })
 
@@ -300,7 +318,7 @@ describe('LineScanCapture component - Marker Linking', () => {
       buildMarker('marker-unlinked-1', { is_linked: false }),
       buildMarker('marker-unlinked-2', { is_linked: false })
     ]
-    
+
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, markers))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -309,32 +327,26 @@ describe('LineScanCapture component - Marker Linking', () => {
 
     const markerItems = wrapper.findAll('[data-testid^="marker-item-"]')
     expect(markerItems).toHaveLength(3)
-    
-    // First two should be unlinked
     expect(markerItems[0].attributes('data-testid')).toContain('marker-unlinked')
     expect(markerItems[1].attributes('data-testid')).toContain('marker-unlinked')
-    // Last should be linked
     expect(markerItems[2].attributes('data-testid')).toContain('marker-linked')
   })
 
   it('links a marker to an entry when link button is clicked', async () => {
     const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
     const linkedMarker = buildMarker('marker-1', { is_linked: true, entry_id: 'entry-99' })
-    
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, linkedMarker)) // link
+      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker]))
+      .mockResolvedValueOnce(jsonResponse(200, linkedMarker))
 
     vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    await wrapper.find('[data-testid="link-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
-    await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
-    await flushPromises()
+    await runLinkFlow(wrapper, 'marker-1')
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
     const request = getRequest(fetchMock, 1)
@@ -346,11 +358,11 @@ describe('LineScanCapture component - Marker Linking', () => {
   it('unlinks a marker when unlink button is clicked', async () => {
     const linkedMarker = buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })
     const unlinkedMarker = buildMarker('marker-1', { is_linked: false, entry_id: null })
-    
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [linkedMarker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, unlinkedMarker)) // unlink
+      .mockResolvedValueOnce(jsonResponse(200, [linkedMarker]))
+      .mockResolvedValueOnce(jsonResponse(200, unlinkedMarker))
 
     vi.stubGlobal('fetch', fetchMock)
 
@@ -372,15 +384,14 @@ describe('LineScanCapture component - Marker Linking', () => {
       is_approved: true,
       entry_id: 'entry-1'
     })
-    
+
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
     vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    const unlinkButton = wrapper.find('[data-testid="unlink-marker-marker-approved"]')
-    expect(unlinkButton.exists()).toBe(false)
+    expect(wrapper.find('[data-testid="unlink-marker-marker-approved"]').exists()).toBe(false)
   })
 })
 
@@ -391,7 +402,7 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
       is_approved: true,
       entry_id: 'entry-1'
     })
-    
+
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -408,27 +419,42 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
       is_approved: true,
       entry_id: 'entry-1'
     })
-    
+
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
     vi.stubGlobal('fetch', fetchMock)
 
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    const updateButton = wrapper.find('[data-testid="update-marker-marker-approved"]')
-    expect(updateButton.exists()).toBe(false)
+    expect(wrapper.find('[data-testid="update-marker-marker-approved"]').exists()).toBe(false)
   })
 
-  it('handles 409 conflict when attempting to modify approved marker', async () => {
+  it('prevents linking approved markers that are still unlinked', async () => {
+    const approvedMarker = buildMarker('marker-approved', {
+      is_linked: false,
+      is_approved: true,
+      entry_id: null
+    })
+
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = await mountLineScanCapture()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="link-marker-marker-approved"]').exists()).toBe(false)
+  })
+
+  it('handles approved marker guard when attempting direct modification', async () => {
     const approvedMarker = buildMarker('marker-approved', {
       is_linked: true,
       is_approved: true,
       entry_id: 'entry-1'
     })
-    
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [approvedMarker])) // initial load
+      .mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
       .mockResolvedValueOnce(
         jsonResponse(409, {
           error: {
@@ -443,7 +469,6 @@ describe('LineScanCapture component - Approved Marker Lock States', () => {
     const wrapper = await mountLineScanCapture()
     await flushPromises()
 
-    // Try to delete via API call (shouldn't be possible in UI, but testing error handling)
     await wrapper.vm.deleteMarker('marker-approved')
     await flushPromises()
 
@@ -456,11 +481,11 @@ describe('LineScanCapture component - Marker State Transitions', () => {
   it('updates marker frame offset', async () => {
     const marker = buildMarker('marker-1', { frame_offset: 1000 })
     const updatedMarker = buildMarker('marker-1', { frame_offset: 1500 })
-    
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [marker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, updatedMarker)) // update
+      .mockResolvedValueOnce(jsonResponse(200, [marker]))
+      .mockResolvedValueOnce(jsonResponse(200, updatedMarker))
 
     vi.stubGlobal('fetch', fetchMock)
 
@@ -477,12 +502,12 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     const marker = buildMarker('marker-1', { frame_offset: 1000 })
     const updatedMarker = buildMarker('marker-1', { frame_offset: 1500 })
     const undoneMarker = buildMarker('marker-1', { frame_offset: 1000 })
-    
+
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [marker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, updatedMarker)) // update
-      .mockResolvedValueOnce(jsonResponse(200, undoneMarker)) // undo
+      .mockResolvedValueOnce(jsonResponse(200, [marker]))
+      .mockResolvedValueOnce(jsonResponse(200, updatedMarker))
+      .mockResolvedValueOnce(jsonResponse(200, undoneMarker))
 
     vi.stubGlobal('fetch', fetchMock)
 
@@ -490,8 +515,6 @@ describe('LineScanCapture component - Marker State Transitions', () => {
     await flushPromises()
 
     await updateMarkerFrame(wrapper, 1500)
-
-    // Undo the change
     await wrapper.find('[data-testid="undo-last-change"]').trigger('click')
     await flushPromises()
 
@@ -539,7 +562,6 @@ describe('LineScanCapture component - Conflict Resolution UI', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(false)
-    // Markers should have been reloaded (3 total fetch calls)
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
@@ -595,18 +617,10 @@ describe('LineScanCapture component - Session Status and Tile Pane', () => {
   })
 
   it('loads session status when refresh button is clicked and shows sync state', async () => {
-    const captureSessionData = {
-      id: 'session-1',
-      regatta_id: 'regatta-97',
-      station: 'finish-line',
-      state: 'open',
-      is_synced: true
-    }
-
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [])) // initial markers load
-      .mockResolvedValueOnce(jsonResponse(200, captureSessionData)) // session load
+      .mockResolvedValueOnce(jsonResponse(200, []))
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
 
     const wrapper = await mountWithFetch(fetchMock)
 
@@ -615,6 +629,43 @@ describe('LineScanCapture component - Session Status and Tile Pane', () => {
 
     expect(wrapper.find('[data-testid="session-status-detail"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="session-sync-indicator"]').text()).toContain('Synced')
+  })
+
+  it('shows unsynced reason when session status is pending', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, []))
+      .mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildCaptureSession('session-1', {
+            is_synced: false,
+            unsynced_reason: 'Awaiting manifest upload'
+          })
+        )
+      )
+
+    const wrapper = await mountWithFetch(fetchMock)
+
+    await wrapper.find('[data-testid="load-session-status"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="session-sync-indicator"]').text()).toContain('Sync pending')
+    expect(wrapper.find('[data-testid="session-sync-reason"]').text()).toContain('Awaiting manifest upload')
+  })
+
+  it('shows session status error when session refresh fails', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, []))
+      .mockRejectedValueOnce(new Error('network down'))
+
+    const wrapper = await mountWithFetch(fetchMock)
+
+    await wrapper.find('[data-testid="load-session-status"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="session-status-error"]').text()).toContain('Failed to load session status')
   })
 
   it('shows tile status pane when markers are present', async () => {

@@ -1,11 +1,11 @@
 {
   "common": {
     "save": "Save",
+    "search": "Search",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
     "confirm": "Confirm",
-    "search": "Search",
     "yes": "Yes",
     "no": "No",
     "loading": "Loading...",
@@ -21,12 +21,12 @@
   },
   "status": {
     "entered": "Entered",
+    "official": "Official",
     "withdrawn_before_draw": "Withdrawn Before Draw",
     "withdrawn_after_draw": "Withdrawn After Draw"
   },
   "entry": {
-    "crew": "Crew",
-    "status": "Status"
+    "crew": "Crew"
   },
   "print": {
     "generated": "Generated",
@@ -106,6 +106,23 @@
       "not_found": "Club not found",
       "entries_list": "Entries"
     },
+    "home": {
+      "search_label": "Search finance records",
+      "payment_status_label": "Payment status",
+      "all_statuses": "All statuses",
+      "status_paid": "Paid",
+      "status_unpaid": "Unpaid",
+      "status_partial": "Partial",
+      "entries_heading": "Entries",
+      "clubs_heading": "Clubs",
+      "bulk_heading": "Bulk Update",
+      "invoices_heading": "Invoices",
+      "entry_empty": "No matching entries found",
+      "club_empty": "No matching clubs found",
+      "load_error": "Failed to load finance records",
+      "view_entry": "Open entry",
+      "view_club": "Open club"
+    },
     "invoice": {
       "list_title": "Invoice List",
       "detail_title": "Invoice Details",
@@ -130,6 +147,9 @@
       "entries": "Invoice Entries"
     },
     "navigation": {
+      "entries": "Entries",
+      "clubs": "Clubs",
+      "bulk": "Bulk Update",
       "invoices": "Invoices"
     }
   },
@@ -139,11 +159,135 @@
     "rulesets": "Rulesets",
     "setup": "Setup",
     "draw": "Draw",
+    "adjudication": "Adjudication",
     "finance": "Finance",
+    "operator_access": "Operator Access",
     "blocks": "Blocks",
+    "printables": "Printables",
     "line_scan": "Line Scan",
     "schedule": "Schedule",
     "results": "Results"
+  },
+  "breadcrumb": {
+    "regattas": "Regattas",
+    "operator_access": "Operator Access",
+    "adjudication": "Adjudication",
+    "printables": "Printables"
+  },
+  "adjudication": {
+    "title": "Adjudication",
+    "subtitle": "Manage investigations, penalties, DSQs, exclusions, and revision-impact messaging.",
+    "empty": "Select an investigation or open one for an entry to begin adjudication.",
+    "sections": {
+      "investigations": "Investigations",
+      "detail": "Entry detail",
+      "history": "History"
+    },
+    "open": {
+      "entry_id": "Entry ID",
+      "description": "Investigation summary",
+      "submit": "Open investigation"
+    },
+    "entry": {
+      "status": "Status",
+      "result_label": "Result label",
+      "penalty_seconds": "Penalty seconds"
+    },
+    "actions": {
+      "reason": "Reason",
+      "note": "Note",
+      "penalty_seconds": "Penalty seconds",
+      "penalty": "Apply penalty",
+      "dsq": "Apply DSQ",
+      "exclusion": "Apply exclusion",
+      "revert_dsq": "Revert DSQ"
+    },
+    "confirmation": {
+      "title": "Confirm {action}",
+      "confirm": "Confirm action",
+      "cancel": "Cancel",
+      "current_state": "Current state: {status}, result label {resultLabel}, results revision {revision}.",
+      "latest_history": "Latest adjudication history: {action} by {actor} at revision {revision}.",
+      "prompts": {
+        "dsq": "Disqualify {crew}? This result-affecting change will be added to adjudication history.",
+        "exclusion": "Exclude {crew}? This destructive change will be added to adjudication history.",
+        "revert_dsq": "Revert the DSQ for {crew}? This restoration will also be recorded in adjudication history."
+      }
+    },
+    "revision": {
+      "current": "Results revision {revision}"
+    },
+    "messages": {
+      "investigation_opened": "Investigation opened."
+    },
+    "errors": {
+      "load": "Failed to load adjudication workflow.",
+      "open_required": "Entry ID and description are required to open an investigation.",
+      "open_failed": "Failed to open investigation.",
+      "action_required": "A reason is required before applying an adjudication action.",
+      "invalid_penalty_seconds": "Penalty seconds must be a whole number greater than zero.",
+      "action_failed": "Failed to apply adjudication action."
+    }
+  },
+  "operator_access": {
+    "title": "Operator access",
+    "description": "Manage operator tokens, PDF fallback instructions, and staff-visible handoff oversight for this regatta.",
+    "authorization_denied": "You are not authorized to create, revoke, or reveal operator access for this regatta.",
+    "messages": {
+      "token_created": "Operator token created.",
+      "token_revoked": "Operator token revoked.",
+      "token_exported": "Operator token PDF prepared: {filename}"
+    },
+    "errors": {
+      "load_tokens": "Failed to load operator tokens.",
+      "create_token": "Failed to create operator token.",
+      "invalid_validity_window": "Valid until must be after valid from.",
+      "revoke_token": "Failed to revoke operator token.",
+      "export_token": "Failed to export operator token PDF.",
+      "load_handoffs": "Failed to load pending station handoffs.",
+      "reveal_pin": "Failed to reveal station handoff PIN."
+    },
+    "confirmation": {
+      "title": "Confirm token action",
+      "export": "Export PDF for station {station}?",
+      "revoke": "Revoke operator access for station {station}?"
+    },
+    "create": {
+      "title": "Create operator token",
+      "station": "Station",
+      "block_id": "Block ID",
+      "valid_from": "Valid from",
+      "valid_until": "Valid until",
+      "submit": "Create token"
+    },
+    "tokens": {
+      "title": "Issued tokens",
+      "station": "Station",
+      "validity": "Validity",
+      "status": "Status",
+      "actions": "Actions",
+      "active": "Active",
+      "revoked": "Revoked",
+      "export_pdf": "Export PDF",
+      "revoke": "Revoke",
+      "fallback_instructions": "Fallback: if QR scan fails, open the operator access URL manually and provide the station PIN from the exported PDF.",
+      "validity_window": "Valid: {start} to {end}"
+    },
+    "handoff": {
+      "title": "Handoff oversight",
+      "description": "Review pending station handoffs across the regatta, filter by station or token, and reveal the PIN remotely when the admin fallback endpoint is available.",
+      "station_filter": "Filter by station",
+      "token_filter": "Filter by token ID",
+      "lookup_submit": "Refresh handoffs",
+      "clear_filters": "Clear filters",
+      "empty": "No pending handoffs match the current filters.",
+      "station": "Station",
+      "requesting_device": "Requesting device",
+      "expires_at": "Expires at",
+      "token_id": "Token ID",
+      "admin_reveal_pin": "Reveal PIN",
+      "revealed_pin": "PIN: {pin}"
+    }
   },
   "staff": {
     "regattas": {
@@ -156,55 +300,20 @@
     },
     "regatta_detail": {
       "sections": {
-        "events": "Events",
-        "athletes": "Athletes",
-        "crews": "Crews",
-        "entries": "Entries",
         "export": "Export"
       },
       "form": {
-        "eventGroup": "Event group",
-        "selectPlaceholder": "Select",
-        "groupA": "Group A",
-        "name": "Name",
-        "crewName": "Crew name",
-        "allStatuses": "All",
-        "athlete": "Athlete",
-        "saveEntry": "Save entry"
+        "selectPlaceholder": "Select"
       },
       "export": {
         "export_printables": "Export Printables",
         "export_printables_aria": "Start asynchronous export job for printable documents"
-      },
-      "events": {
-        "open2x": "Open 2x"
-      },
-      "athletes": {
-        "row1": "Athlete 1"
-      },
-      "crews": {
-        "row1": "Crew 1"
-      },
-      "withdraw": {
-        "open": "Withdraw entry",
-        "confirmTitle": "Confirm destructive action",
-        "reason": "Reason",
-        "auditActor": "actor: staff.user",
-        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
-        "conflict": "conflict: this entry changed since your last fetch",
-        "reload": "Reload",
-        "alreadyBeforeDraw": "Already withdrawn before draw",
-        "setEntered": "Set entered",
-        "invalidTransition": "Invalid transition"
-      },
-      "table": {
-        "event": "Event",
-        "action": "Action",
-        "athlete": "Athlete",
-        "crew": "Crew",
-        "currentAction": "Current action",
-        "nextAction": "Next action"
       }
+    },
+    "printables": {
+      "title": "Regatta Printables",
+      "description": "Export printable regatta documents and verify the print header metadata before downloading.",
+      "header_preview": "Print header preview"
     },
     "draw_workflow": {
       "title": "Draw Workflow",
@@ -386,10 +495,6 @@
     }
   },
   "validation": {
-    "entry": {
-      "crewRequired": "Crew is required",
-      "athleteRequired": "Athlete is required"
-    },
     "ruleset": {
       "nameRequired": "Name is required",
       "versionRequired": "Version is required",
@@ -400,14 +505,14 @@
     "regattas": {
       "title": "Regattas",
       "description": "Select a regatta to work with",
-      "token_status": "Active token {token} at station {station}.",
+      "auth_status": "Active token {token} at station {station}.",
       "access_hint": "Open the link provided by your regatta administrator to access your assigned regatta."
     },
     "regatta": {
       "title": "Regatta",
       "id": "Regatta ID",
-      "token_status": "Operator token: {token}",
-      "no_token": "Unavailable",
+      "auth_status": "Operator token: {token}",
+      "no_auth": "Unavailable",
       "station_context": "Station: {station}",
       "session_label": "Session: {id}",
       "create_session": "Create Capture Session",
@@ -450,13 +555,25 @@
       "session_status_refresh": "Refresh",
       "session_status_loading": "Loading...",
       "tile_status": "Tile Status",
-      "tile_status_synced": "Synced",
-      "tile_status_pending": "Sync pending",
       "conflicts_pending_title": "Conflicts Requiring Resolution",
       "conflict_marker": "Conflict for marker {id}",
       "conflict_keep_mine": "Keep Mine",
       "conflict_use_server": "Use Server",
-      "conflict_detected": "A conflict was detected. See the conflict panel below."
+      "conflict_detected": "A conflict was detected. See the conflict panel below.",
+      "errors": {
+        "capture_session_required": "Capture session is required",
+        "failed_load_markers": "Failed to load markers",
+        "failed_load_session_status": "Failed to load session status",
+        "failed_create_marker": "Failed to create marker",
+        "failed_delete_marker": "Failed to delete marker",
+        "failed_update_marker": "Failed to update marker",
+        "failed_link_marker": "Failed to link marker",
+        "failed_unlink_marker": "Failed to unlink marker",
+        "failed_undo": "Failed to undo change",
+        "entry_id_required": "Entry ID is required",
+        "entry_id_invalid": "Entry ID format is invalid",
+        "marker_approved": "Cannot modify approved marker"
+      }
     }
   },
   "public": {
@@ -483,7 +600,27 @@
     },
     "results": {
       "title": "Results",
-      "description": "View race results"
+      "description": "Live race results",
+      "empty": "No results published for this revision yet.",
+      "version_banner": "Draw v{drawRevision}, Results v{resultsRevision}",
+      "version_link": "Canonical results link",
+      "fields": {
+        "rank": "Rank",
+        "crew": "Crew",
+        "club": "Club",
+        "time": "Time",
+        "delta": "Delta",
+        "status": "Status"
+      },
+      "penalties": {
+        "label": "Penalty",
+        "seconds": "+{seconds}s"
+      },
+      "recovery": {
+        "missing_regatta": "Missing regatta context. Re-open the published results link for this regatta.",
+        "bootstrap_failed": "Unable to refresh public results right now.",
+        "retry": "Retry loading results"
+      }
     },
     "version": {
       "draw": "Draw Revision",

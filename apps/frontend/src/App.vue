@@ -7,6 +7,3 @@
   <router-view />
 </template>
 
-<style>
-/* Global styles are defined in style.css */
-</style>

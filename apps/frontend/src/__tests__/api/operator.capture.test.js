@@ -1,18 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createApiClient } from '../../api/client.js'
 import { createOperatorApi } from '../../api/operator.js'
-
-function jsonResponse(status, body) {
-  return new Response(body === null ? '' : JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  })
-}
-
-function getRequest(fetchMock) {
-  const [request] = fetchMock.mock.calls[0]
-  return request
-}
+import { jsonResponse, getRequest } from '../utils/testHelpers.js'
 
 describe('Operator API - Capture Sessions', () => {
   let fetchMock

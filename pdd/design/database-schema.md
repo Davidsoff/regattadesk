@@ -89,6 +89,18 @@ CREATE INDEX idx_crew_athletes_crew ON crew_athletes(crew_id);
 CREATE INDEX idx_crew_athletes_athlete ON crew_athletes(athlete_id);
 ```
 
+### regatta_crews table
+```sql
+CREATE TABLE regatta_crews (
+    regatta_id UUID NOT NULL REFERENCES regattas(id) ON DELETE CASCADE,
+    crew_id UUID NOT NULL REFERENCES crews(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (regatta_id, crew_id)
+);
+
+CREATE INDEX idx_regatta_crews_crew ON regatta_crews(crew_id);
+```
+
 ### club_billing table
 ```sql
 CREATE TABLE club_billing (

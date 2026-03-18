@@ -48,11 +48,14 @@ const showCaptureWorkspace = ref(false)
 const isCaptureWorkspaceVisible = computed(() => showCaptureWorkspace.value || Boolean(captureSessionId.value))
 
 function applyAccessModeFromResponse(response) {
+  // Server may return an explicit new_device_mode (e.g. after completing a handoff).
   if (response?.new_device_mode === 'active' || response?.new_device_mode === 'read_only') {
     operatorAccessMode.value = response.new_device_mode
     return
   }
 
+  // Derive access mode from active_device_id: if another device holds station control,
+  // this device is read-only; otherwise it is active (the only device or new controller).
   operatorAccessMode.value =
     response?.active_device_id && response.active_device_id !== currentDeviceId.value
       ? 'read_only'
@@ -197,7 +200,7 @@ async function completeHandoff() {
           regattaId: String(route.params.regattaId),
           captureSessionId: response.capture_session_id.trim()
         }
-      })
+      }).catch(err => console.error('Navigation error:', err))
     }
   } catch (error) {
     handleCompleteHandoffError(error)

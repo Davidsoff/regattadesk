@@ -14,6 +14,8 @@ Payment-status operations for entries and clubs, and invoice lifecycle managemen
 - `PUT /api/v1/regattas/{regatta_id}/entries/{entry_id}/payment_status`
 - `GET /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status`
 - `PUT /api/v1/regattas/{regatta_id}/clubs/{club_id}/payment_status`
+- `GET /api/v1/regattas/{regatta_id}/finance/entries`
+- `GET /api/v1/regattas/{regatta_id}/finance/clubs`
 - `POST /api/v1/regattas/{regatta_id}/payments/mark_bulk`
 - `GET /api/v1/regattas/{regatta_id}/invoices`
 - `POST /api/v1/regattas/{regatta_id}/invoices/generate`

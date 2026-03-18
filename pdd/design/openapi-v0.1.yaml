@@ -2,6 +2,20 @@
 openapi: 3.1.0
 components:
   schemas:
+    AdjudicationActionRequest:
+      type: object
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          pattern: \S
+        note:
+          type: string
+        penalty_seconds:
+          type: integer
+          format: int32
+          minimum: 1
     AthleteCreateRequest:
       type: object
       required:
@@ -40,6 +54,15 @@ components:
           type: string
         club_id:
           $ref: "#/components/schemas/UUID"
+    AuditResponse:
+      type: object
+      properties:
+        actor:
+          type: string
+        at:
+          $ref: "#/components/schemas/Instant"
+        reason:
+          type: string
     BibPoolListResponse:
       type: object
       properties:
@@ -249,6 +272,136 @@ components:
           type: string
         domain:
           type: string
+    CrewCreateRequest:
+      type: object
+      required:
+      - display_name
+      - members
+      properties:
+        display_name:
+          type: string
+          pattern: \S
+          maxLength: 255
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        is_composite:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewMemberRequest"
+          minItems: 1
+    CrewListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    CrewMemberRequest:
+      type: object
+      required:
+      - athlete_id
+      - seat_position
+      properties:
+        athlete_id:
+          $ref: "#/components/schemas/UUID"
+        seat_position:
+          type: integer
+          format: int32
+    CrewMemberResponse:
+      type: object
+      properties:
+        athlete_id:
+          $ref: "#/components/schemas/UUID"
+        seat_position:
+          type: integer
+          format: int32
+    CrewResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        display_name:
+          type: string
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        is_composite:
+          type: boolean
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewMemberResponse"
+    EntryCreateRequest:
+      type: object
+      required:
+      - event_id
+      - block_id
+      - crew_id
+      properties:
+        event_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        crew_id:
+          $ref: "#/components/schemas/UUID"
+        billing_club_id:
+          $ref: "#/components/schemas/UUID"
+    EntryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntryResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    EntryResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        event_id:
+          $ref: "#/components/schemas/UUID"
+        block_id:
+          $ref: "#/components/schemas/UUID"
+        crew_id:
+          $ref: "#/components/schemas/UUID"
+        billing_club_id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+          - entered
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+          - dns
+          - dnf
+          - excluded
+          - dsq
+        payment_status:
+          type: string
+          enum:
+          - unpaid
+          - paid
+        paid_at:
+          $ref: "#/components/schemas/Instant"
+        paid_by:
+          type: string
+        payment_reference:
+          type: string
+        marker_start_time_ms:
+          type: integer
+          format: int64
+        marker_finish_time_ms:
+          type: integer
+          format: int64
+        completion_status:
+          type: string
     ErrorBody:
       type: object
       properties:
@@ -264,6 +417,91 @@ components:
       properties:
         error:
           $ref: "#/components/schemas/ErrorBody"
+    EventCreateRequest:
+      type: object
+      required:
+      - event_group_id
+      - category_id
+      - boat_type_id
+      - name
+      properties:
+        event_group_id:
+          $ref: "#/components/schemas/UUID"
+        category_id:
+          $ref: "#/components/schemas/UUID"
+        boat_type_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+          pattern: \S
+          maxLength: 255
+        display_order:
+          type: integer
+          format: int32
+    EventGroupCreateRequest:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          pattern: \S
+          maxLength: 255
+        description:
+          type: string
+        display_order:
+          type: integer
+          format: int32
+    EventGroupListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventGroupResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    EventGroupResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        description:
+          type: string
+        display_order:
+          type: integer
+          format: int32
+    EventListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventResponse"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    EventResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        event_group_id:
+          $ref: "#/components/schemas/UUID"
+        category_id:
+          $ref: "#/components/schemas/UUID"
+        boat_type_id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: string
+        display_order:
+          type: integer
+          format: int32
     ExportJobCreatedResponse:
       description: Response returned when a new printable export job is accepted.
       type: object
@@ -294,6 +532,57 @@ components:
           type: string
           description: Human-readable error description. Present only when status
             is "failed".
+    FinanceClubListResponse:
+      type: object
+      properties:
+        clubs:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceClubSummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceClubSummaryResponse:
+      type: object
+      properties:
+        club_id:
+          $ref: "#/components/schemas/UUID"
+        club_name:
+          type: string
+        payment_status:
+          type: string
+        paid_entries:
+          type: integer
+          format: int32
+        unpaid_entries:
+          type: integer
+          format: int32
+    FinanceEntryListResponse:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/FinanceEntrySummaryResponse"
+        pagination:
+          $ref: "#/components/schemas/FinanceListPaginationResponse"
+    FinanceEntrySummaryResponse:
+      type: object
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        crew_name:
+          type: string
+        club_name:
+          type: string
+        payment_status:
+          type: string
+    FinanceListPaginationResponse:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     GenerateDrawRequest:
       type: object
       properties:
@@ -521,6 +810,22 @@ components:
           format: int32
         is_approved:
           type: boolean
+    OpenInvestigationRequest:
+      type: object
+      required:
+      - entry_id
+      - description
+      properties:
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        description:
+          type: string
+          pattern: \S
+    OperationResult:
+      type: object
+      properties:
+        message:
+          type: string
     OperatorTokenCreateRequest:
       type: object
       properties:
@@ -537,6 +842,13 @@ components:
       - station
       - valid_from
       - valid_until
+    Pagination:
+      type: object
+      properties:
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     PaymentBulkMarkRequest:
       type: object
       properties:
@@ -565,6 +877,17 @@ components:
           type: string
         payment_reference:
           type: string
+    ReinstateEntryRequest:
+      type: object
+      required:
+      - expected_status
+      properties:
+        expected_status:
+          type: string
+          enum:
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+          pattern: ^(withdrawn_before_draw|withdrawn_after_draw)$
     RulesetCreateRequest:
       type: object
       properties:
@@ -624,6 +947,36 @@ components:
         requestingDeviceId:
           type: string
           pattern: \S
+    StationHandoffListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StationHandoffResponse"
+    StationHandoffResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        regattaId:
+          $ref: "#/components/schemas/UUID"
+        tokenId:
+          $ref: "#/components/schemas/UUID"
+        station:
+          type: string
+        requestingDeviceId:
+          type: string
+        status:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        expiresAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+        pin:
+          type: string
     TileDto:
       type: object
       required:
@@ -665,6 +1018,46 @@ components:
           type: string
         paidAtValid:
           type: boolean
+    WithdrawEntryRequest:
+      type: object
+      required:
+      - status
+      - reason
+      - expected_status
+      properties:
+        status:
+          type: string
+          enum:
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+          pattern: ^(withdrawn_before_draw|withdrawn_after_draw)$
+        reason:
+          type: string
+          pattern: \S
+        expected_status:
+          type: string
+          enum:
+          - entered
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+          - dns
+          - dnf
+          - excluded
+          - dsq
+          pattern: ^(entered|withdrawn_before_draw|withdrawn_after_draw|dns|dnf|excluded|dsq)$
+    WithdrawResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        status:
+          type: string
+          enum:
+          - entered
+          - withdrawn_before_draw
+          - withdrawn_after_draw
+        audit:
+          $ref: "#/components/schemas/AuditResponse"
 paths:
   /api/health:
     get:
@@ -911,6 +1304,189 @@ paths:
       summary: Get Regatta
       tags:
       - Regatta Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}:
+    get:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: Get Entry Detail
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/dsq:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Dsq
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/exclude:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Exclusion
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/penalty:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Apply Penalty
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/entries/{entry_id}/revert_dsq:
+    post:
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjudicationActionRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Revert Dsq
+      tags:
+      - Adjudication Resource
+  /api/v1/regattas/{regatta_id}/adjudication/investigations:
+    post:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenInvestigationRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+        "400":
+          description: Bad Request
+      summary: Open Investigation
+      tags:
+      - Adjudication Resource
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: {}
+      summary: List Investigations
+      tags:
+      - Adjudication Resource
   /api/v1/regattas/{regatta_id}/bib_pools:
     get:
       summary: List bib pools
@@ -1255,6 +1831,134 @@ paths:
       summary: Get Club Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/crews:
+    get:
+      summary: List Crews
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrewListResponse"
+      tags:
+      - Regatta Setup Resource
+    post:
+      summary: Create Crew
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrewCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/crews/{crew_id}:
+    patch:
+      summary: Update Crew
+      parameters:
+      - name: crew_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrewCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrewResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Crew
+      parameters:
+      - name: crew_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
   /api/v1/regattas/{regatta_id}/draw/generate:
     post:
       parameters:
@@ -1314,6 +2018,126 @@ paths:
       summary: Unpublish Draw
       tags:
       - Draw Resource
+  /api/v1/regattas/{regatta_id}/entries:
+    get:
+      summary: List Entries
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntryListResponse"
+      tags:
+      - Regatta Setup Resource
+    post:
+      summary: Create Entry
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}:
+    patch:
+      summary: Update Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EntryResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
   /api/v1/regattas/{regatta_id}/entries/{entry_id}/payment_status:
     put:
       parameters:
@@ -1365,6 +2189,332 @@ paths:
       summary: Get Entry Payment Status
       tags:
       - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/reinstate:
+    post:
+      summary: Reinstate Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReinstateEntryRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/entries/{entry_id}/withdraw:
+    post:
+      summary: Withdraw Entry
+      parameters:
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawEntryRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/event-groups:
+    get:
+      summary: List Event Groups
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventGroupListResponse"
+      tags:
+      - Regatta Setup Resource
+    post:
+      summary: Create Event Group
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventGroupCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventGroupResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/event-groups/{event_group_id}:
+    patch:
+      summary: Update Event Group
+      parameters:
+      - name: event_group_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventGroupCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventGroupResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Event Group
+      parameters:
+      - name: event_group_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/events:
+    get:
+      summary: List Events
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventListResponse"
+      tags:
+      - Regatta Setup Resource
+    post:
+      summary: Create Event
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+  /api/v1/regattas/{regatta_id}/events/{event_id}:
+    patch:
+      summary: Update Event
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventCreateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
+    delete:
+      summary: Delete Event
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Regatta Setup Resource
   /api/v1/regattas/{regatta_id}/export/printables:
     post:
       summary: Request Printable Export
@@ -1401,6 +2551,99 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Printable Export Resource
+  /api/v1/regattas/{regatta_id}/finance/clubs:
+    get:
+      summary: List Finance Clubs
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+          - partial
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceClubListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
+  /api/v1/regattas/{regatta_id}/finance/entries:
+    get:
+      summary: List Finance Entries
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - schema:
+          type: integer
+          format: int32
+          maximum: 100
+          minimum: 1
+          default: 100
+        name: limit
+        in: query
+      - schema:
+          enum:
+          - paid
+          - unpaid
+        name: payment_status
+        in: query
+      - name: search
+        in: query
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceEntryListResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Payment Status Resource
   /api/v1/regattas/{regatta_id}/invoices:
     get:
       summary: List invoices
@@ -2122,6 +3365,7 @@ paths:
       - Marker Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs:
     post:
+      summary: Request Handoff
       parameters:
       - name: regatta_id
         in: path
@@ -2143,18 +3387,60 @@ paths:
               $ref: "#/components/schemas/StationHandoffCreateRequest"
         required: true
       responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Station Handoff Resource
+    get:
+      summary: List pending station handoffs
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: station
+        in: query
+        schema:
+          type: string
+      - name: token_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: {}
-        "400":
-          description: Bad Request
-      summary: Request Handoff
+              schema:
+                $ref: "#/components/schemas/StationHandoffListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}:
     get:
+      summary: Get Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2171,12 +3457,19 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Get Handoff
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/admin_reveal_pin:
     post:
+      summary: Admin Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2193,12 +3486,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Admin Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/cancel:
     post:
+      summary: Cancel Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2215,12 +3533,25 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Cancel Handoff
+              schema:
+                $ref: "#/components/schemas/OperationResult"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/complete:
     post:
+      summary: Complete Handoff
       parameters:
       - name: handoff_id
         in: path
@@ -2243,14 +3574,37 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
         "400":
           description: Bad Request
-      summary: Complete Handoff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/station_handoffs/{handoff_id}/reveal_pin:
     post:
+      summary: Reveal Pin
       parameters:
       - name: handoff_id
         in: path
@@ -2267,8 +3621,26 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
-      summary: Reveal Pin
+              schema:
+                $ref: "#/components/schemas/StationHandoffResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Gone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       tags:
       - Station Handoff Resource
   /api/v1/regattas/{regatta_id}/operator/tokens:

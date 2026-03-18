@@ -1,5 +1,11 @@
 package com.regattadesk.linescan;
 
+import com.regattadesk.linescan.model.LineScanManifest;
+import com.regattadesk.linescan.model.TimingMarker;
+import com.regattadesk.linescan.repository.EntryRepository;
+import com.regattadesk.linescan.repository.LineScanManifestRepository;
+import com.regattadesk.linescan.repository.RegattaRepository;
+import com.regattadesk.linescan.repository.TimingMarkerRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;

@@ -13,7 +13,7 @@ describe('Operator routing for issue #138', () => {
     storage.clear()
     globalThis.window?.history?.replaceState({}, '', '/')
     globalThis.__REGATTADESK_AUTH__ = {
-      operatorToken: 'token-138'
+      operatorAuth: 'token-138'
     }
   })
 

@@ -4,10 +4,182 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import i18n from '../i18n'
 import RegattaDetail from '../views/staff/RegattaDetail.vue'
+import RegattaSetupSection from '../views/staff/RegattaSetupSection.vue'
+
+const eventGroupStore = [
+  {
+    id: 'event-group-1',
+    name: 'Junior Sweep',
+    description: 'Morning setup group',
+    display_order: 1
+  }
+]
+
+const athleteStore = [
+  {
+    id: 'athlete-1',
+    first_name: 'Ada',
+    middle_name: '',
+    last_name: 'Lovelace',
+    date_of_birth: '1990-12-10',
+    gender: 'F',
+    club_id: 'club-1'
+  }
+]
+
+const entryStore = [
+  {
+    id: 'entry-entered',
+    event_id: 'event-1',
+    block_id: 'block-1',
+    crew_id: 'crew-1',
+    billing_club_id: 'club-1',
+    status: 'entered'
+  },
+  {
+    id: 'entry-row-withdrawn-before-draw',
+    event_id: 'event-2',
+    block_id: 'block-1',
+    crew_id: 'crew-2',
+    billing_club_id: 'club-1',
+    status: 'withdrawn_before_draw'
+  },
+  {
+    id: 'entry-row-withdrawn-after-draw',
+    event_id: 'event-3',
+    block_id: 'block-1',
+    crew_id: 'crew-3',
+    billing_club_id: 'club-1',
+    status: 'withdrawn_after_draw'
+  }
+]
+
+const mockSetupApi = {
+  listEventGroups: vi.fn(async (regattaId, params) => ({
+    data: params?.search
+      ? eventGroupStore.filter((group) => group.name.toLowerCase().includes(params.search.toLowerCase()))
+      : eventGroupStore
+  })),
+  createEventGroup: vi.fn(async (regattaId, payload) => {
+    const item = {
+      id: `event-group-${eventGroupStore.length + 1}`,
+      ...payload
+    }
+    eventGroupStore.push(item)
+    return item
+  }),
+  updateEventGroup: vi.fn(async (regattaId, eventGroupId, payload) => {
+    const item = eventGroupStore.find((group) => group.id === eventGroupId)
+    Object.assign(item, payload)
+    return item
+  }),
+  deleteEventGroup: vi.fn(async (regattaId, eventGroupId) => {
+    const index = eventGroupStore.findIndex((group) => group.id === eventGroupId)
+    eventGroupStore.splice(index, 1)
+    return null
+  }),
+  listEvents: vi.fn(async () => ({ data: [] })),
+  createEvent: vi.fn(async () => ({})),
+  updateEvent: vi.fn(async () => ({})),
+  deleteEvent: vi.fn(async () => null),
+  listAthletes: vi.fn(async (params) => ({
+    data: params?.search
+      ? athleteStore.filter((athlete) => `${athlete.first_name} ${athlete.last_name}`.toLowerCase().includes(params.search.toLowerCase()))
+      : athleteStore
+  })),
+  createAthlete: vi.fn(async (payload) => {
+    const item = {
+      id: `athlete-${athleteStore.length + 1}`,
+      ...payload
+    }
+    athleteStore.push(item)
+    return item
+  }),
+  updateAthlete: vi.fn(async (athleteId, payload) => {
+    const item = athleteStore.find((athlete) => athlete.id === athleteId)
+    Object.assign(item, payload)
+    return item
+  }),
+  deleteAthlete: vi.fn(async (athleteId) => {
+    const index = athleteStore.findIndex((athlete) => athlete.id === athleteId)
+    athleteStore.splice(index, 1)
+    return null
+  }),
+  listCrews: vi.fn(async () => ({ data: [] })),
+  createCrew: vi.fn(async () => ({})),
+  updateCrew: vi.fn(async () => ({})),
+  deleteCrew: vi.fn(async () => null),
+  listEntries: vi.fn(async (regattaId, params) => ({
+    data: entryStore.filter((entry) => {
+      const matchesStatus = !params?.status || entry.status === params.status
+      const search = params?.search?.toLowerCase()
+      const matchesSearch = !search || JSON.stringify(entry).toLowerCase().includes(search)
+      return matchesStatus && matchesSearch
+    })
+  })),
+  createEntry: vi.fn(async (regattaId, payload) => {
+    entryStore.push({
+      id: 'entry-new',
+      ...payload,
+      status: 'entered'
+    })
+    return { id: 'entry-new' }
+  }),
+  updateEntry: vi.fn(async (regattaId, entryId, payload) => {
+    const entry = entryStore.find((item) => item.id === entryId)
+    Object.assign(entry, payload)
+    return entry
+  }),
+  deleteEntry: vi.fn(async (regattaId, entryId) => {
+    const index = entryStore.findIndex((entry) => entry.id === entryId)
+    entryStore.splice(index, 1)
+    return null
+  }),
+  withdrawEntry: vi.fn(async (regattaId, entryId, payload) => {
+    if (payload.reason.includes('conflict')) {
+      const error = new Error('Conflict')
+      error.code = 'CONFLICT'
+      throw error
+    }
+
+    const entry = entryStore.find((item) => item.id === entryId)
+    entry.status = payload.status
+    return { id: entryId, status: payload.status }
+  }),
+  reinstateEntry: vi.fn(async (regattaId, entryId) => {
+    const entry = entryStore.find((item) => item.id === entryId)
+    entry.status = 'entered'
+    return { id: entryId, status: 'entered' }
+  })
+}
+
+vi.mock('../api', () => ({
+  createApiClient: vi.fn(() => ({})),
+  createExportApi: vi.fn(() => ({})),
+  createRegattaSetupApi: vi.fn(() => mockSetupApi),
+  ApiError: class ApiError extends Error {}
+}))
+
+vi.mock('../composables/useExportJob', () => ({
+  useExportJob: () => ({
+    status: 'idle',
+    jobId: '',
+    downloadUrl: '',
+    error: '',
+    startExport: vi.fn(),
+    resetState: vi.fn()
+  })
+}))
+
+vi.mock('../components/export/ExportJobStatus.vue', () => ({
+  default: {
+    template: '<div data-testid="export-job-status" />'
+  }
+}))
 
 const REGATTA_ID = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
 
-async function mountPage() {
+async function mountDetailPage() {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -15,6 +187,31 @@ async function mountPage() {
         path: '/staff/regattas/:regattaId',
         name: 'staff-regatta-detail',
         component: RegattaDetail
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/event-groups',
+        name: 'staff-regatta-setup-event-groups',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/events',
+        name: 'staff-regatta-setup-events',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/athletes',
+        name: 'staff-regatta-setup-athletes',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/crews',
+        name: 'staff-regatta-setup-crews',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/entries',
+        name: 'staff-regatta-setup-entries',
+        component: RegattaSetupSection
       }
     ]
   })
@@ -30,44 +227,168 @@ async function mountPage() {
   })
 }
 
-describe('Staff regatta management workflows (issue #94)', () => {
+async function settle() {
+  await Promise.resolve()
+  await Promise.resolve()
+}
+
+function createSetupRouter() {
+  return createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/staff/regattas/:regattaId/setup/entries',
+        name: 'staff-regatta-setup-entries',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/event-groups',
+        name: 'staff-regatta-setup-event-groups',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/events',
+        name: 'staff-regatta-setup-events',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/athletes',
+        name: 'staff-regatta-setup-athletes',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/crews',
+        name: 'staff-regatta-setup-crews',
+        component: RegattaSetupSection
+      }
+    ]
+  })
+}
+
+async function mountSetupSection(sectionName) {
+  const router = createSetupRouter()
+
+  await router.push(`/staff/regattas/${REGATTA_ID}/setup/${sectionName}`)
+  await router.isReady()
+
+  return mount(RegattaSetupSection, {
+    attachTo: document.body,
+    global: {
+      plugins: [router, i18n]
+    }
+  })
+}
+
+async function mountEntriesSection() {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/staff/regattas/:regattaId/setup/entries',
+        name: 'staff-regatta-setup-entries',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/event-groups',
+        name: 'staff-regatta-setup-event-groups',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/events',
+        name: 'staff-regatta-setup-events',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/athletes',
+        name: 'staff-regatta-setup-athletes',
+        component: RegattaSetupSection
+      },
+      {
+        path: '/staff/regattas/:regattaId/setup/crews',
+        name: 'staff-regatta-setup-crews',
+        component: RegattaSetupSection
+      }
+    ]
+  })
+
+  await router.push(`/staff/regattas/${REGATTA_ID}/setup/entries`)
+  await router.isReady()
+
+  return mount(RegattaSetupSection, {
+    attachTo: document.body,
+    global: {
+      plugins: [router, i18n]
+    }
+  })
+}
+
+describe('Staff regatta management workflows (issue #134)', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
     document.body.innerHTML = ''
+    eventGroupStore.splice(0, eventGroupStore.length,
+      {
+        id: 'event-group-1',
+        name: 'Junior Sweep',
+        description: 'Morning setup group',
+        display_order: 1
+      }
+    )
+    athleteStore.splice(0, athleteStore.length,
+      {
+        id: 'athlete-1',
+        first_name: 'Ada',
+        middle_name: '',
+        last_name: 'Lovelace',
+        date_of_birth: '1990-12-10',
+        gender: 'F',
+        club_id: 'club-1'
+      }
+    )
+    entryStore.splice(0, entryStore.length,
+      {
+        id: 'entry-entered',
+        event_id: 'event-1',
+        block_id: 'block-1',
+        crew_id: 'crew-1',
+        billing_club_id: 'club-1',
+        status: 'entered'
+      },
+      {
+        id: 'entry-row-withdrawn-before-draw',
+        event_id: 'event-2',
+        block_id: 'block-1',
+        crew_id: 'crew-2',
+        billing_club_id: 'club-1',
+        status: 'withdrawn_before_draw'
+      },
+      {
+        id: 'entry-row-withdrawn-after-draw',
+        event_id: 'event-3',
+        block_id: 'block-1',
+        crew_id: 'crew-3',
+        billing_club_id: 'club-1',
+        status: 'withdrawn_after_draw'
+      }
+    )
   })
 
   afterEach(() => {
     document.body.innerHTML = ''
   })
 
-  it('renders searchable/filterable tables for events, athletes, crews, and entries', async () => {
-    const wrapper = await mountPage()
+  it('replaces the placeholder detail page with route-backed setup links', async () => {
+    const wrapper = await mountDetailPage()
 
-    expect(wrapper.find('[data-testid="events-table"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="athletes-table"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="crews-table"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="entries-table"]').exists()).toBe(true)
-
-    expect(wrapper.find('input[name="entries_search"]').exists()).toBe(true)
-    expect(wrapper.find('select[name="entries_status_filter"]').exists()).toBe(true)
-  })
-
-  it('provides action forms for event-group assignment and CRUD workflows', async () => {
-    const wrapper = await mountPage()
-
-    expect(wrapper.find('form[data-testid="event-form"]').exists()).toBe(true)
-    expect(wrapper.find('select[name="event_group_id"]').exists()).toBe(true)
-
-    expect(wrapper.find('form[data-testid="athlete-form"]').exists()).toBe(true)
-    expect(wrapper.find('form[data-testid="crew-form"]').exists()).toBe(true)
-    expect(wrapper.find('form[data-testid="entry-form"]').exists()).toBe(true)
-
-    expect(wrapper.find('[data-testid="events-table"] [data-action="edit"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="events-table"] [data-action="delete"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="setup-nav"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Setup workflows')
+    expect(wrapper.text()).toContain('Event groups')
+    expect(wrapper.text()).toContain('Entries')
   })
 
   it('surfaces audit metadata fields for destructive actions in an accessible dialog', async () => {
-    const wrapper = await mountPage()
+    const wrapper = await mountEntriesSection()
+    await settle()
 
     const withdrawAction = wrapper.find('button[data-action="withdraw-entry"]')
     expect(withdrawAction.exists()).toBe(true)
@@ -81,33 +402,37 @@ describe('Staff regatta management workflows (issue #94)', () => {
     expect(dialog.attributes('aria-modal')).toBe('true')
     expect(dialog.attributes('aria-labelledby')).toBe('withdraw-dialog-title')
 
+    expect(wrapper.find('[data-testid="destructive-action-dialog"] select[name="status"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-actor"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="destructive-action-dialog"] [data-testid="audit-timestamp"]').exists()).toBe(true)
   })
 
   it('shows per-field validation errors and moves focus to the first invalid field', async () => {
-    const wrapper = await mountPage()
+    const wrapper = await mountEntriesSection()
+    await settle()
 
-    const form = wrapper.find('form[data-testid="entry-form"]')
+    const form = wrapper.find('form[data-testid="setup-form"]')
     expect(form.exists()).toBe(true)
 
     await form.trigger('submit.prevent')
+    await settle()
 
     const validationError = wrapper.find('[data-testid="entry-form-errors"] [role="alert"]')
     expect(validationError.exists()).toBe(true)
     expect(validationError.text().toLowerCase()).toContain('required')
 
-    const firstInvalid = wrapper.find('input[name="entry_crew"]')
+    const firstInvalid = wrapper.find('input[name="event_id"]')
     expect(firstInvalid.attributes('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(firstInvalid.element)
 
-    const secondInvalid = wrapper.find('input[name="entry_athlete"]')
+    const secondInvalid = wrapper.find('input[name="crew_id"]')
     expect(secondInvalid.attributes('aria-invalid')).toBe('true')
   })
 
   it('handles 409 conflict responses with a clear recovery action', async () => {
-    const wrapper = await mountPage()
+    const wrapper = await mountEntriesSection()
+    await settle()
 
     const withdrawAction = wrapper.find('button[data-action="withdraw-entry"]')
     expect(withdrawAction.exists()).toBe(true)
@@ -121,6 +446,7 @@ describe('Staff regatta management workflows (issue #94)', () => {
     const confirm = wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-withdraw"]')
     expect(confirm.exists()).toBe(true)
     await confirm.trigger('click')
+    await settle()
 
     const conflictBanner = wrapper.find('[data-testid="entry-conflict-error"]')
     expect(conflictBanner.exists()).toBe(true)
@@ -128,8 +454,9 @@ describe('Staff regatta management workflows (issue #94)', () => {
     expect(wrapper.find('[data-testid="entry-conflict-reload"]').exists()).toBe(true)
   })
 
-  it('regresses withdrawal transitions so invalid status changes are blocked in UI', async () => {
-    const wrapper = await mountPage()
+  it('only renders meaningful entry actions for each supported status', async () => {
+    const wrapper = await mountEntriesSection()
+    await settle()
 
     const beforeDrawRow = wrapper.find('[data-testid="entry-row-withdrawn-before-draw"]')
     const afterDrawRow = wrapper.find('[data-testid="entry-row-withdrawn-after-draw"]')
@@ -137,16 +464,83 @@ describe('Staff regatta management workflows (issue #94)', () => {
     expect(beforeDrawRow.exists()).toBe(true)
     expect(afterDrawRow.exists()).toBe(true)
 
-    expect(
-      beforeDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').attributes('disabled')
-    ).toBeDefined()
+    expect(beforeDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').exists()).toBe(false)
+    expect(afterDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').exists()).toBe(false)
 
-    expect(
-      afterDrawRow.find('button[data-action="set-status-withdrawn-before-draw"]').attributes('disabled')
-    ).toBeDefined()
+    expect(beforeDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')).toBeUndefined()
+    expect(afterDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')).toBeUndefined()
+  })
 
-    expect(
-      afterDrawRow.find('button[data-action="set-status-entered"]').attributes('disabled')
-    ).toBeDefined()
+  it('submits the selected withdrawal timing instead of a hardcoded status', async () => {
+    const wrapper = await mountEntriesSection()
+    await settle()
+
+    await wrapper.find('button[data-action="withdraw-entry"]').trigger('click')
+    await wrapper.find('[data-testid="destructive-action-dialog"] select[name="status"]').setValue('withdrawn_after_draw')
+    await wrapper.find('[data-testid="destructive-action-dialog"] textarea[name="reason"]').setValue('Late scratch')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-withdraw"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.withdrawEntry).toHaveBeenCalledWith(
+      REGATTA_ID,
+      'entry-entered',
+      expect.objectContaining({
+        status: 'withdrawn_after_draw',
+        reason: 'Late scratch',
+        expected_status: 'entered'
+      })
+    )
+  })
+
+  it('searches and completes edit/delete flows for event groups', async () => {
+    const wrapper = await mountSetupSection('event-groups')
+    await settle()
+
+    await wrapper.find('input[name="setup_search"]').setValue('Junior')
+    await settle()
+
+    expect(mockSetupApi.listEventGroups).toHaveBeenLastCalledWith(REGATTA_ID, { search: 'Junior' })
+
+    await wrapper.find('button[data-action="edit-item"]').trigger('click')
+    await wrapper.find('input[name="name"]').setValue('Senior Sweep')
+    await wrapper.find('form[data-testid="setup-form"]').trigger('submit.prevent')
+    await settle()
+
+    expect(mockSetupApi.updateEventGroup).toHaveBeenCalledWith(
+      REGATTA_ID,
+      'event-group-1',
+      expect.objectContaining({ name: 'Senior Sweep' })
+    )
+
+    await wrapper.find('input[name="setup_search"]').setValue('Senior')
+    await settle()
+
+    await wrapper.find('button[data-action="delete-item"]').trigger('click')
+    expect(wrapper.find('[data-testid="destructive-action-dialog"]').text()).toContain('Delete event group')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-delete"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.deleteEventGroup).toHaveBeenCalledWith(REGATTA_ID, 'event-group-1')
+  })
+
+  it('uses the shared athlete API for edit and delete setup workflows', async () => {
+    const wrapper = await mountSetupSection('athletes')
+    await settle()
+
+    await wrapper.find('button[data-action="edit-item"]').trigger('click')
+    await wrapper.find('input[name="last_name"]').setValue('Byron')
+    await wrapper.find('form[data-testid="setup-form"]').trigger('submit.prevent')
+    await settle()
+
+    expect(mockSetupApi.updateAthlete).toHaveBeenCalledWith(
+      'athlete-1',
+      expect.objectContaining({ last_name: 'Byron' })
+    )
+
+    await wrapper.find('button[data-action="delete-item"]').trigger('click')
+    await wrapper.find('[data-testid="destructive-action-dialog"] button[data-action="confirm-delete"]').trigger('click')
+    await settle()
+
+    expect(mockSetupApi.deleteAthlete).toHaveBeenCalledWith('athlete-1')
   })
 })
