@@ -23,6 +23,8 @@ export function normalizeCaptureSession(session) {
     device_id: session.device_id ?? '',
     session_type: session.session_type ?? '',
     state: session.state ?? '',
+    server_time_at_start: session.server_time_at_start ?? null,
+    device_monotonic_offset_ms: session.device_monotonic_offset_ms ?? null,
     fps: session.fps ?? null,
     is_synced: session.is_synced !== false,
     drift_exceeded_threshold: session.drift_exceeded_threshold === true,

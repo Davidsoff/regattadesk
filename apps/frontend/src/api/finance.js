@@ -134,10 +134,24 @@ export function createFinanceApi(client) {
      * Generate invoices for unpaid entries.
      * 
      * @param {string} regattaId - Regatta UUID
+     * @param {object} payload - Optional generation filters
+     * @param {string[]} payload.club_ids - Optional club UUID filter
+     * @param {string} payload.idempotency_key - Optional idempotency key
      * @returns {Promise<object>} Job creation response
      */
-    async generateInvoices(regattaId) {
-      return client.post(`/regattas/${regattaId}/invoices/generate`, {})
+    async generateInvoices(regattaId, payload = {}) {
+      return client.post(`/regattas/${regattaId}/invoices/generate`, payload)
+    },
+
+    /**
+     * Get the status of an invoice generation job.
+     *
+     * @param {string} regattaId - Regatta UUID
+     * @param {string} jobId - Job UUID
+     * @returns {Promise<object>} Job status response
+     */
+    async getInvoiceGenerationJob(regattaId, jobId) {
+      return client.get(`/regattas/${regattaId}/invoices/jobs/${jobId}`)
     },
 
     /**

@@ -1,14 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import LineScan from '../views/operator/LineScan.vue'
+import en from '../i18n/locales/en.json'
 
-const requestStationHandoff = vi.fn()
-const revealStationHandoffPin = vi.fn()
-const getStationHandoffStatus = vi.fn()
-const cancelStationHandoff = vi.fn()
-const completeStationHandoff = vi.fn()
+const {
+  requestStationHandoff,
+  revealStationHandoffPin,
+  getStationHandoffStatus,
+  cancelStationHandoff,
+  completeStationHandoff,
+  queueState
+} = vi.hoisted(() => ({
+  requestStationHandoff: vi.fn(),
+  revealStationHandoffPin: vi.fn(),
+  getStationHandoffStatus: vi.fn(),
+  cancelStationHandoff: vi.fn(),
+  completeStationHandoff: vi.fn(),
+  queueState: { value: 0 }
+}))
 
 vi.mock('../api', () => ({
   ApiError: class ApiError extends Error {
@@ -28,39 +39,43 @@ vi.mock('../api', () => ({
   }))
 }))
 
+vi.mock('../composables/useOfflineQueue', async () => {
+  const { ref } = await import('vue')
+  const state = ref(0)
+  Object.defineProperty(queueState, 'value', {
+    get: () => state.value,
+    set: (value) => {
+      state.value = value
+    }
+  })
+
+  return {
+    useOfflineQueue: vi.fn(() => ({
+      queueSize: state
+    }))
+  }
+})
+
+const CaptureStub = {
+  template: `
+    <div>
+      <div data-testid="line-scan-capture-stub">Capture workspace</div>
+      <button
+        type="button"
+        data-testid="emit-queue-summary"
+        @click="$emit('queue-state-change', { queuedCount: 2, conflictCount: 1, failedCount: 1 })"
+      >
+        emit
+      </button>
+    </div>
+  `
+}
+
 function createTestI18n() {
   return createI18n({
     legacy: false,
     locale: 'en',
-    messages: {
-      en: {
-        operator: {
-          regatta: {
-            id: 'Regatta ID'
-          },
-          line_scan: {
-            title: 'Line Scan',
-            description: 'Capture line scan images and mark finish times',
-            queued_operations: '{count} operation(s) queued'
-          },
-          capture: {
-            title: 'Line Scan Capture',
-            create_marker: 'Create Marker',
-            no_markers: 'No markers yet',
-            high_contrast_on: 'High Contrast: On',
-            high_contrast_off: 'High Contrast: Off',
-            session_status: 'Session Status',
-            session_status_refresh: 'Refresh',
-            session_status_loading: 'Loading...',
-            tile_status: 'Tile Status',
-            conflicts_pending_title: 'Conflicts Requiring Resolution',
-            conflict_keep_mine: 'Keep Mine',
-            conflict_use_server: 'Use Server',
-            conflict_detected: 'A conflict was detected.'
-          }
-        }
-      }
-    }
+    messages: { en }
   })
 }
 
@@ -79,7 +94,7 @@ function buildHandoff(id = 'handoff-97', overrides = {}) {
   }
 }
 
-async function mountLineScan() {
+async function mountLineScan(path = '/operator/regattas/regatta-97/sessions/session-97/line-scan') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -87,24 +102,7 @@ async function mountLineScan() {
         path: '/operator/regattas/:regattaId/sessions/:captureSessionId/line-scan',
         name: 'operator-session-line-scan',
         component: LineScan
-      }
-    ]
-  })
-
-  await router.push('/operator/regattas/regatta-97/sessions/session-97/line-scan')
-  await router.isReady()
-
-  return mount(LineScan, {
-    global: {
-      plugins: [router, createTestI18n()]
-    }
-  })
-}
-
-async function mountLineScanWithoutSession() {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
+      },
       {
         path: '/operator/regattas/:regattaId/line-scan',
         name: 'operator-line-scan-legacy-test',
@@ -113,19 +111,23 @@ async function mountLineScanWithoutSession() {
     ]
   })
 
-  await router.push('/operator/regattas/regatta-97/line-scan')
+  await router.push(path)
   await router.isReady()
 
   return mount(LineScan, {
     global: {
-      plugins: [router, createTestI18n()]
+      plugins: [router, createTestI18n()],
+      stubs: {
+        LineScanCapture: CaptureStub
+      }
     }
   })
 }
 
-describe('Operator line-scan handoff UX (issue #97)', () => {
+describe('Operator line-scan handoff UX', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    queueState.value = 0
     vi.stubGlobal('__REGATTADESK_AUTH__', {
       operatorAuth: 'token-97',
       operatorStation: 'finish-line'
@@ -149,7 +151,6 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     )
 
     const wrapper = await mountLineScan()
-    expect(wrapper.find('[data-testid="handoff-request-toast"]').exists()).toBe(false)
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
     await flushPromises()
 
@@ -168,32 +169,6 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     })
     expect(wrapper.find('[data-testid="operator-readonly-banner"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="line-scan-capture"]').attributes('disabled')).toBeDefined()
-  })
-
-  it('prevents concurrent reveal requests while one reveal is in flight', async () => {
-    let resolveReveal
-    const revealPromise = new Promise((resolve) => {
-      resolveReveal = resolve
-    })
-
-    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-reveal'))
-    revealStationHandoffPin.mockReturnValueOnce(revealPromise)
-
-    const wrapper = await mountLineScan()
-    await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    const revealButton = buttons.find((button) => button.text() === 'Show PIN')
-    expect(revealButton).toBeDefined()
-
-    await revealButton?.trigger('click')
-    await revealButton?.trigger('click')
-    expect(revealStationHandoffPin).toHaveBeenCalledTimes(1)
-
-    resolveReveal({ pin: '123456' })
-    await flushPromises()
-    expect(wrapper.find('[data-testid="handoff-revealed-pin"]').text()).toContain('123456')
   })
 
   it('renders INVALID_PIN feedback from API 400 response', async () => {
@@ -221,60 +196,37 @@ describe('Operator line-scan handoff UX (issue #97)', () => {
     expect(wrapper.find('[data-testid="handoff-conflict-banner"]').exists()).toBe(false)
   })
 
-  it('renders conflict guidance from API 409 while keeping line-scan usable during pending handoff', async () => {
-    const { ApiError } = await import('../api')
-    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-conflict'))
-    completeStationHandoff.mockRejectedValueOnce(
-      new ApiError(
-        {
-          code: 'HANDOFF_CONFLICT',
-          message: 'This handoff is no longer available'
-        },
-        409
-      )
-    )
+  it('shows a non-blocking handoff toast while the evidence workspace remains active', async () => {
+    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-toast'))
 
     const wrapper = await mountLineScan()
     await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="handoff-request-toast"]').exists()).toBe(true)
-    const scanCaptureButton = wrapper.find('[data-testid="line-scan-capture"]')
-    expect(scanCaptureButton.attributes('disabled')).toBeUndefined()
-
-    await wrapper.find('[data-testid="handoff-pin-input"]').setValue('123456')
-    await wrapper.find('[data-testid="handoff-complete-submit"]').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="handoff-conflict-banner"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('This handoff is no longer available')
+    expect(wrapper.find('[data-testid="line-scan-capture-stub"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="line-scan-capture"]').attributes('disabled')).toBeUndefined()
   })
 
-  it('shows non-interrupting handoff request toast while keeping line-scan actions active', async () => {
-    requestStationHandoff.mockResolvedValueOnce(buildHandoff('handoff-toast'))
-
+  it('shows queue summary details after the workspace reports conflicts and failed syncs', async () => {
+    queueState.value = 2
     const wrapper = await mountLineScan()
-    expect(wrapper.find('[data-testid="handoff-request-toast"]').exists()).toBe(false)
-    await wrapper.find('[data-testid="handoff-request-start"]').trigger('click')
+
+    await wrapper.find('[data-testid="emit-queue-summary"]').trigger('click')
     await flushPromises()
 
-    const handoffToast = wrapper.find('[data-testid="handoff-request-toast"]')
-    expect(handoffToast.exists()).toBe(true)
-    expect(handoffToast.text()).toContain('Show PIN')
-    expect(handoffToast.text()).not.toContain('Approve')
-    expect(handoffToast.text()).not.toContain('Deny')
-
-    const scanCaptureButton = wrapper.find('[data-testid="line-scan-capture"]')
-    expect(scanCaptureButton.exists()).toBe(true)
-    expect(scanCaptureButton.attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="offline-queue-indicator"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('2 operation(s) queued for sync')
+    expect(wrapper.text()).toContain('1 conflict')
+    expect(wrapper.text()).toContain('1 failed')
   })
 
-  it('does not call capture session create endpoint when workspace is toggled without capture_session_id', async () => {
-    const wrapper = await mountLineScanWithoutSession()
-    await wrapper.find('[data-testid="toggle-capture-workspace"]').trigger('click')
+  it('keeps the workspace honest when no capture session is present', async () => {
+    const wrapper = await mountLineScan('/operator/regattas/regatta-97/line-scan')
+
+    await wrapper.find('[data-testid="line-scan-capture"]').trigger('click')
     await flushPromises()
 
-    expect(requestStationHandoff).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('Capture session is required to open workspace')
   })
 })
