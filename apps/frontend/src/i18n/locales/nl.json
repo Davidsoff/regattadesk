@@ -131,6 +131,7 @@
       "detail_title": "Factuurdetails",
       "invoice_number": "Factuurnummer",
       "invoice_id": "Factuur ID",
+      "club_name": "Club",
       "club_id": "Club ID",
       "amount": "Bedrag",
       "status": "Status",

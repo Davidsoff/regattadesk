@@ -131,6 +131,7 @@
       "detail_title": "Invoice Details",
       "invoice_number": "Invoice Number",
       "invoice_id": "Invoice ID",
+      "club_name": "Club",
       "club_id": "Club ID",
       "amount": "Amount",
       "status": "Status",
