@@ -6,7 +6,7 @@ Bounded Context: BC09 - Operability, Hardening, and Quality
 
 ## Overview
 
-This document defines the comprehensive testing strategy and CI quality gates for RegattaDesk v0.1, implementing the requirements from `pdd/implementation/plan.md` Step 25.
+This document defines the comprehensive testing strategy and CI quality gates for RegattaDesk v0.1, implementing the requirements from `.mindspec/docs/specs/pdd-v0.1/implementation/plan.md` Step 25.
 
 ## Test Matrix by Change Type
 
@@ -416,8 +416,8 @@ Review and update:
 
 ## References
 
-- [Implementation Plan](../pdd/implementation/plan.md) - Step 25, Step quality gates
-- [BC09 Spec](../pdd/implementation/bc09-operability-hardening-and-quality.md)
+- [Implementation Plan](../specs/pdd-v0.1/implementation/plan.md) - Step 25, Step quality gates
+- [BC09 Spec](../specs/pdd-v0.1/implementation/bc09-operability-hardening-and-quality.md)
 - [WCAG 2.2 Guidelines](https://www.w3.org/WAI/WCAG22/quickref/)
 - [Pact Documentation](https://docs.pact.io/)
 - [Testcontainers](https://www.testcontainers.org/)

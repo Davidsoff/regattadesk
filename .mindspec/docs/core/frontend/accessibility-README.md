@@ -152,7 +152,7 @@ For critical flows (public results, operator capture, staff workflows), complete
 - [WCAG 2.2 Quick Reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - [axe-core Rules](https://github.com/dequelabs/axe-core/blob/develop/doc/rule-descriptions.md)
 - [Vue Accessibility Guide](https://vuejs.org/guide/best-practices/accessibility.html)
-- [RegattaDesk Style Guide](../../../../pdd/design/style-guide.md)
+- [RegattaDesk Style Guide](../../specs/pdd-v0.1/design/style-guide.md)
 
 ## Reporting Issues
 

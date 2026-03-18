@@ -118,7 +118,7 @@ Performance targets (validated in tests):
 
 Events are retained **indefinitely** in v0.1 for full audit trail.
 
-See [docs/retention-policy.md](/docs/retention-policy.md) for:
+See [retention-policy.md](../retention-policy.md) for:
 - Detailed retention policy
 - Storage growth estimates
 - Backup requirements
@@ -184,7 +184,7 @@ After BC03-001 completion:
 
 ## References
 
-- [BC03 Implementation Plan](/pdd/implementation/bc03-core-regatta-management.md)
-- [Database Schema Design](/pdd/design/database-schema.md)
-- [Retention Policy](/docs/retention-policy.md)
+- [BC03 Implementation Plan](../../specs/pdd-v0.1/implementation/bc03-core-regatta-management.md)
+- [Database Schema Design](../../specs/pdd-v0.1/design/database-schema.md)
+- [Retention Policy](../retention-policy.md)
 - [GitHub Issue BC03-001](https://github.com/Davidsoff/regattadesk/issues/BC03-001)

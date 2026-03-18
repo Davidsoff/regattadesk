@@ -11,7 +11,7 @@ Public-facing versioned content delivery, live updates, UX primitives, accessibi
 - Implement public results pages backed by result-dependent read models.
 - Implement regatta SSE stream with `snapshot`, `draw_revision`, and `results_revision` event types.
 - Implement Live/Offline indicator driven only by SSE connection state.
-- Implement design tokens and table primitives per `pdd/design/style-guide.md`.
+- Implement design tokens and table primitives per `.mindspec/docs/specs/pdd-v0.1/design/style-guide.md`.
 - Implement i18n and formatting support (`nl`/`en`, locale display formatting, regatta-local timezone).
 - Implement printable A4 PDF outputs with required monochrome-friendly header metadata.
 

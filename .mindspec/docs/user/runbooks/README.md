@@ -187,8 +187,8 @@ When updating runbooks:
 
 ## Related Documentation
 
-- [OBSERVABILITY.md](../../infra/compose/OBSERVABILITY.md) - Monitoring and telemetry
-- [BC09-001 Implementation](../../infra/compose/BC09-001-IMPLEMENTATION-SUMMARY.md) - Observability setup
-- [BC09-002 Implementation](../../infra/compose/BC09-002-IMPLEMENTATION-SUMMARY.md) - Edge hardening
+- [OBSERVABILITY.md](../../core/infra/OBSERVABILITY.md) - Monitoring and telemetry
+- [Edge Security](../../core/EDGE_SECURITY.md) - Edge hardening and TLS posture
+- [Testing Strategy](../../core/TESTING_STRATEGY.md) - Cross-cutting quality and validation policy
 - [Developer Setup](../DEVELOPER_SETUP.md) - Local development environment
-- [Implementation Plan](../../pdd/implementation/plan.md) - Overall implementation strategy
+- [Implementation Plan](../../specs/pdd-v0.1/implementation/plan.md) - Overall implementation strategy

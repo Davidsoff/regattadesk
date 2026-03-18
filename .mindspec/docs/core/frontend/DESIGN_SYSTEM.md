@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains the design system implementation for RegattaDesk v0.1, including design tokens, primitive components, and accessibility utilities aligned with `pdd/design/style-guide.md`.
+This directory contains the design system implementation for RegattaDesk v0.1, including design tokens, primitive components, and accessibility utilities aligned with `.mindspec/docs/specs/pdd-v0.1/design/style-guide.md`.
 
 ## Files Structure
 
@@ -304,8 +304,8 @@ Visit `http://localhost:5173` to see the design system demo.
 
 ## References
 
-- `pdd/design/style-guide.md` - Complete style guide specification
-- `pdd/implementation/bc05-public-experience-and-delivery.md` - BC05 feature list
+- `.mindspec/docs/specs/pdd-v0.1/design/style-guide.md` - Complete style guide specification
+- `.mindspec/docs/specs/pdd-v0.1/implementation/bc05-public-experience-and-delivery.md` - BC05 feature list
 - WCAG 2.2 Guidelines: https://www.w3.org/WAI/WCAG22/quickref/
 
 ## Future Work

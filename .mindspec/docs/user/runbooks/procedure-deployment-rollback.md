@@ -497,6 +497,6 @@ For critical security updates or critical bugs:
 ## Additional Resources
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
-- [CI/CD Implementation Summary](../ci-cd-implementation-summary.md)
+- [CI Quality Gates](../../core/CI_QUALITY_GATES.md)
 - [Developer Setup Guide](../DEVELOPER_SETUP.md)
-- [Implementation Plan](../../pdd/implementation/plan.md)
+- [Implementation Plan](../../specs/pdd-v0.1/implementation/plan.md)

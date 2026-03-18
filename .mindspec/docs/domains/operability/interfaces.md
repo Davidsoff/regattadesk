@@ -4,7 +4,7 @@
 
 - `GET /api/health` plus Quarkus health endpoints expose runtime health signals.
 - The top-level `make test`, `make lint`, and related backend or frontend commands expose the verification contract used across domains.
-- Runbooks and validation scripts under `docs/runbooks/` and `infra/compose/*.sh` expose the operational contract for incident response, hardening, and smoke checks.
+- Runbooks under `.mindspec/docs/user/runbooks/` and validation scripts under `infra/compose/*.sh` expose the operational contract for incident response, hardening, and smoke checks.
 - Version-controlled load scenarios and thresholds under `apps/backend/performance/` expose the performance-gate contract.
 
 ## Integration Points

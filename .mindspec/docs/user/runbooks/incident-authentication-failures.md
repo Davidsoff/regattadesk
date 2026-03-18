@@ -434,5 +434,5 @@ Escalate to senior engineer or security team if:
 
 - [Authelia Documentation](https://www.authelia.com/)
 - [Traefik ForwardAuth](https://doc.traefik.io/traefik/middlewares/http/forwardauth/)
-- [BC02-001 Implementation Status](../../infra/compose/BC02-001-STATUS.md)
-- [Identity Forwarding](../IDENTITY_FORWARDING.md)
+- [BC02 Identity and Access](../../specs/pdd-v0.1/implementation/bc02-identity-and-access.md)
+- [Identity Forwarding](../../core/IDENTITY_FORWARDING.md)

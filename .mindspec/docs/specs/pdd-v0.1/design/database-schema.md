@@ -554,7 +554,7 @@ ALTER TABLE operator_conflicts
     FOREIGN KEY (capture_session_id) REFERENCES capture_sessions(id) ON DELETE SET NULL;
 ```
 
-Capture session lifecycle in API contract (`pdd/design/openapi-v0.1.yaml`):
+Capture session lifecycle in API contract (`.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`):
 - Start/list: `POST|GET /api/v1/regattas/{regatta_id}/operator/capture_sessions`
 - Read: `GET /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}`
 - Sync state updates: `POST /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/sync_state`

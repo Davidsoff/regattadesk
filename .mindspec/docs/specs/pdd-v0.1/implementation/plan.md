@@ -108,7 +108,7 @@ This implementation plan is decomposed into bounded contexts, each with function
 
 - RegattaDesk v0.1 is pre-production. Breaking changes are allowed when they simplify implementation and remove unused compatibility layers.
 - Do not add deprecation-only API shims or migration paths unless a concrete active consumer requires them.
-- Any breaking change must include synchronized updates to affected `pdd/` artifacts in the same PR.
+- Any breaking change must include synchronized updates to affected `.mindspec/docs/specs/pdd-v0.1/` artifacts in the same PR.
 
 ## Third-party dependency inventory (v0.1 baseline)
 | Component | Dependency / Service | Minimum version | Update policy |

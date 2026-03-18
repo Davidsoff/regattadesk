@@ -147,4 +147,4 @@ For questions about dependencies:
 
 ---
 
-**Note:** This inventory is maintained automatically where possible and manually reviewed regularly. See `docs/dependency-governance.md` for the complete governance policy.
+**Note:** This inventory is maintained automatically where possible and manually reviewed regularly. See `.mindspec/docs/core/dependency-governance.md` for the complete governance policy.

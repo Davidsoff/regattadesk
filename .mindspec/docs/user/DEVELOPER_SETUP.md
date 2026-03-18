@@ -301,7 +301,7 @@ regattadesk/
 │       ├── package.json  # NPM configuration
 │       └── vite.config.js
 │
-├── docs/                 # Documentation
+├── .mindspec/docs/       # Canonical MindSpec documentation
 ├── infra/compose/        # Docker Compose (future)
 ├── tests/                # Integration tests (future)
 ├── Makefile              # Build commands
@@ -313,14 +313,14 @@ regattadesk/
 1. ✅ Complete the setup above
 2. ✅ Run both backend and frontend in dev mode
 3. ✅ Verify health endpoints
-4. 📖 Read the [main README](../README.md) for common commands
-5. 📖 Review [BC01 Platform Spec](../pdd/implementation/bc01-platform-and-delivery.md)
+4. 📖 Read the [main README](../../../README.md) for common commands
+5. 📖 Review [BC01 Platform Spec](../specs/pdd-v0.1/implementation/bc01-platform-and-delivery.md)
 6. 🚀 Start development!
 
 ## Getting Help
 
-- Check the main [README](../README.md)
-- Review the [Implementation Plan](../pdd/implementation/plan.md)
+- Check the main [README](../../../README.md)
+- Review the [Implementation Plan](../specs/pdd-v0.1/implementation/plan.md)
 - Search existing GitHub issues
 - Create a new issue if you encounter problems
 

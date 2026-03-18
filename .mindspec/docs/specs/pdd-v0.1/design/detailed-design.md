@@ -108,7 +108,7 @@ flowchart TD
 - Future consideration: credit notes system for post-v0.1
 
 #### Payment API Endpoints
-All payment endpoints, methods, parameters, and schemas are defined in `pdd/design/openapi-v0.1.yaml`.
+All payment endpoints, methods, parameters, and schemas are defined in `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`.
 
 - Draw: random v0.1, stored seed for reproducibility, publish increments draw_revision; no insertion after draw; events start sequentially but finishes can interleave.
   - Bib pools are immutable after draw publish. To change pools, unpublish draw first.
@@ -326,7 +326,7 @@ flowchart LR
 
 ## Components and Interfaces
 - Staff API: Traefik-forwarded identity (Authelia SSO), regatta-scoped roles (+ super_admin).
-  - Contract details (security schemes, headers, and endpoint-level auth) are defined in `pdd/design/openapi-v0.1.yaml`.
+  - Contract details (security schemes, headers, and endpoint-level auth) are defined in `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`.
   - Role model: regatta_admin, head_of_jury, info_desk, financial_manager; super_admin is global.
   - Forwarded headers: `x_forwarded_user` (required), `x_forwarded_groups` (optional), `x_regatta_roles` (optional), `x_global_roles` (optional).
   - Operator capabilities are token-scoped (QR/PIN) and are not part of the staff JWT role set.
@@ -354,7 +354,7 @@ flowchart LR
   - QR tokens exportable to PDF with fallback instructions (short URL + token/PIN) if QR scan fails.
   - Line-scan tiles/manifests are API-managed artifacts; operator ingestion uses token-auth endpoints and staff/operator retrieval uses authenticated endpoints defined in OpenAPI.
 - Public:
-  - Endpoint contracts are defined in `pdd/design/openapi-v0.1.yaml`.
+  - Endpoint contracts are defined in `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`.
   - Public session behavior:
     - Missing or invalid anon cookie issues a new session.
     - Valid cookie refreshes only within the refresh window; otherwise no cookie rotation.
@@ -383,7 +383,7 @@ flowchart LR
 
 ## Staff API Endpoints
 
-OpenAPI contract source of truth: `pdd/design/openapi-v0.1.yaml`.
+OpenAPI contract source of truth: `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`.
 
 This document intentionally avoids duplicating endpoint methods, paths, request/response schemas, and auth/header requirements that are already specified in OpenAPI.
 

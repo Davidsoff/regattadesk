@@ -184,11 +184,11 @@ Backend services MUST:
 
 ## References
 
-- [Authelia Configuration](../infra/compose/authelia/configuration.yml)
-- [Traefik Dynamic Configuration](../infra/compose/traefik/dynamic.yml)
-- [Docker Compose Stack](../infra/compose/docker-compose.yml)
-- [BC02 Identity and Access](../pdd/implementation/bc02-identity-and-access.md)
-- [Detailed Design - Authentication](../pdd/design/detailed-design.md#authentication-and-authorization)
+- [Authelia Configuration](../../../infra/compose/authelia/configuration.yml)
+- [Traefik Dynamic Configuration](../../../infra/compose/traefik/dynamic.yml)
+- [Docker Compose Stack](../../../infra/compose/docker-compose.yml)
+- [BC02 Identity and Access](../specs/pdd-v0.1/implementation/bc02-identity-and-access.md)
+- [Detailed Design - Authentication](../specs/pdd-v0.1/design/detailed-design.md#authentication-and-authorization)
 
 ## Status
 

@@ -417,5 +417,5 @@ Escalate to senior engineer if:
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Quarkus Health Check Guide](https://quarkus.io/guides/smallrye-health)
-- [Observability Documentation](../../infra/compose/OBSERVABILITY.md)
+- [Observability Documentation](../../core/infra/OBSERVABILITY.md)
 - [PostgreSQL Troubleshooting](https://www.postgresql.org/docs/current/runtime.html)

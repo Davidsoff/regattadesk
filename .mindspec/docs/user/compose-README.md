@@ -205,7 +205,7 @@ RegattaDesk uses Authelia for Single Sign-On (SSO) at the Traefik edge. Protecte
 
 **Note:** The `/q/metrics` endpoint is intentionally not exposed publicly for security reasons. It is only accessible from the internal Docker network for Prometheus scraping.
 
-For detailed information about the identity forwarding contract and trust boundary, see [Identity Forwarding Documentation](../../docs/IDENTITY_FORWARDING.md).
+For detailed information about the identity forwarding contract and trust boundary, see [Identity Forwarding Documentation](../core/IDENTITY_FORWARDING.md).
 
 ## Service Details
 
@@ -464,22 +464,22 @@ docker compose config --quiet
 
 ## References
 
-- [Implementation Plan](../../pdd/implementation/plan.md) - Step 1
-- [BC01 Platform Spec](../../pdd/implementation/bc01-platform-and-delivery.md)
-- [Detailed Design](../../pdd/design/detailed-design.md)
-- [Observability Setup](./OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
-- [Edge Security](../../docs/EDGE_SECURITY.md) - TLS, security headers, rate limiting, abuse prevention
-- [Operational Runbooks](../../docs/runbooks/README.md) - Incident response and operational procedures
-- [Grafana Security](./SECURITY-GRAFANA.md) - Security configuration and best practices for Grafana
+- [Implementation Plan](../specs/pdd-v0.1/implementation/plan.md) - Step 1
+- [BC01 Platform Spec](../specs/pdd-v0.1/implementation/bc01-platform-and-delivery.md)
+- [Detailed Design](../specs/pdd-v0.1/design/detailed-design.md)
+- [Observability Setup](../core/infra/OBSERVABILITY.md) - Health, metrics, tracing, and dashboards
+- [Edge Security](../core/EDGE_SECURITY.md) - TLS, security headers, rate limiting, abuse prevention
+- [Operational Runbooks](runbooks/README.md) - Incident response and operational procedures
+- [Grafana Security](../core/infra/SECURITY-GRAFANA.md) - Security configuration and best practices for Grafana
 
 ## Operational Procedures
 
-For incident response and operational procedures, see the [Runbooks](../../docs/runbooks/README.md):
+For incident response and operational procedures, see the [Runbooks](runbooks/README.md):
 
-- **[RB-001: Service Unavailability](../../docs/runbooks/incident-service-unavailability.md)** - Backend, database, or complete stack failures
-- **[RB-002: Authentication Failures](../../docs/runbooks/incident-authentication-failures.md)** - Login, session, and ForwardAuth issues
-- **[RB-003: Public Performance Issues](../../docs/runbooks/incident-public-performance.md)** - Slow responses, high load, SSE failures
-- **[RB-005: Deployment and Rollback](../../docs/runbooks/procedure-deployment-rollback.md)** - Standard deployments, emergency rollbacks, config updates
+- **[RB-001: Service Unavailability](runbooks/incident-service-unavailability.md)** - Backend, database, or complete stack failures
+- **[RB-002: Authentication Failures](runbooks/incident-authentication-failures.md)** - Login, session, and ForwardAuth issues
+- **[RB-003: Public Performance Issues](runbooks/incident-public-performance.md)** - Slow responses, high load, SSE failures
+- **[RB-005: Deployment and Rollback](runbooks/procedure-deployment-rollback.md)** - Standard deployments, emergency rollbacks, config updates
 
 **Quick incident response:**
 1. Identify symptoms from runbook

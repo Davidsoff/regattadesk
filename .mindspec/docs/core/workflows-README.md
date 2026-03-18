@@ -44,7 +44,7 @@ The `all-checks` job should be required for merge. It ensures all critical check
 - Consolidated security summary (90-day retention)
 
 **Follow-up:**
-Review artifacts weekly and triage vulnerabilities according to the security fast-path policy in `docs/dependency-governance.md`.
+Review artifacts weekly and triage vulnerabilities according to the security fast-path policy in `.mindspec/docs/core/dependency-governance.md`.
 
 ### Release (`release.yml`)
 
@@ -151,5 +151,5 @@ When adding new checks to CI:
 ## References
 
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [RegattaDesk Dependency Governance](../../docs/dependency-governance.md)
-- [AGENTS.md](../../AGENTS.md) - CI/CD best practices
+- [RegattaDesk Dependency Governance](./dependency-governance.md)
+- [AGENTS.md](../../../AGENTS.md) - CI/CD best practices

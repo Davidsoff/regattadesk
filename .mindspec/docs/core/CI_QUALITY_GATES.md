@@ -290,6 +290,6 @@ graph TD
 ## References
 
 - [Testing Strategy](./TESTING_STRATEGY.md)
-- [BC09-004 Issue](../pdd/implementation/issues/bc09-operability-hardening-and-quality.issues.yaml)
-- [Implementation Plan Step 25](../pdd/implementation/plan.md)
-- [CI Workflow](../.github/workflows/ci.yml)
+- [BC09-004 Issue](../../../pdd/implementation/issues/bc09-operability-hardening-and-quality.issues.yaml)
+- [Implementation Plan Step 25](../specs/pdd-v0.1/implementation/plan.md)
+- [CI Workflow](../../../.github/workflows/ci.yml)

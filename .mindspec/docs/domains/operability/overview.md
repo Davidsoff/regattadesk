@@ -18,10 +18,10 @@
 |:-----|:--------|
 | `apps/backend/src/main/java/com/regattadesk/health/HealthResource.java` | App-specific health endpoint. |
 | `apps/backend/src/main/java/com/regattadesk/performance/PerformanceGateEvaluator.java` | Backend performance gate evaluation. |
-| `docs/TESTING_STRATEGY.md` | Test matrix and quality expectations. |
-| `docs/CI_QUALITY_GATES.md` | CI enforcement and merge gate guidance. |
-| `docs/EDGE_SECURITY.md` | Edge hardening and TLS posture. |
-| `docs/runbooks/performance-gates.md` | Load and performance gate interpretation. |
+| `.mindspec/docs/core/TESTING_STRATEGY.md` | Test matrix and quality expectations. |
+| `.mindspec/docs/core/CI_QUALITY_GATES.md` | CI enforcement and merge gate guidance. |
+| `.mindspec/docs/core/EDGE_SECURITY.md` | Edge hardening and TLS posture. |
+| `.mindspec/docs/user/runbooks/performance-gates.md` | Load and performance gate interpretation. |
 | `infra/compose/observability-smoke-test.sh` | Observability validation script. |
 | `infra/compose/security-validation-test.sh` | Security validation script. |
 

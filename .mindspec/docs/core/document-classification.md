@@ -4,6 +4,7 @@ This file records the Phase 5 classification decisions for markdown files that w
 
 Legend:
 
+- `canonicalized`: the canonical MindSpec copy is retained and the original non-agent source file was removed.
 - `staged-copy`: a copy was placed in the canonical MindSpec location and the original was left in place.
 - `mapped`: the file was classified and given a canonical target, but the original remains authoritative for now.
 - `skip`: the file should remain in place.
@@ -77,5 +78,6 @@ Legend:
 ## Notes
 
 - Root `README.md` remains in place by design.
-- Source documents remain authoritative until relative links and downstream tool references are fully validated against the canonical copies.
+- Agent instruction files remain in their original locations and were not removed; no canonical `.mindspec/docs/agent/` copy is retained.
+- Non-agent files listed here were canonicalized into `.mindspec/docs` and their original markdown files were removed at user request.
 - Some files listed in earlier workspace summaries are not present in the current filesystem snapshot; those are recorded as `missing` instead of being copied.

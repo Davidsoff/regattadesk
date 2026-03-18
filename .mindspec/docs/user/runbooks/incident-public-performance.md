@@ -468,6 +468,6 @@ Escalate if:
 
 ## Additional Resources
 
-- [Observability Documentation](../../infra/compose/OBSERVABILITY.md)
+- [Observability Documentation](../../core/infra/OBSERVABILITY.md)
 - [PostgreSQL Performance Tuning](https://www.postgresql.org/docs/current/performance-tips.html)
 - [Quarkus Performance Guide](https://quarkus.io/guides/performance-measure)

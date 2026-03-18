@@ -9,7 +9,7 @@
 ## Debugging
 
 - Run `infra/compose/edge-auth-test.sh` and `infra/compose/security-test.sh` to verify edge policy and forwarded identity behavior.
-- Inspect `docs/IDENTITY_FORWARDING.md` first when route trust assumptions and implementation diverge.
+- Inspect `.mindspec/docs/core/IDENTITY_FORWARDING.md` first when route trust assumptions and implementation diverge.
 - If headers appear unexpectedly on untrusted routes, review `IdentityHeaderSanitizer` before changing resource code.
 
 ## Common Tasks
