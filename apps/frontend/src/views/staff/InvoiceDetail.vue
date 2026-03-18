@@ -3,7 +3,14 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
-import { SUCCESS_MESSAGE_DURATION_MS, resolveStaffAuditActor, validateRouteParam } from './financeViewShared'
+import {
+  SUCCESS_MESSAGE_DURATION_MS,
+  formatFinanceAmount,
+  formatFinanceDateTime,
+  resolveStaffAuditActor,
+  translateInvoiceStatus,
+  validateRouteParam
+} from './financeViewShared'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -32,44 +39,6 @@ function syncAuditActor() {
 function handleVisibilityChange() {
   if (document.visibilityState === 'visible') {
     syncAuditActor()
-  }
-}
-
-function formatAmount(amount, currency = 'EUR') {
-  if (typeof amount !== 'number') {
-    return '-'
-  }
-
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency
-    }).format(amount)
-  } catch {
-    return amount.toFixed(2)
-  }
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return '-'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-function invoiceStatusLabel(status) {
-  switch (status) {
-    case 'draft':
-      return t('finance.invoice.status_draft')
-    case 'sent':
-      return t('finance.invoice.status_sent')
-    case 'paid':
-      return t('finance.invoice.status_paid')
-    case 'cancelled':
-      return t('finance.invoice.status_cancelled')
-    default:
-      return status || '-'
   }
 }
 
@@ -165,26 +134,26 @@ onUnmounted(() => {
         <dd class="mono">{{ invoice.club_id || '-' }}</dd>
 
         <dt>{{ t('finance.invoice.amount') }}</dt>
-        <dd>{{ formatAmount(invoice.total_amount, invoice.currency) }}</dd>
+        <dd>{{ formatFinanceAmount(invoice.total_amount, invoice.currency) }}</dd>
 
         <dt>{{ t('finance.invoice.status') }}</dt>
         <dd>
           <span :class="`status-badge status-badge--${invoice.status}`">
-            {{ invoiceStatusLabel(invoice.status) }}
+            {{ translateInvoiceStatus(invoice.status, t) }}
           </span>
         </dd>
 
         <dt>{{ t('finance.invoice.generated_at') }}</dt>
-        <dd>{{ formatDateTime(invoice.generated_at) }}</dd>
+        <dd>{{ formatFinanceDateTime(invoice.generated_at) }}</dd>
 
         <template v-if="invoice.sent_at">
           <dt>{{ t('finance.invoice.sent_at') }}</dt>
-          <dd>{{ formatDateTime(invoice.sent_at) }}</dd>
+          <dd>{{ formatFinanceDateTime(invoice.sent_at) }}</dd>
         </template>
 
         <template v-if="invoice.paid_at">
           <dt>{{ t('finance.invoice.paid_at') }}</dt>
-          <dd>{{ formatDateTime(invoice.paid_at) }}</dd>
+          <dd>{{ formatFinanceDateTime(invoice.paid_at) }}</dd>
         </template>
 
         <template v-if="invoice.paid_by">
@@ -232,7 +201,7 @@ onUnmounted(() => {
           <tbody>
             <tr v-for="entry in invoice.entries" :key="entry.entry_id">
               <td class="mono">{{ entry.entry_id }}</td>
-              <td>{{ formatAmount(entry.amount, invoice.currency) }}</td>
+              <td>{{ formatFinanceAmount(entry.amount, invoice.currency) }}</td>
             </tr>
           </tbody>
         </table>

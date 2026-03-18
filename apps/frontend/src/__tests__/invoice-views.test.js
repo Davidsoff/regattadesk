@@ -10,6 +10,7 @@ const REGATTA_ID = 'a0000000-0000-4000-8000-000000000001'
 const CLUB_ID = 'c0000000-0000-4000-8000-000000000003'
 const INVOICE_ID = 'd0000000-0000-4000-8000-000000000004'
 const ENTRY_ID = 'e0000000-0000-4000-8000-000000000005'
+const INVOICE_JOB_ID = 'f0000000-0000-4000-8000-000000000006'
 
 function createTestI18n() {
   return createI18n({
@@ -96,6 +97,66 @@ function buildInvoice(overrides = {}) {
   }
 }
 
+function mockNotFound() {
+  return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+}
+
+function installInvoiceListFetchMock({
+  listResponses,
+  generationResponse = { job_id: INVOICE_JOB_ID, status: 'pending' },
+  jobResponses = []
+}) {
+  let invoiceListCalls = 0
+  let jobStatusCalls = 0
+
+  globalThis.fetch.mockImplementation((request) => {
+    const url = request.url
+
+    if (url.endsWith(`/regattas/${REGATTA_ID}/invoices`) && request.method === 'GET') {
+      const response = listResponses[Math.min(invoiceListCalls, listResponses.length - 1)]
+      invoiceListCalls += 1
+      return Promise.resolve(response)
+    }
+
+    if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/generate`) && request.method === 'POST') {
+      return Promise.resolve(jsonResponse(202, generationResponse))
+    }
+
+    if (url.endsWith(`/invoices/jobs/${INVOICE_JOB_ID}`) && request.method === 'GET') {
+      const response = jobResponses[Math.min(jobStatusCalls, jobResponses.length - 1)]
+      jobStatusCalls += 1
+      return Promise.resolve(response)
+    }
+
+    return mockNotFound()
+  })
+
+  return {
+    getInvoiceListCalls: () => invoiceListCalls,
+    getJobStatusCalls: () => jobStatusCalls
+  }
+}
+
+function installInvoiceDetailFetchMock({ invoice = buildInvoice(), markPaidResponse } = {}) {
+  globalThis.fetch.mockImplementation((request) => {
+    const url = request.url
+
+    if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}`) && request.method === 'GET') {
+      return Promise.resolve(jsonResponse(200, invoice))
+    }
+
+    if (
+      markPaidResponse &&
+      url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}/mark_paid`) &&
+      request.method === 'POST'
+    ) {
+      return Promise.resolve(jsonResponse(200, markPaidResponse))
+    }
+
+    return mockNotFound()
+  })
+}
+
 async function mountInvoiceList() {
   const router = createRouter({
     history: createMemoryHistory(),
@@ -172,38 +233,20 @@ describe('invoice staff views', () => {
       pagination: { has_more: false, next_cursor: null }
     }
 
-    let invoiceListCalls = 0
-    let jobStatusCalls = 0
-
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices`) && request.method === 'GET') {
-        invoiceListCalls += 1
-        return Promise.resolve(jsonResponse(200, invoiceListCalls === 1 ? initialList : refreshedList))
-      }
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/generate`) && request.method === 'POST') {
-        return Promise.resolve(
-          jsonResponse(202, {
-            job_id: 'f0000000-0000-4000-8000-000000000006',
-            status: 'pending'
-          })
-        )
-      }
-
-      if (url.endsWith('/invoices/jobs/f0000000-0000-4000-8000-000000000006') && request.method === 'GET') {
-        jobStatusCalls += 1
-        return Promise.resolve(
-          jsonResponse(200, {
-            job_id: 'f0000000-0000-4000-8000-000000000006',
-            status: jobStatusCalls === 1 ? 'running' : 'completed',
-            invoice_ids: jobStatusCalls === 1 ? [] : [INVOICE_ID]
-          })
-        )
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    const fetchState = installInvoiceListFetchMock({
+      listResponses: [jsonResponse(200, initialList), jsonResponse(200, refreshedList)],
+      jobResponses: [
+        jsonResponse(200, {
+          job_id: INVOICE_JOB_ID,
+          status: 'running',
+          invoice_ids: []
+        }),
+        jsonResponse(200, {
+          job_id: INVOICE_JOB_ID,
+          status: 'completed',
+          invoice_ids: [INVOICE_ID]
+        })
+      ]
     })
 
     const { wrapper } = await mountInvoiceList()
@@ -218,7 +261,7 @@ describe('invoice staff views', () => {
     await vi.advanceTimersByTimeAsync(1000)
     await flushPromises()
 
-    expect(jobStatusCalls).toBe(2)
+    expect(fetchState.getJobStatusCalls()).toBe(2)
     expect(wrapper.text()).toContain('Invoice generation completed and the invoice list was refreshed.')
     expect(wrapper.text()).toContain('INV-2026-001')
     expect(wrapper.text()).toContain('Draft')
@@ -227,27 +270,9 @@ describe('invoice staff views', () => {
   it('shows a user-facing error when polling the invoice generation job fails', async () => {
     const initialList = { data: [], pagination: { has_more: false, next_cursor: null } }
 
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices`) && request.method === 'GET') {
-        return Promise.resolve(jsonResponse(200, initialList))
-      }
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/generate`) && request.method === 'POST') {
-        return Promise.resolve(
-          jsonResponse(202, {
-            job_id: 'f0000000-0000-4000-8000-000000000006',
-            status: 'pending'
-          })
-        )
-      }
-
-      if (url.endsWith('/invoices/jobs/f0000000-0000-4000-8000-000000000006') && request.method === 'GET') {
-        return Promise.resolve(jsonResponse(500, { message: 'Polling failed' }))
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    installInvoiceListFetchMock({
+      listResponses: [jsonResponse(200, initialList)],
+      jobResponses: [jsonResponse(500, { message: 'Polling failed' })]
     })
 
     const { wrapper } = await mountInvoiceList()
@@ -265,22 +290,8 @@ describe('invoice staff views', () => {
       pagination: { has_more: false, next_cursor: null }
     }
 
-    let invoiceListCalls = 0
-
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices`) && request.method === 'GET') {
-        invoiceListCalls += 1
-
-        if (invoiceListCalls === 1) {
-          return Promise.resolve(jsonResponse(200, invoiceList))
-        }
-
-        return Promise.resolve(jsonResponse(500, { message: 'Refresh failed' }))
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    const fetchState = installInvoiceListFetchMock({
+      listResponses: [jsonResponse(200, invoiceList), jsonResponse(500, { message: 'Refresh failed' })]
     })
 
     const { wrapper } = await mountInvoiceList()
@@ -290,6 +301,7 @@ describe('invoice staff views', () => {
     await wrapper.find('button.secondary').trigger('click')
     await flushPromises()
 
+    expect(fetchState.getInvoiceListCalls()).toBe(2)
     expect(wrapper.text()).toContain('Refresh failed')
     expect(wrapper.text()).toContain('INV-2026-001')
   })
@@ -302,27 +314,12 @@ describe('invoice staff views', () => {
       }
     }
 
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}`) && request.method === 'GET') {
-        return Promise.resolve(jsonResponse(200, buildInvoice()))
-      }
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}/mark_paid`) && request.method === 'POST') {
-        return Promise.resolve(
-          jsonResponse(
-            200,
-            buildInvoice({
-              status: 'paid',
-              paid_at: '2026-03-18T08:30:00Z',
-              paid_by: 'Finance Staff'
-            })
-          )
-        )
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    installInvoiceDetailFetchMock({
+      markPaidResponse: buildInvoice({
+        status: 'paid',
+        paid_at: '2026-03-18T08:30:00Z',
+        paid_by: 'Finance Staff'
+      })
     })
 
     const { wrapper } = await mountInvoiceDetail()
@@ -340,15 +337,7 @@ describe('invoice staff views', () => {
   })
 
   it('blocks mark-paid submission when no signed-in staff identity is available', async () => {
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}`) && request.method === 'GET') {
-        return Promise.resolve(jsonResponse(200, buildInvoice()))
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
-    })
+    installInvoiceDetailFetchMock()
 
     const { wrapper } = await mountInvoiceDetail()
 
@@ -361,27 +350,12 @@ describe('invoice staff views', () => {
   })
 
   it('refreshes the paid-by actor when auth state appears after mount', async () => {
-    globalThis.fetch.mockImplementation((request) => {
-      const url = request.url
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}`) && request.method === 'GET') {
-        return Promise.resolve(jsonResponse(200, buildInvoice()))
-      }
-
-      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}/mark_paid`) && request.method === 'POST') {
-        return Promise.resolve(
-          jsonResponse(
-            200,
-            buildInvoice({
-              status: 'paid',
-              paid_at: '2026-03-18T08:30:00Z',
-              paid_by: 'Late Login User'
-            })
-          )
-        )
-      }
-
-      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    installInvoiceDetailFetchMock({
+      markPaidResponse: buildInvoice({
+        status: 'paid',
+        paid_at: '2026-03-18T08:30:00Z',
+        paid_by: 'Late Login User'
+      })
     })
 
     const { wrapper } = await mountInvoiceDetail()

@@ -3,7 +3,13 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
-import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
+import {
+  SUCCESS_MESSAGE_DURATION_MS,
+  formatFinanceAmount,
+  formatFinanceDateTime,
+  translateInvoiceStatus,
+  validateRouteParam
+} from './financeViewShared'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,44 +59,6 @@ async function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
-}
-
-function formatAmount(amount, currency = 'EUR') {
-  if (typeof amount !== 'number') {
-    return '-'
-  }
-
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency
-    }).format(amount)
-  } catch {
-    return amount.toFixed(2)
-  }
-}
-
-function formatDateTime(value) {
-  if (!value) {
-    return '-'
-  }
-
-  return new Date(value).toLocaleString()
-}
-
-function invoiceStatusLabel(status) {
-  switch (status) {
-    case 'draft':
-      return t('finance.invoice.status_draft')
-    case 'sent':
-      return t('finance.invoice.status_sent')
-    case 'paid':
-      return t('finance.invoice.status_paid')
-    case 'cancelled':
-      return t('finance.invoice.status_cancelled')
-    default:
-      return status || '-'
-  }
 }
 
 async function loadInvoices({ background = false } = {}) {
@@ -283,13 +251,13 @@ onUnmounted(() => {
           <td>{{ invoice.invoice_number || '-' }}</td>
           <td class="mono">{{ invoice.id }}</td>
           <td class="mono">{{ invoice.club_id || '-' }}</td>
-          <td>{{ formatAmount(invoice.total_amount, invoice.currency) }}</td>
+          <td>{{ formatFinanceAmount(invoice.total_amount, invoice.currency) }}</td>
           <td>
             <span :class="`status-badge status-badge--${invoice.status}`">
-              {{ invoiceStatusLabel(invoice.status) }}
+              {{ translateInvoiceStatus(invoice.status, t) }}
             </span>
           </td>
-          <td>{{ formatDateTime(invoice.generated_at) }}</td>
+          <td>{{ formatFinanceDateTime(invoice.generated_at) }}</td>
           <td>
             <button class="link-button" @click="viewInvoice(invoice.id)">
               {{ t('finance.invoice.view_details') }}

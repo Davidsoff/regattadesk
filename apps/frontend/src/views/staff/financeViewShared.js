@@ -33,3 +33,41 @@ export function resolveStaffAuditActor() {
   const actor = candidates.find((candidate) => typeof candidate === 'string' && candidate.trim().length > 0)
   return actor?.trim() || ''
 }
+
+export function formatFinanceAmount(amount, currency = 'EUR') {
+  if (typeof amount !== 'number') {
+    return '-'
+  }
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency
+    }).format(amount)
+  } catch {
+    return amount.toFixed(2)
+  }
+}
+
+export function formatFinanceDateTime(value) {
+  if (!value) {
+    return '-'
+  }
+
+  return new Date(value).toLocaleString()
+}
+
+export function translateInvoiceStatus(status, t) {
+  switch (status) {
+    case 'draft':
+      return t('finance.invoice.status_draft')
+    case 'sent':
+      return t('finance.invoice.status_sent')
+    case 'paid':
+      return t('finance.invoice.status_paid')
+    case 'cancelled':
+      return t('finance.invoice.status_cancelled')
+    default:
+      return status || '-'
+  }
+}
