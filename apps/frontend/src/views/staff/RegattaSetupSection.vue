@@ -29,7 +29,7 @@ const filters = ref({
 
 function normalizeNullable(value) {
   const normalized = String(value ?? '').trim()
-  return normalized ? normalized : null
+  return normalized || null
 }
 
 function toInteger(value) {
