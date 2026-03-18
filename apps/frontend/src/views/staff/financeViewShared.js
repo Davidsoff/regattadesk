@@ -12,3 +12,24 @@ export function validateRouteParam(param, name) {
 
   return value
 }
+
+export function resolveStaffAuditActor() {
+  const user = globalThis.__REGATTADESK_AUTH__?.user
+
+  if (!user || typeof user !== 'object') {
+    return ''
+  }
+
+  const candidates = [
+    user.displayName,
+    user.name,
+    user.preferred_username,
+    user.username,
+    user.email,
+    user.sub,
+    user.id
+  ]
+
+  const actor = candidates.find((candidate) => typeof candidate === 'string' && candidate.trim().length > 0)
+  return actor?.trim() || ''
+}
