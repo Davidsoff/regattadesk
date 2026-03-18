@@ -224,6 +224,41 @@ describe('invoice staff views', () => {
     expect(wrapper.text()).toContain('Draft')
   })
 
+  it('shows a user-facing error when polling the invoice generation job fails', async () => {
+    const initialList = { data: [], pagination: { has_more: false, next_cursor: null } }
+
+    globalThis.fetch.mockImplementation((request) => {
+      const url = request.url
+
+      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices`) && request.method === 'GET') {
+        return Promise.resolve(jsonResponse(200, initialList))
+      }
+
+      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/generate`) && request.method === 'POST') {
+        return Promise.resolve(
+          jsonResponse(202, {
+            job_id: 'f0000000-0000-4000-8000-000000000006',
+            status: 'pending'
+          })
+        )
+      }
+
+      if (url.endsWith('/invoices/jobs/f0000000-0000-4000-8000-000000000006') && request.method === 'GET') {
+        return Promise.resolve(jsonResponse(500, { message: 'Polling failed' }))
+      }
+
+      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    })
+
+    const { wrapper } = await mountInvoiceList()
+
+    await wrapper.find('button.primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Polling failed')
+    expect(wrapper.find('button.primary').attributes('disabled')).toBeUndefined()
+  })
+
   it('keeps existing invoice rows visible when an explicit refresh fails', async () => {
     const invoiceList = {
       data: [buildInvoice()],
@@ -323,5 +358,53 @@ describe('invoice staff views', () => {
       'A signed-in staff identity is required to record who marked this invoice as paid.'
     )
     expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes the paid-by actor when auth state appears after mount', async () => {
+    globalThis.fetch.mockImplementation((request) => {
+      const url = request.url
+
+      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}`) && request.method === 'GET') {
+        return Promise.resolve(jsonResponse(200, buildInvoice()))
+      }
+
+      if (url.endsWith(`/regattas/${REGATTA_ID}/invoices/${INVOICE_ID}/mark_paid`) && request.method === 'POST') {
+        return Promise.resolve(
+          jsonResponse(
+            200,
+            buildInvoice({
+              status: 'paid',
+              paid_at: '2026-03-18T08:30:00Z',
+              paid_by: 'Late Login User'
+            })
+          )
+        )
+      }
+
+      return Promise.resolve(jsonResponse(404, { message: 'Not found' }))
+    })
+
+    const { wrapper } = await mountInvoiceDetail()
+
+    expect(wrapper.find('input[disabled]').element.value).toBe('Signed-in staff identity unavailable')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined()
+
+    globalThis.__REGATTADESK_AUTH__ = {
+      user: {
+        name: 'Late Login User'
+      }
+    }
+
+    globalThis.dispatchEvent(new Event('focus'))
+    await flushPromises()
+
+    expect(wrapper.find('input[disabled]').element.value).toBe('Late Login User')
+    expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeUndefined()
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    const request = getRequestAt(globalThis.fetch, 1)
+    expect(await request.json()).toEqual({ paid_by: 'Late Login User' })
   })
 })

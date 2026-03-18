@@ -138,9 +138,34 @@ async function pollGenerationJob(jobId) {
 
     if (attempt > 0) {
       await sleep(INVOICE_GENERATION_POLL_INTERVAL_MS)
+
+      if (isUnmounted) {
+        return generationJob.value
+      }
     }
 
-    const job = await financeApi.getInvoiceGenerationJob(regattaId, jobId)
+    let job
+
+    try {
+      job = await financeApi.getInvoiceGenerationJob(regattaId, jobId)
+    } catch (err) {
+      const failedJob = {
+        job_id: jobId,
+        status: 'failed',
+        error_message: err.message || t('finance.invoice.generate_error')
+      }
+
+      if (!isUnmounted) {
+        generationJob.value = failedJob
+      }
+
+      return failedJob
+    }
+
+    if (isUnmounted) {
+      return generationJob.value
+    }
+
     generationJob.value = job
 
     if (job.status === 'completed' || job.status === 'failed') {

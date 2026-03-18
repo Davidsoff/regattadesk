@@ -22,8 +22,18 @@ const markError = ref(null)
 const markSuccess = ref(false)
 
 const paymentReference = ref('')
-const auditActor = resolveStaffAuditActor()
+const auditActor = ref('')
 let successMessageTimeoutId = null
+
+function syncAuditActor() {
+  auditActor.value = resolveStaffAuditActor()
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    syncAuditActor()
+  }
+}
 
 function formatAmount(amount, currency = 'EUR') {
   if (typeof amount !== 'number') {
@@ -95,7 +105,9 @@ async function markAsPaid() {
     return
   }
 
-  if (!auditActor) {
+  syncAuditActor()
+
+  if (!auditActor.value) {
     markError.value = t('finance.invoice.actor_required')
     return
   }
@@ -105,7 +117,7 @@ async function markAsPaid() {
   markSuccess.value = false
   try {
     const payload = {
-      paid_by: auditActor,
+      paid_by: auditActor.value,
       payment_reference: paymentReference.value.trim() || undefined
     }
     invoice.value = await financeApi.markInvoicePaid(regattaId, invoiceId, payload)
@@ -122,10 +134,15 @@ async function markAsPaid() {
 }
 
 onMounted(() => {
+  syncAuditActor()
+  globalThis.addEventListener?.('focus', syncAuditActor)
+  document.addEventListener?.('visibilitychange', handleVisibilityChange)
   loadInvoice()
 })
 
 onUnmounted(() => {
+  globalThis.removeEventListener?.('focus', syncAuditActor)
+  document.removeEventListener?.('visibilitychange', handleVisibilityChange)
   clearSuccessMessageTimeout()
 })
 </script>
