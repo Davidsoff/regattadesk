@@ -39,6 +39,38 @@ describe('useOfflineSync basic sync', () => {
     vi.unstubAllGlobals();
   });
 
+  it('forwards custom headers on queued operations', async () => {
+    const mockFetch = createMockFetch([
+      { ok: true, json: async () => ({ ok: true }) },
+    ]);
+    vi.stubGlobal('fetch', mockFetch);
+
+    const { useOfflineSync } = await importFreshUseOfflineSync();
+    const { syncQueue } = useOfflineSync();
+
+    await syncQueue([
+      {
+        id: 1,
+        endpoint: '/api/v1/regattas/regatta-1/operator/markers',
+        method: 'POST',
+        data: { frame_offset: 10 },
+        headers: {
+          'X-Operator-Token': 'token-1',
+        },
+        timestamp: Date.now(),
+      },
+    ]);
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/regattas/regatta-1/operator/markers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Operator-Token': 'token-1',
+      },
+      body: JSON.stringify({ frame_offset: 10 }),
+    });
+  });
+
   it('syncs queued operations on reconnect', async () => {
     const mockFetch = createMockFetch([
       { ok: true, json: async () => ({ id: 1, status: 'created' }) },

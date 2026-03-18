@@ -339,8 +339,7 @@ describe('finance', () => {
       const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
       const mockResponse = {
         job_id: 'job-456',
-        status: 'accepted',
-        message: 'Invoice generation job accepted'
+        status: 'pending'
       }
 
       mockClient.post.mockResolvedValue(mockResponse)
@@ -350,6 +349,47 @@ describe('finance', () => {
       expect(mockClient.post).toHaveBeenCalledWith(
         `/regattas/${regattaId}/invoices/generate`,
         {}
+      )
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('supports generation filters and idempotency keys', async () => {
+      const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
+      const payload = {
+        club_ids: ['81a4c9ea-2e7d-4e67-8c0e-4657d8ce26fd'],
+        idempotency_key: 'invoice-job-31'
+      }
+
+      mockClient.post.mockResolvedValue({
+        job_id: 'job-789',
+        status: 'pending'
+      })
+
+      await api.generateInvoices(regattaId, payload)
+
+      expect(mockClient.post).toHaveBeenCalledWith(
+        `/regattas/${regattaId}/invoices/generate`,
+        payload
+      )
+    })
+  })
+
+  describe('getInvoiceGenerationJob', () => {
+    it('calls correct endpoint with job ID', async () => {
+      const regattaId = 'f3cf2a08-91e0-469d-a851-41a6f3d0e3dc'
+      const jobId = 'job-456'
+      const mockResponse = {
+        job_id: jobId,
+        status: 'completed',
+        invoice_ids: ['inv-1']
+      }
+
+      mockClient.get.mockResolvedValue(mockResponse)
+
+      const result = await api.getInvoiceGenerationJob(regattaId, jobId)
+
+      expect(mockClient.get).toHaveBeenCalledWith(
+        `/regattas/${regattaId}/invoices/jobs/${jobId}`
       )
       expect(result).toEqual(mockResponse)
     })

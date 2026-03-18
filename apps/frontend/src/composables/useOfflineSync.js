@@ -97,6 +97,7 @@ async function parseResponseBody(response) {
 function buildRequestHeaders(operation) {
   const headers = {
     'Content-Type': 'application/json',
+    ...(operation.headers ?? {}),
   };
 
   if (operation.clientVersion) {
@@ -166,13 +167,20 @@ async function buildSyncResponse(validatedOperation, response) {
 
   if (response.status === 409) {
     const conflictData = await parseResponseBody(response)
+    const normalizedConflict = conflictData?.error && typeof conflictData.error === 'object'
+      ? conflictData.error
+      : conflictData
+
     return {
       success: false,
       conflict: true,
       status: 409,
-      serverVersion: conflictData?.serverVersion,
-      serverData: conflictData?.serverData,
-      serverTimestamp: conflictData?.serverTimestamp,
+      conflictCode: normalizedConflict?.code,
+      conflictMessage: normalizedConflict?.message,
+      conflictDetails: normalizedConflict?.details,
+      serverVersion: conflictData?.serverVersion ?? normalizedConflict?.serverVersion,
+      serverData: conflictData?.serverData ?? normalizedConflict?.serverData,
+      serverTimestamp: conflictData?.serverTimestamp ?? normalizedConflict?.serverTimestamp,
       clientData: validatedOperation.data,
       operation: validatedOperation,
     }
@@ -232,9 +240,32 @@ async function handleConflict(operation, conflictResult) {
       const clientTime = operation.timestamp;
       const serverTime = conflictResult.serverTimestamp;
 
-      if (clientTime > serverTime) {
+      if (
+        Number.isFinite(clientTime) &&
+        Number.isFinite(serverTime) &&
+        clientTime > serverTime &&
+        operation.supportsForceOverride !== false
+      ) {
         // Client is newer, force update
         return forceUpdateOperation(operation);
+      }
+
+      if (!Number.isFinite(serverTime) || operation.supportsForceOverride === false) {
+        return {
+          success: false,
+          conflict: true,
+          requiresManualResolution: true,
+          clientData: conflictResult.clientData,
+          serverData: conflictResult.serverData,
+          conflictCode: conflictResult.conflictCode,
+          conflictMessage: conflictResult.conflictMessage,
+          operation: conflictResult.operation,
+          policy: 'last-write-wins',
+          limitation:
+            operation.supportsForceOverride === false
+              ? 'backend-no-force-override'
+              : 'missing-server-timestamp',
+        };
       }
 
       // Server is newer, discard client changes
@@ -264,7 +295,10 @@ async function handleConflict(operation, conflictResult) {
         requiresManualResolution: true,
         clientData: conflictResult.clientData,
         serverData: conflictResult.serverData,
+        conflictCode: conflictResult.conflictCode,
+        conflictMessage: conflictResult.conflictMessage,
         operation: conflictResult.operation,
+        policy: strategy,
       };
     }
   }
