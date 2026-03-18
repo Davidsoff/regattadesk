@@ -1,9 +1,15 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
-import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
+import {
+  SUCCESS_MESSAGE_DURATION_MS,
+  formatFinanceAmount,
+  formatFinanceDateTime,
+  translateInvoiceStatus,
+  validateRouteParam
+} from './financeViewShared'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,20 +17,36 @@ const { t } = useI18n()
 const apiClient = createApiClient()
 const financeApi = createFinanceApi(apiClient)
 
-const INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS = 6
-const INVOICE_GENERATION_REFRESH_INTERVAL_MS = 1000
+const INVOICE_GENERATION_MAX_POLL_ATTEMPTS = 6
+const INVOICE_GENERATION_POLL_INTERVAL_MS = 1000
 
 const regattaId = validateRouteParam(route.params.regattaId, 'regattaId')
 const hasValidRouteParams = Boolean(regattaId)
 
 const invoices = ref([])
 const loading = ref(true)
+const refreshing = ref(false)
 const error = ref(null)
+const refreshError = ref(null)
 const generating = ref(false)
 const generateError = ref(null)
-const generateSuccess = ref(false)
+const generateSuccess = ref('')
+const generationJob = ref(null)
 let successMessageTimeoutId = null
 let isUnmounted = false
+
+const generationStatusMessage = computed(() => {
+  switch (generationJob.value?.status) {
+    case 'pending':
+      return t('finance.invoice.generate_pending')
+    case 'running':
+      return t('finance.invoice.generate_running')
+    case 'completed':
+      return t('finance.invoice.generate_completed')
+    default:
+      return ''
+  }
+})
 
 function clearSuccessMessageTimeout() {
   if (successMessageTimeoutId !== null) {
@@ -39,23 +61,87 @@ async function sleep(ms) {
   })
 }
 
-async function loadInvoices() {
+async function loadInvoices({ background = false } = {}) {
   if (!hasValidRouteParams) {
     error.value = t('finance.invalid_route_params')
     loading.value = false
     return
   }
 
-  loading.value = true
-  error.value = null
+  const preserveContent = background || invoices.value.length > 0
+
+  if (preserveContent) {
+    refreshing.value = true
+  } else {
+    loading.value = true
+    error.value = null
+  }
+
+  refreshError.value = null
   try {
     const result = await financeApi.listInvoices(regattaId)
     invoices.value = result.data || []
+    return true
   } catch (err) {
-    error.value = err.message || t('common.error')
+    const message = err.message || t('common.error')
+
+    if (preserveContent) {
+      refreshError.value = message
+      return false
+    }
+
+    error.value = message
+    return false
   } finally {
     loading.value = false
+    refreshing.value = false
   }
+}
+
+async function pollGenerationJob(jobId) {
+  for (let attempt = 0; attempt < INVOICE_GENERATION_MAX_POLL_ATTEMPTS; attempt += 1) {
+    if (isUnmounted) {
+      return generationJob.value
+    }
+
+    if (attempt > 0) {
+      await sleep(INVOICE_GENERATION_POLL_INTERVAL_MS)
+
+      if (isUnmounted) {
+        return generationJob.value
+      }
+    }
+
+    let job
+
+    try {
+      job = await financeApi.getInvoiceGenerationJob(regattaId, jobId)
+    } catch (err) {
+      const failedJob = {
+        job_id: jobId,
+        status: 'failed',
+        error_message: err.message || t('finance.invoice.generate_error')
+      }
+
+      if (!isUnmounted) {
+        generationJob.value = failedJob
+      }
+
+      return failedJob
+    }
+
+    if (isUnmounted) {
+      return generationJob.value
+    }
+
+    generationJob.value = job
+
+    if (job.status === 'completed' || job.status === 'failed') {
+      return job
+    }
+  }
+
+  return generationJob.value
 }
 
 async function generateInvoices() {
@@ -66,37 +152,42 @@ async function generateInvoices() {
 
   generating.value = true
   generateError.value = null
-  generateSuccess.value = false
+  generateSuccess.value = ''
+  generationJob.value = null
   try {
-    const previousInvoiceCount = invoices.value.length
-    await financeApi.generateInvoices(regattaId)
-    generateSuccess.value = true
-    clearSuccessMessageTimeout()
-    successMessageTimeoutId = setTimeout(() => {
-      generateSuccess.value = false
-    }, SUCCESS_MESSAGE_DURATION_MS)
+    const acceptedJob = await financeApi.generateInvoices(regattaId, {})
+    generationJob.value = acceptedJob
 
-    // We do not have a generation job-status endpoint yet, so we use bounded polling.
-    for (let attempt = 0; attempt < INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS; attempt += 1) {
-      if (isUnmounted) {
-        return
-      }
+    const finalJob =
+      acceptedJob?.job_id && acceptedJob.status !== 'completed' && acceptedJob.status !== 'failed'
+        ? await pollGenerationJob(acceptedJob.job_id)
+        : acceptedJob
 
-      await loadInvoices()
-
-      if (invoices.value.length > previousInvoiceCount) {
-        break
-      }
-
-      if (attempt < INVOICE_GENERATION_MAX_REFRESH_ATTEMPTS - 1) {
-        await sleep(INVOICE_GENERATION_REFRESH_INTERVAL_MS)
-      }
+    if (finalJob?.status === 'failed') {
+      generateError.value = finalJob.error_message || t('finance.invoice.generate_error')
+      return
     }
+
+    if (finalJob?.status === 'completed') {
+      await loadInvoices({ background: invoices.value.length > 0 })
+      generateSuccess.value = t('finance.invoice.generate_success')
+      clearSuccessMessageTimeout()
+      successMessageTimeoutId = setTimeout(() => {
+        generateSuccess.value = ''
+      }, SUCCESS_MESSAGE_DURATION_MS)
+      return
+    }
+
+    generateSuccess.value = t('finance.invoice.generate_pending')
   } catch (err) {
     generateError.value = err.message || t('finance.invoice.generate_error')
   } finally {
     generating.value = false
   }
+}
+
+async function refreshInvoices() {
+  await loadInvoices({ background: invoices.value.length > 0 })
 }
 
 function viewInvoice(invoiceId) {
@@ -119,14 +210,26 @@ onUnmounted(() => {
 <template>
   <div class="invoice-list">
     <div class="header">
-      <h2>{{ t('finance.invoice.list_title') }}</h2>
-      <button class="primary" :disabled="generating" @click="generateInvoices">
-        {{ generating ? t('finance.bulk.submitting') : t('finance.invoice.generate') }}
-      </button>
+      <div>
+        <h2>{{ t('finance.invoice.list_title') }}</h2>
+        <p class="subtle">{{ t('finance.invoice.list_description') }}</p>
+      </div>
+      <div class="actions">
+        <button class="secondary" :disabled="loading || refreshing || generating" @click="refreshInvoices">
+          {{ refreshing ? t('common.loading') : t('finance.invoice.refresh') }}
+        </button>
+        <button class="primary" :disabled="generating || refreshing" @click="generateInvoices">
+          {{ generating ? t('finance.bulk.submitting') : t('finance.invoice.generate') }}
+        </button>
+      </div>
     </div>
 
     <div v-if="generateError" class="error" role="alert">{{ generateError }}</div>
-    <output v-if="generateSuccess" class="success" aria-live="polite">{{ t('finance.invoice.generate_success') }}</output>
+    <div v-else-if="refreshError" class="warning" role="status">{{ refreshError }}</div>
+    <output v-if="generateSuccess" class="success" aria-live="polite">{{ generateSuccess }}</output>
+    <p v-if="generationStatusMessage && !generateSuccess" class="info" aria-live="polite">
+      {{ generationStatusMessage }}
+    </p>
 
     <div v-if="loading" class="loading">{{ t('finance.invoice.loading') }}</div>
     <div v-else-if="error" class="error" role="alert">{{ error }}</div>
@@ -134,27 +237,29 @@ onUnmounted(() => {
     <table v-else class="invoices-table">
       <thead>
         <tr>
+          <th>{{ t('finance.invoice.invoice_number') }}</th>
           <th>{{ t('finance.invoice.invoice_id') }}</th>
-          <th>{{ t('finance.invoice.club_name') }}</th>
+          <th>{{ t('finance.invoice.club_id') }}</th>
           <th>{{ t('finance.invoice.amount') }}</th>
           <th>{{ t('finance.invoice.status') }}</th>
-          <th>{{ t('finance.invoice.created_at') }}</th>
+          <th>{{ t('finance.invoice.generated_at') }}</th>
           <th>{{ t('common.open') }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="invoice in invoices" :key="invoice.invoice_id">
-          <td class="mono">{{ invoice.invoice_id }}</td>
-          <td>{{ invoice.club_name || '-' }}</td>
-          <td>{{ invoice.amount?.toFixed(2) || '-' }}</td>
+        <tr v-for="invoice in invoices" :key="invoice.id">
+          <td>{{ invoice.invoice_number || '-' }}</td>
+          <td class="mono">{{ invoice.id }}</td>
+          <td class="mono">{{ invoice.club_id || '-' }}</td>
+          <td>{{ formatFinanceAmount(invoice.total_amount, invoice.currency) }}</td>
           <td>
             <span :class="`status-badge status-badge--${invoice.status}`">
-              {{ invoice.status === 'paid' ? t('finance.invoice.status_paid') : t('finance.invoice.status_unpaid') }}
+              {{ translateInvoiceStatus(invoice.status, t) }}
             </span>
           </td>
-          <td>{{ invoice.created_at ? new Date(invoice.created_at).toLocaleDateString() : '-' }}</td>
+          <td>{{ formatFinanceDateTime(invoice.generated_at) }}</td>
           <td>
-            <button class="link-button" @click="viewInvoice(invoice.invoice_id)">
+            <button class="link-button" @click="viewInvoice(invoice.id)">
               {{ t('finance.invoice.view_details') }}
             </button>
           </td>
@@ -177,12 +282,24 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
 h2 {
   margin: 0;
   color: var(--rd-text);
+}
+
+.subtle {
+  margin: 0.25rem 0 0;
+  color: var(--rd-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .primary {
@@ -195,12 +312,25 @@ h2 {
   color: var(--rd-bg);
 }
 
-.primary:disabled {
+.secondary {
+  font: inherit;
+  border: 1px solid var(--rd-border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  background: var(--rd-bg);
+  color: var(--rd-text);
+}
+
+.primary:disabled,
+.secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.error {
+.error,
+.warning,
+.info {
   margin-bottom: 1rem;
 }
 

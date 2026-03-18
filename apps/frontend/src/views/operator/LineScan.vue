@@ -4,12 +4,16 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, createApiClient, createOperatorApi } from '../../api'
 import LineScanCapture from '../../components/operator/LineScanCapture.vue'
+import { useOfflineQueue } from '../../composables/useOfflineQueue'
 import { resolveOperatorDeviceId, resolveOperatorStation, resolveOperatorToken } from '../../operatorContext'
 import { setSelectedCaptureSessionId } from '../../operatorSessionSelection'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+// Offline queue state
+const { queueSize } = useOfflineQueue()
 
 const handoff = ref(null)
 const handoffPin = ref('')
@@ -42,6 +46,23 @@ const captureSessionId = computed(() =>
 )
 const showCaptureWorkspace = ref(false)
 const isCaptureWorkspaceVisible = computed(() => showCaptureWorkspace.value || Boolean(captureSessionId.value))
+const queueSummary = ref({
+  queuedCount: 0,
+  failedCount: 0,
+  conflictCount: 0
+})
+
+const hasQueueAttention = computed(() => {
+  return queueSummary.value.failedCount > 0 || queueSummary.value.conflictCount > 0
+})
+
+function handleQueueStateChange(summary) {
+  queueSummary.value = {
+    queuedCount: Number(summary?.queuedCount) || 0,
+    failedCount: Number(summary?.failedCount) || 0,
+    conflictCount: Number(summary?.conflictCount) || 0
+  }
+}
 
 function applyAccessModeFromResponse(response) {
   // Server may return an explicit new_device_mode (e.g. after completing a handoff).
@@ -286,19 +307,43 @@ watch(
     <p v-if="handoffErrorMessage" class="handoff-error">{{ handoffErrorMessage }}</p>
 
     <div class="line-scan-actions">
-      <button type="button" data-testid="line-scan-capture" :disabled="isCaptureDisabled">
-        Capture frame
+      <button
+        type="button"
+        data-testid="line-scan-capture"
+        @click="toggleCaptureWorkspace"
+        :disabled="!operatorToken || isCaptureDisabled"
+      >
+        {{ isCaptureWorkspaceVisible ? 'Hide' : 'Open' }} Evidence Workspace
       </button>
+      <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
+      <span v-if="captureSessionId" class="operator-session-state">Session {{ captureSessionId }}</span>
+    </div>
+
+    <div class="line-scan-actions">
       <button
         type="button"
         data-testid="toggle-capture-workspace"
         @click="toggleCaptureWorkspace"
         :disabled="!operatorToken"
       >
-        {{ isCaptureWorkspaceVisible ? 'Hide' : 'Show' }} Capture Workspace
+        {{ isCaptureWorkspaceVisible ? 'Hide' : 'Show' }} Workspace Details
       </button>
-      <span v-if="operatorToken" class="operator-token-state">Operator token active</span>
-      <span v-if="captureSessionId" class="operator-session-state">Session {{ captureSessionId }}</span>
+    </div>
+
+    <!-- Offline queue indicator -->
+    <div
+      v-if="queueSize > 0 || hasQueueAttention"
+      data-testid="offline-queue-indicator"
+      class="offline-queue-indicator"
+      :class="{ 'offline-queue-indicator--attention': hasQueueAttention }"
+    >
+      <span>{{ t('operator.line_scan.queued_operations', { count: queueSize }) }}</span>
+      <span v-if="queueSummary.conflictCount > 0" class="offline-queue-meta">
+        {{ queueSummary.conflictCount }} conflict{{ queueSummary.conflictCount === 1 ? '' : 's' }}
+      </span>
+      <span v-if="queueSummary.failedCount > 0" class="offline-queue-meta">
+        {{ queueSummary.failedCount }} failed
+      </span>
     </div>
 
     <!-- Capture Workspace -->
@@ -306,6 +351,7 @@ watch(
       v-if="isCaptureWorkspaceVisible && operatorToken && captureSessionId"
       :capture-session-id="captureSessionId"
       :regatta-id="route.params.regattaId"
+      @queue-state-change="handleQueueStateChange"
     />
   </div>
 </template>
@@ -357,5 +403,25 @@ watch(
   display: flex;
   gap: var(--rd-space-2);
   align-items: center;
+}
+
+.offline-queue-indicator {
+  margin-top: var(--rd-space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rd-space-2);
+  padding: var(--rd-space-2);
+  border: 1px solid var(--rd-color-warning, #e1b100);
+  background: var(--rd-color-warning-soft, #fff7d1);
+  font-size: 0.875rem;
+}
+
+.offline-queue-indicator--attention {
+  border-color: #b30000;
+  background: #ffebee;
+}
+
+.offline-queue-meta {
+  font-weight: 600;
 }
 </style>

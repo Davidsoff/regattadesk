@@ -199,7 +199,7 @@ onMounted(() => {
         <div class="panel-header">
           <h3>{{ t('finance.home.invoices_heading') }}</h3>
         </div>
-        <p>{{ t('finance.invoice.no_invoices') }}</p>
+        <p>{{ t('finance.home.invoices_description') }}</p>
         <button class="nav-button" @click="navigateToInvoices">
           {{ t('finance.navigation.invoices') }}
         </button>

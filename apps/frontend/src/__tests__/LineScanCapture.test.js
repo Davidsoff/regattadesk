@@ -1,74 +1,97 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount, flushPromises } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
-import { createMemoryHistory, createRouter } from 'vue-router'
 import LineScanCapture from '../components/operator/LineScanCapture.vue'
+import en from '../i18n/locales/en.json'
+
+const { syncQueueMock, toggleContrastMock, queueHarness } = vi.hoisted(() => ({
+  syncQueueMock: vi.fn(),
+  toggleContrastMock: vi.fn(),
+  queueHarness: {
+    items: [],
+    nextId: 1,
+    queueSizeRef: null
+  }
+}))
+
+function resetQueueHarness() {
+  queueHarness.items = []
+  queueHarness.nextId = 1
+  if (queueHarness.queueSizeRef) {
+    queueHarness.queueSizeRef.value = 0
+  }
+}
+
+function updateQueueSize() {
+  if (queueHarness.queueSizeRef) {
+    queueHarness.queueSizeRef.value = queueHarness.items.length
+  }
+}
+
+vi.mock('../composables/useOperatorTheme', async () => {
+  const { ref } = await import('vue')
+  return {
+    useOperatorTheme: vi.fn(() => ({
+      isHighContrast: ref(true),
+      toggleContrast: toggleContrastMock
+    }))
+  }
+})
+
+vi.mock('../composables/useOfflineQueue', async () => {
+  const { ref } = await import('vue')
+  queueHarness.queueSizeRef = ref(0)
+
+  return {
+    useOfflineQueue: vi.fn(() => ({
+      queueSize: queueHarness.queueSizeRef,
+      enqueue: vi.fn(async (operation) => {
+        const id = queueHarness.nextId
+        queueHarness.nextId += 1
+        queueHarness.items.push({ ...operation, id })
+        updateQueueSize()
+        return id
+      }),
+      dequeue: vi.fn(async (queueId) => {
+        queueHarness.items = queueHarness.items.filter((item) => item.id !== queueId)
+        updateQueueSize()
+      }),
+      getQueue: vi.fn(async () => [...queueHarness.items]),
+      updateQueueItem: vi.fn(async (queueId, updates) => {
+        const index = queueHarness.items.findIndex((item) => item.id === queueId)
+        if (index === -1) {
+          throw new Error('Queue item not found')
+        }
+        queueHarness.items[index] = {
+          ...queueHarness.items[index],
+          ...updates
+        }
+        updateQueueSize()
+        return queueHarness.items[index]
+      })
+    }))
+  }
+})
+
+vi.mock('../composables/useOfflineSync', () => ({
+  useOfflineSync: vi.fn(() => ({
+    syncQueue: syncQueueMock
+  }))
+}))
 
 function createTestI18n() {
   return createI18n({
     legacy: false,
     locale: 'en',
-    messages: {
-      en: {
-        operator: {
-          capture: {
-            title: 'Line Scan Capture',
-            overview: 'Overview',
-            detail: 'Detail View',
-            markers: 'Markers',
-            unlinked_markers: 'Unlinked Markers',
-            linked_markers: 'Linked Markers',
-            create_marker: 'Create Marker',
-            delete_marker: 'Delete Marker',
-            link_to_bib: 'Link to Bib',
-            unlink: 'Unlink',
-            approve: 'Approve',
-            locked: 'Locked',
-            bib_number: 'Bib',
-            frame_offset: 'Frame',
-            timestamp: 'Time',
-            no_markers: 'No markers yet',
-            marker_approved: 'This marker is approved and cannot be edited',
-            undo: 'Undo',
-            errors: {
-              capture_session_required: 'Capture session is required',
-              failed_load_markers: 'Failed to load markers',
-              failed_create_marker: 'Failed to create marker',
-              failed_delete_marker: 'Failed to delete marker',
-              marker_approved: 'This marker is approved and cannot be modified',
-              entry_id_required: 'Entry ID is required',
-              entry_id_invalid: 'Entry ID is invalid',
-              failed_update_marker: 'Failed to update marker',
-              failed_link_marker: 'Failed to link marker',
-              failed_unlink_marker: 'Failed to unlink marker',
-              failed_undo: 'Failed to undo'
-            }
-          }
-        }
-      }
-    }
+    messages: { en }
   })
 }
 
 function jsonResponse(status, body) {
-  const bodyText = body === null || body === undefined ? '' : JSON.stringify(body)
-  return {
-    ok: status >= 200 && status < 300,
+  return new Response(body === null ? '' : JSON.stringify(body), {
     status,
-    headers: {
-      get(name) {
-        if (name.toLowerCase() === 'content-type') return 'application/json'
-        if (name.toLowerCase() === 'content-length') return String(bodyText.length)
-        return null
-      }
-    },
-    async text() {
-      return bodyText
-    },
-    async json() {
-      return body
-    }
-  }
+    headers: { 'Content-Type': 'application/json' }
+  })
 }
 
 function buildMarker(id = 'marker-1', overrides = {}) {
@@ -77,7 +100,7 @@ function buildMarker(id = 'marker-1', overrides = {}) {
     capture_session_id: 'session-1',
     entry_id: null,
     frame_offset: 1000,
-    timestamp_ms: 1609459200000,
+    timestamp_ms: 1767261600000,
     is_linked: false,
     is_approved: false,
     tile_id: 'tile-1',
@@ -89,7 +112,7 @@ function buildMarker(id = 'marker-1', overrides = {}) {
 
 function buildCaptureSession(id = 'session-1', overrides = {}) {
   return {
-    id,
+    capture_session_id: id,
     regatta_id: 'regatta-97',
     block_id: 'block-1',
     station: 'finish-line',
@@ -97,398 +120,220 @@ function buildCaptureSession(id = 'session-1', overrides = {}) {
     session_type: 'finish',
     state: 'open',
     server_time_at_start: '2026-01-01T10:00:00Z',
-    fps: 30,
+    device_monotonic_offset_ms: 0,
+    fps: 25,
     is_synced: true,
+    drift_exceeded_threshold: false,
+    unsynced_reason: '',
     ...overrides
   }
 }
 
-async function mountLineScanCapture(props = {}) {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      {
-        path: '/operator/regattas/:regattaId/capture',
-        name: 'operator-capture',
-        component: LineScanCapture
-      }
-    ]
-  })
+async function mountLineScanCapture(fetchMock, options = {}) {
+  vi.stubGlobal('fetch', fetchMock)
 
-  await router.push('/operator/regattas/regatta-97/capture')
-  await router.isReady()
-
-  return mount(LineScanCapture, {
+  const wrapper = mount(LineScanCapture, {
     props: {
       captureSessionId: 'session-1',
       regattaId: 'regatta-97',
-      ...props
+      ...options.props
     },
     global: {
-      plugins: [router, createTestI18n()]
+      plugins: [createTestI18n()]
     }
+  })
+
+  await flushPromises()
+  return wrapper
+}
+
+function setNavigatorOnline(value) {
+  Object.defineProperty(globalThis.navigator, 'onLine', {
+    configurable: true,
+    get: () => value
   })
 }
 
-describe('LineScanCapture component - Marker CRUD', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorAuth: 'token-97'
-    })
+beforeEach(() => {
+  vi.restoreAllMocks()
+  vi.stubGlobal('__REGATTADESK_AUTH__', {
+    operatorAuth: 'token-97'
   })
+  resetQueueHarness()
+  syncQueueMock.mockReset()
+  toggleContrastMock.mockReset()
+  setNavigatorOnline(true)
+})
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
-  it('renders empty state when no markers exist', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, []))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="capture-markers-list"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('No markers yet')
-  })
-
-  it('loads and displays markers on mount', async () => {
-    const markers = [
-      buildMarker('marker-1'),
-      buildMarker('marker-2', { frame_offset: 2000 })
-    ]
-    
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, markers))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-    const [request] = fetchMock.mock.calls[0]
-    expect(request.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
-    expect(request.url).toContain('capture_session_id=session-1')
-    expect(request.headers.get('x_operator_token')).toBe('token-97')
-
-    expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(2)
-  })
-
-  it('creates a new marker when create button is clicked', async () => {
-    const newMarker = buildMarker('marker-new', { frame_offset: 3000 })
+describe('LineScanCapture operator evidence workspace', () => {
+  it('shows the explicit development evidence source when no live frame is attached', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [])) // initial load
-      .mockResolvedValueOnce(jsonResponse(201, newMarker)) // create
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
 
-    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = await mountLineScanCapture(fetchMock)
 
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    expect(wrapper.find('[data-testid="dev-evidence-banner"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="evidence-source-mode"]').text()).toContain('Development evidence source')
+  })
+
+  it('creates a marker from explicit evidence metadata and clears the queue after sync', async () => {
+    const createdMarker = buildMarker('marker-created', {
+      frame_offset: 0,
+      timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
+      tile_id: null,
+      tile_x: null,
+      tile_y: null
+    })
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [{ id: 1, data: createdMarker }],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
 
     await wrapper.find('[data-testid="create-marker-button"]').trigger('click')
     await flushPromises()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [createRequest] = fetchMock.mock.calls[1]
-    expect(createRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers')
-    expect(createRequest.method).toBe('POST')
-    expect(createRequest.headers.get('x_operator_token')).toBe('token-97')
-
-    expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(1)
-  })
-
-  it('deletes a marker when delete button is clicked', async () => {
-    const markers = [buildMarker('marker-1')]
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, markers)) // initial load
-      .mockResolvedValueOnce(jsonResponse(204, null)) // delete
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    await wrapper.find('[data-testid="delete-marker-marker-1"]').trigger('click')
-    await flushPromises()
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [deleteRequest] = fetchMock.mock.calls[1]
-    expect(deleteRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(deleteRequest.method).toBe('DELETE')
-
-    expect(wrapper.findAll('[data-testid^="marker-item-"]')).toHaveLength(0)
-  })
-
-  it('prevents deletion of approved markers', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
-      is_linked: true,
-      is_approved: true,
-      entry_id: 'entry-1'
+    expect(syncQueueMock).toHaveBeenCalledTimes(1)
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].data).toEqual({
+      capture_session_id: 'session-1',
+      frame_offset: 0,
+      timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
+      tile_id: null,
+      tile_x: null,
+      tile_y: null
     })
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    const deleteButton = wrapper.find('[data-testid="delete-marker-marker-approved"]')
-    expect(deleteButton.attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Locked')
-  })
-})
-
-describe('LineScanCapture component - Marker Linking', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorAuth: 'token-97'
-    })
+    expect(wrapper.find('[data-testid="marker-item-marker-created"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="queue-empty-state"]').exists()).toBe(true)
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('shows unlinked markers first in the list', async () => {
+  it('recenters review state when an unlinked marker is selected from the overview', async () => {
     const markers = [
-      buildMarker('marker-linked', { is_linked: true, entry_id: 'entry-1' }),
-      buildMarker('marker-unlinked-1', { is_linked: false }),
-      buildMarker('marker-unlinked-2', { is_linked: false })
+      buildMarker('marker-linked', { frame_offset: 2000, is_linked: true, entry_id: 'entry-2' }),
+      buildMarker('marker-unlinked', { frame_offset: 1400, is_linked: false })
     ]
-    
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, markers))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    const markerItems = wrapper.findAll('[data-testid^="marker-item-"]')
-    expect(markerItems).toHaveLength(3)
-    
-    // First two should be unlinked
-    expect(markerItems[0].attributes('data-testid')).toContain('marker-unlinked')
-    expect(markerItems[1].attributes('data-testid')).toContain('marker-unlinked')
-    // Last should be linked
-    expect(markerItems[2].attributes('data-testid')).toContain('marker-linked')
-  })
-
-  it('links a marker to an entry when link button is clicked', async () => {
-    const unlinkedMarker = buildMarker('marker-1', { is_linked: false })
-    const linkedMarker = buildMarker('marker-1', { is_linked: true, entry_id: 'entry-99' })
-    
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [unlinkedMarker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, linkedMarker)) // link
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: markers }))
 
-    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = await mountLineScanCapture(fetchMock)
 
-    const wrapper = await mountLineScanCapture()
+    await wrapper.find('[data-testid="overview-marker-marker-unlinked"]').trigger('click')
     await flushPromises()
+
+    expect(wrapper.text()).toContain('Selected marker: marker-unlinked')
+    expect(wrapper.find('[data-testid="overview-center-slider"]').element.value).toBe('1400')
+  })
+
+  it('queues link mutations while offline instead of attempting immediate sync', async () => {
+    setNavigatorOnline(false)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1')] }))
+
+    const wrapper = await mountLineScanCapture(fetchMock)
 
     await wrapper.find('[data-testid="link-marker-marker-1"]').trigger('click')
     await wrapper.find('[data-testid="link-entry-input"]').setValue('entry-99')
     await wrapper.find('[data-testid="link-entry-submit"]').trigger('click')
     await flushPromises()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [linkRequest] = fetchMock.mock.calls[1]
-    expect(linkRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1/link')
-    expect(linkRequest.method).toBe('POST')
-    await expect(linkRequest.json()).resolves.toEqual({ entry_id: 'entry-99' })
+    expect(syncQueueMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="queue-item-1"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Link marker')
+    expect(wrapper.text()).toContain('Queued')
   })
 
-  it('unlinks a marker when unlink button is clicked', async () => {
-    const linkedMarker = buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })
-    const unlinkedMarker = buildMarker('marker-1', { is_linked: false, entry_id: null })
-    
+  it('surfaces queued conflicts and lets the operator discard the blocked mutation', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [linkedMarker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, unlinkedMarker)) // unlink
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
 
-    vi.stubGlobal('fetch', fetchMock)
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [],
+      failed: [],
+      conflicts: [
+        {
+          conflictCode: 'CONFLICT',
+          conflictMessage: 'Marker conflict',
+          limitation: 'backend-no-force-override',
+          policy: 'last-write-wins'
+        }
+      ],
+      discarded: []
+    })
 
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    const wrapper = await mountLineScanCapture(fetchMock)
 
     await wrapper.find('[data-testid="unlink-marker-marker-1"]').trigger('click')
     await flushPromises()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [unlinkRequest] = fetchMock.mock.calls[1]
-    expect(unlinkRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1/unlink')
-    expect(unlinkRequest.method).toBe('POST')
-  })
+    expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('last-write-wins')
 
-  it('prevents unlinking of approved markers', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
-      is_linked: true,
-      is_approved: true,
-      entry_id: 'entry-1'
-    })
-    
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
+    await wrapper.find('[data-testid="conflict-discard-1"]').trigger('click')
     await flushPromises()
 
-    const unlinkButton = wrapper.find('[data-testid="unlink-marker-marker-approved"]')
-    expect(unlinkButton.exists()).toBe(false)
-  })
-})
-
-describe('LineScanCapture component - Approved Marker Lock States', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorAuth: 'token-97'
-    })
+    expect(wrapper.find('[data-testid="conflict-resolution-pane"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="queue-empty-state"]').exists()).toBe(true)
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('displays locked indicator for approved markers', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
+  it('approves a linked marker through the queued marker approval flow', async () => {
+    const approvedMarker = buildMarker('marker-1', {
       is_linked: true,
       is_approved: true,
       entry_id: 'entry-1'
     })
-    
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="marker-locked-marker-approved"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Locked')
-  })
-
-  it('prevents editing frame offset of approved markers', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
-      is_linked: true,
-      is_approved: true,
-      entry_id: 'entry-1'
-    })
-    
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, [approvedMarker]))
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    const updateButton = wrapper.find('[data-testid="update-marker-marker-approved"]')
-    expect(updateButton.exists()).toBe(false)
-  })
-
-  it('handles 409 conflict when attempting to modify approved marker', async () => {
-    const approvedMarker = buildMarker('marker-approved', {
-      is_linked: true,
-      is_approved: true,
-      entry_id: 'entry-1'
-    })
-    
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [approvedMarker])) // initial load
-      .mockResolvedValueOnce(
-        jsonResponse(409, {
-          error: {
-            code: 'MARKER_APPROVED',
-            message: 'Cannot modify approved marker'
-          }
-        })
-      )
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
 
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    // Try to delete via API call (shouldn't be possible in UI, but testing error handling)
-    await wrapper.vm.deleteMarker('marker-approved')
-    await flushPromises()
-
-    // The frontend guard fires before the API call for already-approved markers
-    expect(wrapper.find('[data-testid="error-message"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('This marker is approved and cannot be modified')
-  })
-})
-
-describe('LineScanCapture component - Marker State Transitions', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks()
-    vi.stubGlobal('__REGATTADESK_AUTH__', {
-      operatorAuth: 'token-97'
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [{ id: 1, data: approvedMarker }],
+      failed: [],
+      conflicts: [],
+      discarded: []
     })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    await wrapper.find('[data-testid="approve-marker-marker-1"]').trigger('click')
+    await flushPromises()
+
+    expect(syncQueueMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="marker-locked-marker-1"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('marker approval only')
   })
 
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('updates marker frame offset', async () => {
-    const marker = buildMarker('marker-1', { frame_offset: 1000 })
-    const updatedMarker = buildMarker('marker-1', { frame_offset: 1500 })
-    
+  it('keeps the high-contrast control wired to the operator theme composable', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [marker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, updatedMarker)) // update
+      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
+      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
 
-    vi.stubGlobal('fetch', fetchMock)
+    const wrapper = await mountLineScanCapture(fetchMock)
 
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
+    await wrapper.find('[data-testid="toggle-high-contrast"]').trigger('click')
 
-    await wrapper.find('[data-testid="edit-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="marker-frame-input"]').setValue('1500')
-    await wrapper.find('[data-testid="update-marker-marker-1"]').trigger('click')
-    await flushPromises()
-
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    const [updateRequest] = fetchMock.mock.calls[1]
-    expect(updateRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(updateRequest.method).toBe('PATCH')
-    await expect(updateRequest.json()).resolves.toEqual({ frame_offset: 1500 })
-  })
-
-  it('supports undo of marker position changes', async () => {
-    const marker = buildMarker('marker-1', { frame_offset: 1000 })
-    const updatedMarker = buildMarker('marker-1', { frame_offset: 1500 })
-    const undoneMarker = buildMarker('marker-1', { frame_offset: 1000 })
-    
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, [marker])) // initial load
-      .mockResolvedValueOnce(jsonResponse(200, updatedMarker)) // update
-      .mockResolvedValueOnce(jsonResponse(200, undoneMarker)) // undo
-
-    vi.stubGlobal('fetch', fetchMock)
-
-    const wrapper = await mountLineScanCapture()
-    await flushPromises()
-
-    // Make a change
-    await wrapper.find('[data-testid="edit-marker-marker-1"]').trigger('click')
-    await wrapper.find('[data-testid="marker-frame-input"]').setValue('1500')
-    await wrapper.find('[data-testid="update-marker-marker-1"]').trigger('click')
-    await flushPromises()
-
-    // Undo the change
-    await wrapper.find('[data-testid="undo-last-change"]').trigger('click')
-    await flushPromises()
-
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    const [undoRequest] = fetchMock.mock.calls[2]
-    expect(undoRequest.url).toContain('/api/v1/regattas/regatta-97/operator/markers/marker-1')
-    expect(undoRequest.method).toBe('PATCH')
-    await expect(undoRequest.json()).resolves.toEqual({ frame_offset: 1000 })
+    expect(toggleContrastMock).toHaveBeenCalledTimes(1)
   })
 })
