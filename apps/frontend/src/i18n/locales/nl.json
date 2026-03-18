@@ -1,11 +1,11 @@
 {
   "common": {
     "save": "Opslaan",
+    "search": "Zoeken",
     "cancel": "Annuleren",
     "delete": "Verwijderen",
     "edit": "Bewerken",
     "confirm": "Bevestigen",
-    "search": "Zoeken",
     "yes": "Ja",
     "no": "Nee",
     "loading": "Laden...",
@@ -26,8 +26,7 @@
     "withdrawn_after_draw": "Afgemeld na loting"
   },
   "entry": {
-    "crew": "Ploeg",
-    "status": "Status"
+    "crew": "Ploeg"
   },
   "print": {
     "generated": "Gegenereerd",
@@ -301,54 +300,14 @@
     },
     "regatta_detail": {
       "sections": {
-        "events": "Nummers",
-        "athletes": "Atleten",
-        "crews": "Ploegen",
-        "entries": "Inschrijvingen",
         "export": "Export"
       },
       "form": {
-        "eventGroup": "Nummergroep",
-        "selectPlaceholder": "Selecteer",
-        "groupA": "Groep A",
-        "name": "Naam",
-        "crewName": "Ploegnaam",
-        "allStatuses": "Alle",
-        "athlete": "Atleet",
-        "saveEntry": "Inschrijving opslaan"
+        "selectPlaceholder": "Selecteer"
       },
       "export": {
         "export_printables": "Printbare bestanden exporteren",
         "export_printables_aria": "Start asynchrone exporttaak voor printbare documenten"
-      },
-      "events": {
-        "open2x": "Open 2x"
-      },
-      "athletes": {
-        "row1": "Atleet 1"
-      },
-      "crews": {
-        "row1": "Ploeg 1"
-      },
-      "withdraw": {
-        "open": "Inschrijving afmelden",
-        "confirmTitle": "Bevestig destructieve actie",
-        "reason": "Reden",
-        "auditActor": "actor: staff.user",
-        "auditTimestamp": "timestamp: 2026-02-27T00:00:00Z",
-        "conflict": "conflict: deze inschrijving is gewijzigd sinds je laatste keer ophalen",
-        "reload": "Opnieuw laden",
-        "alreadyBeforeDraw": "Al afgemeld voor loting",
-        "setEntered": "Zet op ingeschreven",
-        "invalidTransition": "Ongeldige overgang"
-      },
-      "table": {
-        "event": "Nummer",
-        "action": "Actie",
-        "athlete": "Atleet",
-        "crew": "Ploeg",
-        "currentAction": "Huidige actie",
-        "nextAction": "Volgende actie"
       }
     },
     "printables": {
@@ -536,10 +495,6 @@
     }
   },
   "validation": {
-    "entry": {
-      "crewRequired": "Ploeg is verplicht",
-      "athleteRequired": "Atleet is verplicht"
-    },
     "ruleset": {
       "nameRequired": "Naam is verplicht",
       "versionRequired": "Versie is verplicht",
