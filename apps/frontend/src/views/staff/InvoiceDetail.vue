@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createApiClient, createFinanceApi } from '../../api'
-import { SUCCESS_MESSAGE_DURATION_MS, validateRouteParam } from './financeViewShared'
+import { SUCCESS_MESSAGE_DURATION_MS, resolveStaffAuditActor, validateRouteParam } from './financeViewShared'
 
 const route = useRoute()
 const { t } = useI18n()
@@ -22,7 +22,46 @@ const markError = ref(null)
 const markSuccess = ref(false)
 
 const paymentReference = ref('')
+const auditActor = resolveStaffAuditActor()
 let successMessageTimeoutId = null
+
+function formatAmount(amount, currency = 'EUR') {
+  if (typeof amount !== 'number') {
+    return '-'
+  }
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency
+    }).format(amount)
+  } catch {
+    return amount.toFixed(2)
+  }
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return '-'
+  }
+
+  return new Date(value).toLocaleString()
+}
+
+function invoiceStatusLabel(status) {
+  switch (status) {
+    case 'draft':
+      return t('finance.invoice.status_draft')
+    case 'sent':
+      return t('finance.invoice.status_sent')
+    case 'paid':
+      return t('finance.invoice.status_paid')
+    case 'cancelled':
+      return t('finance.invoice.status_cancelled')
+    default:
+      return status || '-'
+  }
+}
 
 function clearSuccessMessageTimeout() {
   if (successMessageTimeoutId !== null) {
@@ -56,11 +95,17 @@ async function markAsPaid() {
     return
   }
 
+  if (!auditActor) {
+    markError.value = t('finance.invoice.actor_required')
+    return
+  }
+
   marking.value = true
   markError.value = null
   markSuccess.value = false
   try {
     const payload = {
+      paid_by: auditActor,
       payment_reference: paymentReference.value.trim() || undefined
     }
     invoice.value = await financeApi.markInvoicePaid(regattaId, invoiceId, payload)
@@ -93,28 +138,41 @@ onUnmounted(() => {
     <div v-else-if="error" class="error" role="alert">{{ error }}</div>
     <div v-else-if="invoice" class="content">
       <dl class="invoice-info">
-        <dt>{{ t('finance.invoice.invoice_id') }}</dt>
-        <dd class="mono">{{ invoiceId }}</dd>
+        <dt>{{ t('finance.invoice.invoice_number') }}</dt>
+        <dd>{{ invoice.invoice_number || '-' }}</dd>
 
-        <dt>{{ t('finance.invoice.club_name') }}</dt>
-        <dd>{{ invoice.club_name || '-' }}</dd>
+        <dt>{{ t('finance.invoice.invoice_id') }}</dt>
+        <dd class="mono">{{ invoice.id || invoiceId }}</dd>
+
+        <dt>{{ t('finance.invoice.club_id') }}</dt>
+        <dd class="mono">{{ invoice.club_id || '-' }}</dd>
 
         <dt>{{ t('finance.invoice.amount') }}</dt>
-        <dd>{{ invoice.amount?.toFixed(2) || '-' }}</dd>
+        <dd>{{ formatAmount(invoice.total_amount, invoice.currency) }}</dd>
 
         <dt>{{ t('finance.invoice.status') }}</dt>
         <dd>
           <span :class="`status-badge status-badge--${invoice.status}`">
-            {{ invoice.status === 'paid' ? t('finance.invoice.status_paid') : t('finance.invoice.status_unpaid') }}
+            {{ invoiceStatusLabel(invoice.status) }}
           </span>
         </dd>
 
-        <dt>{{ t('finance.invoice.created_at') }}</dt>
-        <dd>{{ invoice.created_at ? new Date(invoice.created_at).toLocaleString() : '-' }}</dd>
+        <dt>{{ t('finance.invoice.generated_at') }}</dt>
+        <dd>{{ formatDateTime(invoice.generated_at) }}</dd>
+
+        <template v-if="invoice.sent_at">
+          <dt>{{ t('finance.invoice.sent_at') }}</dt>
+          <dd>{{ formatDateTime(invoice.sent_at) }}</dd>
+        </template>
 
         <template v-if="invoice.paid_at">
           <dt>{{ t('finance.invoice.paid_at') }}</dt>
-          <dd>{{ new Date(invoice.paid_at).toLocaleString() }}</dd>
+          <dd>{{ formatDateTime(invoice.paid_at) }}</dd>
+        </template>
+
+        <template v-if="invoice.paid_by">
+          <dt>{{ t('finance.invoice.paid_by') }}</dt>
+          <dd>{{ invoice.paid_by }}</dd>
         </template>
 
         <template v-if="invoice.payment_reference">
@@ -123,18 +181,24 @@ onUnmounted(() => {
         </template>
       </dl>
 
-      <form v-if="invoice.status === 'unpaid'" class="finance-form mark-paid-form" @submit.prevent="markAsPaid">
+      <form v-if="invoice.status !== 'paid' && invoice.status !== 'cancelled'" class="finance-form mark-paid-form" @submit.prevent="markAsPaid">
         <h3>{{ t('finance.invoice.mark_paid') }}</h3>
+
+        <label>
+          <span>{{ t('finance.invoice.paid_by') }}</span>
+          <input :value="auditActor || t('finance.invoice.actor_missing')" type="text" disabled />
+        </label>
 
         <label>
           <span>{{ t('finance.invoice.payment_reference') }}</span>
           <input v-model="paymentReference" type="text" :disabled="marking" />
         </label>
 
+        <div v-if="!auditActor" class="error" role="alert">{{ t('finance.invoice.actor_required') }}</div>
         <div v-if="markError" class="error" role="alert">{{ markError }}</div>
         <output v-if="markSuccess" class="success" aria-live="polite">{{ t('finance.invoice.mark_paid_success') }}</output>
 
-        <button type="submit" class="primary" :disabled="marking">
+        <button type="submit" class="primary" :disabled="marking || !auditActor">
           {{ marking ? t('finance.bulk.submitting') : t('finance.invoice.mark_paid') }}
         </button>
       </form>
@@ -145,15 +209,13 @@ onUnmounted(() => {
           <thead>
             <tr>
               <th>{{ t('finance.entry.entry_id') }}</th>
-              <th>{{ t('entry.crew') }}</th>
               <th>{{ t('finance.invoice.amount') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="entry in invoice.entries" :key="entry.entry_id">
               <td class="mono">{{ entry.entry_id }}</td>
-              <td>{{ entry.crew_name || '-' }}</td>
-              <td>{{ entry.amount?.toFixed(2) || '-' }}</td>
+              <td>{{ formatAmount(entry.amount, invoice.currency) }}</td>
             </tr>
           </tbody>
         </table>
@@ -194,6 +256,10 @@ onUnmounted(() => {
 
 .mark-paid-form {
   margin-bottom: 2rem;
+}
+
+.mark-paid-form input[disabled] {
+  background: var(--rd-surface);
 }
 
 .entries-section {

@@ -49,6 +49,7 @@ function createTestI18n() {
             clubs_heading: 'Clubs',
             bulk_heading: 'Bulk Update',
             invoices_heading: 'Invoices',
+            invoices_description: 'Generate, refresh, and review invoices for each club.',
             entry_empty: 'No matching entries',
             club_empty: 'No matching clubs',
             view_entry: 'Open entry',
@@ -208,6 +209,7 @@ describe('RegattaFinance', () => {
     expect(wrapper.text()).toContain('Entries')
     expect(wrapper.text()).toContain('Clubs')
     expect(wrapper.text()).toContain('Bulk Payment Status')
+    expect(wrapper.text()).toContain('Generate, refresh, and review invoices for each club.')
     expect(wrapper.text()).toContain('Crew One')
     expect(wrapper.text()).toContain('Finance Club')
     expect(wrapper.html()).toContain('/staff/regattas/f3cf2a08-91e0-469d-a851-41a6f3d0e3dc/finance/entries/7f7af3d8-9090-49d5-b21c-9cc12d35a0e6')
