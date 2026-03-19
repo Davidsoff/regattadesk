@@ -120,6 +120,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `docs/spe
   - Overflow pool is regatta-level and shared across all blocks; any block may borrow from it.
 - Timing: line-scan markers create/move/delete; link/unlink to bib; immutability after approval.
   - UI: overview strip plus draggable detail window for fine alignment at start/finish.
+  - UI: draggable overview navigation, keyboard arrow navigation, and a linked precision pane keep the selected marker and viewport synchronized.
   - Selecting an unlinked marker recenters the detail view on that marker.
   - Capture metadata: recording start time + fps; compute time from frame offset.
   - Recording start time sourced via device time sync at session start (server handshake/NTP); store server_time_at_start plus device monotonic offset.

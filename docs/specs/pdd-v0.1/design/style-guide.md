@@ -214,7 +214,8 @@ Purpose: very fast event selection for experienced users while remaining accessi
   - approved/immutable markers show a lock and disable destructive controls
 - Overview + detail:
   - overview strip with draggable detail window for fine alignment
-  - selecting an unlinked marker recenters the detail view
+  - overview drag, keyboard arrows, and the center slider all move the viewport consistently
+  - selecting an unlinked marker recenters the detail view and keeps the selected-marker context visible in the precision pane
 - Detail loupe:
   - draggable magnifier window
   - fixed zoom steps (don’t rely on pinch-only)

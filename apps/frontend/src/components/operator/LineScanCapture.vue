@@ -42,8 +42,10 @@ const queueItems = ref([])
 const isQueueSyncing = ref(false)
 const isOnline = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
 const stageElement = ref(null)
+const overviewElement = ref(null)
 const liveDragMarkerId = ref(null)
 const dragState = ref(null)
+const overviewDragState = ref(null)
 
 const { isHighContrast, toggleContrast } = useOperatorTheme()
 const { queueSize, enqueue, dequeue, getQueue, updateQueueItem } = useOfflineQueue()
@@ -172,6 +174,10 @@ function clampCursorTileY(tileY) {
   return Math.min(span.max_tile_y, Math.max(span.min_tile_y, Math.round(tileY)))
 }
 
+function setDetailCenterFrame(frameOffset) {
+  detailCenterFrame.value = clampFrameOffset(frameOffset)
+}
+
 function mergeMarkerSyncState(nextMarkers) {
   const syncStateById = new Map(markers.value.map((marker) => [marker.id, marker.local_sync_state ?? null]))
   return nextMarkers.map((marker) => {
@@ -207,10 +213,10 @@ async function loadWorkspace() {
     if (!selectedMarkerId.value && markers.value.length > 0) {
       const firstMarker = [...markers.value].sort((a, b) => a.frame_offset - b.frame_offset)[0]
       selectedMarkerId.value = firstMarker.id
-      detailCenterFrame.value = firstMarker.frame_offset
+      setDetailCenterFrame(firstMarker.frame_offset)
       cursorTileY.value = firstMarker.tile_y ?? defaultCursorTileY()
     } else if (!selectedMarkerId.value) {
-      detailCenterFrame.value = defaultCursorFrameOffset()
+      setDetailCenterFrame(defaultCursorFrameOffset())
       cursorTileY.value = defaultCursorTileY()
     }
   } catch (error) {
@@ -510,7 +516,7 @@ function removeMarker(markerId) {
 
 function selectMarker(marker) {
   selectedMarkerId.value = marker.id
-  detailCenterFrame.value = marker.frame_offset
+  setDetailCenterFrame(marker.frame_offset)
   cursorTileY.value = marker.tile_y ?? defaultCursorTileY()
 }
 
@@ -541,6 +547,22 @@ function detailWindowStyle() {
     width: `${Math.min(100, Math.max(8, widthPercent))}%`,
     left: `${Math.min(100, Math.max(0, leftPercent))}%`
   }
+}
+
+function overviewFrameFromPoint(clientX, span = frameBounds.value) {
+  const element = overviewElement.value
+  if (!element || span.max <= span.min) {
+    return null
+  }
+
+  const rect = element.getBoundingClientRect()
+  if (!rect.width) {
+    return null
+  }
+
+  const relativeX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+  const frameOffset = span.min + relativeX * (span.max - span.min)
+  return clampFrameOffset(frameOffset)
 }
 
 function describeQueueItem(item) {
@@ -780,7 +802,7 @@ async function createMarkerFromPlacement(placement) {
     return
   }
 
-  detailCenterFrame.value = placement.frameOffset
+  setDetailCenterFrame(placement.frameOffset)
   cursorTileY.value = placement.tileY ?? defaultCursorTileY()
   await createMarker()
 }
@@ -873,7 +895,7 @@ async function updateMarker(markerId) {
       undoStack.value.push({ markerId, oldFrameOffset })
       editingMarkerId.value = null
       editingFrameOffset.value = ''
-      detailCenterFrame.value = frameOffset
+      setDetailCenterFrame(frameOffset)
       cursorTileY.value = payload.tile_y ?? cursorTileY.value
     }
   )
@@ -916,7 +938,7 @@ async function updateMarkerFromPlacement(markerId, placement) {
         local_sync_state: 'queued'
       })
       undoStack.value.push({ markerId, oldFrameOffset: marker.frame_offset })
-      detailCenterFrame.value = placement.frameOffset
+      setDetailCenterFrame(placement.frameOffset)
       cursorTileY.value = placement.tileY ?? cursorTileY.value
     }
   )
@@ -1221,6 +1243,26 @@ function beginMarkerDrag(marker, event) {
   liveDragMarkerId.value = marker.id
 }
 
+function beginOverviewDrag(event) {
+  const dragBounds = {
+    min: frameBounds.value.min,
+    max: frameBounds.value.max
+  }
+  const frameOffset = overviewFrameFromPoint(event.clientX, dragBounds)
+  if (frameOffset === null) {
+    return
+  }
+
+  setDetailCenterFrame(frameOffset)
+  overviewDragState.value = {
+    pointerId: event.pointerId,
+    moved: false,
+    bounds: dragBounds
+  }
+
+  event.currentTarget?.setPointerCapture?.(event.pointerId)
+}
+
 function handleStagePointerDown(event) {
   if (dragState.value) {
     return
@@ -1231,8 +1273,16 @@ function handleStagePointerDown(event) {
     return
   }
 
-  detailCenterFrame.value = placement.frameOffset
+  setDetailCenterFrame(placement.frameOffset)
   cursorTileY.value = placement.tileY ?? defaultCursorTileY()
+}
+
+function handleOverviewPointerDown(event) {
+  if (overviewDragState.value) {
+    return
+  }
+
+  beginOverviewDrag(event)
 }
 
 async function handleStageClick(event) {
@@ -1269,13 +1319,13 @@ async function handleStageKeydown(event) {
 
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
-    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value - step)
+    setDetailCenterFrame(detailCenterFrame.value - step)
     return
   }
 
   if (event.key === 'ArrowRight') {
     event.preventDefault()
-    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value + step)
+    setDetailCenterFrame(detailCenterFrame.value + step)
     return
   }
 
@@ -1297,7 +1347,55 @@ async function handleStageKeydown(event) {
   }
 }
 
+async function handleOverviewKeydown(event) {
+  if (!hasRenderableEvidence.value) {
+    return
+  }
+
+  const step = event.shiftKey ? 5 : 1
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    setDetailCenterFrame(detailCenterFrame.value - step)
+    return
+  }
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    setDetailCenterFrame(detailCenterFrame.value + step)
+    return
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault()
+    setDetailCenterFrame(frameBounds.value.min)
+    return
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault()
+    setDetailCenterFrame(frameBounds.value.max)
+    return
+  }
+
+  if ((event.key === 'Enter' || event.key === ' ') && selectedMarker.value) {
+    event.preventDefault()
+    selectMarker(selectedMarker.value)
+  }
+}
+
 async function handleWindowPointerMove(event) {
+  if (overviewDragState.value && overviewDragState.value.pointerId === event.pointerId) {
+    const frameOffset = overviewFrameFromPoint(event.clientX, overviewDragState.value.bounds)
+    if (frameOffset === null) {
+      return
+    }
+
+    overviewDragState.value.moved = true
+    setDetailCenterFrame(frameOffset)
+    return
+  }
+
   if (!dragState.value) {
     return
   }
@@ -1323,11 +1421,16 @@ async function handleWindowPointerMove(event) {
     tile_x: placement.tileX,
     tile_y: placement.tileY
   })
-  detailCenterFrame.value = placement.frameOffset
+  setDetailCenterFrame(placement.frameOffset)
   cursorTileY.value = placement.tileY ?? cursorTileY.value
 }
 
 async function handleWindowPointerUp(event) {
+  if (overviewDragState.value && overviewDragState.value.pointerId === event.pointerId) {
+    overviewDragState.value = null
+    return
+  }
+
   if (!dragState.value) {
     return
   }
@@ -1576,8 +1679,27 @@ defineExpose({
           </button>
         </div>
 
-        <div data-testid="overview-strip" class="overview-strip">
-          <div class="overview-window" :style="detailWindowStyle()"></div>
+        <p id="overview-strip-hint" class="sr-only">
+          {{ t('operator.capture.overview_navigation_hint') }}
+        </p>
+
+        <div
+          data-testid="overview-strip"
+          class="overview-strip"
+          ref="overviewElement"
+          role="region"
+          tabindex="0"
+          :aria-label="t('operator.capture.overview_strip')"
+          :aria-describedby="'overview-strip-hint'"
+          @pointerdown="handleOverviewPointerDown"
+          @keydown="handleOverviewKeydown"
+        >
+          <div
+            class="overview-window"
+            :style="detailWindowStyle()"
+            aria-hidden="true"
+            @pointerdown.stop.prevent="beginOverviewDrag"
+          ></div>
           <button
             v-for="marker in sortedMarkers"
             :key="`overview-${marker.id}`"
@@ -1590,6 +1712,7 @@ defineExpose({
             }"
             :style="markerPositionStyle(marker)"
             :data-testid="`overview-marker-${marker.id}`"
+            @pointerdown.stop
             @click="selectMarker(marker)"
           >
             <span class="sr-only">{{ t('operator.capture.review_marker') }}</span>
@@ -1603,14 +1726,14 @@ defineExpose({
         </div>
 
         <label class="overview-slider">
-          <span>{{ t('operator.capture.detail_window') }}: {{ detailCenterFrame }}</span>
+          <span>{{ t('operator.capture.viewport_center') }}: {{ detailCenterFrame }}</span>
           <input
             type="range"
             data-testid="overview-center-slider"
             :min="frameBounds.min"
             :max="frameBounds.max"
             :value="detailCenterFrame"
-            @input="detailCenterFrame = Number($event.target.value)"
+            @input="setDetailCenterFrame(Number($event.target.value))"
           />
         </label>
 
@@ -1664,32 +1787,101 @@ defineExpose({
     <section class="workspace-grid workspace-grid--bottom">
       <div class="workspace-panel detail-panel">
         <div class="panel-header">
-          <h3>{{ t('operator.capture.detail_window') }}</h3>
-          <span v-if="selectedMarker">{{ t('operator.capture.selected_marker') }}: {{ selectedMarker.id }}</span>
+          <h3>{{ t('operator.capture.precision_pane') }}</h3>
+          <button
+            type="button"
+            data-testid="precision-center-selected"
+            class="secondary-button"
+            @click="selectedMarker && selectMarker(selectedMarker)"
+            :disabled="!selectedMarker"
+          >
+            {{ t('operator.capture.center_selected_viewport') }}
+          </button>
         </div>
 
-        <div data-testid="detail-window" class="detail-window">
-          <div v-if="visibleMarkers.length === 0" class="empty-state">
-            {{ t('operator.capture.no_visible_markers') }}
+        <div data-testid="precision-pane" class="precision-pane">
+          <div class="precision-summary">
+            <strong>{{ t('operator.capture.selected_marker') }}</strong>
+            <span>{{ selectedMarker ? selectedMarker.id : t('operator.capture.none_selected') }}</span>
+            <span>{{ t('operator.capture.viewport_center') }}: {{ detailCenterFrame }}</span>
+            <span>{{ t('operator.capture.viewport_width') }}: {{ detailWindowSize }}</span>
+            <span v-if="currentEvidence">{{ t('operator.capture.current_frame') }}: {{ currentEvidence.frameOffset }}</span>
+            <span v-if="currentEvidence">{{ t('operator.capture.derived_time') }}: {{ formatTimestamp(currentEvidence.timestampMs) }}</span>
+            <span v-if="currentEvidence">{{ t('operator.capture.current_tile') }}: {{ currentEvidence.tileId || '—' }}</span>
           </div>
 
-          <button
-            v-for="marker in visibleMarkers"
-            :key="`detail-${marker.id}`"
-            type="button"
-            class="detail-marker"
-            :class="{
-              'detail-marker--selected': marker.id === selectedMarkerId,
-              'detail-marker--linked': marker.is_linked,
-              'detail-marker--approved': marker.is_approved
-            }"
-            :data-testid="`detail-marker-${marker.id}`"
-            @click="selectMarker(marker)"
+          <div class="precision-actions">
+            <button
+              type="button"
+              data-testid="precision-capture-button"
+              class="secondary-button"
+              @click="createMarker"
+              :disabled="!canCreateMarker"
+            >
+              {{ t('operator.capture.capture_precision_frame') }}
+            </button>
+
+            <button
+              v-if="selectedMarker && !selectedMarker.is_approved"
+              type="button"
+              data-testid="precision-edit-selected"
+              class="secondary-button"
+              @click="startEditing(selectedMarker.id)"
+            >
+              {{ t('operator.capture.edit_selected_marker') }}
+            </button>
+          </div>
+
+          <div
+            v-if="selectedMarker && editingMarkerId === selectedMarker.id && !selectedMarker.is_approved"
+            class="precision-editor"
           >
-            <strong>{{ marker.frame_offset }}</strong>
-            <span>{{ formatTimestamp(marker.timestamp_ms) }}</span>
-            <span v-if="marker.entry_id">{{ t('operator.capture.bib_number') }} {{ marker.entry_id }}</span>
-          </button>
+            <label>
+              <span>{{ t('operator.capture.frame_offset') }}</span>
+              <input
+                type="number"
+                data-testid="precision-marker-frame-input"
+                v-model="editingFrameOffset"
+                min="0"
+              />
+            </label>
+            <div class="precision-editor__actions">
+              <button
+                type="button"
+                data-testid="precision-update-selected"
+                @click="updateMarker(selectedMarker.id)"
+              >
+                {{ t('operator.capture.save_precision_change') }}
+              </button>
+              <button type="button" @click="editingMarkerId = null">
+                {{ t('operator.capture.cancel') }}
+              </button>
+            </div>
+          </div>
+
+          <div data-testid="detail-window" class="detail-window">
+            <div v-if="visibleMarkers.length === 0" class="empty-state">
+              {{ t('operator.capture.no_visible_markers') }}
+            </div>
+
+            <button
+              v-for="marker in visibleMarkers"
+              :key="`detail-${marker.id}`"
+              type="button"
+              class="detail-marker"
+              :class="{
+                'detail-marker--selected': marker.id === selectedMarkerId,
+                'detail-marker--linked': marker.is_linked,
+                'detail-marker--approved': marker.is_approved
+              }"
+              :data-testid="`detail-marker-${marker.id}`"
+              @click="selectMarker(marker)"
+            >
+              <strong>{{ marker.frame_offset }}</strong>
+              <span>{{ formatTimestamp(marker.timestamp_ms) }}</span>
+              <span v-if="marker.entry_id">{{ t('operator.capture.bib_number') }} {{ marker.entry_id }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1780,30 +1972,13 @@ defineExpose({
         </div>
 
         <div class="marker-actions">
-          <div v-if="editingMarkerId === marker.id" class="edit-controls">
-            <input
-              type="number"
-              data-testid="marker-frame-input"
-              v-model="editingFrameOffset"
-              min="0"
-            />
-            <button
-              type="button"
-              :data-testid="`update-marker-${marker.id}`"
-              @click="updateMarker(marker.id)"
-            >
-              Save
-            </button>
-            <button type="button" @click="editingMarkerId = null">Cancel</button>
-          </div>
-
           <button
-            v-else-if="!marker.is_approved"
+            v-if="!marker.is_approved"
             type="button"
             :data-testid="`edit-marker-${marker.id}`"
             @click="startEditing(marker.id)"
           >
-            Edit
+            {{ t('operator.capture.edit_selected_marker') }}
           </button>
 
           <div v-if="linkingMarkerId === marker.id" class="link-controls">
@@ -2107,6 +2282,18 @@ defineExpose({
   background:
     linear-gradient(90deg, rgba(9, 53, 92, 0.1), rgba(9, 53, 92, 0.2)),
     repeating-linear-gradient(90deg, transparent, transparent 24px, rgba(9, 53, 92, 0.08) 24px, rgba(9, 53, 92, 0.08) 25px);
+  cursor: grab;
+  touch-action: none;
+}
+
+.overview-strip:focus-visible,
+.overview-window:focus-visible,
+.detail-marker:focus-visible,
+.precision-actions button:focus-visible,
+.precision-editor button:focus-visible,
+.precision-editor input:focus-visible {
+  outline: 3px solid #09355c;
+  outline-offset: 2px;
 }
 
 .overview-window {
@@ -2116,6 +2303,7 @@ defineExpose({
   border: 2px solid #09355c;
   border-radius: 999px;
   background: rgba(9, 53, 92, 0.12);
+  cursor: grab;
 }
 
 .overview-marker,
@@ -2161,6 +2349,46 @@ defineExpose({
 .detail-window {
   display: grid;
   gap: var(--rd-space-2, 0.5rem);
+}
+
+.precision-pane {
+  display: grid;
+  gap: var(--rd-space-3, 1rem);
+}
+
+.precision-summary {
+  display: grid;
+  gap: 0.35rem;
+  padding: var(--rd-space-2, 0.5rem);
+  border: 1px solid var(--rd-color-border, #ccc);
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, rgba(9, 53, 92, 0.05), rgba(9, 53, 92, 0.01));
+}
+
+.precision-actions,
+.precision-editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.precision-editor {
+  display: grid;
+  gap: 0.75rem;
+  padding: var(--rd-space-2, 0.5rem);
+  border: 1px solid rgba(9, 53, 92, 0.2);
+  border-radius: 0.75rem;
+  background: #f7fbff;
+}
+
+.precision-editor label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.precision-editor input {
+  max-width: 12rem;
 }
 
 .detail-marker {

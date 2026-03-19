@@ -224,6 +224,18 @@ function setStageRect(wrapper, rect = { left: 0, top: 0, width: 200, height: 100
   })
 }
 
+function setOverviewRect(wrapper, rect = { left: 0, top: 0, width: 200, height: 64 }) {
+  const overview = wrapper.find('[data-testid="overview-strip"]').element
+  overview.getBoundingClientRect = () => ({
+    ...rect,
+    right: rect.left + rect.width,
+    bottom: rect.top + rect.height,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => rect
+  })
+}
+
 function dispatchPointerEvent(type, coords) {
   const event = new Event(type, { bubbles: true })
   Object.assign(event, coords)
@@ -411,6 +423,118 @@ describe('LineScanCapture operator evidence workspace', () => {
     const [operations] = syncQueueMock.mock.calls[0]
     expect(operations[0].data.frame_offset).toBe(5)
     expect(wrapper.find('[data-testid="marker-item-marker-keyboard"]').exists()).toBe(true)
+  })
+
+  it('repositions the viewport by dragging the overview strip', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          markers: [
+            buildMarker('marker-overview', {
+              frame_offset: 20,
+              timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z'),
+              tile_x: 0
+            }),
+            buildMarker('marker-overview-far', {
+              frame_offset: 300,
+              timestamp_ms: Date.parse('2026-01-01T10:00:12.000Z'),
+              tile_x: 1
+            })
+          ]
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    setOverviewRect(wrapper)
+
+    await wrapper.find('[data-testid="overview-strip"]').trigger('pointerdown', {
+      pointerId: 2,
+      clientX: 150,
+      clientY: 20
+    })
+    dispatchPointerEvent('pointermove', { pointerId: 2, clientX: 150, clientY: 20 })
+    dispatchPointerEvent('pointerup', { pointerId: 2, clientX: 150, clientY: 20 })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="precision-pane"]').text()).toContain('Viewport center: 315')
+    expect(wrapper.find('[data-testid="overview-center-slider"]').element.value).toBe('315')
+  })
+
+  it('moves the viewport from overview keyboard controls', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          markers: [
+            buildMarker('marker-keyboard-overview', {
+              frame_offset: 20,
+              timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z'),
+              tile_x: 0
+            })
+          ]
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    await wrapper.find('[data-testid="overview-strip"]').trigger('keydown', {
+      key: 'ArrowRight',
+      shiftKey: true
+    })
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="precision-pane"]').text()).toContain('Viewport center: 25')
+    expect(wrapper.find('[data-testid="overview-center-slider"]').element.value).toBe('25')
+  })
+
+  it('syncs selected marker corrections from the precision pane', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          markers: [
+            buildMarker('marker-precision', {
+              frame_offset: 20,
+              timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z'),
+              tile_x: 0
+            })
+          ]
+        })
+      )
+    )
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [
+        {
+          id: 1,
+          data: buildMarker('marker-precision', {
+            frame_offset: 45,
+            timestamp_ms: Date.parse('2026-01-01T10:00:01.800Z'),
+            tile_id: 'tile-ready',
+            tile_x: 0,
+            tile_y: 0
+          })
+        }
+      ],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    await wrapper.find('[data-testid="precision-edit-selected"]').trigger('click')
+    await wrapper.find('[data-testid="precision-marker-frame-input"]').setValue('45')
+    await wrapper.find('[data-testid="precision-update-selected"]').trigger('click')
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].type).toBe('UPDATE_MARKER')
+    expect(operations[0].data.frame_offset).toBe(45)
+    expect(wrapper.find('[data-testid="precision-pane"]').text()).toContain('Viewport center: 45')
   })
 
   it('drags an editable marker with immediate optimistic feedback before queue sync', async () => {
