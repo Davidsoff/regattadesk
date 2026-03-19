@@ -122,6 +122,21 @@ export type CaptureSessionResponse = {
     close_reason?: string;
     created_at?: Instant;
     updated_at?: Instant;
+    capabilities?: CaptureSessionCapabilities;
+    live_status?: CaptureSessionLiveStatus;
+};
+
+export type CaptureSessionCapabilities = {
+    persisted_evidence_workspace_supported?: boolean;
+    live_preview_supported?: boolean;
+    device_control_mode?: 'read_only' | 'unsupported';
+};
+
+export type CaptureSessionLiveStatus = {
+    preview_state?: 'inactive' | 'closed' | 'unsupported';
+    drift_state?: 'synced' | 'unsynced' | 'drift_exceeded';
+    elapsed_capture_ms?: number;
+    status_observed_at?: Instant;
 };
 
 export type CaptureSessionSyncStateRequest = {
@@ -396,6 +411,31 @@ export type MarkerLinkRequest = {
     entry_id: Uuid;
 };
 
+export type MarkerListResponse = {
+    data?: Array<MarkerResponse>;
+};
+
+export type MarkerResponse = {
+    id?: Uuid;
+    capture_session_id?: Uuid;
+    entry_id?: Uuid;
+    frame_offset?: number;
+    timestamp_ms?: number;
+    is_linked?: boolean;
+    is_approved?: boolean;
+    tile_id?: string;
+    tile_x?: number;
+    tile_y?: number;
+};
+
+export type MarkerCreateResponse = MarkerResponse;
+
+export type MarkerUpdateResponse = MarkerResponse;
+
+export type MarkerLinkResponse = MarkerResponse;
+
+export type MarkerUnlinkResponse = MarkerResponse;
+
 export type MarkerUpdateRequest = {
     frame_offset?: number;
     timestamp_ms?: number;
@@ -403,6 +443,73 @@ export type MarkerUpdateRequest = {
     tile_x?: number;
     tile_y?: number;
     is_approved?: boolean;
+};
+
+export type OperatorEvidenceWorkspaceResponse = {
+    regatta_id?: Uuid;
+    capture_session_id?: Uuid;
+    event_id?: Uuid;
+    capture_session?: CaptureSessionResponse;
+    evidence?: OperatorEvidenceWorkspaceEvidence;
+    markers?: Array<OperatorEvidenceWorkspaceMarker>;
+};
+
+export type OperatorEvidenceWorkspaceEvidence = {
+    manifest_id?: Uuid;
+    capture_session_id?: Uuid;
+    availability_state?: 'ready' | 'degraded' | 'unavailable';
+    availability_reason?: 'manifest_missing' | 'manifest_has_no_tiles' | 'tile_upload_pending' | 'tile_upload_failed';
+    tile_size_px?: number;
+    primary_format?: string;
+    fallback_format?: string;
+    x_origin_timestamp_ms?: number;
+    ms_per_pixel?: number;
+    span?: OperatorEvidenceWorkspaceSpan;
+    tiles?: Array<OperatorEvidenceWorkspaceTile>;
+};
+
+export type OperatorEvidenceWorkspaceSpan = {
+    start_timestamp_ms?: number;
+    end_timestamp_ms?: number;
+    min_tile_x?: number;
+    max_tile_x?: number;
+    min_tile_y?: number;
+    max_tile_y?: number;
+    tile_columns?: number;
+    tile_rows?: number;
+    pixel_width?: number;
+    pixel_height?: number;
+};
+
+export type OperatorEvidenceWorkspaceTile = {
+    tile_id?: string;
+    tile_x?: number;
+    tile_y?: number;
+    content_type?: string;
+    byte_size?: number;
+    upload_state?: 'pending' | 'ready' | 'failed';
+    upload_attempts?: number;
+    last_upload_error?: string;
+    last_upload_attempt_at?: Instant;
+    tile_href?: string;
+};
+
+export type OperatorEvidenceWorkspaceMarker = {
+    id?: Uuid;
+    capture_session_id?: Uuid;
+    entry_id?: Uuid;
+    frame_offset?: number;
+    timestamp_ms?: number;
+    is_linked?: boolean;
+    is_approved?: boolean;
+    tile_id?: string;
+    tile_x?: number;
+    tile_y?: number;
+    entry_summary?: {
+        entry_id?: Uuid;
+        event_id?: Uuid;
+        completion_status?: string;
+    };
 };
 
 export type OpenInvestigationRequest = {
@@ -2330,12 +2437,23 @@ export type GetApiV1RegattasByRegattaIdOperatorMarkersData = {
     url: '/api/v1/regattas/{regatta_id}/operator/markers';
 };
 
+export type GetApiV1RegattasByRegattaIdOperatorMarkersErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorMarkersError = GetApiV1RegattasByRegattaIdOperatorMarkersErrors[keyof GetApiV1RegattasByRegattaIdOperatorMarkersErrors];
+
 export type GetApiV1RegattasByRegattaIdOperatorMarkersResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: MarkerListResponse;
 };
+
+export type GetApiV1RegattasByRegattaIdOperatorMarkersResponse = GetApiV1RegattasByRegattaIdOperatorMarkersResponses[keyof GetApiV1RegattasByRegattaIdOperatorMarkersResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorMarkersData = {
     body: MarkerCreateRequest;
@@ -2353,15 +2471,27 @@ export type PostApiV1RegattasByRegattaIdOperatorMarkersErrors = {
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersError = PostApiV1RegattasByRegattaIdOperatorMarkersErrors[keyof PostApiV1RegattasByRegattaIdOperatorMarkersErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorMarkersResponses = {
     /**
-     * OK
+     * Created
      */
-    200: unknown;
+    201: MarkerResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersResponse = PostApiV1RegattasByRegattaIdOperatorMarkersResponses[keyof PostApiV1RegattasByRegattaIdOperatorMarkersResponses];
 
 export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData = {
     body?: never;
@@ -2376,12 +2506,31 @@ export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData = {
     url: '/api/v1/regattas/{regatta_id}/operator/markers/{marker_id}';
 };
 
+export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdError = DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors[keyof DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors];
+
 export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses = {
     /**
-     * OK
+     * No Content
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponse = DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses[keyof DeleteApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses];
 
 export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData = {
     body: MarkerUpdateRequest;
@@ -2396,12 +2545,31 @@ export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdData = {
     url: '/api/v1/regattas/{regatta_id}/operator/markers/{marker_id}';
 };
 
+export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdError = PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors[keyof PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdErrors];
+
 export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: MarkerResponse;
 };
+
+export type PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponse = PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses[keyof PatchApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkData = {
     body: MarkerLinkRequest;
@@ -2420,15 +2588,31 @@ export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkErrors = {
     /**
      * Bad Request
      */
-    400: unknown;
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkError = PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkErrors[keyof PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkErrors];
 
 export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: MarkerResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponse = PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponses[keyof PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdLinkResponses];
 
 export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkData = {
     body?: never;
@@ -2443,12 +2627,72 @@ export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkData = {
     url: '/api/v1/regattas/{regatta_id}/operator/markers/{marker_id}/unlink';
 };
 
+export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkError = PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkErrors[keyof PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkErrors];
+
 export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: MarkerResponse;
 };
+
+export type PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponse = PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses[keyof PostApiV1RegattasByRegattaIdOperatorMarkersByMarkerIdUnlinkResponses];
+
+export type GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceData = {
+    body?: never;
+    headers?: {
+        'X-Operator-Token'?: string;
+    };
+    path: {
+        regatta_id: Uuid;
+    };
+    query?: {
+        capture_session_id?: Uuid;
+        event_id?: Uuid;
+    };
+    url: '/api/v1/regattas/{regatta_id}/operator/evidence_workspace';
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceError = GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceErrors[keyof GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceErrors];
+
+export type GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceResponses = {
+    /**
+     * OK
+     */
+    200: OperatorEvidenceWorkspaceResponse;
+};
+
+export type GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceResponse = GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceResponses[keyof GetApiV1RegattasByRegattaIdOperatorEvidenceWorkspaceResponses];
 
 export type GetApiV1RegattasByRegattaIdOperatorStationHandoffsData = {
     body?: never;

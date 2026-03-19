@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.regattadesk.operator.CaptureSession;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -66,6 +67,12 @@ public class CaptureSessionResponse {
     @JsonProperty("updated_at")
     private final Instant updatedAt;
 
+    @JsonProperty("capabilities")
+    private final CaptureSessionCapabilities capabilities;
+
+    @JsonProperty("live_status")
+    private final CaptureSessionLiveStatus liveStatus;
+
     public CaptureSessionResponse(CaptureSession session) {
         this.captureSessionId = session.getId();
         this.regattaId = session.getRegattaId();
@@ -84,6 +91,8 @@ public class CaptureSessionResponse {
         this.closeReason = session.getCloseReason();
         this.createdAt = session.getCreatedAt();
         this.updatedAt = session.getUpdatedAt();
+        this.capabilities = CaptureSessionCapabilities.from(session);
+        this.liveStatus = CaptureSessionLiveStatus.from(session);
     }
 
     public UUID getCaptureSessionId() { return captureSessionId; }
@@ -103,4 +112,63 @@ public class CaptureSessionResponse {
     public String getCloseReason() { return closeReason; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public CaptureSessionCapabilities getCapabilities() { return capabilities; }
+    public CaptureSessionLiveStatus getLiveStatus() { return liveStatus; }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CaptureSessionCapabilities(
+        @JsonProperty("persisted_evidence_workspace_supported")
+        boolean persistedEvidenceWorkspaceSupported,
+
+        @JsonProperty("live_preview_supported")
+        boolean livePreviewSupported,
+
+        @JsonProperty("device_control_mode")
+        String deviceControlMode
+    ) {
+        static CaptureSessionCapabilities from(CaptureSession session) {
+            boolean isLineScanStation = "line-scan".equals(session.getStation());
+            return new CaptureSessionCapabilities(
+                isLineScanStation,
+                false,
+                isLineScanStation ? "read_only" : "unsupported"
+            );
+        }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CaptureSessionLiveStatus(
+        @JsonProperty("preview_state")
+        String previewState,
+
+        @JsonProperty("drift_state")
+        String driftState,
+
+        @JsonProperty("elapsed_capture_ms")
+        long elapsedCaptureMs,
+
+        @JsonProperty("status_observed_at")
+        Instant statusObservedAt
+    ) {
+        static CaptureSessionLiveStatus from(CaptureSession session) {
+            Instant observedAt = session.getClosedAt() != null ? session.getClosedAt() : Instant.now();
+            long elapsedCaptureMs = Math.max(0L, Duration.between(session.getServerTimeAtStart(), observedAt).toMillis());
+
+            String driftState = "synced";
+            if (!session.isSynced()) {
+                driftState = session.isDriftExceededThreshold() ? "drift_exceeded" : "unsynced";
+            }
+
+            String previewState;
+            if (!"line-scan".equals(session.getStation())) {
+                previewState = "unsupported";
+            } else if (session.isClosed()) {
+                previewState = "closed";
+            } else {
+                previewState = "inactive";
+            }
+
+            return new CaptureSessionLiveStatus(previewState, driftState, elapsedCaptureMs, observedAt);
+        }
+    }
 }

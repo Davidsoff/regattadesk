@@ -244,6 +244,43 @@ components:
           $ref: "#/components/schemas/Instant"
         updated_at:
           $ref: "#/components/schemas/Instant"
+        capabilities:
+          $ref: "#/components/schemas/CaptureSessionCapabilities"
+        live_status:
+          $ref: "#/components/schemas/CaptureSessionLiveStatus"
+    CaptureSessionCapabilities:
+      type: object
+      properties:
+        persisted_evidence_workspace_supported:
+          type: boolean
+        live_preview_supported:
+          type: boolean
+        device_control_mode:
+          type: string
+          enum:
+          - read_only
+          - unsupported
+    CaptureSessionLiveStatus:
+      type: object
+      properties:
+        preview_state:
+          type: string
+          enum:
+          - inactive
+          - closed
+          - unsupported
+        drift_state:
+          type: string
+          enum:
+          - synced
+          - unsynced
+          - drift_exceeded
+        elapsed_capture_ms:
+          type: integer
+          format: int64
+          minimum: 0
+        status_observed_at:
+          $ref: "#/components/schemas/Instant"
     CaptureSessionSyncStateRequest:
       type: object
       required:
@@ -789,6 +826,50 @@ components:
       properties:
         entry_id:
           $ref: "#/components/schemas/UUID"
+    MarkerListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarkerResponse"
+    MarkerResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        capture_session_id:
+          $ref: "#/components/schemas/UUID"
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        frame_offset:
+          type: integer
+          format: int64
+          minimum: 0
+        timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+        is_linked:
+          type: boolean
+        is_approved:
+          type: boolean
+        tile_id:
+          type: string
+        tile_x:
+          type: integer
+          format: int32
+        tile_y:
+          type: integer
+          format: int32
+    MarkerCreateResponse:
+      $ref: "#/components/schemas/MarkerResponse"
+    MarkerUpdateResponse:
+      $ref: "#/components/schemas/MarkerResponse"
+    MarkerLinkResponse:
+      $ref: "#/components/schemas/MarkerResponse"
+    MarkerUnlinkResponse:
+      $ref: "#/components/schemas/MarkerResponse"
     MarkerUpdateRequest:
       type: object
       properties:
@@ -810,6 +891,172 @@ components:
           format: int32
         is_approved:
           type: boolean
+    OperatorEvidenceWorkspaceResponse:
+      type: object
+      properties:
+        regatta_id:
+          $ref: "#/components/schemas/UUID"
+        capture_session_id:
+          $ref: "#/components/schemas/UUID"
+        event_id:
+          $ref: "#/components/schemas/UUID"
+        capture_session:
+          $ref: "#/components/schemas/CaptureSessionResponse"
+        evidence:
+          $ref: "#/components/schemas/OperatorEvidenceWorkspaceEvidence"
+        markers:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperatorEvidenceWorkspaceMarker"
+    OperatorEvidenceWorkspaceEvidence:
+      type: object
+      properties:
+        manifest_id:
+          $ref: "#/components/schemas/UUID"
+        capture_session_id:
+          $ref: "#/components/schemas/UUID"
+        availability_state:
+          type: string
+          enum:
+          - ready
+          - degraded
+          - unavailable
+        availability_reason:
+          type: string
+          enum:
+          - manifest_missing
+          - manifest_has_no_tiles
+          - tile_upload_pending
+          - tile_upload_failed
+        tile_size_px:
+          type: integer
+          format: int32
+          minimum: 1
+        primary_format:
+          type: string
+        fallback_format:
+          type: string
+        x_origin_timestamp_ms:
+          type: integer
+          format: int64
+        ms_per_pixel:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+        span:
+          $ref: "#/components/schemas/OperatorEvidenceWorkspaceSpan"
+        tiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperatorEvidenceWorkspaceTile"
+    OperatorEvidenceWorkspaceSpan:
+      type: object
+      properties:
+        start_timestamp_ms:
+          type: integer
+          format: int64
+        end_timestamp_ms:
+          type: integer
+          format: int64
+        min_tile_x:
+          type: integer
+          format: int32
+        max_tile_x:
+          type: integer
+          format: int32
+        min_tile_y:
+          type: integer
+          format: int32
+        max_tile_y:
+          type: integer
+          format: int32
+        tile_columns:
+          type: integer
+          format: int32
+          minimum: 0
+        tile_rows:
+          type: integer
+          format: int32
+          minimum: 0
+        pixel_width:
+          type: integer
+          format: int32
+          minimum: 0
+        pixel_height:
+          type: integer
+          format: int32
+          minimum: 0
+    OperatorEvidenceWorkspaceTile:
+      type: object
+      properties:
+        tile_id:
+          type: string
+        tile_x:
+          type: integer
+          format: int32
+        tile_y:
+          type: integer
+          format: int32
+        content_type:
+          type: string
+        byte_size:
+          type: integer
+          format: int32
+          minimum: 0
+        upload_state:
+          type: string
+          enum:
+          - pending
+          - ready
+          - failed
+        upload_attempts:
+          type: integer
+          format: int32
+          minimum: 0
+        last_upload_error:
+          type: string
+        last_upload_attempt_at:
+          $ref: "#/components/schemas/Instant"
+        tile_href:
+          type: string
+    OperatorEvidenceWorkspaceMarker:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        capture_session_id:
+          $ref: "#/components/schemas/UUID"
+        entry_id:
+          $ref: "#/components/schemas/UUID"
+        frame_offset:
+          type: integer
+          format: int64
+          minimum: 0
+        timestamp_ms:
+          type: integer
+          format: int64
+          minimum: 0
+        is_linked:
+          type: boolean
+        is_approved:
+          type: boolean
+        tile_id:
+          type: string
+        tile_x:
+          type: integer
+          format: int32
+        tile_y:
+          type: integer
+          format: int32
+        entry_summary:
+          type: object
+          properties:
+            entry_id:
+              $ref: "#/components/schemas/UUID"
+            event_id:
+              $ref: "#/components/schemas/UUID"
+            completion_status:
+              type: string
     OpenInvestigationRequest:
       type: object
       required:
@@ -3214,7 +3461,14 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/MarkerListResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: List
       tags:
       - Marker Resource
@@ -3236,13 +3490,30 @@ paths:
               $ref: "#/components/schemas/MarkerCreateRequest"
         required: true
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/MarkerCreateResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: Create
       tags:
       - Marker Resource
@@ -3274,7 +3545,26 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/MarkerUpdateResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: Update
       tags:
       - Marker Resource
@@ -3295,11 +3585,26 @@ paths:
         schema:
           type: string
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: Delete
       tags:
       - Marker Resource
@@ -3331,9 +3636,32 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/MarkerLinkResponse"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: Link
       tags:
       - Marker Resource
@@ -3359,10 +3687,77 @@ paths:
           description: OK
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/MarkerUnlinkResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       summary: Unlink
       tags:
       - Marker Resource
+  /api/v1/regattas/{regatta_id}/operator/evidence_workspace:
+    get:
+      parameters:
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: capture_session_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: event_id
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperatorEvidenceWorkspaceResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      summary: Get Evidence Workspace
+      tags:
+      - Operator Evidence Workspace
   /api/v1/regattas/{regatta_id}/operator/station_handoffs:
     post:
       summary: Request Handoff
