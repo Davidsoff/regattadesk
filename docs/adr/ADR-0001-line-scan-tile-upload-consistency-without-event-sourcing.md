@@ -35,6 +35,7 @@ This is explicitly not event sourcing. It is an API-managed persistence workflow
 ### Gains
 - No event-store/projection complexity for BC06.
 - Deterministic DB record of tile upload lifecycle (`pending`/`failed`/`ready`).
+- Derived operator-facing lifecycle summaries can be computed from the stored tile metadata without adding an event log.
 - Better behavior under unreliable networks through safe retries.
 - Operator frontend can treat tile upload as asynchronous work and retry independently.
 
@@ -48,6 +49,7 @@ This is explicitly not event sourcing. It is an API-managed persistence workflow
 - Add `upload_state`, `upload_attempts`, `last_upload_error`, `last_upload_attempt_at` to `line_scan_tiles`.
 - Keep read behavior strict: tile download is allowed only for `upload_state=ready`.
 - Return failure for unavailable data so clients continue retry logic.
+- Surface a derived evidence workspace state (`pending`, `syncing`, `partial_failure`, `failed`, `completed`) so operators can distinguish local-only tiles from remotely persisted tiles.
 
 ## Non-Goals (v0.1)
 

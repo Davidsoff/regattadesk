@@ -149,6 +149,7 @@ public class OperatorEvidenceWorkspaceService {
                 null,
                 null,
                 null,
+                null,
                 List.of()
             );
         }
@@ -167,6 +168,7 @@ public class OperatorEvidenceWorkspaceService {
             availabilityReason = "tile_upload_pending";
         }
 
+        String uploadState = deriveUploadState(tiles);
         OperatorEvidenceWorkspaceResponse.EvidenceSpanResponse span = buildSpan(savedManifest, tiles);
         List<OperatorEvidenceWorkspaceResponse.EvidenceTileResponse> evidenceTiles = tiles.stream()
             .map(tile -> new OperatorEvidenceWorkspaceResponse.EvidenceTileResponse(
@@ -188,6 +190,7 @@ public class OperatorEvidenceWorkspaceService {
             captureSessionId,
             availabilityState,
             availabilityReason,
+            uploadState,
             savedManifest.getTileSizePx(),
             savedManifest.getPrimaryFormat(),
             savedManifest.getFallbackFormat(),
@@ -196,6 +199,39 @@ public class OperatorEvidenceWorkspaceService {
             span,
             evidenceTiles
         );
+    }
+
+    static String deriveUploadState(List<LineScanTileMetadata> tiles) {
+        if (tiles == null || tiles.isEmpty()) {
+            return "pending";
+        }
+
+        long pendingCount = tiles.stream()
+            .filter(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.PENDING)
+            .count();
+        long readyCount = tiles.stream()
+            .filter(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.READY)
+            .count();
+        long failedCount = tiles.stream()
+            .filter(tile -> tile.getUploadState() == LineScanTileMetadata.UploadState.FAILED)
+            .count();
+
+        if (failedCount > 0) {
+            if (failedCount == tiles.size()) {
+                return "failed";
+            }
+            return "partial_failure";
+        }
+
+        if (pendingCount > 0 && readyCount > 0) {
+            return "syncing";
+        }
+
+        if (pendingCount > 0) {
+            return "pending";
+        }
+
+        return "completed";
     }
 
     private OperatorEvidenceWorkspaceResponse.EvidenceSpanResponse buildSpan(

@@ -47,6 +47,7 @@ class OperatorEvidenceWorkspaceResourceIT {
             .body("evidence.manifest_id", equalTo(data.manifestId().toString()))
             .body("evidence.availability_state", equalTo("degraded"))
             .body("evidence.availability_reason", equalTo("tile_upload_pending"))
+            .body("evidence.upload_state", equalTo("syncing"))
             .body("evidence.tiles", hasSize(2))
             .body("evidence.tiles[0].tile_id", equalTo("tile-ready"))
             .body("evidence.tiles[1].upload_state", equalTo("pending"))
@@ -55,6 +56,23 @@ class OperatorEvidenceWorkspaceResourceIT {
             .body("markers[0].id", equalTo(data.unlinkedMarkerId().toString()))
             .body("markers[1].entry_summary.entry_id", equalTo(data.entryId().toString()))
             .body("markers[1].entry_summary.completion_status", equalTo("incomplete"));
+    }
+
+    @Test
+    void workspaceEndpointSurfacesPartialFailureLifecycle() throws Exception {
+        TestData data = createTestDataWithFailedTile();
+
+        given()
+            .header("X-Operator-Token", data.token())
+        .when()
+            .get("/api/v1/regattas/" + data.regattaId() + "/operator/evidence_workspace?capture_session_id=" + data.captureSessionId())
+        .then()
+            .statusCode(200)
+            .body("evidence.upload_state", equalTo("partial_failure"))
+            .body("evidence.availability_state", equalTo("degraded"))
+            .body("evidence.availability_reason", equalTo("tile_upload_failed"))
+            .body("evidence.tiles[1].upload_state", equalTo("failed"))
+            .body("evidence.tiles[1].last_upload_error", equalTo("minio timeout"));
     }
 
     @Test
@@ -120,6 +138,46 @@ class OperatorEvidenceWorkspaceResourceIT {
                 """, linkedMarkerId, captureSessionId, entryId);
 
             return new TestData(regattaId, eventId, entryId, captureSessionId, manifestId, linkedMarkerId, unlinkedMarkerId, tokenFor(regattaId));
+        }
+    }
+
+    private TestData createTestDataWithFailedTile() throws Exception {
+        UUID regattaId = UUID.randomUUID();
+        UUID blockId = UUID.randomUUID();
+        UUID eventId = UUID.randomUUID();
+        UUID captureSessionId = UUID.randomUUID();
+        UUID manifestId = UUID.randomUUID();
+
+        try (Connection conn = dataSource.getConnection()) {
+            insertRegatta(conn, regattaId);
+            UUID categoryId = insertCategory(conn);
+            UUID boatTypeId = insertBoatType(conn);
+            insertEvent(conn, eventId, regattaId, categoryId, boatTypeId);
+            insertBlock(conn, blockId, regattaId);
+            UUID crewId = insertCrew(conn);
+            insertCaptureSession(conn, captureSessionId, regattaId, blockId, Instant.ofEpochMilli(1_000));
+            entryService.createEntry(regattaId, eventId, blockId, crewId, null);
+            insert(conn, """
+                INSERT INTO line_scan_manifests (
+                    id, regatta_id, capture_session_id, tile_size_px, primary_format, fallback_format,
+                    x_origin_timestamp_ms, ms_per_pixel, retention_days, prune_window_seconds,
+                    retention_state, created_at, updated_at
+                ) VALUES (?, ?, ?, 512, 'webp_lossless', 'png', 1000, 0.5, 14, 2, 'full_retained', now(), now())
+                """, manifestId, regattaId, captureSessionId);
+            insert(conn, """
+                INSERT INTO line_scan_tiles (
+                    id, manifest_id, tile_id, tile_x, tile_y, content_type, byte_size, upload_state,
+                    upload_attempts, last_upload_error, minio_bucket, minio_object_key, created_at, updated_at
+                ) VALUES (?, ?, 'tile-ready', 0, 0, 'image/webp', 256, 'ready', 1, null, 'bucket', 'ready-key', now(), now())
+                """, UUID.randomUUID(), manifestId);
+            insert(conn, """
+                INSERT INTO line_scan_tiles (
+                    id, manifest_id, tile_id, tile_x, tile_y, content_type, upload_state,
+                    upload_attempts, last_upload_error, minio_bucket, minio_object_key, created_at, updated_at
+                ) VALUES (?, ?, 'tile-failed', 1, 0, 'image/webp', 'failed', 2, 'minio timeout', 'bucket', 'failed-key', now(), now())
+                """, UUID.randomUUID(), manifestId);
+
+            return new TestData(regattaId, eventId, UUID.randomUUID(), captureSessionId, manifestId, UUID.randomUUID(), UUID.randomUUID(), tokenFor(regattaId));
         }
     }
 

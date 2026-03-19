@@ -430,6 +430,67 @@ const evidenceAvailabilityMessage = computed(() => {
       return t('operator.capture.evidence_reason_manifest_missing')
   }
 })
+const evidenceUploadState = computed(() => {
+  if (!evidence.value?.manifest_id) {
+    return null
+  }
+
+  return evidence.value?.upload_state ?? deriveEvidenceUploadStateFromTiles(evidenceTiles.value)
+})
+const evidenceUploadStateClass = computed(() => {
+  if (!evidenceUploadState.value) {
+    return 'stage-state--unavailable'
+  }
+
+  switch (evidenceUploadState.value) {
+    case 'completed':
+      return 'stage-state--ready'
+    case 'pending':
+    case 'syncing':
+      return 'stage-state--degraded'
+    case 'partial_failure':
+    case 'failed':
+      return 'stage-state--unavailable'
+    default:
+      return 'stage-state--degraded'
+  }
+})
+const evidenceUploadStateLabel = computed(() => {
+  if (!evidenceUploadState.value) {
+    return ''
+  }
+
+  switch (evidenceUploadState.value) {
+    case 'completed':
+      return t('operator.capture.evidence_upload_completed')
+    case 'syncing':
+      return t('operator.capture.evidence_upload_syncing')
+    case 'partial_failure':
+      return t('operator.capture.evidence_upload_partial_failure')
+    case 'failed':
+      return t('operator.capture.evidence_upload_failed')
+    default:
+      return t('operator.capture.evidence_upload_pending')
+  }
+})
+const evidenceUploadStateMessage = computed(() => {
+  if (!evidenceUploadState.value) {
+    return ''
+  }
+
+  switch (evidenceUploadState.value) {
+    case 'completed':
+      return t('operator.capture.evidence_upload_completed_hint')
+    case 'syncing':
+      return t('operator.capture.evidence_upload_syncing_hint')
+    case 'partial_failure':
+      return t('operator.capture.evidence_upload_partial_failure_hint')
+    case 'failed':
+      return t('operator.capture.evidence_upload_failed_hint')
+    default:
+      return t('operator.capture.evidence_upload_pending_hint')
+  }
+})
 const previewStateMessage = computed(() => {
   const previewState = captureSession.value?.live_status?.preview_state
   if (previewState === 'closed') {
@@ -590,12 +651,37 @@ function conflictHelperText(item) {
 function tileStateLabel(tile) {
   switch (tile.upload_state) {
     case 'ready':
-      return t('operator.capture.tile_state_ready')
+      return t('operator.capture.tile_state_persisted')
     case 'failed':
       return t('operator.capture.tile_state_failed')
     default:
       return t('operator.capture.tile_state_pending')
   }
+}
+
+function deriveEvidenceUploadStateFromTiles(tiles) {
+  const tileStates = Array.isArray(tiles) ? tiles : []
+  if (tileStates.length === 0) {
+    return 'pending'
+  }
+
+  const pendingCount = tileStates.filter((tile) => tile.upload_state === 'pending').length
+  const readyCount = tileStates.filter((tile) => tile.upload_state === 'ready').length
+  const failedCount = tileStates.filter((tile) => tile.upload_state === 'failed').length
+
+  if (failedCount > 0) {
+    return failedCount === tileStates.length ? 'failed' : 'partial_failure'
+  }
+
+  if (pendingCount > 0 && readyCount > 0) {
+    return 'syncing'
+  }
+
+  if (pendingCount > 0) {
+    return 'pending'
+  }
+
+  return 'completed'
 }
 
 function tilePlacementStyle(tile) {
@@ -1455,6 +1541,14 @@ defineExpose({
           <span data-testid="evidence-availability-badge" class="stage-state" :class="evidenceAvailabilityClass">
             {{ evidenceAvailabilityLabel }}
           </span>
+          <span
+            v-if="evidenceUploadState"
+            data-testid="evidence-upload-state-badge"
+            class="stage-state"
+            :class="evidenceUploadStateClass"
+          >
+            {{ evidenceUploadStateLabel }}
+          </span>
           <span class="stage-note">
             {{ previewStateMessage }}
           </span>
@@ -1473,6 +1567,14 @@ defineExpose({
           class="stage-banner stage-banner--warning"
         >
           {{ evidenceAvailabilityMessage }}
+        </p>
+
+        <p
+          v-if="evidenceUploadState && (evidenceUploadState === 'partial_failure' || evidenceUploadState === 'failed')"
+          data-testid="evidence-upload-retry-banner"
+          class="stage-banner stage-banner--warning"
+        >
+          {{ evidenceUploadStateMessage }}
         </p>
 
         <div
@@ -1512,6 +1614,17 @@ defineExpose({
               <span class="evidence-stage__tile-label">
                 {{ tileStateLabel(tile) }}
               </span>
+              <div
+                v-if="tile.upload_attempts != null || tile.last_upload_error"
+                class="evidence-stage__tile-meta"
+              >
+                <span v-if="tile.upload_attempts != null">
+                  {{ t('operator.capture.tile_upload_attempts', { count: tile.upload_attempts }) }}
+                </span>
+                <span v-if="tile.last_upload_error" class="evidence-stage__tile-error">
+                  {{ tile.last_upload_error }}
+                </span>
+              </div>
             </div>
 
             <div class="evidence-stage__overlay">
@@ -2045,6 +2158,26 @@ defineExpose({
   background: rgba(9, 53, 92, 0.75);
   color: #fff;
   font-size: 0.75rem;
+}
+
+.evidence-stage__tile-meta {
+  position: absolute;
+  right: 0.4rem;
+  bottom: 0.4rem;
+  display: grid;
+  gap: 0.15rem;
+  max-width: calc(100% - 6rem);
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: #09355c;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.evidence-stage__tile-error {
+  color: #7f0000;
 }
 
 .evidence-stage__overlay {

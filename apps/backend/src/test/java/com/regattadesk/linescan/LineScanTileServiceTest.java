@@ -103,6 +103,34 @@ class LineScanTileServiceTest {
     }
 
     @Test
+    void storeTile_retriesFailedTileAndMarksReadyOnSuccess() throws Exception {
+        UUID regattaId = UUID.randomUUID();
+        UUID manifestId = UUID.randomUUID();
+        UUID captureSessionId = UUID.randomUUID();
+
+        LineScanTileMetadata metadata = baseMetadata(manifestId, "tile_0_0", LineScanTileMetadata.UploadState.FAILED, 2);
+        LineScanManifest manifest = baseManifest(regattaId, captureSessionId, manifestId);
+
+        when(tileRepository.findByRegattaAndTileId(regattaId, "tile_0_0")).thenReturn(Optional.of(metadata));
+        when(manifestRepository.findById(manifestId)).thenReturn(Optional.of(manifest));
+
+        LineScanTileService service = new LineScanTileService(tileRepository, manifestRepository, storageAdapter);
+
+        service.storeTile(regattaId, "tile_0_0", new byte[]{9, 8, 7}, "image/webp");
+
+        verify(storageAdapter).storeTile(eq(regattaId), eq(captureSessionId), eq("tile_0_0"), any(byte[].class), eq("image/webp"));
+
+        ArgumentCaptor<LineScanTileMetadata> metadataCaptor = ArgumentCaptor.forClass(LineScanTileMetadata.class);
+        verify(tileRepository, times(2)).save(metadataCaptor.capture());
+
+        LineScanTileMetadata ready = metadataCaptor.getAllValues().get(1);
+        assertEquals(LineScanTileMetadata.UploadState.READY, ready.getUploadState());
+        assertEquals(3, ready.getUploadAttempts());
+        assertNull(ready.getLastUploadError());
+        assertEquals(3, ready.getByteSize());
+    }
+
+    @Test
     void retrieveTile_rejectsWhenUploadNotReady() throws Exception {
         UUID regattaId = UUID.randomUUID();
         UUID manifestId = UUID.randomUUID();

@@ -40,6 +40,9 @@ public record OperatorEvidenceWorkspaceResponse(
         @JsonProperty("availability_reason")
         String availabilityReason,
 
+        @JsonProperty("upload_state")
+        String uploadState,
+
         @JsonProperty("tile_size_px")
         Integer tileSizePx,
 

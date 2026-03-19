@@ -10,10 +10,12 @@
 
 - Verify object storage and manifest metadata before debugging marker behavior.
 - Check capture-session state and sync-state endpoints when queued actions do not clear.
+- Use the evidence workspace response to inspect whether upload state is `pending`, `syncing`, `partial_failure`, `failed`, or `completed` before deciding whether a tile retry is needed.
 - If marker link behavior is inconsistent, compare operator API responses with the downstream entry or adjudication state before changing UI code.
 
 ## Common Tasks
 
 - To add a new operator action, update the backend resource, sync semantics, and matching frontend composable in one change.
 - To debug upload issues, inspect MinIO accessibility through the compose stack and verify content types on tile upload.
+- Failed evidence uploads are retryable by reissuing the same tile upload; do not recapture unless the source artifact is lost.
 - To validate token handoff flows, exercise reveal, complete, and cancellation endpoints against a live stack.

@@ -459,6 +459,7 @@ export type OperatorEvidenceWorkspaceEvidence = {
     capture_session_id?: Uuid;
     availability_state?: 'ready' | 'degraded' | 'unavailable';
     availability_reason?: 'manifest_missing' | 'manifest_has_no_tiles' | 'tile_upload_pending' | 'tile_upload_failed';
+    upload_state?: 'pending' | 'syncing' | 'partial_failure' | 'failed' | 'completed';
     tile_size_px?: number;
     primary_format?: string;
     fallback_format?: string;

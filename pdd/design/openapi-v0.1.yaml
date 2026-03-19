@@ -928,6 +928,14 @@ components:
           - manifest_has_no_tiles
           - tile_upload_pending
           - tile_upload_failed
+        upload_state:
+          type: string
+          enum:
+          - pending
+          - syncing
+          - partial_failure
+          - failed
+          - completed
         tile_size_px:
           type: integer
           format: int32

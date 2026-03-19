@@ -137,6 +137,7 @@ All payment endpoints, methods, parameters, and schemas are defined in `docs/spe
     - Manifest payload is canonical for tile grid plus `x_origin_timestamp_ms` and `ms_per_pixel` mapping.
     - Tile/manifest storage persistence path is API-managed and not represented as domain events in v0.1.
     - Tile upload lifecycle is metadata-driven (`pending`, `failed`, `ready`) with idempotent retry on `PUT /line_scan/tiles/{tile_id}`.
+    - The operator evidence workspace derives an explicit upload lifecycle summary (`pending`, `syncing`, `partial_failure`, `failed`, `completed`) from tile metadata so operators can distinguish local-only evidence from remotely persisted tiles and retry failed uploads without recapturing.
   - Unlinked marker create/delete is not audited.
   - Link/unlink actions and edits to linked markers are always audited.
   - Pre-approval deletes of linked markers emit audit events.

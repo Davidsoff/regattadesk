@@ -5,7 +5,7 @@
 - `GET|POST /api/v1/regattas/{regatta_id}/operator/tokens` plus revoke and PDF export endpoints expose operator token administration.
 - `GET|POST /api/v1/regattas/{regatta_id}/operator/capture_sessions` plus sync-state and close endpoints expose capture-session lifecycle.
 - `GET /api/v1/regattas/{regatta_id}/operator/evidence_workspace` exposes the persisted evidence-first operator workspace keyed by capture session and optional event.
-  The response is the operator review contract for the evidence stage: tile grid metadata, upload availability/degraded reasons, capture-session capability flags, and marker overlays rendered over persisted evidence.
+  The response is the operator review contract for the evidence stage: tile grid metadata, upload availability/degraded reasons, a derived upload lifecycle summary (`pending`, `syncing`, `partial_failure`, `failed`, `completed`), capture-session capability flags, and marker overlays rendered over persisted evidence.
 - `GET|POST /api/v1/regattas/{regatta_id}/operator/station_handoffs` plus reveal, complete, and cancel endpoints expose station handoffs.
 - `POST|GET /api/v1/regattas/{regatta_id}/line_scan/manifests`, `PUT|GET /line_scan/tiles/{tile_id}`, and marker endpoints expose line-scan ingest and evidence workflows.
 

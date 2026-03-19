@@ -150,6 +150,7 @@ function buildWorkspace(overrides = {}) {
       capture_session_id: 'session-1',
       availability_state: 'ready',
       availability_reason: null,
+      upload_state: 'syncing',
       tile_size_px: 512,
       primary_format: 'webp_lossless',
       fallback_format: 'png',
@@ -284,8 +285,54 @@ describe('LineScanCapture operator evidence workspace', () => {
 
     expect(wrapper.find('[data-testid="evidence-stage"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="evidence-degraded-banner"]').text()).toContain('still uploading')
+    expect(wrapper.find('[data-testid="evidence-upload-state-badge"]').text()).toContain('Syncing')
     expect(wrapper.find('[data-testid="evidence-stage-marker-marker-a"]').attributes('style')).toContain('left:')
     expect(wrapper.find('[data-testid="evidence-cursor"]').exists()).toBe(true)
+  })
+
+  it('surfaces partial upload failures with retry guidance and tile error metadata', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          evidence: {
+            ...buildWorkspace().evidence,
+            upload_state: 'partial_failure',
+            availability_state: 'degraded',
+            availability_reason: 'tile_upload_failed',
+            tiles: [
+              {
+                tile_id: 'tile-ready',
+                tile_x: 0,
+                tile_y: 0,
+                content_type: 'image/webp',
+                byte_size: 256,
+                upload_state: 'ready',
+                upload_attempts: 1,
+                tile_href: 'https://example.test/tile-ready.webp'
+              },
+              {
+                tile_id: 'tile-failed',
+                tile_x: 1,
+                tile_y: 0,
+                content_type: 'image/webp',
+                upload_state: 'failed',
+                upload_attempts: 2,
+                last_upload_error: 'minio timeout'
+              }
+            ]
+          },
+          markers: []
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    expect(wrapper.find('[data-testid="evidence-upload-state-badge"]').text()).toContain('Partial failure')
+    expect(wrapper.find('[data-testid="evidence-upload-retry-banner"]').text()).toContain('Retry the same tile upload')
+    expect(wrapper.text()).toContain('2 upload attempt(s)')
+    expect(wrapper.text()).toContain('minio timeout')
   })
 
   it('shows an explicit unavailable state when persisted evidence is missing', async () => {
