@@ -193,7 +193,7 @@ The project uses the following minimum versions (as defined in `pdd/implementati
 
 ## Testing
 
-RegattaDesk follows a comprehensive testing strategy with multiple test categories and CI quality gates. See [Testing Strategy](.mindspec/docs/core/TESTING_STRATEGY.md) for complete details.
+RegattaDesk follows a comprehensive testing strategy with multiple test categories and CI quality gates. See [Testing Strategy](docs/core/TESTING_STRATEGY.md) for complete details.
 
 ### Test Categories
 
@@ -236,7 +236,7 @@ Optional checks (informational until implemented):
 - Backend integration and contract tests
 - Frontend unit (`frontend-test`) and accessibility tests
 
-See [CI Quality Gates](.mindspec/docs/core/CI_QUALITY_GATES.md) for validation scenarios and troubleshooting.
+See [CI Quality Gates](docs/core/CI_QUALITY_GATES.md) for validation scenarios and troubleshooting.
 
 ### Test Coverage Requirements
 
@@ -244,13 +244,13 @@ See [CI Quality Gates](.mindspec/docs/core/CI_QUALITY_GATES.md) for validation s
 - **Critical Paths:** 100% for command handlers and domain rules
 - **API Coverage:** All public/staff/operator endpoints must have tests
 
-For detailed test requirements by change type, see [Testing Strategy](.mindspec/docs/core/TESTING_STRATEGY.md).
+For detailed test requirements by change type, see [Testing Strategy](docs/core/TESTING_STRATEGY.md).
 
 ## Documentation
 
-- [Developer Setup Guide](.mindspec/docs/user/DEVELOPER_SETUP.md) - First-time setup instructions
-- [Implementation Plan](.mindspec/docs/specs/pdd-v0.1/implementation/plan.md) - Full implementation roadmap
-- [BC01 Platform Spec](.mindspec/docs/specs/pdd-v0.1/implementation/bc01-platform-and-delivery.md) - Platform context
+- [Developer Setup Guide](docs/user/DEVELOPER_SETUP.md) - First-time setup instructions
+- [Implementation Plan](docs/specs/pdd-v0.1/implementation/plan.md) - Full implementation roadmap
+- [BC01 Platform Spec](docs/specs/pdd-v0.1/implementation/bc01-platform-and-delivery.md) - Platform context
 
 ## Contributing
 

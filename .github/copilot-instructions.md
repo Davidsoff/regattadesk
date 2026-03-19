@@ -172,13 +172,4 @@ Demo mode is planned but not part of v0.1. Deferred to post-v0.1 implementation.
 
 **Trust these instructions.** Only perform additional searches if the information here is incomplete or found to be in error.
 
-<!-- BEGIN mindspec:managed -->
-
 **IMPORTANT**: You MUST read and follow [AGENTS.md](../AGENTS.md) as your primary behavioral instructions. AGENTS.md is the canonical source of project conventions, workflow rules, and development guidance shared across all coding agents.
-
-On session start, run `mindspec instruct` in the terminal for mode-appropriate operating guidance.
-
-## Skills
-
-MindSpec workflow skills are available in `.agents/skills/`. Each skill directory contains a `SKILL.md` with instructions.
-<!-- END mindspec:managed -->
