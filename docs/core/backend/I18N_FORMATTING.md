@@ -190,9 +190,9 @@ All formatters and PDF generation functionality have comprehensive unit tests.
 
 All date/time formatting and PDF generation follows the requirements specified in:
 
-- `.mindspec/docs/specs/pdd-v0.1/design/detailed-design.md`
-- `.mindspec/docs/specs/pdd-v0.1/design/style-guide.md`
-- `.mindspec/docs/specs/pdd-v0.1/implementation/bc05-public-experience-and-delivery.md`
+- `docs/specs/pdd-v0.1/design/detailed-design.md`
+- `docs/specs/pdd-v0.1/design/style-guide.md`
+- `docs/specs/pdd-v0.1/implementation/bc05-public-experience-and-delivery.md`
 
 ### Key Requirements
 

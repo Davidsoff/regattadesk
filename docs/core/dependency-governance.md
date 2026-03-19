@@ -230,7 +230,7 @@ The security fast-path bypasses normal update cadence for:
 
 ### Maintained Inventory
 
-**Location:** `.mindspec/docs/core/dependencies.md`
+**Location:** `docs/core/dependencies.md`
 
 **Content:**
 - Backend dependencies with versions and licenses
@@ -335,9 +335,9 @@ All dependency changes must have:
 
 ### Internal Resources
 - Suppression file: `apps/security/dependency-check-suppressions.xml`
-- Dependency inventory: `.mindspec/docs/core/dependencies.md`
+- Dependency inventory: `docs/core/dependencies.md`
 - CI workflows: `.github/workflows/`
-- Runbooks: `.mindspec/docs/user/runbooks/`
+- Runbooks: `docs/user/runbooks/`
 
 ## Updates to This Policy
 

@@ -368,7 +368,7 @@ For each rotation, document:
 
 ## References
 
-- BC02 Identity and Access: `.mindspec/docs/specs/pdd-v0.1/implementation/bc02-identity-and-access.md`
-- Implementation Plan Step 6: `.mindspec/docs/specs/pdd-v0.1/implementation/plan.md`
+- BC02 Identity and Access: `docs/specs/pdd-v0.1/implementation/bc02-identity-and-access.md`
+- Implementation Plan Step 6: `docs/specs/pdd-v0.1/implementation/plan.md`
 - JWT Configuration: `apps/backend/src/main/resources/application.properties`
 - Key Registry Implementation: `apps/backend/src/main/java/com/regattadesk/jwt/ConfigBasedJwtKeyRegistry.java`

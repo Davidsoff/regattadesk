@@ -20,8 +20,8 @@
 | `apps/backend/src/main/java/com/regattadesk/security/RoleAuthorizationFilter.java` | Applies role-based authorization to protected endpoints. |
 | `apps/backend/src/main/java/com/regattadesk/jwt/JwtTokenService.java` | Issues and validates anonymous public-session JWTs. |
 | `infra/compose/authelia/configuration.yml` | Edge authentication and access control configuration. |
-| `.mindspec/docs/core/IDENTITY_FORWARDING.md` | Canonical identity forwarding contract. |
-| `.mindspec/docs/core/EDGE_SECURITY.md` | Edge TLS, header, and hardening posture. |
+| `docs/core/IDENTITY_FORWARDING.md` | Canonical identity forwarding contract. |
+| `docs/core/EDGE_SECURITY.md` | Edge TLS, header, and hardening posture. |
 
 ## Current State
 

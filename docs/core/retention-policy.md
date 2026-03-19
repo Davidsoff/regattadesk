@@ -164,10 +164,10 @@ WHERE created_at > now() + INTERVAL '1 minute';
 
 ## References
 
-- Database Schema: `.mindspec/docs/specs/pdd-v0.1/design/database-schema.md`
+- Database Schema: `docs/specs/pdd-v0.1/design/database-schema.md`
 - Migration Script: `apps/backend/src/main/resources/db/migration/V001__initial_event_store_schema.sql`
-- Implementation Plan: `.mindspec/docs/specs/pdd-v0.1/implementation/plan.md` (Step 3)
-- BC03 Specification: `.mindspec/docs/specs/pdd-v0.1/implementation/bc03-core-regatta-management.md`
+- Implementation Plan: `docs/specs/pdd-v0.1/implementation/plan.md` (Step 3)
+- BC03 Specification: `docs/specs/pdd-v0.1/implementation/bc03-core-regatta-management.md`
 
 ## Revision History
 

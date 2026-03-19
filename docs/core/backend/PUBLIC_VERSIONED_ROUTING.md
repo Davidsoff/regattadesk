@@ -234,6 +234,6 @@ No cache invalidation needed:
 
 ## References
 
-- PDD: `.mindspec/docs/specs/pdd-v0.1/implementation/bc05-public-experience-and-delivery.md`
+- PDD: `docs/specs/pdd-v0.1/implementation/bc05-public-experience-and-delivery.md`
 - Issue: BC05-002
 - Tests: `apps/backend/src/test/java/com/regattadesk/public_api/PublicVersioned*Test.java`

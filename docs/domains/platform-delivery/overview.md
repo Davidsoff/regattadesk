@@ -22,10 +22,10 @@
 | `apps/backend/pom.xml` | Backend runtime, plugin, and test profile baseline. |
 | `apps/frontend/package.json` | Frontend build, test, and generated API client entrypoints. |
 | `Makefile` | Project-wide install, build, test, lint, and dev commands. |
-| `.mindspec/docs/user/DEVELOPER_SETUP.md` | First-run environment bootstrap guide. |
+| `docs/user/DEVELOPER_SETUP.md` | First-run environment bootstrap guide. |
 
 ## Current State
 
 - The repository already has a working Quarkus backend and Vue frontend plus Docker Compose definitions for the full v0.1 stack.
 - Platform docs are ahead of most ad hoc README files and already describe DB-only Authelia, MinIO-backed line-scan storage, and local TLS.
-- CI and dependency governance are partially documented in `.mindspec/docs/core/` and workflow files, so this domain is primarily documentation consolidation rather than new code discovery.
+- CI and dependency governance are partially documented in `docs/core/` and workflow files, so this domain is primarily documentation consolidation rather than new code discovery.

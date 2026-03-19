@@ -44,7 +44,7 @@ The `all-checks` job should be required for merge. It ensures all critical check
 - Consolidated security summary (90-day retention)
 
 **Follow-up:**
-Review artifacts weekly and triage vulnerabilities according to the security fast-path policy in `.mindspec/docs/core/dependency-governance.md`.
+Review artifacts weekly and triage vulnerabilities according to the security fast-path policy in `docs/core/dependency-governance.md`.
 
 ### Release (`release.yml`)
 

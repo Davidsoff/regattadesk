@@ -21,7 +21,7 @@
 | `apps/backend/src/main/java/com/regattadesk/investigation/InvestigationAggregate.java` | Event-sourced investigation state. |
 | `apps/backend/src/main/java/com/regattadesk/investigation/InvestigationOutcome.java` | Outcome model for investigations. |
 | `apps/frontend/src/views/staff/AdjudicationView.vue` | Staff adjudication UI. |
-| `.mindspec/docs/specs/pdd-v0.1/implementation/bc07-results-and-adjudication.md` | Domain scope and plan coverage. |
+| `docs/specs/pdd-v0.1/implementation/bc07-results-and-adjudication.md` | Domain scope and plan coverage. |
 
 ## Current State
 

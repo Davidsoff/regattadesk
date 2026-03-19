@@ -185,7 +185,7 @@ it('handles API errors', async () => {
 
 ## OpenAPI Alignment
 
-This client is designed to match the contracts in `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`:
+This client is designed to match the contracts in `docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`:
 
 - **Error responses**: Conforms to `error_response` schema
 - **Auth modes**: Supports Staff (proxy auth), Operator (token), and Public (anonymous)
@@ -220,11 +220,11 @@ npm run build:sync
 
 These commands run `api:sync` first, which:
 
-1. Regenerates `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml` from backend code.
+1. Regenerates `docs/specs/pdd-v0.1/design/openapi-v0.1.yaml` from backend code.
 2. Regenerates `src/api/generated/` from that spec.
 
 ## References
 
-- OpenAPI spec: `.mindspec/docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`
-- Implementation plan: `.mindspec/docs/specs/pdd-v0.1/implementation/plan.md`
+- OpenAPI spec: `docs/specs/pdd-v0.1/design/openapi-v0.1.yaml`
+- Implementation plan: `docs/specs/pdd-v0.1/implementation/plan.md`
 - Issue: FEGAP-002

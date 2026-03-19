@@ -301,7 +301,7 @@ regattadesk/
 │       ├── package.json  # NPM configuration
 │       └── vite.config.js
 │
-├── .mindspec/docs/       # Canonical MindSpec documentation
+├── docs/       # Project documentation
 ├── infra/compose/        # Docker Compose (future)
 ├── tests/                # Integration tests (future)
 ├── Makefile              # Build commands

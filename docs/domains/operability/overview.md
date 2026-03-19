@@ -18,15 +18,15 @@
 |:-----|:--------|
 | `apps/backend/src/main/java/com/regattadesk/health/HealthResource.java` | App-specific health endpoint. |
 | `apps/backend/src/main/java/com/regattadesk/performance/PerformanceGateEvaluator.java` | Backend performance gate evaluation. |
-| `.mindspec/docs/core/TESTING_STRATEGY.md` | Test matrix and quality expectations. |
-| `.mindspec/docs/core/CI_QUALITY_GATES.md` | CI enforcement and merge gate guidance. |
-| `.mindspec/docs/core/EDGE_SECURITY.md` | Edge hardening and TLS posture. |
-| `.mindspec/docs/user/runbooks/performance-gates.md` | Load and performance gate interpretation. |
+| `docs/core/TESTING_STRATEGY.md` | Test matrix and quality expectations. |
+| `docs/core/CI_QUALITY_GATES.md` | CI enforcement and merge gate guidance. |
+| `docs/core/EDGE_SECURITY.md` | Edge hardening and TLS posture. |
+| `docs/user/runbooks/performance-gates.md` | Load and performance gate interpretation. |
 | `infra/compose/observability-smoke-test.sh` | Observability validation script. |
 | `infra/compose/security-validation-test.sh` | Security validation script. |
 
 ## Current State
 
 - This domain already has substantial implementation and documentation across backend health and performance packages, compose scripts, and operational runbooks.
-- Testing strategy and CI quality gate documents exist outside MindSpec and now map naturally into this canonical domain view.
+- Testing strategy and CI quality gate documents map naturally into this canonical domain view.
 - Operability is the main cross-cutting domain in the repo and underpins all bounded contexts.

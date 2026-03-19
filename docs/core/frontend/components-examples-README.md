@@ -536,8 +536,8 @@ For questions or issues:
 
 1. Check the example components for reference implementations
 2. Review the test files for usage patterns
-3. Consult the main product design documents in `.mindspec/docs/specs/pdd-v0.1/design/`
-4. Refer to BC04 implementation spec: `.mindspec/docs/specs/pdd-v0.1/implementation/bc04-rules-scheduling-and-draw.md`
+3. Consult the main product design documents in `docs/specs/pdd-v0.1/design/`
+4. Refer to BC04 implementation spec: `docs/specs/pdd-v0.1/implementation/bc04-rules-scheduling-and-draw.md`
 
 ---
 
