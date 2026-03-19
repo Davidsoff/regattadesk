@@ -103,9 +103,9 @@ function buildMarker(id = 'marker-1', overrides = {}) {
     timestamp_ms: 1767261600000,
     is_linked: false,
     is_approved: false,
-    tile_id: 'tile-1',
-    tile_x: 5,
-    tile_y: 3,
+    tile_id: 'tile-ready',
+    tile_x: 0,
+    tile_y: 0,
     ...overrides
   }
 }
@@ -115,7 +115,7 @@ function buildCaptureSession(id = 'session-1', overrides = {}) {
     capture_session_id: id,
     regatta_id: 'regatta-97',
     block_id: 'block-1',
-    station: 'finish-line',
+    station: 'line-scan',
     device_id: 'device-1',
     session_type: 'finish',
     state: 'open',
@@ -125,6 +125,71 @@ function buildCaptureSession(id = 'session-1', overrides = {}) {
     is_synced: true,
     drift_exceeded_threshold: false,
     unsynced_reason: '',
+    capabilities: {
+      persisted_evidence_workspace_supported: true,
+      live_preview_supported: false,
+      device_control_mode: 'read_only'
+    },
+    live_status: {
+      preview_state: 'inactive',
+      drift_state: 'synced',
+      elapsed_capture_ms: 12000,
+      status_observed_at: '2026-01-01T10:00:12Z'
+    },
+    ...overrides
+  }
+}
+
+function buildWorkspace(overrides = {}) {
+  return {
+    regatta_id: 'regatta-97',
+    capture_session_id: 'session-1',
+    capture_session: buildCaptureSession(),
+    evidence: {
+      manifest_id: 'manifest-1',
+      capture_session_id: 'session-1',
+      availability_state: 'ready',
+      availability_reason: null,
+      tile_size_px: 512,
+      primary_format: 'webp_lossless',
+      fallback_format: 'png',
+      x_origin_timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
+      ms_per_pixel: 4,
+      span: {
+        start_timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
+        end_timestamp_ms: Date.parse('2026-01-01T10:00:04.096Z'),
+        min_tile_x: 0,
+        max_tile_x: 1,
+        min_tile_y: 0,
+        max_tile_y: 0,
+        tile_columns: 2,
+        tile_rows: 1,
+        pixel_width: 1024,
+        pixel_height: 512
+      },
+      tiles: [
+        {
+          tile_id: 'tile-ready',
+          tile_x: 0,
+          tile_y: 0,
+          content_type: 'image/webp',
+          byte_size: 256,
+          upload_state: 'ready',
+          upload_attempts: 1,
+          tile_href: 'https://example.test/tile-ready.webp'
+        },
+        {
+          tile_id: 'tile-pending',
+          tile_x: 1,
+          tile_y: 0,
+          content_type: 'image/webp',
+          upload_state: 'pending',
+          upload_attempts: 0,
+          tile_href: 'https://example.test/tile-pending.webp'
+        }
+      ]
+    },
+    markers: [buildMarker('marker-linked', { frame_offset: 20, timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z'), is_linked: true, entry_id: 'entry-2', tile_x: 1 })],
     ...overrides
   }
 }
@@ -170,30 +235,74 @@ afterEach(() => {
 })
 
 describe('LineScanCapture operator evidence workspace', () => {
-  it('shows the explicit development evidence source when no live frame is attached', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
+  it('renders the evidence-first stage with degraded status and overlay markers', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          evidence: {
+            ...buildWorkspace().evidence,
+            availability_state: 'degraded',
+            availability_reason: 'tile_upload_pending'
+          },
+          markers: [
+            buildMarker('marker-a', {
+              frame_offset: 10,
+              timestamp_ms: Date.parse('2026-01-01T10:00:00.400Z'),
+              tile_x: 0
+            }),
+            buildMarker('marker-b', {
+              frame_offset: 30,
+              timestamp_ms: Date.parse('2026-01-01T10:00:01.200Z'),
+              is_linked: true,
+              tile_x: 1
+            })
+          ]
+        })
+      )
+    )
 
     const wrapper = await mountLineScanCapture(fetchMock)
 
-    expect(wrapper.find('[data-testid="dev-evidence-banner"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="evidence-source-mode"]').text()).toContain('Development evidence source')
+    expect(wrapper.find('[data-testid="evidence-stage"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="evidence-degraded-banner"]').text()).toContain('still uploading')
+    expect(wrapper.find('[data-testid="evidence-stage-marker-marker-a"]').attributes('style')).toContain('left:')
+    expect(wrapper.find('[data-testid="evidence-cursor"]').exists()).toBe(true)
   })
 
-  it('creates a marker from explicit evidence metadata and clears the queue after sync', async () => {
+  it('shows an explicit unavailable state when persisted evidence is missing', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          evidence: {
+            manifest_id: null,
+            capture_session_id: 'session-1',
+            availability_state: 'unavailable',
+            availability_reason: 'manifest_missing',
+            tiles: []
+          },
+          markers: []
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    expect(wrapper.find('[data-testid="evidence-unavailable-state"]').text()).toContain('Evidence unavailable')
+    expect(wrapper.text()).toContain('No persisted evidence manifest')
+    expect(wrapper.find('[data-testid="create-marker-button"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('creates a marker from the persisted review cursor and clears the queue after sync', async () => {
     const createdMarker = buildMarker('marker-created', {
       frame_offset: 0,
       timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
-      tile_id: null,
-      tile_x: null,
-      tile_y: null
+      tile_id: 'tile-ready',
+      tile_x: 0,
+      tile_y: 0
     })
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({ markers: [] })))
 
     syncQueueMock.mockResolvedValueOnce({
       synced: [{ id: 1, data: createdMarker }],
@@ -213,39 +322,19 @@ describe('LineScanCapture operator evidence workspace', () => {
       capture_session_id: 'session-1',
       frame_offset: 0,
       timestamp_ms: Date.parse('2026-01-01T10:00:00Z'),
-      tile_id: null,
-      tile_x: null,
-      tile_y: null
+      tile_id: 'tile-ready',
+      tile_x: 0,
+      tile_y: 0
     })
     expect(wrapper.find('[data-testid="marker-item-marker-created"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="queue-empty-state"]').exists()).toBe(true)
   })
 
-  it('recenters review state when an unlinked marker is selected from the overview', async () => {
-    const markers = [
-      buildMarker('marker-linked', { frame_offset: 2000, is_linked: true, entry_id: 'entry-2' }),
-      buildMarker('marker-unlinked', { frame_offset: 1400, is_linked: false })
-    ]
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: markers }))
-
-    const wrapper = await mountLineScanCapture(fetchMock)
-
-    await wrapper.find('[data-testid="overview-marker-marker-unlinked"]').trigger('click')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('Selected marker: marker-unlinked')
-    expect(wrapper.find('[data-testid="overview-center-slider"]').element.value).toBe('1400')
-  })
-
   it('queues link mutations while offline instead of attempting immediate sync', async () => {
     setNavigatorOnline(false)
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1')] }))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-1')]
+    })))
 
     const wrapper = await mountLineScanCapture(fetchMock)
 
@@ -263,9 +352,12 @@ describe('LineScanCapture operator evidence workspace', () => {
   it('surfaces queued conflicts and lets the operator discard the blocked mutation', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
+      .mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+        markers: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })]
+      })))
+      .mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+        markers: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })]
+      })))
 
     syncQueueMock.mockResolvedValueOnce({
       synced: [],
@@ -302,10 +394,9 @@ describe('LineScanCapture operator evidence workspace', () => {
       is_approved: true,
       entry_id: 'entry-1'
     })
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })] }))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-1', { is_linked: true, entry_id: 'entry-1' })]
+    })))
 
     syncQueueMock.mockResolvedValueOnce({
       synced: [{ id: 1, data: approvedMarker }],
@@ -325,10 +416,7 @@ describe('LineScanCapture operator evidence workspace', () => {
   })
 
   it('keeps the high-contrast control wired to the operator theme composable', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse(200, buildCaptureSession()))
-      .mockResolvedValueOnce(jsonResponse(200, { data: [] }))
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace()))
 
     const wrapper = await mountLineScanCapture(fetchMock)
 

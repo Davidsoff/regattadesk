@@ -24,7 +24,9 @@ const emit = defineEmits(['queue-state-change'])
 const { t } = useI18n()
 
 const markers = ref([])
+const evidenceWorkspace = ref(null)
 const errorMessage = ref('')
+const workspaceErrorMessage = ref('')
 const isLoading = ref(false)
 const editingMarkerId = ref(null)
 const editingFrameOffset = ref('')
@@ -32,16 +34,9 @@ const linkingMarkerId = ref(null)
 const linkingEntryId = ref('')
 const undoStack = ref([])
 const captureSession = ref(null)
-const captureSessionErrorMessage = ref('')
-const isSessionLoading = ref(false)
 const selectedMarkerId = ref(null)
 const detailCenterFrame = ref(0)
 const detailZoomStep = ref('medium')
-const attachedEvidence = ref(null)
-const devEvidenceFrameOffset = ref('0')
-const devEvidenceTileId = ref('')
-const devEvidenceTileX = ref('')
-const devEvidenceTileY = ref('')
 const queueItems = ref([])
 const isQueueSyncing = ref(false)
 const isOnline = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
@@ -61,16 +56,13 @@ const zoomWindowSizes = {
   fine: 180
 }
 
-function normalizeMarkerListResponse(result) {
-  if (Array.isArray(result)) {
-    return result
+function normalizeMarker(marker) {
+  return {
+    ...marker,
+    local_sync_state: marker.local_sync_state ?? null,
+    tile_x: Number.isFinite(Number(marker.tile_x)) ? Number(marker.tile_x) : null,
+    tile_y: Number.isFinite(Number(marker.tile_y)) ? Number(marker.tile_y) : null
   }
-
-  if (Array.isArray(result?.data)) {
-    return result.data
-  }
-
-  return []
 }
 
 function parseNonNegativeInteger(value) {
@@ -98,6 +90,19 @@ function formatTimestamp(timestampMs) {
   return new Date(timestampMs).toISOString()
 }
 
+function formatDuration(durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs < 0) {
+    return '—'
+  }
+
+  const totalSeconds = Math.floor(durationMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return [hours, minutes, seconds].map((value) => String(value).padStart(2, '0')).join(':')
+}
+
 function createTempMarkerId() {
   return `temp-marker-${Date.now()}-${Math.round(Math.random() * 10000)}`
 }
@@ -121,51 +126,85 @@ function deriveTimestampMs(frameOffset) {
   return Math.round(startMs + (frameOffset / Number(fps)) * 1000)
 }
 
-function readAttachedEvidenceFrame() {
-  const frame = globalThis.__REGATTADESK_CAPTURE_FRAME__
-  const frameOffset = parseNonNegativeInteger(frame?.frame_offset)
-  if (frameOffset === null) {
-    attachedEvidence.value = null
+function deriveFrameOffsetFromTimestamp(timestampMs) {
+  const startTime = captureSession.value?.server_time_at_start
+  const fps = captureSession.value?.fps
+  if (!startTime || !Number.isFinite(timestampMs) || !Number.isFinite(Number(fps)) || Number(fps) <= 0) {
+    return null
+  }
+
+  const startMs = Date.parse(startTime)
+  if (!Number.isFinite(startMs)) {
+    return null
+  }
+
+  return Math.max(0, Math.round(((timestampMs - startMs) / 1000) * Number(fps)))
+}
+
+function defaultCursorFrameOffset() {
+  const startTimestampMs = evidenceWorkspace.value?.evidence?.span?.start_timestamp_ms
+  const derived = deriveFrameOffsetFromTimestamp(startTimestampMs)
+  return derived ?? 0
+}
+
+function mergeMarkerSyncState(nextMarkers) {
+  const syncStateById = new Map(markers.value.map((marker) => [marker.id, marker.local_sync_state ?? null]))
+  return nextMarkers.map((marker) => {
+    const normalizedMarker = normalizeMarker(marker)
+    return {
+      ...normalizedMarker,
+      local_sync_state: syncStateById.get(normalizedMarker.id) ?? normalizedMarker.local_sync_state ?? null
+    }
+  })
+}
+
+async function loadWorkspace() {
+  if (!hasCaptureSession() || isLoading.value) {
     return
   }
 
-  attachedEvidence.value = {
-    source: 'attached',
-    frameOffset,
-    timestampMs: Number.isFinite(frame?.timestamp_ms) ? frame.timestamp_ms : deriveTimestampMs(frameOffset),
-    tileId: typeof frame?.tile_id === 'string' && frame.tile_id.trim().length > 0 ? frame.tile_id.trim() : null,
-    tileX: parseNonNegativeInteger(frame?.tile_x),
-    tileY: parseNonNegativeInteger(frame?.tile_y)
-  }
+  workspaceErrorMessage.value = ''
+  isLoading.value = true
 
-  if (!selectedMarkerId.value) {
-    detailCenterFrame.value = frameOffset
+  try {
+    const response = await operatorApi.getEvidenceWorkspace(props.regattaId, {
+      capture_session_id: props.captureSessionId
+    })
+
+    evidenceWorkspace.value = response
+    captureSession.value = normalizeCaptureSession(response?.capture_session)
+    markers.value = mergeMarkerSyncState(Array.isArray(response?.markers) ? response.markers : [])
+
+    if (selectedMarkerId.value && !markers.value.some((marker) => marker.id === selectedMarkerId.value)) {
+      selectedMarkerId.value = null
+    }
+
+    if (!selectedMarkerId.value && markers.value.length > 0) {
+      const firstMarker = [...markers.value].sort((a, b) => a.frame_offset - b.frame_offset)[0]
+      selectedMarkerId.value = firstMarker.id
+      detailCenterFrame.value = firstMarker.frame_offset
+    } else if (!selectedMarkerId.value) {
+      detailCenterFrame.value = defaultCursorFrameOffset()
+    }
+  } catch (error) {
+    workspaceErrorMessage.value =
+      error instanceof Error ? error.message : t('operator.capture.errors.failed_load_workspace')
+  } finally {
+    isLoading.value = false
   }
 }
 
-const currentEvidence = computed(() => {
-  if (attachedEvidence.value) {
-    return attachedEvidence.value
-  }
+const evidence = computed(() => evidenceWorkspace.value?.evidence ?? null)
+const evidenceSpan = computed(() => evidence.value?.span ?? null)
+const evidenceTiles = computed(() => {
+  const tiles = Array.isArray(evidence.value?.tiles) ? evidence.value.tiles : []
+  return [...tiles].sort((a, b) => {
+    if ((a.tile_y ?? 0) !== (b.tile_y ?? 0)) {
+      return (a.tile_y ?? 0) - (b.tile_y ?? 0)
+    }
 
-  const frameOffset = parseNonNegativeInteger(devEvidenceFrameOffset.value)
-  if (frameOffset === null) {
-    return null
-  }
-
-  const timestampMs = deriveTimestampMs(frameOffset)
-  if (!Number.isFinite(timestampMs)) {
-    return null
-  }
-
-  return {
-    source: 'development',
-    frameOffset,
-    timestampMs,
-    tileId: devEvidenceTileId.value.trim() || null,
-    tileX: parseNonNegativeInteger(devEvidenceTileX.value),
-    tileY: parseNonNegativeInteger(devEvidenceTileY.value)
-  }
+    return (a.tile_x ?? 0) - (b.tile_x ?? 0)
+  })
 })
 
 const sortedMarkers = computed(() => {
@@ -186,6 +225,84 @@ const detailWindowSize = computed(() => {
   return zoomWindowSizes[detailZoomStep.value] ?? zoomWindowSizes.medium
 })
 
+function evidencePercentX(timestampMs) {
+  const span = evidenceSpan.value
+  const xOriginTimestampMs = evidence.value?.x_origin_timestamp_ms
+  const msPerPixel = evidence.value?.ms_per_pixel
+  if (!span || !Number.isFinite(timestampMs) || !Number.isFinite(Number(xOriginTimestampMs)) || !Number.isFinite(Number(msPerPixel)) || Number(msPerPixel) <= 0 || span.pixel_width <= 0) {
+    return null
+  }
+
+  const pixelX = (timestampMs - Number(xOriginTimestampMs)) / Number(msPerPixel)
+  return Math.min(100, Math.max(0, (pixelX / span.pixel_width) * 100))
+}
+
+function evidencePercentY(tileY) {
+  const span = evidenceSpan.value
+  const tileSizePx = evidence.value?.tile_size_px
+  if (!span || !Number.isFinite(Number(tileY)) || !Number.isFinite(Number(tileSizePx)) || Number(tileSizePx) <= 0 || span.pixel_height <= 0) {
+    return 50
+  }
+
+  const relativeY = ((Number(tileY) - span.min_tile_y) * Number(tileSizePx) + Number(tileSizePx) / 2) / span.pixel_height
+  return Math.min(100, Math.max(0, relativeY * 100))
+}
+
+function locateEvidenceTile(timestampMs, preferredTileY = null) {
+  const span = evidenceSpan.value
+  const tileSizePx = evidence.value?.tile_size_px
+  const msPerPixel = evidence.value?.ms_per_pixel
+  const xOriginTimestampMs = evidence.value?.x_origin_timestamp_ms
+  if (!span || !Number.isFinite(timestampMs) || !Number.isFinite(Number(tileSizePx)) || Number(tileSizePx) <= 0 || !Number.isFinite(Number(msPerPixel)) || Number(msPerPixel) <= 0 || !Number.isFinite(Number(xOriginTimestampMs))) {
+    return {
+      tileId: null,
+      tileX: null,
+      tileY: null,
+      uploadState: null
+    }
+  }
+
+  const absoluteTileX = Math.min(
+    span.max_tile_x,
+    Math.max(
+      span.min_tile_x,
+      span.min_tile_x + Math.floor(((timestampMs - Number(xOriginTimestampMs)) / Number(msPerPixel)) / Number(tileSizePx))
+    )
+  )
+  const absoluteTileY = Math.min(
+    span.max_tile_y,
+    Math.max(span.min_tile_y, Number.isFinite(Number(preferredTileY)) ? Number(preferredTileY) : span.min_tile_y)
+  )
+
+  const tile = evidenceTiles.value.find((candidate) => candidate.tile_x === absoluteTileX && candidate.tile_y === absoluteTileY)
+  return {
+    tileId: tile?.tile_id ?? null,
+    tileX: absoluteTileX,
+    tileY: absoluteTileY,
+    uploadState: tile?.upload_state ?? null
+  }
+}
+
+const currentEvidence = computed(() => {
+  const frameOffset = Math.max(0, Math.round(detailCenterFrame.value))
+  const timestampMs = deriveTimestampMs(frameOffset)
+  if (!Number.isFinite(timestampMs)) {
+    return null
+  }
+
+  const tilePlacement = locateEvidenceTile(timestampMs, selectedMarker.value?.tile_y)
+
+  return {
+    source: 'persisted',
+    frameOffset,
+    timestampMs,
+    tileId: tilePlacement.tileId,
+    tileX: tilePlacement.tileX,
+    tileY: tilePlacement.tileY,
+    uploadState: tilePlacement.uploadState
+  }
+})
+
 const frameBounds = computed(() => {
   const frameOffsets = markers.value.map((marker) => marker.frame_offset)
   if (currentEvidence.value) {
@@ -193,7 +310,8 @@ const frameBounds = computed(() => {
   }
 
   if (frameOffsets.length === 0) {
-    return { min: 0, max: detailWindowSize.value }
+    const fallbackFrame = defaultCursorFrameOffset()
+    return { min: Math.max(0, fallbackFrame - detailWindowSize.value / 2), max: fallbackFrame + detailWindowSize.value / 2 }
   }
 
   const min = Math.max(0, Math.min(...frameOffsets) - 120)
@@ -233,8 +351,75 @@ const pendingConflicts = computed(() => {
 })
 
 const hasMarkers = computed(() => markers.value.length > 0)
-const hasAttachedEvidence = computed(() => Boolean(attachedEvidence.value))
-const canCreateMarker = computed(() => Boolean(currentEvidence.value) && !isLoading.value)
+const hasRenderableEvidence = computed(() => {
+  return Boolean(evidenceSpan.value) && evidenceTiles.value.length > 0 && evidence.value?.availability_state !== 'unavailable'
+})
+const currentCursorPercent = computed(() => evidencePercentX(currentEvidence.value?.timestampMs ?? null))
+const currentCursorStyle = computed(() => {
+  if (currentCursorPercent.value === null) {
+    return {}
+  }
+
+  return {
+    left: `${currentCursorPercent.value}%`
+  }
+})
+const canCreateMarker = computed(() => {
+  return Boolean(currentEvidence.value) && evidence.value?.availability_state !== 'unavailable' && !isLoading.value
+})
+const evidenceAvailabilityClass = computed(() => {
+  switch (evidence.value?.availability_state) {
+    case 'ready':
+      return 'stage-state--ready'
+    case 'degraded':
+      return 'stage-state--degraded'
+    default:
+      return 'stage-state--unavailable'
+  }
+})
+const evidenceAvailabilityLabel = computed(() => {
+  switch (evidence.value?.availability_state) {
+    case 'ready':
+      return t('operator.capture.evidence_ready')
+    case 'degraded':
+      return t('operator.capture.evidence_degraded')
+    default:
+      return t('operator.capture.evidence_unavailable')
+  }
+})
+const evidenceAvailabilityMessage = computed(() => {
+  switch (evidence.value?.availability_reason) {
+    case 'manifest_has_no_tiles':
+      return t('operator.capture.evidence_reason_manifest_has_no_tiles')
+    case 'tile_upload_pending':
+      return t('operator.capture.evidence_reason_tile_upload_pending')
+    case 'tile_upload_failed':
+      return t('operator.capture.evidence_reason_tile_upload_failed')
+    case 'manifest_missing':
+    default:
+      return t('operator.capture.evidence_reason_manifest_missing')
+  }
+})
+const previewStateMessage = computed(() => {
+  const previewState = captureSession.value?.live_status?.preview_state
+  if (previewState === 'closed') {
+    return t('operator.capture.preview_state_closed')
+  }
+
+  return t('operator.capture.preview_state_unsupported')
+})
+const stageGridStyle = computed(() => {
+  const span = evidenceSpan.value
+  if (!span) {
+    return {}
+  }
+
+  return {
+    gridTemplateColumns: `repeat(${Math.max(1, span.tile_columns || 1)}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${Math.max(1, span.tile_rows || 1)}, minmax(0, 1fr))`,
+    aspectRatio: `${Math.max(1, span.pixel_width || 1)} / ${Math.max(1, span.pixel_height || 1)}`
+  }
+})
 
 function buildQueueSummary(items) {
   return {
@@ -251,10 +436,7 @@ async function refreshQueueItems() {
 }
 
 function upsertMarker(marker) {
-  const normalizedMarker = {
-    ...marker,
-    local_sync_state: marker.local_sync_state ?? null
-  }
+  const normalizedMarker = normalizeMarker(marker)
   const index = markers.value.findIndex((candidate) => candidate.id === normalizedMarker.id)
   if (index === -1) {
     markers.value.push(normalizedMarker)
@@ -272,7 +454,7 @@ function replaceMarkerId(previousId, nextMarker) {
   if (index === -1) {
     upsertMarker(nextMarker)
   } else {
-    markers.value[index] = nextMarker
+    markers.value[index] = normalizeMarker(nextMarker)
   }
 
   if (selectedMarkerId.value === previousId) {
@@ -293,63 +475,6 @@ function removeMarker(markerId) {
   markers.value = markers.value.filter((marker) => marker.id !== markerId)
   if (selectedMarkerId.value === markerId) {
     selectedMarkerId.value = null
-  }
-}
-
-async function loadMarkers() {
-  if (!hasCaptureSession() || isLoading.value) {
-    return
-  }
-
-  errorMessage.value = ''
-  isLoading.value = true
-
-  try {
-    const result = await operatorApi.listMarkers(props.regattaId, {
-      capture_session_id: props.captureSessionId
-    })
-    markers.value = normalizeMarkerListResponse(result)
-
-    if (selectedMarkerId.value && !markers.value.some((marker) => marker.id === selectedMarkerId.value)) {
-      selectedMarkerId.value = null
-    }
-
-    if (!selectedMarkerId.value && markers.value.length > 0) {
-      selectedMarkerId.value = sortedMarkers.value[0].id
-      detailCenterFrame.value = sortedMarkers.value[0].frame_offset
-    }
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('operator.capture.errors.failed_load_markers')
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function loadCaptureSession() {
-  if (!hasCaptureSession() || isSessionLoading.value) {
-    return
-  }
-
-  captureSessionErrorMessage.value = ''
-  isSessionLoading.value = true
-
-  try {
-    captureSession.value = normalizeCaptureSession(
-      await operatorApi.getCaptureSession(props.regattaId, props.captureSessionId)
-    )
-
-    if (!captureSession.value) {
-      captureSessionErrorMessage.value = t('operator.capture.errors.failed_load_session_status')
-      return
-    }
-
-    if (!selectedMarkerId.value && currentEvidence.value) {
-      detailCenterFrame.value = currentEvidence.value.frameOffset
-    }
-  } catch {
-    captureSessionErrorMessage.value = t('operator.capture.errors.failed_load_session_status')
-  } finally {
-    isSessionLoading.value = false
   }
 }
 
@@ -431,6 +556,41 @@ function conflictHelperText(item) {
   return t('operator.capture.queue_policy_manual')
 }
 
+function tileStateLabel(tile) {
+  switch (tile.upload_state) {
+    case 'ready':
+      return t('operator.capture.tile_state_ready')
+    case 'failed':
+      return t('operator.capture.tile_state_failed')
+    default:
+      return t('operator.capture.tile_state_pending')
+  }
+}
+
+function tilePlacementStyle(tile) {
+  const span = evidenceSpan.value
+  if (!span) {
+    return {}
+  }
+
+  return {
+    gridColumnStart: tile.tile_x - span.min_tile_x + 1,
+    gridRowStart: tile.tile_y - span.min_tile_y + 1
+  }
+}
+
+function overlayMarkerStyle(marker) {
+  const left = evidencePercentX(marker.timestamp_ms)
+  if (left === null) {
+    return {}
+  }
+
+  return {
+    left: `${left}%`,
+    top: `${evidencePercentY(marker.tile_y)}%`
+  }
+}
+
 async function queueMutation(operation, applyOptimistic) {
   if (!operatorToken.value) {
     errorMessage.value = t('operator.capture.errors.operator_token_required')
@@ -462,9 +622,14 @@ function buildMarkerPatchPayload(frameOffset) {
     return null
   }
 
+  const tilePlacement = locateEvidenceTile(timestampMs, selectedMarker.value?.tile_y)
+
   return {
     frame_offset: frameOffset,
-    timestamp_ms: timestampMs
+    timestamp_ms: timestampMs,
+    tile_id: tilePlacement.tileId,
+    tile_x: tilePlacement.tileX,
+    tile_y: tilePlacement.tileY
   }
 }
 
@@ -475,7 +640,7 @@ async function createMarker() {
   }
 
   if (!captureSession.value) {
-    await loadCaptureSession()
+    await loadWorkspace()
   }
 
   if (!captureSession.value?.server_time_at_start || !captureSession.value?.fps) {
@@ -489,7 +654,7 @@ async function createMarker() {
   }
 
   const tempMarkerId = createTempMarkerId()
-  const evidence = currentEvidence.value
+  const evidenceCursor = currentEvidence.value
   errorMessage.value = ''
 
   await queueMutation(
@@ -499,11 +664,11 @@ async function createMarker() {
       method: 'POST',
       data: {
         capture_session_id: props.captureSessionId,
-        frame_offset: evidence.frameOffset,
-        timestamp_ms: evidence.timestampMs,
-        tile_id: evidence.tileId,
-        tile_x: evidence.tileX,
-        tile_y: evidence.tileY
+        frame_offset: evidenceCursor.frameOffset,
+        timestamp_ms: evidenceCursor.timestampMs,
+        tile_id: evidenceCursor.tileId,
+        tile_x: evidenceCursor.tileX,
+        tile_y: evidenceCursor.tileY
       },
       conflictStrategy: 'manual',
       metadata: {
@@ -515,16 +680,16 @@ async function createMarker() {
         id: tempMarkerId,
         capture_session_id: props.captureSessionId,
         entry_id: null,
-        frame_offset: evidence.frameOffset,
-        timestamp_ms: evidence.timestampMs,
+        frame_offset: evidenceCursor.frameOffset,
+        timestamp_ms: evidenceCursor.timestampMs,
         is_linked: false,
         is_approved: false,
-        tile_id: evidence.tileId,
-        tile_x: evidence.tileX,
-        tile_y: evidence.tileY,
+        tile_id: evidenceCursor.tileId,
+        tile_x: evidenceCursor.tileX,
+        tile_y: evidenceCursor.tileY,
         local_sync_state: 'queued'
       })
-      selectMarker({ id: tempMarkerId, frame_offset: evidence.frameOffset })
+      selectMarker({ id: tempMarkerId, frame_offset: evidenceCursor.frameOffset })
     }
   )
 }
@@ -845,7 +1010,7 @@ async function syncQueuedOperations(targetIds = null) {
 
       if (result.discarded.length > 0) {
         await dequeue(item.id)
-        await loadMarkers()
+        await loadWorkspace()
         continue
       }
 
@@ -888,7 +1053,7 @@ async function retryQueueItem(queueId) {
   await updateQueueItem(queueId, { status: 'queued', lastError: null, limitation: null })
   await refreshQueueItems()
   if (isOnline.value) {
-    await loadMarkers()
+    await loadWorkspace()
     await syncQueuedOperations([queueId])
   }
 }
@@ -896,7 +1061,7 @@ async function retryQueueItem(queueId) {
 async function discardQueueItem(queueId) {
   await dequeue(queueId)
   await refreshQueueItems()
-  await loadMarkers()
+  await loadWorkspace()
 }
 
 function handleOnline() {
@@ -909,16 +1074,6 @@ function handleOffline() {
 }
 
 watch(
-  () => currentEvidence.value?.frameOffset,
-  (frameOffset) => {
-    if (Number.isFinite(frameOffset) && !selectedMarkerId.value) {
-      detailCenterFrame.value = frameOffset
-    }
-  },
-  { immediate: true }
-)
-
-watch(
   () => queueSize.value,
   () => {
     refreshQueueItems()
@@ -926,8 +1081,7 @@ watch(
 )
 
 onMounted(async () => {
-  readAttachedEvidenceFrame()
-  await Promise.all([loadCaptureSession(), loadMarkers(), refreshQueueItems()])
+  await Promise.all([loadWorkspace(), refreshQueueItems()])
 
   if (typeof window !== 'undefined') {
     window.addEventListener('online', handleOnline)
@@ -944,7 +1098,7 @@ onUnmounted(() => {
 
 defineExpose({
   deleteMarker,
-  loadCaptureSession,
+  loadWorkspace,
   retryQueueItem,
   discardQueueItem,
   syncQueuedOperations,
@@ -995,76 +1149,127 @@ defineExpose({
       {{ errorMessage }}
     </div>
 
+    <div v-if="workspaceErrorMessage" data-testid="workspace-error-message" class="error-message">
+      {{ workspaceErrorMessage }}
+    </div>
+
     <section class="workspace-grid">
-      <div class="workspace-panel evidence-panel">
+      <div class="workspace-panel evidence-stage-panel">
         <div class="panel-header">
           <h3>{{ t('operator.capture.current_evidence') }}</h3>
           <button
             type="button"
-            data-testid="refresh-live-source"
+            data-testid="refresh-evidence-workspace"
             class="secondary-button"
-            @click="readAttachedEvidenceFrame"
+            @click="loadWorkspace"
+            :disabled="isLoading"
           >
-            {{ t('operator.capture.refresh_live_source') }}
+            {{ t('operator.capture.refresh_evidence_workspace') }}
           </button>
         </div>
 
-        <p data-testid="evidence-source-mode" class="source-mode">
-          {{ hasAttachedEvidence ? t('operator.capture.evidence_source_live') : t('operator.capture.evidence_source_dev') }}
-        </p>
-
-        <p v-if="!hasAttachedEvidence" data-testid="dev-evidence-banner" class="dev-evidence-banner">
-          {{ t('operator.capture.dev_source_hint') }}
-        </p>
-
-        <div class="evidence-fields">
-          <label>
-            <span>{{ t('operator.capture.dev_frame_offset') }}</span>
-            <input
-              type="number"
-              data-testid="dev-frame-offset-input"
-              v-model="devEvidenceFrameOffset"
-              min="0"
-            />
-          </label>
-
-          <label>
-            <span>{{ t('operator.capture.dev_tile_id') }}</span>
-            <input
-              type="text"
-              data-testid="dev-tile-id-input"
-              v-model="devEvidenceTileId"
-            />
-          </label>
-
-          <label>
-            <span>{{ t('operator.capture.dev_tile_x') }}</span>
-            <input
-              type="number"
-              data-testid="dev-tile-x-input"
-              v-model="devEvidenceTileX"
-              min="0"
-            />
-          </label>
-
-          <label>
-            <span>{{ t('operator.capture.dev_tile_y') }}</span>
-            <input
-              type="number"
-              data-testid="dev-tile-y-input"
-              v-model="devEvidenceTileY"
-              min="0"
-            />
-          </label>
+        <div class="stage-notices">
+          <span data-testid="evidence-availability-badge" class="stage-state" :class="evidenceAvailabilityClass">
+            {{ evidenceAvailabilityLabel }}
+          </span>
+          <span class="stage-note">
+            {{ previewStateMessage }}
+          </span>
+          <span
+            v-if="captureSession?.state === 'closed'"
+            data-testid="session-gated-state"
+            class="stage-note"
+          >
+            {{ t('operator.capture.session_closed_review_only') }}
+          </span>
         </div>
 
-        <div v-if="currentEvidence" data-testid="evidence-preview" class="evidence-preview">
-          <span>{{ t('operator.capture.frame_preview') }}: {{ currentEvidence.frameOffset }}</span>
-          <span>{{ t('operator.capture.derived_time') }}: {{ formatTimestamp(currentEvidence.timestampMs) }}</span>
-          <span>{{ t('operator.capture.capture_ready') }}</span>
+        <p
+          v-if="evidence?.availability_state === 'degraded'"
+          data-testid="evidence-degraded-banner"
+          class="stage-banner stage-banner--warning"
+        >
+          {{ evidenceAvailabilityMessage }}
+        </p>
+
+        <div
+          v-if="hasRenderableEvidence"
+          data-testid="evidence-stage-shell"
+          class="evidence-stage-shell"
+        >
+          <div
+            data-testid="evidence-stage"
+            class="evidence-stage"
+            :style="stageGridStyle"
+            role="img"
+            :aria-label="t('operator.capture.evidence_stage_aria')"
+          >
+            <div
+              v-for="tile in evidenceTiles"
+              :key="tile.tile_id"
+              class="evidence-stage__tile"
+              :class="`evidence-stage__tile--${tile.upload_state || 'pending'}`"
+              :style="tilePlacementStyle(tile)"
+              :data-testid="`evidence-tile-${tile.tile_id}`"
+            >
+              <img
+                v-if="tile.upload_state === 'ready' && tile.tile_href"
+                :src="tile.tile_href"
+                class="evidence-stage__image"
+                :alt="t('operator.capture.evidence_tile_alt', { tileId: tile.tile_id })"
+              />
+              <div v-else class="evidence-stage__placeholder">
+                <strong>{{ tile.tile_id }}</strong>
+              </div>
+              <span class="evidence-stage__tile-label">
+                {{ tileStateLabel(tile) }}
+              </span>
+            </div>
+
+            <div class="evidence-stage__overlay">
+              <div
+                v-if="currentCursorPercent !== null"
+                data-testid="evidence-cursor"
+                class="evidence-cursor"
+                :style="currentCursorStyle"
+              >
+                <span class="sr-only">{{ t('operator.capture.review_cursor') }}</span>
+              </div>
+
+              <button
+                v-for="marker in sortedMarkers"
+                :key="`stage-marker-${marker.id}`"
+                type="button"
+                class="evidence-overlay-marker"
+                :class="{
+                  'evidence-overlay-marker--selected': marker.id === selectedMarkerId,
+                  'evidence-overlay-marker--linked': marker.is_linked,
+                  'evidence-overlay-marker--approved': marker.is_approved
+                }"
+                :style="overlayMarkerStyle(marker)"
+                :data-testid="`evidence-stage-marker-${marker.id}`"
+                :aria-label="t('operator.capture.evidence_marker_aria', { markerId: marker.id, frameOffset: marker.frame_offset })"
+                @click="selectMarker(marker)"
+              >
+                <span>{{ marker.frame_offset }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="currentEvidence" data-testid="evidence-preview" class="evidence-preview">
+            <span>{{ t('operator.capture.frame_preview') }}: {{ currentEvidence.frameOffset }}</span>
+            <span>{{ t('operator.capture.derived_time') }}: {{ formatTimestamp(currentEvidence.timestampMs) }}</span>
+            <span>{{ t('operator.capture.current_tile') }}: {{ currentEvidence.tileId || '—' }}</span>
+          </div>
         </div>
-        <div v-else class="evidence-preview evidence-preview--pending">
-          {{ t('operator.capture.capture_pending_source') }}
+
+        <div
+          v-else
+          data-testid="evidence-unavailable-state"
+          class="evidence-preview evidence-preview--pending"
+        >
+          <strong>{{ evidenceAvailabilityLabel }}</strong>
+          <span>{{ evidenceAvailabilityMessage }}</span>
         </div>
       </div>
 
@@ -1100,6 +1305,12 @@ defineExpose({
           >
             <span class="sr-only">{{ t('operator.capture.review_marker') }}</span>
           </button>
+          <div
+            v-if="currentEvidence"
+            data-testid="overview-cursor"
+            class="overview-cursor"
+            :style="markerPositionStyle({ frame_offset: currentEvidence.frameOffset })"
+          ></div>
         </div>
 
         <label class="overview-slider">
@@ -1134,10 +1345,10 @@ defineExpose({
             type="button"
             data-testid="load-session-status"
             class="secondary-button"
-            @click="loadCaptureSession"
-            :disabled="isSessionLoading"
+            @click="loadWorkspace"
+            :disabled="isLoading"
           >
-            {{ isSessionLoading ? t('operator.capture.session_status_loading') : t('operator.capture.session_status_refresh') }}
+            {{ isLoading ? t('operator.capture.session_status_loading') : t('operator.capture.session_status_refresh') }}
           </button>
         </div>
 
@@ -1147,6 +1358,8 @@ defineExpose({
           </span>
           <span>{{ t('operator.capture.session_start') }}: {{ captureSession.server_time_at_start || '—' }}</span>
           <span>{{ t('operator.capture.frames_per_second') }}: {{ captureSession.fps ?? '—' }}</span>
+          <span>{{ t('operator.capture.capture_elapsed') }}: {{ formatDuration(captureSession.live_status?.elapsed_capture_ms) }}</span>
+          <span>{{ t('operator.capture.preview_state') }}: {{ captureSession.live_status?.preview_state || '—' }}</span>
           <span
             v-if="captureSession.is_synced === false && captureSession.unsynced_reason"
             data-testid="session-sync-reason"
@@ -1155,14 +1368,6 @@ defineExpose({
             {{ captureSession.unsynced_reason }}
           </span>
           <p class="approval-scope-note">{{ t('operator.capture.approval_scope_note') }}</p>
-        </div>
-
-        <div
-          v-if="captureSessionErrorMessage"
-          data-testid="session-status-error"
-          class="session-status-error"
-        >
-          {{ captureSessionErrorMessage }}
         </div>
       </div>
     </section>
@@ -1415,7 +1620,8 @@ defineExpose({
 .marker-actions,
 .edit-controls,
 .link-controls,
-.zoom-controls {
+.zoom-controls,
+.stage-notices {
   display: flex;
   flex-wrap: wrap;
   gap: var(--rd-space-2, 0.5rem);
@@ -1440,9 +1646,168 @@ defineExpose({
   background: var(--rd-color-surface, #fff);
 }
 
+.evidence-stage-panel {
+  grid-column: 1 / -1;
+}
+
 .panel-header {
   justify-content: space-between;
   margin-bottom: var(--rd-space-2, 0.5rem);
+}
+
+.stage-state,
+.stage-note,
+.marker-locked,
+.marker-sync-state {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.stage-state--ready {
+  background: #eef8f1;
+  color: #0d6b3a;
+}
+
+.stage-state--degraded {
+  background: #fff7d1;
+  color: #7a5b00;
+}
+
+.stage-state--unavailable {
+  background: #ffebee;
+  color: #7f0000;
+}
+
+.stage-note {
+  background: #eef5fb;
+  color: #09355c;
+}
+
+.stage-banner {
+  margin: 0.75rem 0 0;
+  padding: var(--rd-space-2, 0.5rem);
+  border-radius: 0.5rem;
+}
+
+.stage-banner--warning,
+.evidence-preview--pending,
+.approval-scope-note {
+  background: #fff7d1;
+}
+
+.evidence-stage-shell {
+  display: grid;
+  gap: var(--rd-space-2, 0.5rem);
+  margin-top: var(--rd-space-3, 1rem);
+}
+
+.evidence-stage {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--rd-color-border, #ccc);
+  background:
+    linear-gradient(180deg, rgba(9, 53, 92, 0.06), rgba(9, 53, 92, 0.14)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55) 8px, rgba(9, 53, 92, 0.05) 8px, rgba(9, 53, 92, 0.05) 16px);
+}
+
+.evidence-stage__tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(9, 53, 92, 0.1);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.evidence-stage__tile--pending {
+  background: rgba(255, 247, 209, 0.75);
+}
+
+.evidence-stage__tile--failed {
+  background: rgba(255, 235, 238, 0.85);
+}
+
+.evidence-stage__image,
+.evidence-stage__placeholder {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.evidence-stage__image {
+  object-fit: cover;
+}
+
+.evidence-stage__placeholder {
+  display: grid;
+  place-items: center;
+  color: #09355c;
+}
+
+.evidence-stage__tile-label {
+  position: absolute;
+  left: 0.4rem;
+  bottom: 0.4rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(9, 53, 92, 0.75);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.evidence-stage__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.evidence-overlay-marker,
+.evidence-cursor {
+  position: absolute;
+}
+
+.evidence-overlay-marker {
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  min-width: 2.5rem;
+  padding: 0.35rem 0.55rem;
+  border: 2px solid #09355c;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #09355c;
+  box-shadow: 0 0.2rem 0.5rem rgba(9, 53, 92, 0.18);
+}
+
+.evidence-overlay-marker--linked {
+  border-color: #0d6b3a;
+}
+
+.evidence-overlay-marker--approved {
+  background: #111;
+  color: #fff;
+}
+
+.evidence-overlay-marker--selected {
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+.evidence-cursor {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #bc2f32;
+  box-shadow: 0 0 0 2px rgba(188, 47, 50, 0.16);
+}
+
+.evidence-preview {
+  display: grid;
+  gap: 0.25rem;
+  padding: var(--rd-space-2, 0.5rem);
+  border-radius: 0.5rem;
+  background: #eef5fb;
 }
 
 .overview-strip {
@@ -1464,15 +1829,27 @@ defineExpose({
   background: rgba(9, 53, 92, 0.12);
 }
 
-.overview-marker {
+.overview-marker,
+.overview-cursor {
   position: absolute;
   top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.overview-marker {
   width: 0.9rem;
   height: 2.5rem;
-  transform: translate(-50%, -50%);
   border: 0;
   border-radius: 999px;
   background: #bc2f32;
+}
+
+.overview-cursor {
+  width: 0.45rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #09355c;
+  opacity: 0.35;
 }
 
 .overview-marker--linked {
@@ -1521,37 +1898,6 @@ defineExpose({
   background: #f4f4f4;
 }
 
-.evidence-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--rd-space-2, 0.5rem);
-  margin-bottom: var(--rd-space-2, 0.5rem);
-}
-
-.evidence-fields label,
-.overview-slider,
-.queue-item,
-.marker-item {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.evidence-preview {
-  display: grid;
-  gap: 0.25rem;
-  padding: var(--rd-space-2, 0.5rem);
-  border-radius: 0.5rem;
-  background: #eef5fb;
-}
-
-.evidence-preview--pending,
-.dev-evidence-banner,
-.approval-scope-note {
-  padding: var(--rd-space-2, 0.5rem);
-  border-radius: 0.5rem;
-  background: #fff7d1;
-}
-
 .queue-items,
 .markers-list {
   display: grid;
@@ -1560,6 +1906,8 @@ defineExpose({
 
 .queue-item,
 .marker-item {
+  display: grid;
+  gap: 0.5rem;
   border: 1px solid var(--rd-color-border, #ccc);
   border-radius: 0.5rem;
   padding: var(--rd-space-2, 0.5rem);
@@ -1573,8 +1921,7 @@ defineExpose({
   align-items: center;
 }
 
-.queue-item__message,
-.source-mode {
+.queue-item__message {
   margin: 0;
 }
 
@@ -1592,14 +1939,6 @@ button {
   cursor: pointer;
 }
 
-.marker-locked,
-.marker-sync-state {
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 .marker-locked {
   background: var(--rd-color-warning-soft, #fff7d1);
   border: 1px solid var(--rd-color-warning, #e1b100);
@@ -1610,8 +1949,7 @@ button {
 }
 
 .conflict-pane,
-.error-message,
-.session-status-error {
+.error-message {
   padding: var(--rd-space-2, 0.5rem);
   margin-top: var(--rd-space-3, 1rem);
   border: 1px solid #b30000;
@@ -1658,9 +1996,15 @@ button {
   border: 0;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .capture-header {
     flex-direction: column;
+  }
+
+  .evidence-overlay-marker {
+    min-width: 2rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
   }
 }
 </style>

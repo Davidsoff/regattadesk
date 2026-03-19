@@ -83,6 +83,17 @@ export function createOperatorApi(client, options = {}) {
       )
     },
 
+    async getEvidenceWorkspace(regattaId, filters = {}) {
+      const query = {}
+      if (filters.capture_session_id) query.capture_session_id = filters.capture_session_id
+      if (filters.event_id) query.event_id = filters.event_id
+
+      return client.get(`/regattas/${regattaId}/operator/evidence_workspace`, {
+        ...authOptions(),
+        query
+      })
+    },
+
     // Marker Management
     async createMarker(regattaId, payload) {
       return client.post(`/regattas/${regattaId}/operator/markers`, payload, authOptions())

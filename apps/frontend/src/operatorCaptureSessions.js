@@ -32,7 +32,25 @@ export function normalizeCaptureSession(session) {
     closed_at: session.closed_at ?? null,
     close_reason: session.close_reason ?? null,
     created_at: session.created_at ?? null,
-    updated_at: session.updated_at ?? null
+    updated_at: session.updated_at ?? null,
+    capabilities:
+      session.capabilities && typeof session.capabilities === 'object'
+        ? {
+            persisted_evidence_workspace_supported:
+              session.capabilities.persisted_evidence_workspace_supported !== false,
+            live_preview_supported: session.capabilities.live_preview_supported === true,
+            device_control_mode: session.capabilities.device_control_mode ?? 'unsupported'
+          }
+        : null,
+    live_status:
+      session.live_status && typeof session.live_status === 'object'
+        ? {
+            preview_state: session.live_status.preview_state ?? 'unsupported',
+            drift_state: session.live_status.drift_state ?? null,
+            elapsed_capture_ms: session.live_status.elapsed_capture_ms ?? null,
+            status_observed_at: session.live_status.status_observed_at ?? null
+          }
+        : null
   }
 }
 
