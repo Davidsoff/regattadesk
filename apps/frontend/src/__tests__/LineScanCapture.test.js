@@ -212,6 +212,24 @@ async function mountLineScanCapture(fetchMock, options = {}) {
   return wrapper
 }
 
+function setStageRect(wrapper, rect = { left: 0, top: 0, width: 200, height: 100 }) {
+  const stage = wrapper.find('[data-testid="evidence-stage"]').element
+  stage.getBoundingClientRect = () => ({
+    ...rect,
+    right: rect.left + rect.width,
+    bottom: rect.top + rect.height,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => rect
+  })
+}
+
+function dispatchPointerEvent(type, coords) {
+  const event = new Event(type, { bubbles: true })
+  Object.assign(event, coords)
+  window.dispatchEvent(event)
+}
+
 function setNavigatorOnline(value) {
   Object.defineProperty(globalThis.navigator, 'onLine', {
     configurable: true,
@@ -328,6 +346,162 @@ describe('LineScanCapture operator evidence workspace', () => {
     })
     expect(wrapper.find('[data-testid="marker-item-marker-created"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="queue-empty-state"]').exists()).toBe(true)
+  })
+
+  it('places a new marker directly from a stage click', async () => {
+    const createdMarker = buildMarker('marker-clicked', {
+      frame_offset: 51,
+      timestamp_ms: Date.parse('2026-01-01T10:00:02.048Z'),
+      tile_id: 'tile-pending',
+      tile_x: 1,
+      tile_y: 0
+    })
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({ markers: [] })))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [{ id: 1, data: createdMarker }],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    setStageRect(wrapper)
+
+    await wrapper.find('[data-testid="evidence-stage"]').trigger('pointerdown', {
+      clientX: 120,
+      clientY: 20
+    })
+    await wrapper.find('[data-testid="evidence-stage"]').trigger('click', {
+      clientX: 120,
+      clientY: 20
+    })
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].type).toBe('CREATE_MARKER')
+    expect(operations[0].data.frame_offset).toBe(61)
+    expect(operations[0].data.tile_id).toBe('tile-pending')
+    expect(wrapper.find('[data-testid="marker-item-marker-clicked"]').exists()).toBe(true)
+  })
+
+  it('supports keyboard cursor placement from the evidence stage', async () => {
+    const createdMarker = buildMarker('marker-keyboard', {
+      frame_offset: 5,
+      timestamp_ms: Date.parse('2026-01-01T10:00:00.200Z'),
+      tile_id: 'tile-ready',
+      tile_x: 0,
+      tile_y: 0
+    })
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({ markers: [] })))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [{ id: 1, data: createdMarker }],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    await wrapper.find('[data-testid="evidence-stage"]').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await wrapper.find('[data-testid="evidence-stage"]').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].data.frame_offset).toBe(5)
+    expect(wrapper.find('[data-testid="marker-item-marker-keyboard"]').exists()).toBe(true)
+  })
+
+  it('drags an editable marker with immediate optimistic feedback before queue sync', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-drag', { frame_offset: 20, timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z'), tile_x: 0 })]
+    })))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [
+        {
+          id: 1,
+          data: buildMarker('marker-drag', {
+            frame_offset: 51,
+            timestamp_ms: Date.parse('2026-01-01T10:00:02.048Z'),
+            tile_id: 'tile-pending',
+            tile_x: 1,
+            tile_y: 0
+          })
+        }
+      ],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    setStageRect(wrapper)
+
+    await wrapper.find('[data-testid="evidence-stage-marker-marker-drag"]').trigger('pointerdown', {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 20
+    })
+    dispatchPointerEvent('pointermove', { clientX: 120, clientY: 20 })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Selected frame: 61')
+
+    dispatchPointerEvent('pointerup', { clientX: 120, clientY: 20 })
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].type).toBe('UPDATE_MARKER')
+    expect(operations[0].data.frame_offset).toBe(61)
+    expect(operations[0].data.tile_id).toBe('tile-pending')
+  })
+
+  it('nudges the selected editable marker from the keyboard', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-nudge', { frame_offset: 20, timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z') })]
+    })))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [{ id: 1, data: buildMarker('marker-nudge', { frame_offset: 25, timestamp_ms: Date.parse('2026-01-01T10:00:01.000Z') }) }],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    await wrapper.find('[data-testid="evidence-stage"]').trigger('keydown', {
+      key: 'ArrowRight',
+      altKey: true,
+      shiftKey: true
+    })
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].type).toBe('UPDATE_MARKER')
+    expect(operations[0].data.frame_offset).toBe(25)
+  })
+
+  it('does not allow approved markers to be dragged', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-locked', { is_approved: true, frame_offset: 20, timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z') })]
+    })))
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    setStageRect(wrapper)
+
+    await wrapper.find('[data-testid="evidence-stage-marker-marker-locked"]').trigger('pointerdown', {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 20
+    })
+    dispatchPointerEvent('pointermove', { clientX: 100, clientY: 20 })
+    dispatchPointerEvent('pointerup', { clientX: 100, clientY: 20 })
+    await flushPromises()
+
+    expect(syncQueueMock).not.toHaveBeenCalled()
   })
 
   it('queues link mutations while offline instead of attempting immediate sync', async () => {

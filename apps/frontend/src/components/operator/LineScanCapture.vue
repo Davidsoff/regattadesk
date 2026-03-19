@@ -37,9 +37,13 @@ const captureSession = ref(null)
 const selectedMarkerId = ref(null)
 const detailCenterFrame = ref(0)
 const detailZoomStep = ref('medium')
+const cursorTileY = ref(0)
 const queueItems = ref([])
 const isQueueSyncing = ref(false)
 const isOnline = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
+const stageElement = ref(null)
+const liveDragMarkerId = ref(null)
+const dragState = ref(null)
 
 const { isHighContrast, toggleContrast } = useOperatorTheme()
 const { queueSize, enqueue, dequeue, getQueue, updateQueueItem } = useOfflineQueue()
@@ -147,6 +151,27 @@ function defaultCursorFrameOffset() {
   return derived ?? 0
 }
 
+function defaultCursorTileY() {
+  return evidenceSpan.value?.min_tile_y ?? 0
+}
+
+function clampFrameOffset(frameOffset) {
+  if (!Number.isFinite(frameOffset)) {
+    return 0
+  }
+
+  return Math.max(0, Math.round(frameOffset))
+}
+
+function clampCursorTileY(tileY) {
+  const span = evidenceSpan.value
+  if (!span) {
+    return 0
+  }
+
+  return Math.min(span.max_tile_y, Math.max(span.min_tile_y, Math.round(tileY)))
+}
+
 function mergeMarkerSyncState(nextMarkers) {
   const syncStateById = new Map(markers.value.map((marker) => [marker.id, marker.local_sync_state ?? null]))
   return nextMarkers.map((marker) => {
@@ -183,8 +208,10 @@ async function loadWorkspace() {
       const firstMarker = [...markers.value].sort((a, b) => a.frame_offset - b.frame_offset)[0]
       selectedMarkerId.value = firstMarker.id
       detailCenterFrame.value = firstMarker.frame_offset
+      cursorTileY.value = firstMarker.tile_y ?? defaultCursorTileY()
     } else if (!selectedMarkerId.value) {
       detailCenterFrame.value = defaultCursorFrameOffset()
+      cursorTileY.value = defaultCursorTileY()
     }
   } catch (error) {
     workspaceErrorMessage.value =
@@ -290,7 +317,10 @@ const currentEvidence = computed(() => {
     return null
   }
 
-  const tilePlacement = locateEvidenceTile(timestampMs, selectedMarker.value?.tile_y)
+  const preferredTileY = liveDragMarkerId.value
+    ? markers.value.find((marker) => marker.id === liveDragMarkerId.value)?.tile_y
+    : cursorTileY.value
+  const tilePlacement = locateEvidenceTile(timestampMs, preferredTileY)
 
   return {
     source: 'persisted',
@@ -481,6 +511,7 @@ function removeMarker(markerId) {
 function selectMarker(marker) {
   selectedMarkerId.value = marker.id
   detailCenterFrame.value = marker.frame_offset
+  cursorTileY.value = marker.tile_y ?? defaultCursorTileY()
 }
 
 function focusFirstUnlinkedMarker() {
@@ -591,6 +622,55 @@ function overlayMarkerStyle(marker) {
   }
 }
 
+function buildEvidencePlacement(frameOffset, tileY = cursorTileY.value) {
+  const normalizedFrameOffset = clampFrameOffset(frameOffset)
+  const timestampMs = deriveTimestampMs(normalizedFrameOffset)
+  if (!Number.isFinite(timestampMs)) {
+    return null
+  }
+
+  const normalizedTileY = clampCursorTileY(tileY)
+  const tilePlacement = locateEvidenceTile(timestampMs, normalizedTileY)
+
+  return {
+    frameOffset: normalizedFrameOffset,
+    timestampMs,
+    tileId: tilePlacement.tileId,
+    tileX: tilePlacement.tileX,
+    tileY: tilePlacement.tileY ?? normalizedTileY,
+    uploadState: tilePlacement.uploadState
+  }
+}
+
+function buildEvidencePlacementFromPoint(clientX, clientY) {
+  const stage = stageElement.value
+  const span = evidenceSpan.value
+  const xOriginTimestampMs = evidence.value?.x_origin_timestamp_ms
+  const msPerPixel = evidence.value?.ms_per_pixel
+  const tileSizePx = evidence.value?.tile_size_px
+  if (!stage || !span || !Number.isFinite(Number(xOriginTimestampMs)) || !Number.isFinite(Number(msPerPixel)) || Number(msPerPixel) <= 0 || !Number.isFinite(Number(tileSizePx)) || Number(tileSizePx) <= 0) {
+    return null
+  }
+
+  const rect = stage.getBoundingClientRect()
+  if (!rect.width || !rect.height) {
+    return null
+  }
+
+  const relativeX = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+  const relativeY = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height))
+  const pixelX = relativeX * span.pixel_width
+  const pixelY = relativeY * span.pixel_height
+  const timestampMs = Number(xOriginTimestampMs) + pixelX * Number(msPerPixel)
+  const frameOffset = deriveFrameOffsetFromTimestamp(timestampMs)
+  const tileY = span.min_tile_y + Math.floor(pixelY / Number(tileSizePx))
+  if (frameOffset === null) {
+    return null
+  }
+
+  return buildEvidencePlacement(frameOffset, tileY)
+}
+
 async function queueMutation(operation, applyOptimistic) {
   if (!operatorToken.value) {
     errorMessage.value = t('operator.capture.errors.operator_token_required')
@@ -694,6 +774,17 @@ async function createMarker() {
   )
 }
 
+async function createMarkerFromPlacement(placement) {
+  if (!placement) {
+    errorMessage.value = t('operator.capture.errors.live_source_unavailable')
+    return
+  }
+
+  detailCenterFrame.value = placement.frameOffset
+  cursorTileY.value = placement.tileY ?? defaultCursorTileY()
+  await createMarker()
+}
+
 async function deleteMarker(markerId) {
   const marker = markers.value.find((candidate) => candidate.id === markerId)
   if (!marker) {
@@ -783,6 +874,50 @@ async function updateMarker(markerId) {
       editingMarkerId.value = null
       editingFrameOffset.value = ''
       detailCenterFrame.value = frameOffset
+      cursorTileY.value = payload.tile_y ?? cursorTileY.value
+    }
+  )
+}
+
+async function updateMarkerFromPlacement(markerId, placement) {
+  const marker = markers.value.find((candidate) => candidate.id === markerId)
+  if (!marker || marker.is_approved || !placement) {
+    return
+  }
+
+  errorMessage.value = ''
+
+  await queueMutation(
+    {
+      type: 'UPDATE_MARKER',
+      endpoint: `/api/v1/regattas/${props.regattaId}/operator/markers/${markerId}`,
+      method: 'PATCH',
+      data: {
+        frame_offset: placement.frameOffset,
+        timestamp_ms: placement.timestampMs,
+        tile_id: placement.tileId,
+        tile_x: placement.tileX,
+        tile_y: placement.tileY
+      },
+      conflictStrategy: 'last-write-wins',
+      supportsForceOverride: false,
+      metadata: {
+        markerId
+      }
+    },
+    () => {
+      upsertMarker({
+        ...marker,
+        frame_offset: placement.frameOffset,
+        timestamp_ms: placement.timestampMs,
+        tile_id: placement.tileId,
+        tile_x: placement.tileX,
+        tile_y: placement.tileY,
+        local_sync_state: 'queued'
+      })
+      undoStack.value.push({ markerId, oldFrameOffset: marker.frame_offset })
+      detailCenterFrame.value = placement.frameOffset
+      cursorTileY.value = placement.tileY ?? cursorTileY.value
     }
   )
 }
@@ -1073,6 +1208,150 @@ function handleOffline() {
   isOnline.value = false
 }
 
+function beginMarkerDrag(marker, event) {
+  if (marker.is_approved) {
+    return
+  }
+
+  dragState.value = {
+    markerId: marker.id,
+    pointerId: event.pointerId,
+    moved: false
+  }
+  liveDragMarkerId.value = marker.id
+}
+
+function handleStagePointerDown(event) {
+  if (dragState.value) {
+    return
+  }
+
+  const placement = buildEvidencePlacementFromPoint(event.clientX, event.clientY)
+  if (!placement) {
+    return
+  }
+
+  detailCenterFrame.value = placement.frameOffset
+  cursorTileY.value = placement.tileY ?? defaultCursorTileY()
+}
+
+async function handleStageClick(event) {
+  if (dragState.value) {
+    return
+  }
+
+  const placement = buildEvidencePlacementFromPoint(event.clientX, event.clientY)
+  await createMarkerFromPlacement(placement)
+}
+
+async function handleStageKeydown(event) {
+  if (!hasRenderableEvidence.value) {
+    return
+  }
+
+  const step = event.shiftKey ? 5 : 1
+
+  if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && (event.altKey || event.metaKey) && selectedMarker.value && !selectedMarker.value.is_approved) {
+    event.preventDefault()
+    const frameOffset = selectedMarker.value.frame_offset + (event.key === 'ArrowLeft' ? -step : step)
+    const placement = buildEvidencePlacement(frameOffset, selectedMarker.value.tile_y ?? cursorTileY.value)
+    await updateMarkerFromPlacement(selectedMarker.value.id, placement)
+    return
+  }
+
+  if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && (event.altKey || event.metaKey) && selectedMarker.value && !selectedMarker.value.is_approved) {
+    event.preventDefault()
+    const tileY = (selectedMarker.value.tile_y ?? cursorTileY.value) + (event.key === 'ArrowUp' ? -1 : 1)
+    const placement = buildEvidencePlacement(selectedMarker.value.frame_offset, tileY)
+    await updateMarkerFromPlacement(selectedMarker.value.id, placement)
+    return
+  }
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value - step)
+    return
+  }
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value + step)
+    return
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    cursorTileY.value = clampCursorTileY(cursorTileY.value - 1)
+    return
+  }
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    cursorTileY.value = clampCursorTileY(cursorTileY.value + 1)
+    return
+  }
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    await createMarker()
+  }
+}
+
+async function handleWindowPointerMove(event) {
+  if (!dragState.value) {
+    return
+  }
+
+  const marker = markers.value.find((candidate) => candidate.id === dragState.value.markerId)
+  if (!marker || marker.is_approved) {
+    dragState.value = null
+    liveDragMarkerId.value = null
+    return
+  }
+
+  const placement = buildEvidencePlacementFromPoint(event.clientX, event.clientY)
+  if (!placement) {
+    return
+  }
+
+  dragState.value.moved = true
+  upsertMarker({
+    ...marker,
+    frame_offset: placement.frameOffset,
+    timestamp_ms: placement.timestampMs,
+    tile_id: placement.tileId,
+    tile_x: placement.tileX,
+    tile_y: placement.tileY
+  })
+  detailCenterFrame.value = placement.frameOffset
+  cursorTileY.value = placement.tileY ?? cursorTileY.value
+}
+
+async function handleWindowPointerUp(event) {
+  if (!dragState.value) {
+    return
+  }
+
+  const markerId = dragState.value.markerId
+  const marker = markers.value.find((candidate) => candidate.id === markerId)
+  const placement = buildEvidencePlacementFromPoint(event.clientX, event.clientY)
+  const moved = dragState.value.moved
+
+  dragState.value = null
+  liveDragMarkerId.value = null
+
+  if (!marker) {
+    return
+  }
+
+  if (!moved) {
+    selectMarker(marker)
+    return
+  }
+
+  await updateMarkerFromPlacement(markerId, placement)
+}
+
 watch(
   () => queueSize.value,
   () => {
@@ -1086,6 +1365,8 @@ onMounted(async () => {
   if (typeof window !== 'undefined') {
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
+    window.addEventListener('pointermove', handleWindowPointerMove)
+    window.addEventListener('pointerup', handleWindowPointerUp)
   }
 })
 
@@ -1093,6 +1374,8 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('online', handleOnline)
     window.removeEventListener('offline', handleOffline)
+    window.removeEventListener('pointermove', handleWindowPointerMove)
+    window.removeEventListener('pointerup', handleWindowPointerUp)
   }
 })
 
@@ -1200,9 +1483,14 @@ defineExpose({
           <div
             data-testid="evidence-stage"
             class="evidence-stage"
+            ref="stageElement"
             :style="stageGridStyle"
-            role="img"
+            role="application"
+            tabindex="0"
             :aria-label="t('operator.capture.evidence_stage_aria')"
+            @pointerdown="handleStagePointerDown"
+            @click="handleStageClick"
+            @keydown="handleStageKeydown"
           >
             <div
               v-for="tile in evidenceTiles"
@@ -1249,7 +1537,8 @@ defineExpose({
                 :style="overlayMarkerStyle(marker)"
                 :data-testid="`evidence-stage-marker-${marker.id}`"
                 :aria-label="t('operator.capture.evidence_marker_aria', { markerId: marker.id, frameOffset: marker.frame_offset })"
-                @click="selectMarker(marker)"
+                @pointerdown.stop.prevent="beginMarkerDrag(marker, $event)"
+                @click.stop="selectMarker(marker)"
               >
                 <span>{{ marker.frame_offset }}</span>
               </button>
