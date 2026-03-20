@@ -44,6 +44,8 @@ const isOnline = ref(typeof navigator === 'undefined' ? true : navigator.onLine)
 const stageElement = ref(null)
 const liveDragMarkerId = ref(null)
 const dragState = ref(null)
+const overviewStripElement = ref(null)
+const overviewDragState = ref(null)
 
 const { isHighContrast, toggleContrast } = useOperatorTheme()
 const { queueSize, enqueue, dequeue, getQueue, updateQueueItem } = useOfflineQueue()
@@ -601,6 +603,83 @@ function detailWindowStyle() {
   return {
     width: `${Math.min(100, Math.max(8, widthPercent))}%`,
     left: `${Math.min(100, Math.max(0, leftPercent))}%`
+  }
+}
+
+function frameOffsetFromOverviewPercent(percentX) {
+  const span = Math.max(1, frameBounds.value.max - frameBounds.value.min)
+  const clampedPercent = Math.max(0, Math.min(100, percentX))
+  return frameBounds.value.min + (clampedPercent / 100) * span
+}
+
+function beginOverviewDrag(event) {
+  if (!overviewStripElement.value) {
+    return
+  }
+
+  overviewDragState.value = {
+    pointerId: event.pointerId
+  }
+  overviewStripElement.value.setPointerCapture(event.pointerId)
+
+  const rect = overviewStripElement.value.getBoundingClientRect()
+  const percentX = ((event.clientX - rect.left) / rect.width) * 100
+  const frameOffset = frameOffsetFromOverviewPercent(percentX)
+  detailCenterFrame.value = clampFrameOffset(frameOffset)
+}
+
+function handleOverviewPointerMove(event) {
+  if (!overviewDragState.value || !overviewStripElement.value) {
+    return
+  }
+
+  const rect = overviewStripElement.value.getBoundingClientRect()
+  const percentX = ((event.clientX - rect.left) / rect.width) * 100
+  const frameOffset = frameOffsetFromOverviewPercent(percentX)
+  detailCenterFrame.value = clampFrameOffset(frameOffset)
+}
+
+function handleOverviewPointerUp(event) {
+  if (!overviewDragState.value || !overviewStripElement.value) {
+    return
+  }
+
+  if (event.pointerId === overviewDragState.value.pointerId) {
+    try {
+      overviewStripElement.value.releasePointerCapture(event.pointerId)
+    } catch (e) {
+      // Pointer may not be captured if event was pointercancel
+    }
+  }
+
+  overviewDragState.value = null
+}
+
+function handleOverviewKeydown(event) {
+  const step = event.shiftKey ? detailWindowSize.value / 10 : 10
+
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value - step)
+    return
+  }
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(detailCenterFrame.value + step)
+    return
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(frameBounds.value.min + detailWindowSize.value / 2)
+    return
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault()
+    detailCenterFrame.value = clampFrameOffset(frameBounds.value.max - detailWindowSize.value / 2)
+    return
   }
 }
 
@@ -1689,8 +1768,28 @@ defineExpose({
           </button>
         </div>
 
-        <div data-testid="overview-strip" class="overview-strip">
-          <div class="overview-window" :style="detailWindowStyle()"></div>
+        <div
+          ref="overviewStripElement"
+          data-testid="overview-strip"
+          class="overview-strip"
+          role="group"
+          tabindex="0"
+          :aria-label="t('operator.capture.overview_controls')"
+          @pointerdown="beginOverviewDrag"
+          @pointermove="handleOverviewPointerMove"
+          @pointerup="handleOverviewPointerUp"
+          @pointercancel="handleOverviewPointerUp"
+          @keydown="handleOverviewKeydown"
+        >
+          <div
+            class="overview-window"
+            :style="detailWindowStyle()"
+            :aria-label="t('operator.capture.viewport_indicator')"
+            role="slider"
+            :aria-valuenow="Math.round(detailCenterFrame)"
+            :aria-valuemin="Math.round(frameBounds.min)"
+            :aria-valuemax="Math.round(frameBounds.max)"
+          ></div>
           <button
             v-for="marker in sortedMarkers"
             :key="`overview-${marker.id}`"
