@@ -645,4 +645,115 @@ describe('LineScanCapture operator evidence workspace', () => {
 
     expect(toggleContrastMock).toHaveBeenCalledTimes(1)
   })
+
+  it('repositions viewport by dragging the overview strip', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-1', { frame_offset: 50, timestamp_ms: Date.parse('2026-01-01T10:00:02.000Z') })]
+    })))
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    // Mock getBoundingClientRect for overview strip
+    const overviewStrip = wrapper.find('[data-testid="overview-strip"]').element
+    overviewStrip.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 400,
+      height: 50,
+      right: 400,
+      bottom: 50,
+      x: 0,
+      y: 0,
+      toJSON: () => ({ left: 0, top: 0, width: 400, height: 50 })
+    })
+
+    const initialFrame = wrapper.vm.detailCenterFrame
+
+    // Drag overview strip from left (0%) to right (75%)
+    await wrapper.find('[data-testid="overview-strip"]').trigger('pointerdown', {
+      pointerId: 1,
+      clientX: 300,
+      clientY: 25
+    })
+    dispatchPointerEvent('pointermove', { pointerId: 1, clientX: 300, clientY: 25 })
+    await flushPromises()
+
+    const newFrame = wrapper.vm.detailCenterFrame
+    expect(newFrame).toBeGreaterThan(initialFrame)
+  })
+
+  it('navigates viewport with keyboard on overview strip', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-1', { frame_offset: 50, timestamp_ms: Date.parse('2026-01-01T10:00:02.000Z') })]
+    })))
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    const initialFrame = wrapper.vm.detailCenterFrame
+
+    // Simulate right arrow key press on overview strip
+    await wrapper.find('[data-testid="overview-strip"]').trigger('keydown', {
+      key: 'ArrowRight'
+    })
+
+    expect(wrapper.vm.detailCenterFrame).toBeGreaterThan(initialFrame)
+  })
+
+  it('creates marker at precision pane center when button clicked', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-existing', { frame_offset: 20, timestamp_ms: Date.parse('2026-01-01T10:00:00.800Z') })]
+    })))
+
+    syncQueueMock.mockResolvedValueOnce({
+      synced: [
+        {
+          id: 1,
+          data: buildMarker('marker-new', {
+            frame_offset: 50,
+            timestamp_ms: Date.parse('2026-01-01T10:00:02.000Z'),
+            tile_id: 'tile-0',
+            tile_x: 1,
+            tile_y: 0
+          })
+        }
+      ],
+      failed: [],
+      conflicts: [],
+      discarded: []
+    })
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+    setStageRect(wrapper)
+
+    // Move detail center to frame 50
+    wrapper.vm.detailCenterFrame = 50
+
+    // Click the create-marker-detail button
+    const createButton = wrapper.find('[data-testid="create-marker-detail"]')
+    expect(createButton.exists()).toBe(true)
+
+    await createButton.trigger('click')
+    await flushPromises()
+
+    const [operations] = syncQueueMock.mock.calls[0]
+    expect(operations[0].type).toBe('CREATE_MARKER')
+    expect(operations[0].data.frame_offset).toBe(50)
+  })
+
+  it('centers viewport on selected marker from overview', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(200, buildWorkspace({
+      markers: [buildMarker('marker-1', { frame_offset: 75, timestamp_ms: Date.parse('2026-01-01T10:00:03.000Z') })]
+    })))
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    const initialFrame = wrapper.vm.detailCenterFrame
+
+    // Click overview marker
+    await wrapper.find('[data-testid="overview-marker-marker-1"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.vm.selectedMarkerId).toBe('marker-1')
+    expect(wrapper.vm.detailCenterFrame).toBe(75)
+    expect(wrapper.vm.detailCenterFrame).not.toBe(initialFrame)
+  })
 })
