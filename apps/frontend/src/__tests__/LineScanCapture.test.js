@@ -130,6 +130,14 @@ function buildCaptureSession(id = 'session-1', overrides = {}) {
       live_preview_supported: false,
       device_control_mode: 'read_only'
     },
+    device_controls: {
+      scan_line_position: 100,
+      scan_line_position_supported: true,
+      scan_line_position_writable: true,
+      capture_rate: 25.0,
+      capture_rate_supported: true,
+      capture_rate_writable: true
+    },
     live_status: {
       preview_state: 'inactive',
       drift_state: 'synced',
@@ -927,5 +935,325 @@ describe('LineScanCapture operator evidence workspace', () => {
     const wrapper = await mountLineScanCapture(closedSessionFetch)
 
     expect(wrapper.text()).toContain('Live preview session is now closed')
+  })
+
+  describe('Device Controls UI', () => {
+    it('renders device control inputs when scan-line position is supported and writable', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: 100,
+                scan_line_position_supported: true,
+                scan_line_position_writable: true,
+                capture_rate: 25.0,
+                capture_rate_supported: true,
+                capture_rate_writable: true
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="device-controls-section"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="capture-rate-input"]').exists()).toBe(true)
+      expect(wrapper.text()).toContain('Current value: 100')
+      expect(wrapper.text()).toContain('Current value: 25')
+    })
+
+    it('hides device control inputs when not supported', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: null,
+                scan_line_position_supported: false,
+                scan_line_position_writable: false,
+                capture_rate: null,
+                capture_rate_supported: false,
+                capture_rate_writable: false
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="capture-rate-input"]').exists()).toBe(false)
+    })
+
+    it('disables device control inputs when not writable', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: 100,
+                scan_line_position_supported: true,
+                scan_line_position_writable: false,
+                capture_rate: 25.0,
+                capture_rate_supported: true,
+                capture_rate_writable: false
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="capture-rate-input"]').attributes('disabled')).toBeDefined()
+    })
+
+    it('updates scan-line position on input change', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: 100,
+                scan_line_position_supported: true,
+                scan_line_position_writable: true,
+                capture_rate: 25.0,
+                capture_rate_supported: true,
+                capture_rate_writable: true
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      // Update scan-line position input
+      const input = wrapper.find('[data-testid="scan-line-position-input"]')
+      await input.setValue(150)
+      await input.trigger('change')
+      await flushPromises()
+
+      // Verify the pending value is updated
+      expect(input.element.value).toBe('150')
+    })
+
+    it('updates capture-rate on input change', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: 100,
+                scan_line_position_supported: true,
+                scan_line_position_writable: true,
+                capture_rate: 25.0,
+                capture_rate_supported: true,
+                capture_rate_writable: true
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      // Update capture-rate input
+      const input = wrapper.find('[data-testid="capture-rate-input"]')
+      await input.setValue(30.0)
+      await input.trigger('change')
+      await flushPromises()
+
+      // Verify the pending value is updated
+      expect(input.element.value).toBe('30')
+    })
+
+    it('supports partial device control updates (only scan-line position)', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(
+          200,
+          buildWorkspace({
+            capture_session: {
+              ...buildCaptureSession(),
+              device_controls: {
+                scan_line_position: 100,
+                scan_line_position_supported: true,
+                scan_line_position_writable: true,
+                capture_rate: 25.0,
+                capture_rate_supported: true,
+                capture_rate_writable: true
+              }
+            }
+          })
+        )
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      // Update only scan-line position, verify capture-rate input unchanged
+      const scanLineInput = wrapper.find('[data-testid="scan-line-position-input"]')
+      const captureRateInput = wrapper.find('[data-testid="capture-rate-input"]')
+
+      await scanLineInput.setValue(150)
+      expect(captureRateInput.element.value).toBe('25')
+    })
+
+    it('renders device control inputs and can accept valid values', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            device_controls: {
+              scan_line_position: 100,
+              scan_line_position_supported: true,
+              scan_line_position_writable: true,
+              capture_rate: 25.0,
+              capture_rate_supported: true,
+              capture_rate_writable: true
+            }
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      const scanLineInput = wrapper.find('[data-testid="scan-line-position-input"]')
+      expect(scanLineInput.exists()).toBe(true)
+      expect(scanLineInput.element.type).toBe('number')
+      expect(scanLineInput.element.min).toBe('0')
+    })
+
+    it('shows input validation with correct constraints', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            device_controls: {
+              scan_line_position: 100,
+              scan_line_position_supported: true,
+              scan_line_position_writable: true,
+              capture_rate: 25.0,
+              capture_rate_supported: true,
+              capture_rate_writable: true
+            }
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      const scanLineInput = wrapper.find('[data-testid="scan-line-position-input"]')
+      const captureRateInput = wrapper.find('[data-testid="capture-rate-input"]')
+
+      // Verify min constraints
+      expect(scanLineInput.element.min).toBe('0') // Non-negative
+      expect(captureRateInput.element.min).toBe('1') // Positive (min 1)
+    })
+
+    it('shows current scan-line position value to operator', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            device_controls: {
+              scan_line_position: 200,
+              scan_line_position_supported: true,
+              scan_line_position_writable: true,
+              capture_rate: 25.0,
+              capture_rate_supported: true,
+              capture_rate_writable: true
+            }
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      const text = wrapper.text()
+      expect(text).toContain('scan_line_position') // i18n key will be in the text
+      expect(text).toContain('200') // Current value should be visible
+    })
+
+    it('prevents device control updates when session is closed', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            state: 'closed',
+            device_controls: {
+              scan_line_position: 100,
+              scan_line_position_supported: true,
+              scan_line_position_writable: false,
+              capture_rate: 25.0,
+              capture_rate_supported: true,
+              capture_rate_writable: false
+            }
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').attributes('disabled')).toBeDefined()
+      expect(wrapper.find('[data-testid="capture-rate-input"]').attributes('disabled')).toBeDefined()
+    })
+
+    it('shows current device control values on mount', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            device_controls: {
+              scan_line_position: 200,
+              scan_line_position_supported: true,
+              scan_line_position_writable: true,
+              capture_rate: 30.0,
+              capture_rate_supported: true,
+              capture_rate_writable: true
+            }
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').element.value).toBe('200')
+      expect(wrapper.find('[data-testid="capture-rate-input"]').element.value).toBe('30')
+      expect(wrapper.text()).toContain('Current value: 200')
+      expect(wrapper.text()).toContain('Current value: 30')
+    })
+
+    it('hides device controls section for stations that do not support them', async () => {
+      const fetchMock = vi.fn().mockResolvedValueOnce(
+        jsonResponse(200, buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            station: 'other-station',
+            device_controls: null
+          }
+        }))
+      )
+
+      const wrapper = await mountLineScanCapture(fetchMock)
+
+      expect(wrapper.find('[data-testid="device-controls-section"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="scan-line-position-input"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="capture-rate-input"]').exists()).toBe(false)
+    })
   })
 })
