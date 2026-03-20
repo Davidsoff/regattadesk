@@ -336,6 +336,7 @@ class CaptureSessionServiceTest {
                 now, null, 25,
                 true, false, null,
                 closedAt, null,
-                now, now);
+                now, now,
+                null, null);
     }
 }
