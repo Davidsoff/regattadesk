@@ -83,6 +83,14 @@ export function createOperatorApi(client, options = {}) {
       )
     },
 
+    async updateDeviceControls(regattaId, captureSessionId, payload) {
+      return client.post(
+        `/regattas/${regattaId}/operator/capture_sessions/${captureSessionId}/device_controls`,
+        payload,
+        authOptions()
+      )
+    },
+
     async getEvidenceWorkspace(regattaId, filters = {}) {
       const query = {}
       if (filters.capture_session_id) query.capture_session_id = filters.capture_session_id

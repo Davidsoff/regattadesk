@@ -47,6 +47,9 @@ const dragState = ref(null)
 const overviewStripElement = ref(null)
 const overviewDragState = ref(null)
 const isPreviewPanelVisible = ref(true)
+const deviceControlsError = ref('')
+const isUpdatingDeviceControls = ref(false)
+const pendingDeviceControls = ref({ scan_line_position: null, capture_rate: null })
 
 const { isHighContrast, toggleContrast } = useOperatorTheme()
 const { queueSize, enqueue, dequeue, getQueue, updateQueueItem } = useOfflineQueue()
@@ -201,6 +204,12 @@ async function loadWorkspace() {
 
     evidenceWorkspace.value = response
     captureSession.value = normalizeCaptureSession(response?.capture_session)
+    if (captureSession.value?.device_controls) {
+      pendingDeviceControls.value = {
+        scan_line_position: captureSession.value.device_controls.scan_line_position ?? null,
+        capture_rate: captureSession.value.device_controls.capture_rate ?? null
+      }
+    }
     markers.value = mergeMarkerSyncState(Array.isArray(response?.markers) ? response.markers : [])
 
     if (selectedMarkerId.value && !markers.value.some((marker) => marker.id === selectedMarkerId.value)) {
@@ -536,6 +545,13 @@ const stageGridStyle = computed(() => {
     gridTemplateRows: `repeat(${Math.max(1, span.tile_rows || 1)}, minmax(0, 1fr))`,
     aspectRatio: `${Math.max(1, span.pixel_width || 1)} / ${Math.max(1, span.pixel_height || 1)}`
   }
+})
+const hasDeviceControls = computed(() => {
+  return Boolean(
+    captureSession.value?.device_controls &&
+    (captureSession.value.device_controls.scan_line_position_supported ||
+      captureSession.value.device_controls.capture_rate_supported)
+  )
 })
 
 function buildQueueSummary(items) {
@@ -1388,6 +1404,54 @@ async function discardQueueItem(queueId) {
   await loadWorkspace()
 }
 
+async function updateDeviceControlValue() {
+  if (!captureSession.value) {
+    return
+  }
+
+  deviceControlsError.value = ''
+  isUpdatingDeviceControls.value = true
+
+  try {
+    const payload = {}
+
+    if (pendingDeviceControls.value.scan_line_position !== null &&
+        pendingDeviceControls.value.scan_line_position !== captureSession.value.device_controls?.scan_line_position) {
+      payload.scan_line_position = pendingDeviceControls.value.scan_line_position
+    }
+
+    if (pendingDeviceControls.value.capture_rate !== null &&
+        pendingDeviceControls.value.capture_rate !== captureSession.value.device_controls?.capture_rate) {
+      payload.capture_rate = pendingDeviceControls.value.capture_rate
+    }
+
+    // Only call API if there are actual changes
+    if (Object.keys(payload).length === 0) {
+      return
+    }
+
+    const response = await operatorApi.updateDeviceControls(
+      props.regattaId,
+      captureSession.value.capture_session_id,
+      payload
+    )
+
+    if (response.capture_session_id) {
+      const normalized = normalizeCaptureSession(response)
+      Object.assign(captureSession.value, normalized)
+      pendingDeviceControls.value = {
+        scan_line_position: normalized.device_controls?.scan_line_position ?? null,
+        capture_rate: normalized.device_controls?.capture_rate ?? null
+      }
+    }
+  } catch (error) {
+    const errorMsg = error?.response?.data?.message || error?.message || 'Failed to update device controls'
+    deviceControlsError.value = errorMsg
+  } finally {
+    isUpdatingDeviceControls.value = false
+  }
+}
+
 function handleOnline() {
   isOnline.value = true
   syncQueuedOperations()
@@ -1938,6 +2002,64 @@ defineExpose({
             {{ captureSession.unsynced_reason }}
           </span>
           <p class="approval-scope-note">{{ t('operator.capture.approval_scope_note') }}</p>
+        </div>
+
+        <div v-if="hasDeviceControls" data-testid="device-controls-section" class="device-controls-section">
+          <h4>{{ t('operator.capture.device_controls') }}</h4>
+
+          <div v-if="deviceControlsError" class="device-controls-error">
+            {{ deviceControlsError }}
+          </div>
+
+          <div class="device-control-item" v-if="captureSession.device_controls?.scan_line_position_supported">
+            <label for="scan-line-position-input">
+              {{ t('operator.capture.scan_line_position') }}
+            </label>
+            <div class="device-control-input-group">
+              <input
+                id="scan-line-position-input"
+                v-model.number="pendingDeviceControls.scan_line_position"
+                type="number"
+                min="0"
+                data-testid="scan-line-position-input"
+                :disabled="!captureSession.device_controls?.scan_line_position_writable || isUpdatingDeviceControls"
+                @change="updateDeviceControlValue"
+              />
+              <span class="current-value" v-if="captureSession.device_controls?.scan_line_position !== null">
+                {{ t('operator.capture.current_value') }}: {{ captureSession.device_controls?.scan_line_position }}
+              </span>
+              <span v-else class="current-value">
+                {{ t('operator.capture.not_configured') }}
+              </span>
+            </div>
+          </div>
+
+          <div class="device-control-item" v-if="captureSession.device_controls?.capture_rate_supported">
+            <label for="capture-rate-input">
+              {{ t('operator.capture.capture_rate') }}
+            </label>
+            <div class="device-control-input-group">
+              <input
+                id="capture-rate-input"
+                v-model.number="pendingDeviceControls.capture_rate"
+                type="number"
+                min="1"
+                data-testid="capture-rate-input"
+                :disabled="!captureSession.device_controls?.capture_rate_writable || isUpdatingDeviceControls"
+                @change="updateDeviceControlValue"
+              />
+              <span class="current-value" v-if="captureSession.device_controls?.capture_rate !== null">
+                {{ t('operator.capture.current_value') }}: {{ captureSession.device_controls?.capture_rate }}
+              </span>
+              <span v-else class="current-value">
+                {{ t('operator.capture.not_configured') }}
+              </span>
+            </div>
+          </div>
+
+          <p v-if="!captureSession.device_controls?.scan_line_position_writable && !captureSession.device_controls?.capture_rate_writable" class="device-controls-disabled-note">
+            {{ t('operator.capture.device_controls_not_writable') }}
+          </p>
         </div>
       </div>
     </section>
@@ -2728,6 +2850,72 @@ button {
   margin: 0;
   display: flex;
   justify-content: space-between;
+}
+
+.device-controls-section {
+  margin-top: var(--rd-space-3, 1rem);
+  padding-top: var(--rd-space-3, 1rem);
+  border-top: 1px solid var(--rd-color-border, #ccc);
+}
+
+.device-controls-section h4 {
+  margin: 0 0 var(--rd-space-2, 0.5rem) 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.device-control-item {
+  margin-bottom: var(--rd-space-2, 0.5rem);
+}
+
+.device-control-item label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.device-control-input-group {
+  display: flex;
+  gap: var(--rd-space-2, 0.5rem);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.device-control-input-group input {
+  width: 100px;
+  padding: 0.35rem;
+  border: 1px solid var(--rd-color-border, #ccc);
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.device-control-input-group input:disabled {
+  background-color: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.current-value {
+  font-size: 0.85rem;
+  color: var(--rd-color-text-secondary, #666);
+}
+
+.device-controls-error {
+  margin-bottom: var(--rd-space-2, 0.5rem);
+  padding: 0.5rem;
+  background-color: #ffe5e5;
+  border: 1px solid #ffb3b3;
+  border-radius: 0.25rem;
+  color: #7f0000;
+  font-size: 0.9rem;
+}
+
+.device-controls-disabled-note {
+  margin-top: var(--rd-space-2, 0.5rem);
+  font-size: 0.85rem;
+  color: var(--rd-color-text-secondary, #666);
+  font-style: italic;
 }
 
 @media (max-width: 768px) {

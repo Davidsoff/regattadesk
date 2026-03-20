@@ -640,6 +640,12 @@
       "queue_policy_lww_unavailable": "Conflict policy should be last-write-wins for unapproved marker edits, but the backend does not yet expose a force-override or conflict-resolution endpoint. Reload and retry after review.",
       "queue_policy_missing_server_timestamp": "The backend did not return server timing metadata, so last-write-wins could not be applied safely. Reload and retry after review.",
       "approval_scope_note": "This workspace supports marker approval only. Entry and event approval remain outside the operator surface.",
+      "device_controls": "Device Controls",
+      "scan_line_position": "Scan Line Position",
+      "capture_rate": "Capture Rate",
+      "current_value": "Current",
+      "not_configured": "Not configured",
+      "device_controls_not_writable": "Device controls are not writable for this session (session closed or device does not support write access).",
       "conflicts_pending_title": "Conflicts Requiring Resolution",
       "conflict_detected": "A conflict was detected. See the conflict panel below.",
       "errors": {

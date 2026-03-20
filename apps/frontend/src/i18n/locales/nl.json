@@ -640,6 +640,12 @@
       "queue_policy_lww_unavailable": "Voor niet-goedgekeurde markerwijzigingen hoort het beleid last-write-wins te zijn, maar de backend biedt nog geen force-override- of conflict-resolutie-endpoint. Laad opnieuw en probeer het na controle opnieuw.",
       "queue_policy_missing_server_timestamp": "De backend gaf geen server-timingmetadata terug, waardoor last-write-wins niet veilig kon worden toegepast. Laad opnieuw en probeer het na controle opnieuw.",
       "approval_scope_note": "Deze werkruimte ondersteunt alleen markergoedkeuring. Inschrijvings- en eventgoedkeuring blijven buiten het operator-oppervlak.",
+      "device_controls": "Apparaatbesturingselementen",
+      "scan_line_position": "Scanlijnpositie",
+      "capture_rate": "Capture frequentie",
+      "current_value": "Huidige",
+      "not_configured": "Niet geconfigureerd",
+      "device_controls_not_writable": "Apparaatbesturingselementen kunnen niet voor deze sessie worden geschreven (sessie gesloten of apparaat ondersteunt geen schrijfacces).",
       "conflicts_pending_title": "Conflicten vereisen oplossing",
       "conflict_detected": "Er is een conflict gedetecteerd. Zie het conflictpaneel hieronder.",
       "errors": {

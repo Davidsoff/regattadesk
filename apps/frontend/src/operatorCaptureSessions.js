@@ -50,6 +50,17 @@ export function normalizeCaptureSession(session) {
             elapsed_capture_ms: session.live_status.elapsed_capture_ms ?? null,
             status_observed_at: session.live_status.status_observed_at ?? null
           }
+        : null,
+    device_controls:
+      session.device_controls && typeof session.device_controls === 'object'
+        ? {
+            scan_line_position_supported: session.device_controls.scan_line_position_supported === true,
+            scan_line_position_writable: session.device_controls.scan_line_position_writable === true,
+            scan_line_position: session.device_controls.scan_line_position ?? null,
+            capture_rate_supported: session.device_controls.capture_rate_supported === true,
+            capture_rate_writable: session.device_controls.capture_rate_writable === true,
+            capture_rate: session.device_controls.capture_rate ?? null
+          }
         : null
   }
 }
