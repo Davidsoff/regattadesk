@@ -756,4 +756,176 @@ describe('LineScanCapture operator evidence workspace', () => {
     expect(wrapper.vm.detailCenterFrame).toBe(75)
     expect(wrapper.vm.detailCenterFrame).not.toBe(initialFrame)
   })
+
+  it('displays capability indicators showing persisted evidence and live preview support status', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: false,
+              device_control_mode: 'read_only'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    expect(wrapper.find('[data-testid="persisted-evidence-capability"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="persisted-evidence-capability"]').text()).toContain('Supported')
+    expect(wrapper.find('[data-testid="live-preview-capability"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="live-preview-capability"]').text()).toContain('Not Supported')
+  })
+
+  it('does not render the live preview panel when live_preview_supported is false', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: false,
+              device_control_mode: 'read_only'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    expect(wrapper.find('[data-testid="toggle-preview-panel"]').exists()).toBe(false)
+  })
+
+  it('renders the live preview panel when live_preview_supported is true', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: true,
+              device_control_mode: 'read_only'
+            },
+            live_status: {
+              preview_state: 'inactive',
+              drift_state: 'synced',
+              elapsed_capture_ms: 5000,
+              status_observed_at: '2026-01-01T10:00:05Z'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    expect(wrapper.find('[data-testid="toggle-preview-panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="live-preview-content"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Live preview is currently inactive')
+  })
+
+  it('supports toggling the live preview panel visibility', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: true,
+              device_control_mode: 'read_only'
+            },
+            live_status: {
+              preview_state: 'inactive',
+              drift_state: 'synced',
+              elapsed_capture_ms: 5000,
+              status_observed_at: '2026-01-01T10:00:05Z'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    // Initially visible
+    expect(wrapper.find('[data-testid="live-preview-content"]').exists()).toBe(true)
+
+    // Toggle visibility
+    await wrapper.find('[data-testid="toggle-preview-panel"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="live-preview-content"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="toggle-preview-panel"]').text()).toContain('Show Preview')
+  })
+
+  it('displays elapsed capture time and drift state in the live preview panel', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: true,
+              device_control_mode: 'read_only'
+            },
+            live_status: {
+              preview_state: 'inactive',
+              drift_state: 'drift_exceeded',
+              elapsed_capture_ms: 12500,
+              status_observed_at: '2026-01-01T10:00:12Z'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(fetchMock)
+
+    const previewContent = wrapper.find('[data-testid="live-preview-content"]')
+    expect(previewContent.text()).toContain('00:12') // 12.5 seconds formatted as MM:SS
+    expect(previewContent.text()).toContain('drift_exceeded')
+    expect(previewContent.text()).toContain('2026-01-01T10:00:12Z')
+  })
+
+  it('displays correct preview state message based on capture session state', async () => {
+    const closedSessionFetch = vi.fn().mockResolvedValueOnce(
+      jsonResponse(
+        200,
+        buildWorkspace({
+          capture_session: {
+            ...buildCaptureSession(),
+            state: 'closed',
+            capabilities: {
+              persisted_evidence_workspace_supported: true,
+              live_preview_supported: true,
+              device_control_mode: 'read_only'
+            },
+            live_status: {
+              preview_state: 'closed',
+              drift_state: 'synced',
+              elapsed_capture_ms: 10000,
+              status_observed_at: '2026-01-01T10:00:10Z'
+            }
+          }
+        })
+      )
+    )
+
+    const wrapper = await mountLineScanCapture(closedSessionFetch)
+
+    expect(wrapper.text()).toContain('Live preview session is now closed')
+  })
 })

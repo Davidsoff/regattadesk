@@ -654,7 +654,19 @@
         "marker_approved": "Goedgekeurde marker kan niet worden gewijzigd",
         "marker_not_found": "Marker niet gevonden",
         "operator_token_required": "Een operator-token is vereist voordat markerwijzigingen in de wachtrij kunnen worden gezet"
-      }
+      },
+      "preview_state_inactive": "Live preview is currently inactive. Capture is in progress.",
+      "preview_state_active": "Live preview is active.",
+      "persisted_evidence_workspace": "Persisted Evidence Workspace",
+      "live_preview": "Live Preview",
+      "capability_supported": "Supported",
+      "capability_unsupported": "Not Supported",
+      "hide_preview": "Hide Preview",
+      "show_preview": "Show Preview",
+      "elapsed_time": "Elapsed Time",
+      "drift_state": "Drift State",
+      "status_observed_at": "Status Observed At",
+      "preview_state_unknown": "Live preview state is unknown"
     }
   },
   "public": {

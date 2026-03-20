@@ -46,6 +46,7 @@ const liveDragMarkerId = ref(null)
 const dragState = ref(null)
 const overviewStripElement = ref(null)
 const overviewDragState = ref(null)
+const isPreviewPanelVisible = ref(true)
 
 const { isHighContrast, toggleContrast } = useOperatorTheme()
 const { queueSize, enqueue, dequeue, getQueue, updateQueueItem } = useOfflineQueue()
@@ -497,10 +498,33 @@ const previewStateMessage = computed(() => {
   const previewState = captureSession.value?.live_status?.preview_state
   if (previewState === 'closed') {
     return t('operator.capture.preview_state_closed')
+  } else if (previewState === 'inactive') {
+    return t('operator.capture.preview_state_inactive')
   }
 
   return t('operator.capture.preview_state_unsupported')
 })
+
+const isLivePreviewSupported = computed(() => {
+  return captureSession.value?.capabilities?.live_preview_supported === true
+})
+
+const isPersistedEvidenceSupported = computed(() => {
+  return captureSession.value?.capabilities?.persisted_evidence_workspace_supported !== false
+})
+
+const previewStateLabel = computed(() => {
+  const previewState = captureSession.value?.live_status?.preview_state
+  if (previewState === 'closed') {
+    return t('operator.capture.preview_state_closed')
+  } else if (previewState === 'inactive') {
+    return t('operator.capture.preview_state_inactive')
+  } else if (previewState === 'active') {
+    return t('operator.capture.preview_state_active')
+  }
+  return t('operator.capture.preview_state_unknown')
+})
+
 const stageGridStyle = computed(() => {
   const span = evidenceSpan.value
   if (!span) {
@@ -1754,6 +1778,37 @@ defineExpose({
         </div>
       </div>
 
+      <div v-if="isLivePreviewSupported" class="workspace-panel live-preview-panel">
+        <div class="panel-header">
+          <h3>{{ t('operator.capture.live_preview') }}</h3>
+          <button
+            type="button"
+            data-testid="toggle-preview-panel"
+            class="secondary-button"
+            @click="isPreviewPanelVisible = !isPreviewPanelVisible"
+          >
+            {{ isPreviewPanelVisible ? t('operator.capture.hide_preview') : t('operator.capture.show_preview') }}
+          </button>
+        </div>
+
+        <div v-if="isPreviewPanelVisible" data-testid="live-preview-content" class="live-preview-content">
+          <div class="preview-state-indicator" :class="`preview-state--${captureSession?.live_status?.preview_state || 'unknown'}`">
+            <span class="preview-state-label">
+              {{ previewStateLabel }}
+            </span>
+          </div>
+          <div class="preview-info">
+            <p>{{ t('operator.capture.elapsed_time') }}: <strong>{{ formatDuration(captureSession?.live_status?.elapsed_capture_ms) }}</strong></p>
+            <p v-if="captureSession?.live_status?.drift_state">
+              {{ t('operator.capture.drift_state') }}: <strong>{{ captureSession.live_status.drift_state }}</strong>
+            </p>
+            <p v-if="captureSession?.live_status?.status_observed_at">
+              {{ t('operator.capture.status_observed_at') }}: <strong>{{ captureSession.live_status.status_observed_at }}</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div class="workspace-panel overview-panel">
         <div class="panel-header">
           <h3>{{ t('operator.capture.overview_strip') }}</h3>
@@ -1861,6 +1916,20 @@ defineExpose({
           <span>{{ t('operator.capture.frames_per_second') }}: {{ captureSession.fps ?? '—' }}</span>
           <span>{{ t('operator.capture.capture_elapsed') }}: {{ formatDuration(captureSession.live_status?.elapsed_capture_ms) }}</span>
           <span>{{ t('operator.capture.preview_state') }}: {{ captureSession.live_status?.preview_state || '—' }}</span>
+          <div class="capability-indicators">
+            <span
+              data-testid="persisted-evidence-capability"
+              :class="isPersistedEvidenceSupported ? 'capability-supported' : 'capability-unsupported'"
+            >
+              {{ t('operator.capture.persisted_evidence_workspace') }}: {{ isPersistedEvidenceSupported ? t('operator.capture.capability_supported') : t('operator.capture.capability_unsupported') }}
+            </span>
+            <span
+              data-testid="live-preview-capability"
+              :class="isLivePreviewSupported ? 'capability-supported' : 'capability-unsupported'"
+            >
+              {{ t('operator.capture.live_preview') }}: {{ isLivePreviewSupported ? t('operator.capture.capability_supported') : t('operator.capture.capability_unsupported') }}
+            </span>
+          </div>
           <span
             v-if="captureSession.is_synced === false && captureSession.unsynced_reason"
             data-testid="session-sync-reason"
@@ -2572,6 +2641,93 @@ button {
   border-radius: 0.25rem;
   font-size: 0.875rem;
   color: var(--rd-color-text-secondary, #666);
+}
+
+.capability-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: var(--rd-color-surface-secondary, #f5f5f5);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.capability-supported {
+  color: #0d6b3a;
+  font-weight: 500;
+}
+
+.capability-unsupported {
+  color: #7a5b00;
+  font-weight: 500;
+}
+
+.live-preview-panel {
+  grid-column: 1 / -1;
+}
+
+.live-preview-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.preview-state-indicator {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.preview-state--active {
+  background: #e8f5e9;
+  color: #0d6b3a;
+  border: 1px solid #0d6b3a;
+}
+
+.preview-state--inactive {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #e65100;
+}
+
+.preview-state--closed {
+  background: #ffebee;
+  color: #b30000;
+  border: 1px solid #b30000;
+}
+
+.preview-state--unsupported {
+  background: #f0f0f0;
+  color: #666;
+  border: 1px solid #999;
+}
+
+.preview-state--unknown {
+  background: #f0f0f0;
+  color: #666;
+  border: 1px solid #999;
+}
+
+.preview-state-label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.preview-info {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--rd-color-surface-secondary, #f5f5f5);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.preview-info p {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
 }
 
 @media (max-width: 768px) {
