@@ -250,6 +250,80 @@ class CaptureSessionServiceTest {
         assertNull(closed.getCloseReason());
     }
 
+    // ---- updateDeviceControls tests -----------------------------------------
+
+    @Test
+    void updateDeviceControls_shouldUpdateBothParameters() {
+        UUID regattaId = UUID.randomUUID();
+        CaptureSession session = buildSession(regattaId, CaptureSession.SessionState.open);
+        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(repository.update(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CaptureSession updated = service.updateDeviceControls(
+                session.getId(), regattaId, 512, 60, "operator");
+
+        assertEquals(512, updated.getScanLinePosition());
+        assertEquals(60, updated.getCaptureRate());
+        verify(repository).update(any(CaptureSession.class));
+    }
+
+    @Test
+    void updateDeviceControls_shouldAllowPartialUpdate() {
+        UUID regattaId = UUID.randomUUID();
+        CaptureSession session = buildSession(regattaId, CaptureSession.SessionState.open);
+        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+        when(repository.update(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CaptureSession updated = service.updateDeviceControls(
+                session.getId(), regattaId, 256, null, "operator");
+
+        assertEquals(256, updated.getScanLinePosition());
+        assertNull(updated.getCaptureRate());
+    }
+
+    @Test
+    void updateDeviceControls_shouldValidateScanLinePositionNonNegative() {
+        UUID regattaId = UUID.randomUUID();
+        CaptureSession session = buildSession(regattaId, CaptureSession.SessionState.open);
+        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.updateDeviceControls(session.getId(), regattaId, -1, null, "op"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldValidateCaptureRatePositive() {
+        UUID regattaId = UUID.randomUUID();
+        CaptureSession session = buildSession(regattaId, CaptureSession.SessionState.open);
+        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.updateDeviceControls(session.getId(), regattaId, null, 0, "op"));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.updateDeviceControls(session.getId(), regattaId, null, -1, "op"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldThrowForClosedSession() {
+        UUID regattaId = UUID.randomUUID();
+        CaptureSession session = buildSession(regattaId, CaptureSession.SessionState.closed);
+        when(repository.findById(session.getId())).thenReturn(Optional.of(session));
+
+        assertThrows(IllegalStateException.class, () ->
+                service.updateDeviceControls(session.getId(), regattaId, 512, null, "op"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldThrowForUnknownSession() {
+        UUID regattaId = UUID.randomUUID();
+        UUID unknownSessionId = UUID.randomUUID();
+        when(repository.findById(unknownSessionId)).thenReturn(Optional.empty());
+
+        assertThrows(CaptureSessionService.CaptureSessionNotFoundException.class, () ->
+                service.updateDeviceControls(unknownSessionId, regattaId, 512, null, "op"));
+    }
+
     // ---- Helpers ------------------------------------------------------------
 
     private CaptureSession buildSession(UUID regattaId, CaptureSession.SessionState state) {

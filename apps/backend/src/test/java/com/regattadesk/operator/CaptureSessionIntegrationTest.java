@@ -40,7 +40,7 @@ class CaptureSessionIntegrationTest {
     void setUp() throws Exception {
         regattaId = UUID.randomUUID();
         blockId = UUID.randomUUID();
-        station = "finish-line";
+        station = "line-scan";
 
         // Seed minimal foreign-key rows required by the schema.
         seedRegatta(regattaId);
@@ -414,6 +414,162 @@ class CaptureSessionIntegrationTest {
         .when()
                 .post("/api/v1/regattas/" + regattaId
                         + "/operator/capture_sessions/" + UUID.randomUUID() + "/close")
+        .then()
+                .statusCode(404);
+    }
+
+    // ---- POST device_controls -----------------------------------------------
+
+    @Test
+    void updateDeviceControls_shouldSucceedForLineScanStationWithOpenSession() {
+        // Create session at a line-scan station (the only supported station)
+        String sessionId = createSessionAndGetId("device-control-01");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "scan_line_position": 512,
+                            "capture_rate": 60
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(200)
+                .body("device_controls.scan_line_position", equalTo(512))
+                .body("device_controls.capture_rate", equalTo(60))
+                .body("device_controls.scan_line_position_writable", equalTo(true))
+                .body("device_controls.capture_rate_writable", equalTo(true))
+                .body("state", equalTo("open"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldAcceptPartialUpdates() {
+        String sessionId = createSessionAndGetId("device-control-partial");
+
+        // Update only scan_line_position
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "scan_line_position": 256
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(200)
+                .body("device_controls.scan_line_position", equalTo(256))
+                .body("device_controls.capture_rate", nullValue());
+    }
+
+    @Test
+    void updateDeviceControls_shouldValidateScanLinePositionNonNegative() {
+        String sessionId = createSessionAndGetId("device-control-negative");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "scan_line_position": -1
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(400)
+                .body("message", containsString("must be non-negative"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldValidateCaptureRatePositive() {
+        String sessionId = createSessionAndGetId("device-control-zero-rate");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "capture_rate": 0
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(400)
+                .body("message", containsString("must be positive"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldReturn409ForClosedSession() {
+        String sessionId = createSessionAndGetId("device-control-closed");
+
+        // Close the session first
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("{}")
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/close");
+
+        // Try to update device controls
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "scan_line_position": 512
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(409)
+                .body("message", containsString("Cannot update device controls of a closed session"));
+    }
+
+    @Test
+    void updateDeviceControls_shouldReturn401ForTokenFromDifferentStation() {
+        String sessionId = createSessionAndGetId("device-control-station-scope");
+
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", otherStationOperatorToken)
+                .body("""
+                        {
+                            "scan_line_position": 512
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + sessionId + "/device_controls")
+        .then()
+                .statusCode(401);
+    }
+
+    @Test
+    void updateDeviceControls_shouldReturn404ForUnknownSession() {
+        given()
+                .contentType(ContentType.JSON)
+                .header("X-Operator-Token", operatorToken)
+                .body("""
+                        {
+                            "scan_line_position": 512
+                        }
+                        """)
+        .when()
+                .post("/api/v1/regattas/" + regattaId
+                        + "/operator/capture_sessions/" + UUID.randomUUID() + "/device_controls")
         .then()
                 .statusCode(404);
     }
