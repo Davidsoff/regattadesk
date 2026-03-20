@@ -1876,8 +1876,36 @@ defineExpose({
     <section class="workspace-grid workspace-grid--bottom">
       <div class="workspace-panel detail-panel">
         <div class="panel-header">
-          <h3>{{ t('operator.capture.detail_window') }}</h3>
-          <span v-if="selectedMarker">{{ t('operator.capture.selected_marker') }}: {{ selectedMarker.id }}</span>
+          <div class="panel-title-group">
+            <h3>{{ t('operator.capture.detail_window') }}</h3>
+            <span class="detail-frame-info">
+              {{ t('operator.capture.center_frame') }}: {{ Math.round(detailCenterFrame) }}
+            </span>
+          </div>
+          <div class="detail-panel-actions">
+            <button
+              v-if="!canCreateMarker"
+              type="button"
+              data-testid="create-marker-detail"
+              class="secondary-button"
+              disabled
+              :title="t('operator.capture.create_marker_unavailable')"
+            >
+              {{ t('operator.capture.create_marker') }}
+            </button>
+            <button
+              v-else
+              type="button"
+              data-testid="create-marker-detail"
+              class="secondary-button"
+              @click="createMarkerFromPlacement(buildEvidencePlacement(detailCenterFrame, cursorTileY))"
+            >
+              {{ t('operator.capture.create_marker_at_center') }}
+            </button>
+            <span v-if="selectedMarker" class="selected-marker-badge">
+              {{ t('operator.capture.selected_marker') }}: {{ selectedMarker.id }}
+            </span>
+          </div>
         </div>
 
         <div data-testid="detail-window" class="detail-window">
@@ -2515,6 +2543,35 @@ button {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.panel-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-frame-info {
+  font-size: 0.875rem;
+  color: var(--rd-color-text-secondary, #666);
+  font-weight: normal;
+}
+
+.detail-panel-actions {
+  display: flex;
+  gap: var(--rd-space-2, 0.5rem);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.selected-marker-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  background: var(--rd-color-background-secondary, #f0f0f0);
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--rd-color-text-secondary, #666);
 }
 
 @media (max-width: 768px) {
