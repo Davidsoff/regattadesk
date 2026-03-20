@@ -44,6 +44,8 @@ public final class CaptureSession {
     private final String closeReason;
     private final Instant createdAt;
     private final Instant updatedAt;
+    private final Integer scanLinePosition;
+    private final Integer captureRate;
 
     /**
      * Creates a new CaptureSession with the specified properties.
@@ -67,7 +69,9 @@ public final class CaptureSession {
             Instant closedAt,
             String closeReason,
             Instant createdAt,
-            Instant updatedAt) {
+            Instant updatedAt,
+            Integer scanLinePosition,
+            Integer captureRate) {
 
         if (id == null) throw new IllegalArgumentException("id cannot be null");
         if (regattaId == null) throw new IllegalArgumentException("regattaId cannot be null");
@@ -98,6 +102,8 @@ public final class CaptureSession {
         this.closeReason = closeReason;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.scanLinePosition = scanLinePosition;
+        this.captureRate = captureRate;
     }
 
     // ---- Accessor methods ------------------------------------------------
@@ -119,6 +125,8 @@ public final class CaptureSession {
     public String getCloseReason() { return closeReason; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Integer getScanLinePosition() { return scanLinePosition; }
+    public Integer getCaptureRate() { return captureRate; }
 
     // ---- State helpers ---------------------------------------------------
 
@@ -161,7 +169,8 @@ public final class CaptureSession {
                 serverTimeAtStart, deviceMonotonicOffsetMs, fps,
                 newIsSynced, newDriftExceeded, newUnsyncedReason,
                 closedAt, closeReason,
-                createdAt, now);
+                createdAt, now,
+                scanLinePosition, captureRate);
     }
 
     /**
@@ -182,7 +191,35 @@ public final class CaptureSession {
                 serverTimeAtStart, deviceMonotonicOffsetMs, fps,
                 isSynced, driftExceededThreshold, unsyncedReason,
                 now, reason,
-                createdAt, now);
+                createdAt, now,
+                scanLinePosition, captureRate);
+    }
+
+    /**
+     * Produces a new instance with updated device control parameters.
+     *
+     * @param newScanLinePosition    updated scan-line position (may be {@code null})
+     * @param newCaptureRate         updated capture rate (may be {@code null})
+     * @param now                    timestamp for updatedAt
+     * @return new {@code CaptureSession} instance with updated device controls
+     * @throws IllegalStateException if the session is already closed
+     */
+    public CaptureSession withDeviceControls(
+            Integer newScanLinePosition,
+            Integer newCaptureRate,
+            Instant now) {
+
+        if (isClosed()) {
+            throw new IllegalStateException("Cannot update device controls of a closed session");
+        }
+        return new CaptureSession(
+                id, regattaId, blockId, station, deviceId,
+                sessionType, state,
+                serverTimeAtStart, deviceMonotonicOffsetMs, fps,
+                isSynced, driftExceededThreshold, unsyncedReason,
+                closedAt, closeReason,
+                createdAt, now,
+                newScanLinePosition, newCaptureRate);
     }
 
     // ---- Object contract -------------------------------------------------

@@ -81,7 +81,9 @@ public class CaptureSessionService {
                 null,
                 null,
                 now,
-                now
+                now,
+                null,
+                null
         );
 
         CaptureSession saved = repository.save(session);
@@ -190,6 +192,42 @@ public class CaptureSessionService {
                 now,
                 actor != null ? actor : "operator"
         ));
+
+        return saved;
+    }
+
+    /**
+     * Updates device control parameters (scan-line position, capture rate) for an open capture session.
+     *
+     * @param sessionId         the session ID
+     * @param regattaId         the regatta scope for ownership check
+     * @param scanLinePosition  scan-line position (may be {@code null})
+     * @param captureRate       capture rate (may be {@code null})
+     * @param actor             identifier of the actor performing the update
+     * @return the updated {@link CaptureSession}
+     * @throws IllegalStateException    if the session is already closed
+     * @throws CaptureSessionNotFoundException if not found in this regatta
+     */
+    public CaptureSession updateDeviceControls(
+            UUID sessionId,
+            UUID regattaId,
+            Integer scanLinePosition,
+            Integer captureRate,
+            String actor) {
+
+        CaptureSession existing = requireSession(sessionId, regattaId);
+
+        if (scanLinePosition != null && scanLinePosition < 0) {
+            throw new IllegalArgumentException("scanLinePosition must be non-negative");
+        }
+        if (captureRate != null && captureRate <= 0) {
+            throw new IllegalArgumentException("captureRate must be positive");
+        }
+
+        Instant now = Instant.now();
+        CaptureSession updated = existing.withDeviceControls(scanLinePosition, captureRate, now);
+
+        CaptureSession saved = repository.update(updated);
 
         return saved;
     }

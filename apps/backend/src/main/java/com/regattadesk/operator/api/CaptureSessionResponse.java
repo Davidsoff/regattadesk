@@ -73,6 +73,9 @@ public class CaptureSessionResponse {
     @JsonProperty("live_status")
     private final CaptureSessionLiveStatus liveStatus;
 
+    @JsonProperty("device_controls")
+    private final DeviceControls deviceControls;
+
     public CaptureSessionResponse(CaptureSession session) {
         this.captureSessionId = session.getId();
         this.regattaId = session.getRegattaId();
@@ -93,6 +96,7 @@ public class CaptureSessionResponse {
         this.updatedAt = session.getUpdatedAt();
         this.capabilities = CaptureSessionCapabilities.from(session);
         this.liveStatus = CaptureSessionLiveStatus.from(session);
+        this.deviceControls = DeviceControls.from(session);
     }
 
     public UUID getCaptureSessionId() { return captureSessionId; }
@@ -114,6 +118,7 @@ public class CaptureSessionResponse {
     public Instant getUpdatedAt() { return updatedAt; }
     public CaptureSessionCapabilities getCapabilities() { return capabilities; }
     public CaptureSessionLiveStatus getLiveStatus() { return liveStatus; }
+    public DeviceControls getDeviceControls() { return deviceControls; }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CaptureSessionCapabilities(
@@ -169,6 +174,41 @@ public class CaptureSessionResponse {
             }
 
             return new CaptureSessionLiveStatus(previewState, driftState, elapsedCaptureMs, observedAt);
+        }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record DeviceControls(
+        @JsonProperty("scan_line_position_supported")
+        boolean scanLinePositionSupported,
+
+        @JsonProperty("scan_line_position_writable")
+        boolean scanLinePositionWritable,
+
+        @JsonProperty("scan_line_position")
+        Integer scanLinePosition,
+
+        @JsonProperty("capture_rate_supported")
+        boolean captureRateSupported,
+
+        @JsonProperty("capture_rate_writable")
+        boolean captureRateWritable,
+
+        @JsonProperty("capture_rate")
+        Integer captureRate
+    ) {
+        static DeviceControls from(CaptureSession session) {
+            boolean isLineScanStation = "line-scan".equals(session.getStation());
+            boolean isOpen = session.isOpen();
+
+            return new DeviceControls(
+                isLineScanStation,
+                isLineScanStation && isOpen,
+                session.getScanLinePosition(),
+                isLineScanStation,
+                isLineScanStation && isOpen,
+                session.getCaptureRate()
+            );
         }
     }
 }

@@ -248,6 +248,8 @@ components:
           $ref: "#/components/schemas/CaptureSessionCapabilities"
         live_status:
           $ref: "#/components/schemas/CaptureSessionLiveStatus"
+        device_controls:
+          $ref: "#/components/schemas/DeviceControls"
     CaptureSessionCapabilities:
       type: object
       properties:
@@ -281,6 +283,38 @@ components:
           minimum: 0
         status_observed_at:
           $ref: "#/components/schemas/Instant"
+    DeviceControls:
+      type: object
+      properties:
+        scan_line_position_supported:
+          type: boolean
+        scan_line_position_writable:
+          type: boolean
+        scan_line_position:
+          type: integer
+          format: int32
+          nullable: true
+        capture_rate_supported:
+          type: boolean
+        capture_rate_writable:
+          type: boolean
+        capture_rate:
+          type: integer
+          format: int32
+          nullable: true
+    DeviceControlRequest:
+      type: object
+      properties:
+        scan_line_position:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+        capture_rate:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
     CaptureSessionSyncStateRequest:
       type: object
       required:
@@ -3414,6 +3448,63 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CaptureSessionSyncStateRequest"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptureSessionResponse"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags:
+      - Capture Session Resource
+  /api/v1/regattas/{regatta_id}/operator/capture_sessions/{capture_session_id}/device_controls:
+    post:
+      summary: Update Device Controls
+      parameters:
+      - name: capture_session_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: regatta_id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: X-Operator-Token
+        in: header
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceControlRequest"
         required: true
       responses:
         "200":

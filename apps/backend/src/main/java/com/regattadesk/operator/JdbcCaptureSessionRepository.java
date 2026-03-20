@@ -45,8 +45,9 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                     session_type, state, server_time_at_start,
                     device_monotonic_offset_ms, fps,
                     is_synced, drift_exceeded_threshold, unsynced_reason,
-                    closed_at, close_reason, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    closed_at, close_reason, created_at, updated_at,
+                    scan_line_position, capture_rate
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection conn = dataSource.getConnection();
@@ -73,6 +74,16 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
             stmt.setString(15, session.getCloseReason());
             stmt.setTimestamp(16, Timestamp.from(session.getCreatedAt()));
             stmt.setTimestamp(17, Timestamp.from(session.getUpdatedAt()));
+            if (session.getScanLinePosition() != null) {
+                stmt.setInt(18, session.getScanLinePosition());
+            } else {
+                stmt.setNull(18, Types.INTEGER);
+            }
+            if (session.getCaptureRate() != null) {
+                stmt.setInt(19, session.getCaptureRate());
+            } else {
+                stmt.setNull(19, Types.INTEGER);
+            }
 
             stmt.executeUpdate();
             return session;
@@ -92,7 +103,9 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                     unsynced_reason = ?,
                     closed_at = ?,
                     close_reason = ?,
-                    updated_at = ?
+                    updated_at = ?,
+                    scan_line_position = ?,
+                    capture_rate = ?
                 WHERE id = ?
                 """;
 
@@ -106,7 +119,17 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
             stmt.setTimestamp(5, session.getClosedAt() != null ? Timestamp.from(session.getClosedAt()) : null);
             stmt.setString(6, session.getCloseReason());
             stmt.setTimestamp(7, Timestamp.from(session.getUpdatedAt()));
-            stmt.setObject(8, session.getId());
+            if (session.getScanLinePosition() != null) {
+                stmt.setInt(8, session.getScanLinePosition());
+            } else {
+                stmt.setNull(8, Types.INTEGER);
+            }
+            if (session.getCaptureRate() != null) {
+                stmt.setInt(9, session.getCaptureRate());
+            } else {
+                stmt.setNull(9, Types.INTEGER);
+            }
+            stmt.setObject(10, session.getId());
 
             int rows = stmt.executeUpdate();
             if (rows == 0) {
@@ -126,7 +149,8 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                        session_type, state, server_time_at_start,
                        device_monotonic_offset_ms, fps,
                        is_synced, drift_exceeded_threshold, unsynced_reason,
-                       closed_at, close_reason, created_at, updated_at
+                       closed_at, close_reason, created_at, updated_at,
+                       scan_line_position, capture_rate
                 FROM capture_sessions
                 WHERE id = ?
                 """;
@@ -154,7 +178,8 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                        session_type, state, server_time_at_start,
                        device_monotonic_offset_ms, fps,
                        is_synced, drift_exceeded_threshold, unsynced_reason,
-                       closed_at, close_reason, created_at, updated_at
+                       closed_at, close_reason, created_at, updated_at,
+                       scan_line_position, capture_rate
                 FROM capture_sessions
                 WHERE regatta_id = ?
                 ORDER BY created_at DESC
@@ -170,7 +195,8 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                        session_type, state, server_time_at_start,
                        device_monotonic_offset_ms, fps,
                        is_synced, drift_exceeded_threshold, unsynced_reason,
-                       closed_at, close_reason, created_at, updated_at
+                       closed_at, close_reason, created_at, updated_at,
+                       scan_line_position, capture_rate
                 FROM capture_sessions
                 WHERE regatta_id = ? AND block_id = ?
                 ORDER BY created_at DESC
@@ -191,7 +217,8 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                            session_type, state, server_time_at_start,
                            device_monotonic_offset_ms, fps,
                            is_synced, drift_exceeded_threshold, unsynced_reason,
-                           closed_at, close_reason, created_at, updated_at
+                           closed_at, close_reason, created_at, updated_at,
+                           scan_line_position, capture_rate
                     FROM capture_sessions
                     WHERE regatta_id = ? AND state = 'open' AND station = ?
                     ORDER BY created_at DESC
@@ -206,7 +233,8 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                            session_type, state, server_time_at_start,
                            device_monotonic_offset_ms, fps,
                            is_synced, drift_exceeded_threshold, unsynced_reason,
-                           closed_at, close_reason, created_at, updated_at
+                           closed_at, close_reason, created_at, updated_at,
+                           scan_line_position, capture_rate
                     FROM capture_sessions
                     WHERE regatta_id = ? AND state = 'open'
                     ORDER BY created_at DESC
@@ -312,6 +340,9 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
 
         Timestamp closedAtTs = rs.getTimestamp("closed_at");
 
+        Integer scanLinePosition = (Integer) rs.getObject("scan_line_position");
+        Integer captureRate = (Integer) rs.getObject("capture_rate");
+
         return new CaptureSession(
                 (UUID) rs.getObject("id"),
                 (UUID) rs.getObject("regatta_id"),
@@ -329,7 +360,9 @@ public class JdbcCaptureSessionRepository implements CaptureSessionRepository {
                 closedAtTs != null ? closedAtTs.toInstant() : null,
                 rs.getString("close_reason"),
                 rs.getTimestamp("created_at").toInstant(),
-                rs.getTimestamp("updated_at").toInstant()
+                rs.getTimestamp("updated_at").toInstant(),
+                scanLinePosition,
+                captureRate
         );
     }
 

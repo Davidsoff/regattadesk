@@ -276,6 +276,88 @@ public class CaptureSessionResource {
     }
 
     /**
+     * Update device control parameters for an open capture session.
+     *
+     * <p>Auth: OperatorTokenAuth only — requires {@code X-Operator-Token} header.
+     * Only available when device_control_mode is not "unsupported".
+     */
+    @POST
+    @Path("/{capture_session_id}/device_controls")
+    @Operation(summary = "Update Device Controls")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "OK",
+                    content = @Content(schema = @Schema(implementation = CaptureSessionResponse.class))),
+            @APIResponse(responseCode = "400", description = "Bad Request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "404", description = "Not Found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @APIResponse(responseCode = "409", description = "Conflict",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public Response updateDeviceControls(
+            @PathParam("regatta_id") UUID regattaId,
+            @PathParam("capture_session_id") UUID captureSessionId,
+            @HeaderParam("X-Operator-Token") String operatorToken,
+            @Valid @NotNull(message = "request body is required") DeviceControlRequest request) {
+
+        Optional<CaptureSession> sessionOpt = captureSessionService.getSession(captureSessionId, regattaId);
+        if (sessionOpt.isEmpty()) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Capture session not found"))
+                    .build();
+        }
+
+        CaptureSession session = sessionOpt.get();
+        if (!isValidOperatorToken(operatorToken, regattaId, session.getStation())) {
+            return unauthorizedResponse();
+        }
+
+        if (session.isClosed()) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(ErrorResponse.conflict("Cannot update device controls of a closed session"))
+                    .build();
+        }
+
+        if (!"line-scan".equals(session.getStation())) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(ErrorResponse.conflict("Device controls not supported for this station"))
+                    .build();
+        }
+
+        try {
+            CaptureSession updated = captureSessionService.updateDeviceControls(
+                    captureSessionId,
+                    regattaId,
+                    request.getScanLinePosition(),
+                    request.getCaptureRate(),
+                    "operator"
+            );
+
+            return Response.ok(new CaptureSessionResponse(updated)).build();
+
+        } catch (CaptureSessionService.CaptureSessionNotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(ErrorResponse.notFound("Capture session not found"))
+                    .build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(ErrorResponse.badRequest(e.getMessage()))
+                    .build();
+        } catch (IllegalStateException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(ErrorResponse.conflict(e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            LOG.error("Failed to update device controls", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ErrorResponse.internalError("Internal error"))
+                    .build();
+        }
+    }
+
+    /**
      * Close a capture session.
      *
      * <p>Auth: OperatorTokenAuth only — requires {@code X-Operator-Token} header.
